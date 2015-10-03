@@ -59,8 +59,8 @@
       <div class="row">
         <div class="col-sm-3 col-md-2 sidebar">
           <ul class="nav nav-sidebar">
-            <!--<li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>-->
-            <li><a href="#">Reports</a></li>
+            <!--<li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>
+            <li><a href="#">Reports</a></li>-->
           </ul>
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
@@ -72,12 +72,12 @@
 			<div style = "text-align: center; border: solid 1px red;">
 				<button id = "restartBeatButton">Restart</button>
 				<button id = "prevBeatButton">Prev</button>
-				<button id = "startBeatButton">Start</button>
+				<button id = "startStopButton">Start</button>
 				<button id = "nextBeatButton">Next</button>
 			</div>
 
 			<div style = "text-align: center; border: solid 1px red;">
-				BPM: <input type = "text" id = "bpmTextField" value = "72"/>
+				BPM: <input type = "text" id = "bpmTextField" value = "80"/>
 				<br/>
 				Sounds: <select id = "soundGroups" onchange = "soundGroupChanged()"></select>
 				Images: <select id = "imageGroups" onchange = "imageGroupChanged()"></select>
@@ -97,12 +97,25 @@
     <script src="/static/js/holder.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <script src="/static/assets/js/ie10-viewport-bug-workaround.js"></script>
-	<script src="/static/js/layagnana.js"></script>
+	<script src="/static/js/lgcore.js"></script>
 	<script src="/static/js/lgimages.js"></script>
 	<script src="/static/js/lgsounds.js"></script>
+	<script src="/static/js/layagnana.js"></script>
 	<script language = "javascript">
 		var lgContext = new LG.Context();
 		var beatImageContainer = $("#beatImageContainer");
+		var lgPlayer = new LG.BeatPlayer(lgContext, beatImageContainer);
+		var beatGenerator = new LG.SimpleBeatGenerator([
+			"down",
+			"one",
+			"two",
+			"three",
+			"down",
+			"open",
+			"down",
+			"open",
+		]);
+		lgPlayer.setGenerator(beatGenerator);
 		lgContext.loadFrom("/static/Resources/TalasFixtures.json", function(context, error) {
 			// load the sounds
 			$("#soundGroups").empty();
@@ -133,6 +146,35 @@
 				beatImageContainer.append(lgContext.imageGroups[groupName].images["down"].imageElement);
 			});
 		}
+
+		$("#restartBeatButton").click(function() {
+			beatGenerator.restart();	
+		});
+
+		$("#nextBeatButton").click(function() {
+			if (!lgPlayer.isPlaying())
+			{
+				lgContext.currentGenerator.forward();
+			}
+		});
+
+		$("#prevBeatButton").click(function() {
+			if (!lgPlayer.isPlaying())
+			{
+				lgContext.currentGenerator.backward();
+			}
+		});
+
+		$("#startStopButton").click(function() {
+			if (!lgPlayer.isPlaying())
+			{
+				lgPlayer.startPlaying();
+				$("#startStopButton").html("Stop");
+			} else {
+				lgPlayer.stopPlaying();
+				$("#startStopButton").html("Start");
+			}
+		});
 	</script>
   </body>
 </html>

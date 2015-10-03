@@ -1,26 +1,12 @@
 
 var LG = (function (lg) {
 	lg.jQuery = $;
-	lg.Beat = function(soundName, imageName, duration) {
-		this.soundName = soundName;
-		this.imageName = imageName;
-		this.duration = duration;
-	};
-
-	lg.Component = function(name, beats) {
-		this.name = name;
-		this.beats = beats;
-	}
-
-	lg.Tala = function(name, components) {
-		this.name = name;
-		this.components = components;
-	};
-
 	lg.Context = function() {
 		this.audioContext = new AudioContext();
 		this.soundGroups = {};
 		this.imageGroups = {};
+		this.currentSoundGroup = null;
+		this.currentImageGroup = null;
 	};
 
 	lg.Context.prototype.loadFrom = function(url, callback) {
@@ -60,11 +46,13 @@ var LG = (function (lg) {
 	};
 
 	lg.Context.prototype.loadSoundGroup = function(name, callback) {
-		this.soundGroups[name].load(this.audioContext, callback);
+		this.currentSoundGroup = this.soundGroups[name];
+		this.currentSoundGroup.load(this.audioContext, callback);
 	};
 
 	lg.Context.prototype.loadImageGroup = function(name, callback) {
-		this.imageGroups[name].load(callback);
+		this.currentImageGroup = this.imageGroups[name]
+		this.currentImageGroup.load(callback);
 	};
 
 	return lg;

@@ -46,6 +46,10 @@ var LG = (function (lg) {
 		this.sounds = {};
 	}
 
+	lg.SoundGroup.prototype.getSound = function(name) {
+		return this.sounds[name];
+	};
+
 	lg.SoundGroup.prototype.addSound = function(sound) {
 		this.sounds[sound.name] = sound;
 	};
