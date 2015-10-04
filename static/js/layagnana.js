@@ -1,60 +1,94 @@
 
-var LG = (function (lg) {
-	lg.jQuery = $;
-	lg.Context = function() {
-		this.audioContext = new AudioContext();
-		this.soundGroups = {};
-		this.imageGroups = {};
-		this.currentSoundGroup = null;
-		this.currentImageGroup = null;
-	};
+function setupLG() {
+	lgPlayer.setGenerator(beatGenerator);
+	lgContext.loadFrom("/static/Resources/TalasFixtures.json", function(context, error) {
+		// load the sounds
+		$("#soundGroupsSelect").empty();
+		for (var groupName in context.soundGroups)
+		{
+			$("#soundGroupsSelect").append("<option value='" + groupName + "'>" + groupName + "</option>");
+		}
 
-	lg.Context.prototype.loadFrom = function(url, callback) {
-		var context = this;
-		lg.jQuery.get(url, function(result, status, xqHTR) {
-			context.soundGroups = {};
-			for (var groupName in result.SoundGroups) {
-				context.soundGroups[groupName] = new lg.SoundGroup(groupName);
-				var sounds = result.SoundGroups[groupName];
-				for (var soundName in sounds) {
-					var url = sounds[soundName];
-					context.soundGroups[groupName].addSound(new lg.Sound(soundName, url));
-				}
-			}
+		$("#imageGroupsSelect").empty();
+		for (var groupName in context.imageGroups)
+		{
+			$("#imageGroupsSelect").append("<option value='" + groupName + "'>" + groupName + "</option>");
+		}
 
-			context.imageGroups = {};
-			for (var groupName in result.ImageGroups) {
-				context.imageGroups[groupName] = new lg.ImageGroup(groupName);
-				var images = result.ImageGroups[groupName];
-				for (var imageName in images) {
-					var url = images[imageName];
-					context.imageGroups[groupName].addImage(new lg.Image(imageName, url));
-				}
-			}
+		soundGroupChanged();
+		imageGroupChanged();
+	});
+}
 
-			if (typeof(callback) !== "undefined" && callback != null)
-			{
-				callback(context, null);
-			}
-		}).fail(function(response, status, msg) {
-			alert("Context load failed: " + arguments);
-			if (typeof(callback) !== "undefined" && callback != null)
-			{
-				callback(context, msg);
-			}
-		});
-	};
+function setupControls() {
+	$("#restartBeatButton").click(function() {
+		beatGenerator.restart();	
+	});
 
-	lg.Context.prototype.loadSoundGroup = function(name, callback) {
-		this.currentSoundGroup = this.soundGroups[name];
-		this.currentSoundGroup.load(this.audioContext, callback);
-	};
+	$("#nextBeatButton").click(function() {
+		if (!lgPlayer.isPlaying())
+		{
+			lgContext.currentGenerator.forward();
+		}
+	});
 
-	lg.Context.prototype.loadImageGroup = function(name, callback) {
-		this.currentImageGroup = this.imageGroups[name]
-		this.currentImageGroup.load(callback);
-	};
+	$("#prevBeatButton").click(function() {
+		if (!lgPlayer.isPlaying())
+		{
+			lgContext.currentGenerator.backward();
+		}
+	});
 
-	return lg;
-}(LG || {}));
+	$("#startStopButton").click(function() {
+		if (!lgPlayer.isPlaying())
+		{
+			lgPlayer.startPlaying();
+			$("#startStopButton").html("Stop");
+		} else {
+			lgPlayer.stopPlaying();
+			$("#startStopButton").html("Start");
+		}
+	});
+	setupTempoSlider();
+    $( "#soundGroupsSelect" ).change(soundGroupChanged);
+    $( "#imageGroupsSelect" ).change(imageGroupChanged);
+}
+
+function setupTempoSlider() {
+	var minTempo = 10;
+	var maxTempo = 300;
+	setTempo(80);
+	var sliderDiv = $("#tempoSlider").slider({
+      min: minTempo,
+      max: maxTempo,
+      range: "min",
+      value: 80,
+      slide: function( event, ui ) {
+		  setTempo(ui.value);
+      }
+    });
+    $( "#tempoSlider" ).change(function() {
+		setTempo(this.selectedIndex + 10);
+    });
+}
+
+function setTempo(tempo) {
+	var tempoLabel=$("#tempoLabel");
+   	tempoLabel.html(tempo + " bpm");
+	lgPlayer.setTempo(tempo);
+}
+
+function soundGroupChanged() {
+	var groupName = $("#soundGroupsSelect").val();
+	lgContext.loadSoundGroup(groupName, function(soundGroup) {
+	});
+}
+
+function imageGroupChanged() {
+	var groupName = $("#imageGroupsSelect").val();
+	lgContext.loadImageGroup(groupName, function(imageGroup) {
+		beatImageContainer.html("");
+		beatImageContainer.append(lgContext.imageGroups[groupName].images["down"].imageElement);
+	});
+}
 

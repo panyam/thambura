@@ -1,20 +1,57 @@
 var LG = (function (lg) {
 	lg.jQuery = $;
-	lg.Beat = function(totalDuration, imageName, sounds, offsets) {
+	lg.processBeatEntry = function(entry) {
+		// plain beat as a string of duration 1
+		var totalDuration = 1.0;
+		var imageName = entry;
+		var ticks = [new lg.Tick(entry, 0)];
+		if (typeof(entry) !== "string")
+		{
+			// we have an object that can be of the following forms:
+			//  {'name': 'name of the beat, eg down, open etc',
+			//   'duration': 'total duration of the beat as a factor of the player beat duration - defaults to 1',
+			//   'ticks': [ list of sounds to be played as
+			//   			{'name': <name of sound>,
+			//   			 'offset': the offset at which the sound is to be played 
+			//   			  		   either as a fraction string or as a floating
+			//   			  		   point value (less than the above duration) }]
+			//   }
+			imageName = entry["name"] || "down";
+			totalDuration = entry["duration"] || 1.0;
+			if (!lg.Utils.isNull(entry["ticks"])) {
+				ticks = entry["ticks"].map(function(tick, index) {
+					var sound = tick["sound"] || imageName;
+					var offset = lg.Utils.parseNumber(tick["offset"]);
+					return new lg.Tick(sound, offset);
+				});
+			}
+		}
+		return new lg.Beat(totalDuration, imageName, ticks);
+	};
+
+	lg.Tick = function(sound, offset) {
+		this.sound = sound;
+		this.offset = offset;
+	}
+
+	lg.Beat = function(totalDuration, imageName, ticks) {
 		this.imageName = imageName;
 
 		// Duration of this beat - as a factor of the BPM
 		this.totalDuration = totalDuration;
 		
 		// The sounds and their corresponding offsets (as a factor of the BPM)
-		this.sounds = sounds;
-		this.offsets = offsets;
+		this.ticks = ticks;
 	};
 
 	lg.SimpleBeatGenerator = function(beatList) {
-		this.beatList = beatList;
+		this.beatList = [];
+		for (var i = 0;i < beatList.length;i++)
+		{
+			var newBeat = lg.processBeatEntry(beatList[i]);
+			this.beatList.push(newBeat);
+		}
 		this.currentIndex = 0;
-		this.currBeat = null;
 	};
 
 	lg.SimpleBeatGenerator.prototype.forward = function() {
@@ -32,7 +69,7 @@ var LG = (function (lg) {
 	};
 
 	lg.SimpleBeatGenerator.prototype.currentBeat = function() {
-		return new lg.Beat(1, this.beatList[this.currentIndex], [this.beatList[this.currentIndex]], [0]);
+		return this.beatList[this.currentIndex];
 	};
 
 	lg.BeatPlayer = function(context, imageContainer) {
@@ -51,7 +88,7 @@ var LG = (function (lg) {
 
 	lg.BeatPlayer.prototype.setTempo = function(bpm) {
 		this.tempo = bpm;	// in beats per minute
-		this.beatDuration = 60000.0 / bpm;
+		this.beatDuration = 60.0 / bpm;
 	};
 
 	lg.BeatPlayer.prototype.isPlaying = function() {
@@ -73,13 +110,17 @@ var LG = (function (lg) {
 		var beat = player.generator.currentBeat();
 		var lgContext = player.lgContext;
 		var image = lgContext.currentImageGroup.getImage(beat.imageName);
-		for (var i = 0;i < beat.sounds.length;i++)
+		this.imageContainer.html("");
+		this.imageContainer.append(image.imageElement);
+		var totalDuration = player.beatDuration * beat.totalDuration;
+		for (var i = 0;i < beat.ticks.length;i++)
 		{
-			var sound = lgContext.currentSoundGroup.getSound(beat.sounds[i]);
+			var tick = beat.ticks[i];
+			var sound = lgContext.currentSoundGroup.getSound(tick.sound);
 			var source = lgContext.audioContext.createBufferSource();
 			source.buffer = sound.buffer;
 			source.connect(lgContext.audioContext.destination);
-			source.start(player.beatDuration * beat.offsets[i]);
+			source.start(lgContext.audioContext.currentTime + (tick.offset * totalDuration));
 		}
 	}
 
@@ -88,7 +129,7 @@ var LG = (function (lg) {
 			var player = this;
 			var beat = player.generator.currentBeat();
 			player.playCurrent();
-			var nextBeatDelay = beat.totalDuration * player.beatDuration;
+			var nextBeatDelay = beat.totalDuration * player.beatDuration * 1000;
 
 			player.generator.forward();
 			setTimeout(function() { player._nextStep(); }, nextBeatDelay);
@@ -97,4 +138,37 @@ var LG = (function (lg) {
 
 	return lg;
 }(LG || {}));
+
+LG.Utils = (function (lgutils) {
+	lgutils.jQuery = $;
+	lgutils.isNull = function(obj) {
+		return typeof(obj) === "undefined" || obj === null;
+	}
+
+	lgutils.parseNumber = function(value) {
+		var num = value || 0;
+		if (typeof(num) === "string")
+		{
+			var slashPos = num.indexOf("/");
+			if (slashPos == -1)
+			{
+				num = parseFloat(num)
+				if (isNaN(num)) 
+				{
+					num = 0;
+				}
+			} else {
+				var numerator = num.substring(0, slashPos);
+				var denominator = num.substring(slashPos + 1);
+				if (isNan(numerator))
+					numerator = 0;
+				if (isNan(denominator))
+					denominator = 1;
+				num = numerator / denominator;
+			}
+		}
+		return num;
+	};
+	return lgutils;
+}(LG.Utils || {}));
 
