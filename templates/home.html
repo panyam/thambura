@@ -77,24 +77,25 @@
 			<div id = "settings_div" class = "col-md-4 col-md-offset-4" style="border: solid 0px blue">
 				<table style="width: 100%">
 					<tr>
-						<td><label>Tala:</label>
+						<td><label>Thaala:</label>
 						<td>
-							<select style="width: 100%">
+							<select id = "thaalaSelect" style="width: 100%">
 								<optgroup label = "Sapta Thaalas">
-									<option>Eka</option>
-									<option>Rupakam</option>
-									<option>Matya</option>
-									<option>Jhumpa</option>
-									<option>Thriputa</option>
-									<option>Ata</option>
-									<option>Dhruva</option>
+									<option value="sapta_eka">Eka</option>
+									<option value="sapta_rupaka">Rupakam</option>
+									<option value="sapta_matya">Matya</option>
+									<option value="sapta_jhumpa">Jhumpa</option>
+									<option value="sapta_thriputa">Thriputa</option>
+									<option value="sapta_ata">Ata</option>
+									<option value="sapta_dhruva">Dhruva</option>
 								</optgroup>
 								<optgroup label = "Chaapu Thaalas">
-									<option>Thisra Chaapu</option>
-									<option>Chathusra Chaapu</option>
-									<option>Khanda Chaapu</option>
-									<option>Misra Chaapu</option>
-									<option>Sankeerna Chaapu</option>
+									<option value = "chaapu_thisram">Thisra Chaapu</option>
+									<option value = "chaapu_chatusram">Chathusra Chaapu</option>
+									<option value = "chaapu_khandam">Khanda Chaapu</option>
+									<option value = "chaapu_misram">Misra Chaapu</option>
+									<option value = "chaapu_vilomam">Viloma Chaapu</option>
+									<option value = "chaapu_sankeernam">Sankeerna Chaapu</option>
 								</optgroup>
 								<optgroup label = "Custom">
 									<option>Adi</option>
@@ -106,31 +107,31 @@
 					<tr>
 						<td><label>Gathi/Nadai:</label>
 						<td>
-							<select style="width: 100%">
-								<option value = "3">Thisram</option>
-								<option value = "4">Chathusram</option>
-								<option value = "5">Khandam</option>
-								<option value = "7">Misram</option>
-								<option value = "9">Sankeernam</option>
+							<select id = "nadaiSelect" style="width: 100%">
+								<option value = "thisram">Thisram</option>
+								<option value = "chatusram" selected="true">Chathusram</option>
+								<option value = "khandam">Khandam</option>
+								<option value = "misram">Misram</option>
+								<option value = "sankeernam">Sankeernam</option>
 							</select>
 						</td>
 					</tr>
 					<tr>
 						<td><label>Jaathi:</label>
 						<td>
-							<select style="width: 100%">
-								<option value = "3">Thisram</option>
-								<option value = "4">Chathusram</option>
-								<option value = "5">Khandam</option>
-								<option value = "7">Misram</option>
-								<option value = "9">Sankeernam</option>
+							<select id = "jaathiSelect" style="width: 100%">
+								<option value = "thisram">Thisram</option>
+								<option value = "chatusram" selected="true">Chathusram</option>
+								<option value = "khandam">Khandam</option>
+								<option value = "misram">Misram</option>
+								<option value = "sankeernam">Sankeernam</option>
 							</select>
 						</td>
 					</tr>
 					<tr>
 						<td><label>Kalai:</label>
 						<td>
-							<select style="width: 100%">
+							<select id = "kalaiSelect" style="width: 100%">
 								<option value = "1">1</option>
 								<option value = "2">2</option>
 								<option value = "3">3</option>
@@ -163,6 +164,7 @@
 	<script src="/static/js/lgmodel.js"></script>
 	<script src="/static/js/lgimages.js"></script>
 	<script src="/static/js/lgsounds.js"></script>
+	<script src="/static/js/lgcarnatic.js"></script>
 	<script src="/static/js/lgview.js"></script>
 	<script language = "javascript"> $(function() { LGView.initialize(); }); </script>
   </body>

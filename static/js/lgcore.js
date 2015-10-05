@@ -6,6 +6,8 @@ var LG = (function (lg) {
 	lg.jQuery = $;
 	lg.processBeatEntry = function(entry) {
 		// plain beat as a string of duration 1
+		if (entry instanceof lg.Beat)
+			return entry;
 		var totalDuration = 1.0;
 		var imageName = entry;
 		var ticks = [new lg.Tick(entry, 0)];
@@ -49,39 +51,64 @@ var LG = (function (lg) {
 	};
 
 	lg.SimpleBeatGenerator = function(beatList) {
+		this.repeatCount = 1;
+		this.currRepeatIndex = 0;
+		this.currBeatIndex = 0;
 		this.setBeatList(beatList);
 	};
 
 	lg.SimpleBeatGenerator.prototype.setBeatList = function(beatList) {
-		this.beatList = [];
-		for (var i = 0;i < beatList.length;i++)
-		{
-			var newBeat = lg.processBeatEntry(beatList[i]);
-			this.beatList.push(newBeat);
-		}
-		this.currentIndex = 0;
+		beatList = beatList || [];
+		this.beatList = beatList.map(function(entry, index) {
+			return lg.processBeatEntry(entry);
+		});
+		this.currBeatIndex = 0;
 	}
 
 	lg.SimpleBeatGenerator.prototype.setBeatAt = function(beatConfig, index) {
 		this.beatList[index] = lg.processBeatEntry(beatbeatConfig);
 	}
 
-	lg.SimpleBeatGenerator.prototype.forward = function() {
-		this.currentIndex = (this.currentIndex + 1) % this.beatList.length;
+	lg.SimpleBeatGenerator.prototype.setRepeatCount = function(count) {
+		this.repeatCount = count;
 	}
 
 	lg.SimpleBeatGenerator.prototype.restart = function() {
-		this.currentIndex = 0;
+		this.first();
 	};
 
+	lg.SimpleBeatGenerator.prototype.first = function() {
+		this.currBeatIndex = 0;
+		this.currRepeatIndex = 0;
+	};
+
+	lg.SimpleBeatGenerator.prototype.last = function() {
+		this.currRepeatIndex = this.repeatCount - 1;
+		this.currBeatIndex = this.beatList.length - 1;
+	};
+
+	lg.SimpleBeatGenerator.prototype.forward = function() {
+		this.currRepeatIndex ++;
+		if (this.currRepeatIndex >= this.repeatCount)
+		{
+			this.currRepeatIndex = 0;
+			this.currBeatIndex = (this.currBeatIndex + 1) % this.beatList.length;
+		}
+	}
+
 	lg.SimpleBeatGenerator.prototype.backward = function() {
-		this.currentIndex--;
-		if (this.currentIndex < 0)
-			this.currentIndex += this.beatList.length;
+		this.currRepeatIndex --;
+		if (this.currRepeatIndex < 0)
+		{
+			this.currRepeatIndex = this.repeatCount - 1;
+			this.currBeatIndex--;
+			if (this.currBeatIndex < 0)
+				this.currBeatIndex += this.beatList.length;
+		}
 	};
 
 	lg.SimpleBeatGenerator.prototype.currentBeat = function() {
-		return this.beatList[this.currentIndex];
+		return this.beatList[this.currBeatIndex];
 	};
 
 	lg.BeatPlayer = function(context, imageContainer) {

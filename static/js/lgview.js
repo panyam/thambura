@@ -9,22 +9,7 @@ var LGView = (function (lgview) {
 	lgview.initialize = function() {
 		lgview._setupLG();
 		lgview._setupControls();
-		lgview.currentGenerator = new LG.SimpleBeatGenerator([
-			{
-				"name": "down",
-				"duration": 1.5,
-				"ticks": [ {"sound": "down", "offset": 0},
-						   {"sound": "down", "offset": 1/3} ]
-			},
-			"one",
-			"two",
-			"three",
-			"down",
-			"open",
-			"down",
-			"open",
-		]);
-		lgview.lgPlayer.setGenerator(lgview.currentGenerator);
+		lgview.updateBeatGenerator();
 	}
 
 	lgview.setTempo = function(tempo) {
@@ -96,6 +81,12 @@ var LGView = (function (lgview) {
 		lgview._setupTempoSlider();
 		$( "#soundGroupsSelect" ).change(lgview._soundGroupChanged);
 		$( "#imageGroupsSelect" ).change(lgview._imageGroupChanged);
+
+		// setup the thala, nadai, jaathi and kalai selectors
+		$("#thaalaSelect").change(function() { lgview.updateBeatGenerator(); });
+		$("#nadaiSelect").change(function() { lgview.updateBeatGenerator(); });
+		$("#jaathiSelect").change(function() { lgview.updateBeatGenerator(); });
+		$("#kalaiSelect").change(function() { lgview.updateBeatGenerator(); });
 	}
 
 	lgview._setupTempoSlider = function() {
@@ -125,6 +116,42 @@ var LGView = (function (lgview) {
 			lgview.beatImageContainer.html("");
 			lgview.beatImageContainer.append(lgview.lgContext.imageGroups[groupName].images["down"].imageElement);
 		});
+	}
+
+	lgview.updateBeatGenerator = function() {
+		var thaala = $("#thaalaSelect").val();
+		var nadai = $("#nadaiSelect").val();
+		var jaathi = $("#jaathiSelect").val();
+		var kalai = parseInt($("#kalaiSelect").val());
+		var config = { "jaathi": jaathi, "nadai": nadai };
+
+		if (lgview.currentGenerator == null)
+		{
+			lgview.currentGenerator = new LG.SimpleBeatGenerator();
+			lgview.lgPlayer.setGenerator(lgview.currentGenerator);
+		}
+		lgview.currentGenerator.setRepeatCount(kalai);
+
+		// given the thala - pick the "template" of beats
+		// with the nadai - only apply to sapta thalas and custom ones
+		// jaathi - only is applied to laghu component
+		// kalai - applies to all thals with more than one beat
+		var beatList = null;
+		if (thaala.startsWith("sapta_"))
+		{
+			thaala = thaala.substring("sapta_".length);
+			beatList = LGCarnatic.generateTalaBeats(thaala, config);
+		}
+		else if (thaala.startsWith("chaapu_"))
+		{
+			thaala = thaala.substring("chaapu_".length);
+			beatList = LGCarnatic.generateAngaBeats(thaala, true, config);
+		}
+
+		if (beatList != null)
+		{
+			lgview.currentGenerator.setBeatList(beatList);
+		}
 	}
 
 	return lgview;
