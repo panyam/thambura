@@ -1,4 +1,8 @@
 var LG = (function (lg) {
+	lg.MIN_TEMPO = 10;
+	lg.MAX_TEMPO = 300;
+	lg.DEFAULT_TEMPO = 80;
+
 	lg.jQuery = $;
 	lg.processBeatEntry = function(entry) {
 		// plain beat as a string of duration 1
@@ -45,6 +49,10 @@ var LG = (function (lg) {
 	};
 
 	lg.SimpleBeatGenerator = function(beatList) {
+		this.setBeatList(beatList);
+	};
+
+	lg.SimpleBeatGenerator.prototype.setBeatList = function(beatList) {
 		this.beatList = [];
 		for (var i = 0;i < beatList.length;i++)
 		{
@@ -52,7 +60,11 @@ var LG = (function (lg) {
 			this.beatList.push(newBeat);
 		}
 		this.currentIndex = 0;
-	};
+	}
+
+	lg.SimpleBeatGenerator.prototype.setBeatAt = function(beatConfig, index) {
+		this.beatList[index] = lg.processBeatEntry(beatbeatConfig);
+	}
 
 	lg.SimpleBeatGenerator.prototype.forward = function() {
 		this.currentIndex = (this.currentIndex + 1) % this.beatList.length;
@@ -76,7 +88,7 @@ var LG = (function (lg) {
 		this.lgContext = context;
 		this.imageContainer = imageContainer;
 		this.generator = null;
-		this.setTempo(80);
+		this.setTempo(lg.DEFAULT_TEMPO);
 		this.playing = false;
 	}
 

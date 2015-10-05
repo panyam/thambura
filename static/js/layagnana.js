@@ -1,4 +1,5 @@
 
+
 function setupLG() {
 	lgPlayer.setGenerator(beatGenerator);
 	lgContext.loadFrom("/static/Resources/TalasFixtures.json", function(context, error) {
@@ -58,27 +59,29 @@ function setupControls() {
 }
 
 function setupTempoSlider() {
-	var minTempo = 10;
-	var maxTempo = 300;
-	setTempo(80);
 	var sliderDiv = $("#tempoSlider").slider({
-      min: minTempo,
-      max: maxTempo,
+      min: LG.MIN_TEMPO,
+      max: LG.MAX_TEMPO,
       range: "min",
-      value: 80,
+      value: LG.DEFAULT_TEMPO,
       slide: function( event, ui ) {
 		  setTempo(ui.value);
       }
     });
-    $( "#tempoSlider" ).change(function() {
-		setTempo(this.selectedIndex + 10);
-    });
+   	$("#tempoSlider").change(function() { setTempo(this.selectedIndex + 10); });
+   	$("#tempoTextField").change(function() { setTempo($(this).val()); });
+	setTempo(LG.DEFAULT_TEMPO);
 }
 
 function setTempo(tempo) {
-	var tempoLabel=$("#tempoLabel");
-   	tempoLabel.html(tempo + " bpm");
+	tempo = parseInt(tempo);
+	if (isNaN(tempo))
+		tempo = LG.DEFAULT_TEMPO;
+	var tempoTextField=$("#tempoTextField");
+   	tempoTextField.val(tempo);
 	lgPlayer.setTempo(tempo);
+	$("#tempoSlider").slider();
+	$("#tempoSlider").slider("value", parseInt(tempo));
 }
 
 function soundGroupChanged() {
