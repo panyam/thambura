@@ -125,39 +125,12 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 	<script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
     <script src="/static/bootstrap/js/bootstrap.min.js"></script>
-	<script src="/static/js/lgcontext.js"></script>
 	<script src="/static/js/lgcore.js"></script>
+	<script src="/static/js/lgmodel.js"></script>
 	<script src="/static/js/lgimages.js"></script>
 	<script src="/static/js/lgsounds.js"></script>
-	<script src="/static/js/layagnana.js"></script>
-	<script language = "javascript">
-		var lgContext = null;
-		var beatImageContainer = null;
-		var lgPlayer = null;
-		var beatGenerator = null;
-		$(function() {
-			lgContext = new LG.Context();
-			beatImageContainer = $("#beatImageContainer");
-			lgPlayer = new LG.BeatPlayer(lgContext, beatImageContainer);
-			beatGenerator = new LG.SimpleBeatGenerator([
-				{
-					"name": "down",
-					"duration": 1.5,
-					"ticks": [ {"sound": "down", "offset": 0},
-							   {"sound": "down", "offset": 1/3} ]
-				},
-				"one",
-				"two",
-				"three",
-				"down",
-				"open",
-				"down",
-				"open",
-			]);
-			setupControls();
-			setupLG();
-		});
-	</script>
+	<script src="/static/js/lgview.js"></script>
+	<script language = "javascript"> $(function() { LGView.initialize(); }); </script>
   </body>
 </html>
 

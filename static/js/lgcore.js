@@ -94,8 +94,9 @@ var LG = (function (lg) {
 
 	lg.BeatPlayer.prototype.setGenerator = function(generator) {
 		this.stopPlaying();
-		generator.restart();
 		this.generator = generator;
+		if (generator != null)
+			generator.restart();
 	};
 
 	lg.BeatPlayer.prototype.setTempo = function(bpm) {
