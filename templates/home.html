@@ -53,72 +53,106 @@
       </div>
     </nav>
 
-    <div class="container-fluid">
-      <div class="row">
-	  <!--
-        <div class="col-sm-3 col-md-2 sidebar">
-          <ul class="nav nav-sidebar">
-            <li class="active"><a href="#">Overview <span class="sr-only">(current)</span></a></li>
-            <li><a href="#">Reports</a></li>
-          </ul>
-        </div>
-		-->
-        <div class="col-sm-9 col-sm-offset-3 col-md-12 col-md-offset-0 main">
-			<center>
-				<div id = "beatImageContainer"
-					 style = "width: 250px; height: 250px; border: solid 2px black; overflow: hidden; margin: 20px">
+    <div class="container">
+		<div class = "row" style="border: solid 0px green">
+			<div id = "player_div" class = "col-md-12" style="vertical-align: bottom; border: solid 0px blue">
+				<center>
+					<div id = "beatImageContainer"
+					 	style = "width: 250px; height: 250px; border: solid 2px black; overflow: hidden; padding: 20px">
+					</div>
+				<div style = "border: solid 0px red;padding: 10px">
+					<button id = "restartBeatButton">Restart</button>
+					<button id = "prevBeatButton">Prev</button>
+					<button id = "startStopButton">Start</button>
+					<button id = "nextBeatButton">Next</button>
 				</div>
-			</center>
-			<div style = "text-align: center; border: solid 0px red;padding: 10px">
-				<button id = "restartBeatButton">Restart</button>
-				<button id = "prevBeatButton">Prev</button>
-				<button id = "startStopButton">Start</button>
-				<button id = "nextBeatButton">Next</button>
-			</div>
-
-			<div style = "text-align: center; border: solid 0px red;padding: 10px">
+				</center>
+        	</div>
+			<div id = "tempo_div" class = "col-md-12" style = "text-align: center; border: solid 0px red;padding: 20px">
 				<label>Tempo:</label> <input type = "number" id = "tempoTextField"/> bpm
 				<div style = "text-align: center; border: solid 0px red;padding: 10px">
 					<div id = "tempoSlider"/>
 				</div>
 			</div>
-
-			<div style = "text-align: center; border: solid 0px red;padding: 10px">
-			<label>Gathi/Nadai:</label>
-			<select>
-				<option value = "3">Thisram</option>
-				<option value = "4">Chathusram</option>
-				<option value = "5">Khandam</option>
-				<option value = "7">Misram</option>
-				<option value = "9">Sankeernam</option>
-			</select>
-			<label>Jaathi:</label>
-			<select>
-				<option value = "3">Thisra</option>
-				<option value = "4">Chathusra</option>
-				<option value = "5">Khanda</option>
-				<option value = "7">Misra</option>
-				<option value = "9">Sankeerna</option>
-			</select>
-			<label>Kalai:</label>
-			<select>
-				<option value = "1">1</option>
-				<option value = "2">2</option>
-				<option value = "3">3</option>
-				<option value = "4">4</option>
-				<option value = "5">5</option>
-			</select>
+			<div id = "settings_div" class = "col-md-4 col-md-offset-4" style="border: solid 0px blue">
+				<table style="width: 100%">
+					<tr>
+						<td><label>Tala:</label>
+						<td>
+							<select style="width: 100%">
+								<optgroup label = "Sapta Thaalas">
+									<option>Eka</option>
+									<option>Rupakam</option>
+									<option>Matya</option>
+									<option>Jhumpa</option>
+									<option>Thriputa</option>
+									<option>Ata</option>
+									<option>Dhruva</option>
+								</optgroup>
+								<optgroup label = "Chaapu Thaalas">
+									<option>Thisra Chaapu</option>
+									<option>Chathusra Chaapu</option>
+									<option>Khanda Chaapu</option>
+									<option>Misra Chaapu</option>
+									<option>Sankeerna Chaapu</option>
+								</optgroup>
+								<optgroup label = "Custom">
+									<option>Adi</option>
+									<option>Short Rupakam</option>
+								</optgroup>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><label>Gathi/Nadai:</label>
+						<td>
+							<select style="width: 100%">
+								<option value = "3">Thisram</option>
+								<option value = "4">Chathusram</option>
+								<option value = "5">Khandam</option>
+								<option value = "7">Misram</option>
+								<option value = "9">Sankeernam</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><label>Jaathi:</label>
+						<td>
+							<select style="width: 100%">
+								<option value = "3">Thisram</option>
+								<option value = "4">Chathusram</option>
+								<option value = "5">Khandam</option>
+								<option value = "7">Misram</option>
+								<option value = "9">Sankeernam</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><label>Kalai:</label>
+						<td>
+							<select style="width: 100%">
+								<option value = "1">1</option>
+								<option value = "2">2</option>
+								<option value = "3">3</option>
+								<option value = "4">4</option>
+								<option value = "5">5</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td><label>Sounds:</label>
+						<td><select id = "soundGroupsSelect" style="width: 100%"/></td>
+					</tr>
+					<tr>
+						<td><label>Images:</label>
+						<td><select id = "imageGroupsSelect" style="width: 100%"/></td>
+					</tr>
+					</table>
+				<div>
 			</div>
-			<div style = "text-align: center; border: solid 0px red;padding: 10px">
-				Sounds: <select id = "soundGroupsSelect"></select>
-				Images: <select id = "imageGroupsSelect"></select>
-			</div>
-        </div>
-      </div>
+		</div>
     </div>
 
-	<div id = "imagesDiv" hidden = "true">
-	</div>
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
