@@ -18,11 +18,7 @@
     <!-- Custom styles for this template -->
     <link href="/static/css/dashboard.css" rel="stylesheet">
 
-	<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-
-    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="/static/js/ie8-responsive-file-warning.js"></script><![endif]-->
-    <script src="/static/js/assets/ie-emulation-modes-warning.js"></script>
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -81,9 +77,40 @@
 			</div>
 
 			<div style = "text-align: center; border: solid 0px red;padding: 10px">
-				Tempo: <label id = "tempoLabel"></label> 
+				<label>Tempo:</label> <label id = "tempoLabel"></label> 
 				<div id = "tempoSlider" />
 			</div>
+			<div>
+			<label>Gathi/Nadai:</label>
+			<select>
+				<option value = "3">Thisram</option>
+				<option value = "4">Chathusram</option>
+				<option value = "5">Khandam</option>
+				<option value = "7">Misram</option>
+				<option value = "9">Sankeernam</option>
+			</select>
+			</div>
+			<div>
+			<label>Jaathi:</label>
+			<select>
+				<option value = "3">Thisra</option>
+				<option value = "4">Chathusra</option>
+				<option value = "5">Khanda</option>
+				<option value = "7">Misra</option>
+				<option value = "9">Sankeerna</option>
+			</select>
+			</div>
+			<div>
+			<label>Kalai:</label>
+			<select>
+				<option value = "1">1</option>
+				<option value = "2">2</option>
+				<option value = "3">3</option>
+				<option value = "4">4</option>
+				<option value = "5">5</option>
+			</select>
+			</div>
+			<div style = "text-align: center; border: solid 0px red;padding: 10px">
 			<div style = "text-align: center; border: solid 0px red;padding: 10px">
 				Sounds: <select id = "soundGroupsSelect"></select>
 				Images: <select id = "imageGroupsSelect"></select>

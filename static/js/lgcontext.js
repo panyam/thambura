@@ -12,6 +12,8 @@ var LG = (function (lg) {
 	lg.Context.prototype.loadFrom = function(url, callback) {
 		var context = this;
 		lg.jQuery.get(url, function(result, status, xqHTR) {
+			if (typeof(result) === "string")
+				result = JSON.parse(result);
 			context.soundGroups = {};
 			for (var groupName in result.SoundGroups) {
 				context.soundGroups[groupName] = new lg.SoundGroup(groupName);

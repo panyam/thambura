@@ -22,20 +22,23 @@ function setupLG() {
 
 function setupControls() {
 	$("#restartBeatButton").click(function() {
-		beatGenerator.restart();	
+		lgPlayer.generator.restart();	
+		lgPlayer.playCurrent();
 	});
 
 	$("#nextBeatButton").click(function() {
 		if (!lgPlayer.isPlaying())
 		{
-			lgContext.currentGenerator.forward();
+			lgPlayer.generator.forward();
+			lgPlayer.playCurrent();
 		}
 	});
 
 	$("#prevBeatButton").click(function() {
 		if (!lgPlayer.isPlaying())
 		{
-			lgContext.currentGenerator.backward();
+			lgPlayer.generator.backward();
+			lgPlayer.playCurrent();
 		}
 	});
 
