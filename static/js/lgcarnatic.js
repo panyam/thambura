@@ -139,6 +139,26 @@ var LGCarnatic = (function (lgc) {
 		return beatList;
 	}
 
+	lgc.generateCustomBeats = function(name, config) {
+		var beatList = [];
+		var nadai = config.nadai || lgc.CHATUSRAM;
+		if (name === "adi") {
+			beatList.push(beatWithType("down", nadai));
+			beatList.push(beatWithType("one", nadai));
+			beatList.push(beatWithType("two", nadai));
+			beatList.push(beatWithType("three", nadai));
+			beatList.push(beatWithType("down", nadai));
+			beatList.push(beatWithType("open", nadai));
+			beatList.push(beatWithType("down", nadai));
+			beatList.push(beatWithType("open", nadai));
+		} else {
+			beatList.push(beatWithType("down", nadai));
+			beatList.push(beatWithType("down", nadai));
+			beatList.push(beatWithType("open", nadai));
+		}
+		return beatList;
+	}
+
 	initialize();
 	return lgc;
 }(LGCarnatic || {}));

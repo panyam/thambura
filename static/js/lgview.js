@@ -147,6 +147,11 @@ var LGView = (function (lgview) {
 			thaala = thaala.substring("chaapu_".length);
 			beatList = LGCarnatic.generateAngaBeats(thaala, true, config);
 		}
+		else if (thaala.startsWith("custom_"))
+		{
+			thaala = thaala.substring("custom_".length);
+			beatList = LGCarnatic.generateCustomBeats(thaala, config);
+		}
 
 		if (beatList != null)
 		{
