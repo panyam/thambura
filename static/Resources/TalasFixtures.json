@@ -1,14 +1,5 @@
 {
     "SoundGroups": {
-        "Metronome": {
-            "down": "/static/Resources/Sounds/Metronome/tick_hi.wav" ,
-            "open": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "one": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "two": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "three": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "four": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "five": "/static/Resources/Sounds/Metronome/tick_lo.wav"
-            },
         "Clap": {
             "down": "/static/Resources/Sounds/Clap/high1.wav" ,
             "open": "/static/Resources/Sounds/Clap/low1.wav" ,
@@ -17,7 +8,17 @@
             "three": "/static/Resources/Sounds/Clap/low1.wav" ,
             "four": "/static/Resources/Sounds/Clap/low1.wav" ,
             "five": "/static/Resources/Sounds/Clap/low1.wav"
-            }},
+            },
+        "Metronome": {
+            "down": "/static/Resources/Sounds/Metronome/tick_hi.wav" ,
+            "open": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "one": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "two": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "three": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "four": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "five": "/static/Resources/Sounds/Metronome/tick_lo.wav"
+            }
+		},
     "ImageGroups": {
         "Simple": {
             "down": "/static/Resources/Images/Simple/down_hand.GIF",
