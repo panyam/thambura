@@ -99,8 +99,8 @@ var LGView = (function (lgview) {
 			  lgview.setTempo(ui.value);
 		  }
 		});
-		$("#tempoSlider").change(function() { setTempo(this.selectedIndex + 10); });
-		$("#tempoTextField").change(function() { setTempo($(this).val()); });
+		$("#tempoSlider").change(function() { lgview.setTempo(this.selectedIndex + 10); });
+		$("#tempoTextField").change(function() { lgview.setTempo($(this).val()); });
 		lgview.setTempo(LG.DEFAULT_TEMPO);
 	}
 
