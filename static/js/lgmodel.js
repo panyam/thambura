@@ -3,6 +3,9 @@ var LG = (function (lg) {
 	lg.jQuery = $;
 	lg.Context = function() {
 		this.audioContext = new AudioContext();
+		this.gainNode = this.audioContext.createGain();
+		// Connect gain node to destination
+		this.gainNode.connect(this.audioContext.destination);
 		this.soundGroups = {};
 		this.imageGroups = {};
 		this.currentSoundGroup = null;
@@ -56,6 +59,13 @@ var LG = (function (lg) {
 		this.currentImageGroup = this.imageGroups[name]
 		this.currentImageGroup.load(callback);
 	};
+
+	lg.Context.prototype.setVolume = function(value) {
+		value = value / 100;
+		// Let's use an x*x curve (x-squared) since simple linear (x) does not
+		// sound as good.
+		this.gainNode.gain.value = value * value;
+	}
 
 	return lg;
 }(LG || {}));

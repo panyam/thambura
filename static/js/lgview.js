@@ -12,6 +12,13 @@ var LGView = (function (lgview) {
 		lgview.updateBeatGenerator();
 	}
 
+	lgview.setVolume = function(volume) {
+		volume = parseInt(volume);
+		if (isNaN(volume))
+			volume = 50;
+		lgview.lgContext.setVolume(volume);
+	}
+
 	lgview.setTempo = function(tempo) {
 		tempo = parseInt(tempo);
 		if (isNaN(tempo))
@@ -87,6 +94,11 @@ var LGView = (function (lgview) {
 		$("#nadaiSelect").change(function() { lgview.updateBeatGenerator(); });
 		$("#jaathiSelect").change(function() { lgview.updateBeatGenerator(); });
 		$("#kalaiSelect").change(function() { lgview.updateBeatGenerator(); });
+
+		// and volume
+		$("#volumeSlider").change(function() {
+			lgview.setVolume($("#volumeSlider").val());
+		});
 	}
 
 	lgview._setupTempoSlider = function() {

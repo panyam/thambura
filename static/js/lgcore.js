@@ -159,7 +159,9 @@ var LG = (function (lg) {
 			var sound = lgContext.currentSoundGroup.getSound(tick.sound);
 			var source = lgContext.audioContext.createBufferSource();
 			source.buffer = sound.buffer;
-			source.connect(lgContext.audioContext.destination);
+			// Connect source to a gain node
+			source.connect(lgContext.gainNode);
+			// source.connect(lgContext.audioContext.destination);
 			source.start(lgContext.audioContext.currentTime + (tick.offset * totalDuration));
 		}
 	}
