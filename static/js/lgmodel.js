@@ -2,7 +2,11 @@
 var LG = (function (lg) {
 	lg.jQuery = $;
 	lg.Context = function() {
-		this.audioContext = new AudioContext();
+		if('webkitAudioContext' in window) {
+			this.audioContext = new webkitAudioContext();
+		} else {
+			this.audioContext = new AudioContext();
+		}
 		this.gainNode = this.audioContext.createGain();
 		// Connect gain node to destination
 		this.gainNode.connect(this.audioContext.destination);
