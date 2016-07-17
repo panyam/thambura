@@ -28,7 +28,18 @@
             "three": "/static/Resources/Images/Simple/laghu_3.GIF",
             "four": "/static/Resources/Images/Simple/laghu_4.GIF",
             "five": "/static/Resources/Images/Simple/laghu_5.GIF"
-            }},
+        },
+        "SaRiGaMa": {
+            "Sa": "/static/Resources/Images/SaRiGaMa/Sa.GIF",
+            "Ri": "/static/Resources/Images/SaRiGaMa/Ri.GIF",
+            "Ga": "/static/Resources/Images/SaRiGaMa/Ga.GIF",
+            "Ma": "/static/Resources/Images/SaRiGaMa/Ma.GIF",
+            "Pa": "/static/Resources/Images/SaRiGaMa/Pa.GIF",
+            "Da": "/static/Resources/Images/SaRiGaMa/Da.GIF",
+            "Ni": "/static/Resources/Images/SaRiGaMa/Ni.GIF"
+            "UpperSa": "/static/Resources/Images/SaRiGaMa/UpperSa.GIF"
+        }
+    },
     "Angas": [
         {"name": "Thisra Chaapu",
          "children": [{"name": "down", "duration": "1/2"}, "down"]},
