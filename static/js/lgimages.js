@@ -32,7 +32,7 @@ var LG = (function (lg) {
 	}
 
 	lg.ImageGroup.prototype.getImage = function(name) {
-		return this.images[name];
+		return this.images[name] || null;
 	};
 
 	lg.ImageGroup.prototype.addImage = function(image) {

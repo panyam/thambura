@@ -8,7 +8,7 @@
             "three": "/static/Resources/Sounds/Clap/low1.wav" ,
             "four": "/static/Resources/Sounds/Clap/low1.wav" ,
             "five": "/static/Resources/Sounds/Clap/low1.wav"
-            },
+        },
         "Metronome": {
             "down": "/static/Resources/Sounds/Metronome/tick_hi.wav" ,
             "open": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
@@ -17,8 +17,17 @@
             "three": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
             "four": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
             "five": "/static/Resources/Sounds/Metronome/tick_lo.wav"
-            }
-		},
+        },
+        "SaRiGaMa": {
+            "down": "/static/Resources/Sounds/Metronome/tick_hi.wav" ,
+            "open": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "one": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "two": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "three": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "four": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "five": "/static/Resources/Sounds/Metronome/tick_lo.wav"
+        }
+	},
     "ImageGroups": {
         "Simple": {
             "down": "/static/Resources/Images/Simple/down_hand.GIF",
@@ -36,7 +45,7 @@
             "Ma": "/static/Resources/Images/SaRiGaMa/Ma.GIF",
             "Pa": "/static/Resources/Images/SaRiGaMa/Pa.GIF",
             "Da": "/static/Resources/Images/SaRiGaMa/Da.GIF",
-            "Ni": "/static/Resources/Images/SaRiGaMa/Ni.GIF"
+            "Ni": "/static/Resources/Images/SaRiGaMa/Ni.GIF",
             "UpperSa": "/static/Resources/Images/SaRiGaMa/UpperSa.GIF"
         }
     },

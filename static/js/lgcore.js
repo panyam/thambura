@@ -149,9 +149,11 @@ var LG = (function (lg) {
 		if (!player.generator) return;
 		var beat = player.generator.currentBeat();
 		var lgContext = player.lgContext;
+        this.imageContainer.html("");
 		var image = lgContext.currentImageGroup.getImage(beat.imageName);
-		this.imageContainer.html("");
-		this.imageContainer.append(image.imageElement);
+        if (image != null) {
+            this.imageContainer.append(image.imageElement);
+        }
 		var totalDuration = player.beatDuration * beat.totalDuration;
 		for (var i = 0;i < beat.ticks.length;i++)
 		{

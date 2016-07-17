@@ -126,7 +126,9 @@ var LGView = (function (lgview) {
 		var groupName = $("#imageGroupsSelect").val();
 		lgview.lgContext.loadImageGroup(groupName, function(imageGroup) {
 			lgview.beatImageContainer.html("");
-			lgview.beatImageContainer.append(lgview.lgContext.imageGroups[groupName].images["down"].imageElement);
+            if ("down" in lgview.lgContext.imageGroups[groupName].images) {
+			    lgview.beatImageContainer.append(lgview.lgContext.imageGroups[groupName].images["down"].imageElement);
+            }
 		});
 	}
 
