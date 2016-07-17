@@ -50,7 +50,8 @@ var LG = (function (lg) {
 		this.ticks = ticks;
 	};
 
-	lg.SimpleBeatGenerator = function(beatList) {
+	lg.SimpleBeatGenerator = function(beatList, context) {
+        this.lgContext = context;
 		this.repeatCount = 1;
 		this.currRepeatIndex = 0;
 		this.currBeatIndex = 0;
@@ -78,16 +79,19 @@ var LG = (function (lg) {
 	};
 
 	lg.SimpleBeatGenerator.prototype.first = function() {
+        this.lgContext.currentRandom = Math.random();
 		this.currBeatIndex = 0;
 		this.currRepeatIndex = 0;
 	};
 
 	lg.SimpleBeatGenerator.prototype.last = function() {
+        this.lgContext.currentRandom = Math.random();
 		this.currRepeatIndex = this.repeatCount - 1;
 		this.currBeatIndex = this.beatList.length - 1;
 	};
 
 	lg.SimpleBeatGenerator.prototype.forward = function() {
+        this.lgContext.currentRandom = Math.random();
 		this.currRepeatIndex ++;
 		if (this.currRepeatIndex >= this.repeatCount)
 		{
@@ -97,6 +101,7 @@ var LG = (function (lg) {
 	}
 
 	lg.SimpleBeatGenerator.prototype.backward = function() {
+        this.lgContext.currentRandom = Math.random();
 		this.currRepeatIndex --;
 		if (this.currRepeatIndex < 0)
 		{
@@ -147,6 +152,7 @@ var LG = (function (lg) {
 	lg.BeatPlayer.prototype.playCurrent = function() {
 		var player = this;
 		if (!player.generator) return;
+
 		var beat = player.generator.currentBeat();
 		var lgContext = player.lgContext;
         this.imageContainer.html("");

@@ -26,13 +26,20 @@ var LG = (function (lg) {
 		});
 	}
 
-	lg.ImageGroup = function(name) {
+	lg.ImageGroup = function(name, context) {
 		this.name = name;
+        this.lgContext = context;
 		this.images = {};
 	}
 
 	lg.ImageGroup.prototype.getImage = function(name) {
-		return this.images[name] || null;
+        if (this.name == "SaRiGaMa") { 
+            var keys = Object.keys(this.images);
+            var index = Math.floor(this.lgContext.currentRandom * keys.length);
+            return this.images[keys[index]];
+        } else {
+		    return this.images[name] || null;
+        }
 	};
 
 	lg.ImageGroup.prototype.addImage = function(image) {

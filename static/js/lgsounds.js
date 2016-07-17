@@ -41,13 +41,20 @@ var LG = (function (lg) {
 		request.send();
 	}
 
-	lg.SoundGroup = function(name) {
+	lg.SoundGroup = function(name, context) {
 		this.name = name;
+        this.lgContext = context;
 		this.sounds = {};
 	}
 
 	lg.SoundGroup.prototype.getSound = function(name) {
-		return this.sounds[name];
+        if (this.name == "SaRiGaMa") { 
+            var keys = Object.keys(this.sounds);
+            var index = Math.floor(this.lgContext.currentRandom * keys.length);
+            return this.sounds[keys[index]];
+        } else {
+		    return this.sounds[name] || null;
+        }
 	};
 
 	lg.SoundGroup.prototype.addSound = function(sound) {

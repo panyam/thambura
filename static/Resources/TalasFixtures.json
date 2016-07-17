@@ -39,14 +39,14 @@
             "five": "/static/Resources/Images/Simple/laghu_5.GIF"
         },
         "SaRiGaMa": {
-            "Sa": "/static/Resources/Images/SaRiGaMa/Sa.GIF",
-            "Ri": "/static/Resources/Images/SaRiGaMa/Ri.GIF",
-            "Ga": "/static/Resources/Images/SaRiGaMa/Ga.GIF",
-            "Ma": "/static/Resources/Images/SaRiGaMa/Ma.GIF",
-            "Pa": "/static/Resources/Images/SaRiGaMa/Pa.GIF",
-            "Da": "/static/Resources/Images/SaRiGaMa/Da.GIF",
-            "Ni": "/static/Resources/Images/SaRiGaMa/Ni.GIF",
-            "UpperSa": "/static/Resources/Images/SaRiGaMa/UpperSa.GIF"
+            "Sa": "/static/Resources/Images/SaRiGaMa/Sa.png",
+            "Ri": "/static/Resources/Images/SaRiGaMa/Ri.png",
+            "Ga": "/static/Resources/Images/SaRiGaMa/Ga.png",
+            "Ma": "/static/Resources/Images/SaRiGaMa/Ma.png",
+            "Pa": "/static/Resources/Images/SaRiGaMa/Pa.png",
+            "Da": "/static/Resources/Images/SaRiGaMa/Da.png",
+            "Ni": "/static/Resources/Images/SaRiGaMa/Ni.png",
+            "UpperSa": "/static/Resources/Images/SaRiGaMa/UpperSa.png"
         }
     },
     "Angas": [
@@ -137,7 +137,7 @@
         "mukhi": 4,
         "tala": "Thriputa Talam",
         "speed": 80,
-        "image_group": "Simple",
+        "image_group": "SaRiGaMa",
         "sound_group": "Clap"
     }
 }

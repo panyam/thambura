@@ -23,7 +23,7 @@ var LG = (function (lg) {
 				result = JSON.parse(result);
 			context.soundGroups = {};
 			for (var groupName in result.SoundGroups) {
-				context.soundGroups[groupName] = new lg.SoundGroup(groupName);
+				context.soundGroups[groupName] = new lg.SoundGroup(groupName, context);
 				var sounds = result.SoundGroups[groupName];
 				for (var soundName in sounds) {
 					var url = sounds[soundName];
@@ -33,7 +33,7 @@ var LG = (function (lg) {
 
 			context.imageGroups = {};
 			for (var groupName in result.ImageGroups) {
-				context.imageGroups[groupName] = new lg.ImageGroup(groupName);
+				context.imageGroups[groupName] = new lg.ImageGroup(groupName, context);
 				var images = result.ImageGroups[groupName];
 				for (var imageName in images) {
 					var url = images[imageName];

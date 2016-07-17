@@ -141,7 +141,7 @@ var LGView = (function (lgview) {
 
 		if (lgview.currentGenerator == null)
 		{
-			lgview.currentGenerator = new LG.SimpleBeatGenerator();
+			lgview.currentGenerator = new LG.SimpleBeatGenerator(null, lgview.lgContext);
 			lgview.lgPlayer.setGenerator(lgview.currentGenerator);
 		}
 		lgview.currentGenerator.setRepeatCount(kalai);
