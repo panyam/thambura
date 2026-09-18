@@ -11,7 +11,8 @@ make run         # ui + go run on :8000 (8080 is taken in the dev container)
 make test        # go test ./... ; pnpm typecheck ; pnpm test (vitest)
 make ui          # pnpm install, Tailwind -> web/static/css/tailwind.css, esbuild -> web/static/app.js
 make templates   # templar get: re-vendor goapplib templates after a ref bump
-make deploy      # App Engine, project layagnana
+make deploy      # tests + prod build, then App Engine project thambura (see Deploying)
+make prodlogs    # tail App Engine logs
 ```
 
 Built assets (`app.js`, `tailwind.css`) are gitignored. `.gcloudignore` exists
@@ -19,9 +20,9 @@ so a deploy still uploads them.
 
 ## Naming
 
-The display name **Sadhana** lives in `internal/brand.Name`. The folder
-and GitHub repo (`layaguide`) and the App Engine project id
-(`layagnana`) are from before the rename and stay as they are for now.
+The display name **Sadhana** lives in `internal/brand.Name`. The folder and
+GitHub repo (`layaguide`) are from before the rename. It's served from the
+`thambura` App Engine project at thambura.com.
 
 ## Server (Go)
 
@@ -99,6 +100,31 @@ See NEXTSTEPS.md for the order.
   5-10 ms rather than calling `stop()`, which clicks. Also plan for 2-3 takes per
   stroke, picked by the step's `variant`, and trimmed mono samples, since decoded
   PCM is about 350 KB/s stereo.
+
+## Deploying
+
+`make deploy` runs the tests, a minified frontend build and a Go build, then
+`gcloud app deploy` to the `thambura` project (`GCP_PROJECT=... make deploy`
+to override). It refuses to run with active `replace` directives in go.mod.
+The runtime is `go126` in `app.yaml`, which has to be at least the `go` line
+in go.mod. App Engine serves `/static` itself (`static_dir: web/static`) and
+forces HTTPS.
+
+One-time setup, run by an owner of the project from a machine with `gcloud`
+(the dev container has none):
+
+1. `gcloud app create --project thambura --region <region>` if the project
+   has no App Engine app yet. The region can't be changed later.
+2. `make deploy`, then check https://thambura.appspot.com.
+3. `make verifydomain` opens Search Console to prove you own thambura.com,
+   via a TXT record at the registrar. It has to be the same Google account
+   that deploys.
+4. `make domains` maps thambura.com and www.thambura.com with Google-managed
+   certificates, and prints the DNS records to add at the registrar (A and
+   AAAA records for the bare domain, a CNAME to `ghs.googlehosted.com` for www).
+5. `make domainstatus` shows the mappings. The certificates are issued once
+   DNS resolves, which can take a few hours, and HTTPS on the custom domain
+   fails until then.
 
 ## PRs
 

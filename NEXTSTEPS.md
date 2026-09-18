@@ -7,8 +7,8 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [ ] Listen to it on a real machine. Headless Chromium has no audio device, so
       only scheduled times were verified.
 - [ ] Try iOS Safari, where the ringer switch can mute Web Audio.
-- [ ] Check that App Engine offers `runtime: go126` (go.mod needs Go 1.26.3),
-      then deploy.
+- [ ] First deploy to the `thambura` project and map thambura.com (the
+      one-time steps under "Deploying" in CLAUDE.md).
 
 ## Features
 
@@ -30,5 +30,7 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       `Images/icons.xcf`.
 - [ ] Decide whether to keep or drop the unused `Angas`/`Talas`/`TalaGroups`/
       `Defaults` sections of `TalasFixtures.json`.
-- [ ] Rename the GitHub repo and App Engine project (`layagnana`) to Sadhana.
+- [ ] Rename the GitHub repo (`layaguide`) to match.
+- [ ] Decide whether www.thambura.com should redirect to the bare domain
+      (both serve the app as mapped).
 - [ ] Delete the `pr-assets` screenshot branch after PR #1 merges, if unwanted.
