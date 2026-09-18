@@ -1,0 +1,9 @@
+# Without this file gcloud derives one from .gitignore, which would drop the
+# built frontend (web/static/app.js, web/static/css/tailwind.css) from uploads.
+.git/
+.gitignore
+/bin/
+/locallinks/
+/web/node_modules/
+/web/src/
+*.test.ts

@@ -1,0 +1,37 @@
+# Stackfile
+
+> Tracks which stack components this project uses and at what version.
+> Updated by `/stack-update` or manually.
+
+## Stack Components
+
+| Component | Module | Version | Updated |
+|-----------|--------|---------|---------|
+| goapplib | github.com/panyam/goapplib | v0.1.1 | 2026-09-18 |
+| goapplib templates | github.com/panyam/goapplib (templar source, `web/templates/templar.yaml`) | v0.1.1 | 2026-09-18 |
+| templar | github.com/panyam/templar | v0.1.2 | 2026-09-18 |
+| goutils | github.com/panyam/goutils | v0.1.13 (indirect) | 2026-09-18 |
+| tsappkit (TS) | @panyam/tsappkit | 0.0.5 | 2026-09-18 |
+| tsappkit-solid (TS) | @panyam/tsappkit-solid | 0.0.1 | 2026-09-18 |
+
+goapplib + templar render the page shell (BasePage, header, theme toggle).
+tsappkit's `BasePage` wires the toggle, and tsappkit-solid's `SolidIsland` and
+`signalView` mount the player. This follows the goapplib + Solid pattern
+diffpp uses.
+
+## Third-Party Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| solid-js | ^1.9 | Player UI |
+| tailwindcss + @tailwindcss/forms | ^3.4 / ^0.5 | Styling, `darkMode: 'class'` |
+| esbuild + esbuild-plugin-solid | ^0.28 / ^0.6 | Bundling |
+| vitest | ^3.2 | Engine and presenter tests |
+
+## Project Conventions
+
+- **grpc**: none (no server-side data)
+- **replace-pattern**: locallinks (none active)
+- **frontend**: goapplib page shells + Solid islands, Tailwind dark/light
+- **proto-build**: none
+- **wasm**: no

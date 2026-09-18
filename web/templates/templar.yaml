@@ -1,0 +1,13 @@
+# Template dependencies. `templar get` (run from this folder, or `make templates`)
+# vendors them into templar_modules/, which is committed so a fresh clone and
+# App Engine both serve without a fetch step.
+sources:
+  goapplib:
+    url: github.com/panyam/goapplib
+    path: templates
+    ref: v0.1.1
+
+vendor_dir: ./templar_modules
+search_paths:
+  - .
+  - ./templar_modules

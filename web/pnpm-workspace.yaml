@@ -1,0 +1,7 @@
+# esbuild's postinstall links its platform binary, and pnpm won't run a
+# dependency's build script until the repo approves it. pnpm 12 reads
+# allowBuilds; pnpm 10 reads onlyBuiltDependencies. Both are here so either works.
+allowBuilds:
+  esbuild: true
+onlyBuiltDependencies:
+  - esbuild

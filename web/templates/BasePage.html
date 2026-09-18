@@ -1,0 +1,53 @@
+<!-- sadhana/web/templates/BasePage.html -->
+<!--
+Extends goapplib's BasePage (vendored under templar_modules/ by `templar get`).
+It keeps goapplib's theme bootstrap and header with its light/dark toggle, and
+swaps in our logo with no login actions (the app has no accounts). goapplib's
+header actions drawer is login-only, so it is left out.
+
+Pages include this file, define "BodySection" and "PageScripts" (both are
+required: Go templates reject a second definition, so this file cannot carry
+defaults for them), and render "BasePage".
+-->
+{{# namespace "GoalBase" "@goapplib/BasePage.html" #}}
+
+{{# extend "GoalBase:Header" "SadhanaHeader"
+           "GoalBase:HeaderLogo" "SadhanaHeaderLogo"
+           "GoalBase:HeaderActions" "SadhanaHeaderActions" #}}
+
+{{ define "SadhanaHeaderLogo" }}
+<a href="/" class="flex items-center space-x-2">
+    <svg class="h-8 w-8 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <path stroke-linecap="round" d="M12 3v3M12 18v3M3 12h3M18 12h3"/>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+    </svg>
+    <span class="font-bold text-xl text-gray-900 dark:text-white">{{ .AppName }}</span>
+</a>
+{{ end }}
+
+{{ define "SadhanaHeaderActions" }}{{ end }}
+
+{{ define "SadhanaHeaderSection" }}
+<div class="print:hidden sticky left-0 top-0 z-20 border-b border-gray-200 dark:border-gray-700">
+    {{ template "SadhanaHeader" .Header }}
+</div>
+{{ end }}
+
+{{ define "SadhanaExtraHead" }}
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+{{ end }}
+
+{{/* No HTMX: the pages are static shells. */}}
+{{ define "SadhanaHTMX" }}{{ end }}
+
+{{ define "SadhanaScripts" }}
+{{ template "PageScripts" . }}
+{{ end }}
+
+{{# extend "GoalBase:BasePage" "BasePage"
+           "GoalBase:HTMXSection" "SadhanaHTMX"
+           "GoalBase:ExtraHeadSection" "SadhanaExtraHead"
+           "GoalBase:HeaderSection" "SadhanaHeaderSection"
+           "GoalBase:BodySection" "BodySection"
+           "GoalBase:PostScriptsSection" "SadhanaScripts" #}}
