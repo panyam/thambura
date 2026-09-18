@@ -34,8 +34,8 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
         ref={panel}
         role="region"
         aria-label="Thambura"
-        class={`pointer-events-auto w-full max-w-3xl rounded-t-2xl border border-b-0 border-gray-200 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.15)] backdrop-blur transition-transform duration-300 ease-out dark:border-gray-700 dark:bg-gray-900/95 ${
-          st().open ? "translate-y-0" : "translate-y-[110%]"
+        class={`pointer-events-auto w-full max-w-3xl rounded-t-2xl border border-b-0 border-gray-200 bg-white/95 backdrop-blur transition-[transform,box-shadow] duration-300 ease-out dark:border-gray-700 dark:bg-gray-900/95 ${
+          st().open ? "translate-y-0 shadow-[0_-8px_30px_rgba(0,0,0,0.15)]" : "translate-y-[110%] shadow-none"
         }`}
       >
         <div class="flex items-center gap-3 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
