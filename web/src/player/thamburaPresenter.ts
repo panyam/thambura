@@ -78,8 +78,10 @@ export class ThamburaPresenter {
   private readonly timing: ThamburaTiming;
   private readonly transport: Transport;
   private tones: ToneHandle[] = [];
-  // Sample keys for the four strings, and whether they are stale.
+  // Sample keys the four strings play, every key added to the audio cache,
+  // and whether the strings' samples are out of date.
   private stringKeys: string[] = [];
+  private readonly rendered = new Set<string>();
   private stale = true;
   private renderQueued = false;
   // Plucks waiting to be heard, in time order, and when each string goes dark.
@@ -190,7 +192,7 @@ export class ThamburaPresenter {
       this.startTones();
       return;
     }
-    if (this.stale) this.render();
+    if (this.stale) this.renderAll();
     this.transport.start();
     this.runFrames();
   }
@@ -220,34 +222,56 @@ export class ThamburaPresenter {
     srutiFrequencies(s).forEach((frequency, i) => this.tones[i]?.set({ frequency, detune: s.cents, spectrum }));
   }
 
-  /** Marks the plucks stale; while playing, re-renders them once, soon. */
+  /** Marks the plucks stale; while playing, starts re-rendering them soon. */
   private invalidate(): void {
     this.stale = true;
-    if (!this.state.playing || this.state.settings.mode !== "tambura" || this.renderQueued) return;
+    if (this.state.playing && this.state.settings.mode === "tambura") this.queueRender();
+  }
+
+  /**
+   * Renders one pluck per deferred call, since three at once (100-150 ms)
+   * would stall the main thread past the transport's 75 ms margin and make
+   * the tala late. The strings keep their old samples until all are ready.
+   */
+  private queueRender(): void {
+    if (this.renderQueued) return;
     this.renderQueued = true;
     this.deps.defer(() => {
       this.renderQueued = false;
-      if (this.stale) this.render();
+      if (this.stale && this.renderStep()) this.queueRender();
     });
   }
 
-  /** Renders a pluck per distinct string pitch and drops samples no string uses now. */
-  private render(): void {
+  private renderAll(): void {
+    while (this.renderStep());
+  }
+
+  /**
+   * Renders one sample the current settings need and returns true, or, when
+   * none are missing, switches the strings over to them, drops samples no
+   * string uses, and returns false.
+   */
+  private renderStep(): boolean {
     const s = this.state.settings;
     const voice = pluckVoice(s);
     const { audio } = this.deps;
     const voiceId = [voice.brightness, voice.firmness, voice.ringSeconds, voice.jawari].map((v) => v.toFixed(3)).join("/");
-    const keys = stringFrequencies(s).map((hz) => `thambura/${hz.toFixed(3)}/${voiceId}`);
-    const unique = [...new Set(keys)];
-    const old = new Set(this.stringKeys);
-    unique.forEach((key, i) => {
-      if (old.has(key)) return;
-      const hz = stringFrequencies(s)[keys.indexOf(key)];
-      audio.addSamples(key, renderPluck(hz, audio.sampleRate, voice, i + 1));
-    });
-    for (const key of old) if (!unique.includes(key)) audio.dropSamples(key);
+    const freqs = stringFrequencies(s);
+    const keys = freqs.map((hz) => `thambura/${hz.toFixed(3)}/${voiceId}`);
+    const missing = keys.findIndex((k) => !this.rendered.has(k));
+    if (missing >= 0) {
+      audio.addSamples(keys[missing], renderPluck(freqs[missing], audio.sampleRate, voice, missing + 1));
+      this.rendered.add(keys[missing]);
+      return true;
+    }
+    for (const key of this.rendered) {
+      if (keys.includes(key)) continue;
+      audio.dropSamples(key);
+      this.rendered.delete(key);
+    }
     this.stringKeys = keys;
     this.stale = false;
+    return false;
   }
 
   private pluck(e: PluckEvent): void {

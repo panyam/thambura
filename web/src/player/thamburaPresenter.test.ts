@@ -36,10 +36,16 @@ describe("ThamburaPresenter", () => {
     views = [];
     p.attach({ setState: (s) => views.push(s) });
   };
+  // Runs deferred work, including anything it defers in turn; returns how many rounds ran.
   const flushDeferred = () => {
-    const q = deferred;
-    deferred = [];
-    q.forEach((cb) => cb());
+    let rounds = 0;
+    while (deferred.length > 0) {
+      const q = deferred;
+      deferred = [];
+      q.forEach((cb) => cb());
+      rounds++;
+    }
+    return rounds;
   };
   // Advance the audio clock, firing the transport tick and a frame.
   const advance = (to: number) => {
@@ -134,6 +140,19 @@ describe("ThamburaPresenter", () => {
     set({ key: 6 });
     set({ tone: 80 });
     expect(deferred).toHaveLength(1);
+  });
+
+  it("renders one pluck per deferred call, keeping the old samples until all are ready", async () => {
+    await p.toggle();
+    const before = new Set(audio.samples.keys());
+    set({ key: KEY_G3 });
+    deferred.shift()!();
+    expect(audio.samples.size).toBe(4); // three old, one new
+    run(1.5);
+    expect(audio.played.every((e) => before.has(e.url))).toBe(true);
+    // Two more renders, then one call to switch over.
+    expect(flushDeferred()).toBe(3);
+    expect(audio.samples.size).toBe(3);
   });
 
   it("changes speed from the next pluck", async () => {
