@@ -61,9 +61,16 @@ prodlogs:
 verifydomain:
 	gcloud domains verify thambura.com
 
+# Safe to rerun: an existing mapping is left alone and its records reprinted.
 domains:
 	for d in $(DOMAINS); do \
-		gcloud app domain-mappings create $$d --certificate-management=AUTOMATIC --project $(GCP_PROJECT) || exit 1; \
+		if gcloud app domain-mappings describe $$d --project $(GCP_PROJECT) >/dev/null 2>&1; then \
+			echo "== $$d already mapped"; \
+		else \
+			gcloud app domain-mappings create $$d --certificate-management=AUTOMATIC --project $(GCP_PROJECT) >/dev/null || exit 1; \
+			echo "== $$d mapped"; \
+		fi; \
+		gcloud app domain-mappings describe $$d --project $(GCP_PROJECT) --format='table(resourceRecords.type, resourceRecords.rrdata)' --flatten=resourceRecords || exit 1; \
 	done
 
 domainstatus:

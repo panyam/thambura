@@ -115,7 +115,12 @@ One-time setup, run by an owner of the project from a machine with `gcloud`
 
 1. `gcloud app create --project thambura --region <region>` if the project
    has no App Engine app yet. The region can't be changed later.
-2. `make deploy`, then check https://thambura.appspot.com.
+2. `make deploy`, then check https://thambura.appspot.com. The first deploy
+   turns on Cloud Build and Artifact Registry and can fail with `[13] an
+   internal error has occurred` (the gcloud log says `invalid bucket
+   "staging.thambura.appspot.com"; service account ... does not have access`).
+   The new service-account grants hadn't taken effect yet. Wait a minute or two
+   and rerun.
 3. `make verifydomain` opens Search Console to prove you own thambura.com,
    via a TXT record at the registrar. It has to be the same Google account
    that deploys.
