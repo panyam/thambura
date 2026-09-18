@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { AudioOut, Bus } from "./audio";
 import { PlayerPresenter, type PlayerState } from "./presenter";
-import type { Ticker } from "./transport";
+import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 
 const FIXTURES = {
   RandomGroups: ["Swaras"],
@@ -14,59 +13,6 @@ const FIXTURES = {
     Swaras: { Sa: "/sa.png", Ri: "/ri.png" },
   },
 };
-
-class FakeAudio implements AudioOut {
-  now = 0;
-  latency = 0;
-  unlocked = 0;
-  volume = -1;
-  loaded: string[] = [];
-  played: { url: string; bus: Bus; when: number }[] = [];
-  cancelled: Bus[] = [];
-  get heardNow() {
-    return this.now - this.latency;
-  }
-  async unlock() {
-    this.unlocked++;
-  }
-  async load(urls: string[]) {
-    this.loaded.push(...urls);
-    return [];
-  }
-  play(url: string, bus: Bus, when: number) {
-    this.played.push({ url, bus, when });
-  }
-  cancel(bus: Bus) {
-    this.cancelled.push(bus);
-  }
-  setVolume(p: number) {
-    this.volume = p;
-  }
-}
-
-class FakeTicker implements Ticker {
-  onTick: (() => void) | null = null;
-  start(_ms: number, onTick: () => void) {
-    this.onTick = onTick;
-  }
-  stop() {
-    this.onTick = null;
-  }
-}
-
-class FakeFrames {
-  queue: (() => void)[] = [];
-  request(cb: () => void) {
-    this.queue.push(cb);
-    return this.queue.length;
-  }
-  cancel() {}
-  flush() {
-    const q = this.queue;
-    this.queue = [];
-    q.forEach((cb) => cb());
-  }
-}
 
 describe("PlayerPresenter", () => {
   let audio: FakeAudio;
@@ -106,7 +52,7 @@ describe("PlayerPresenter", () => {
     expect(p.state.imageGroup).toBe("Simple");
     expect(p.state.image).toBe("/down.gif");
     expect(audio.loaded).toEqual(["/clap-hi.wav", "/clap-lo.wav"]);
-    expect(audio.volume).toBe(50);
+    expect(audio.busVolume.tala).toBe(50);
     expect(views.at(-1)).toBe(p.state);
   });
 
@@ -222,6 +168,6 @@ describe("PlayerPresenter", () => {
     p.setVolume(-5);
     expect(p.state.tempo).toBe(300);
     expect(p.state.volume).toBe(0);
-    expect(audio.volume).toBe(0);
+    expect(audio.busVolume.tala).toBe(0);
   });
 });
