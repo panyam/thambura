@@ -57,18 +57,30 @@ export function PlayerView(props: { state: Accessor<PlayerState>; actions: Playe
         </p>
       </section>
 
-      <section class="flex flex-wrap items-center justify-center gap-2" aria-label="Transport">
-        <Button onClick={() => a.restart()} disabled={s().status !== "ready"}>Restart</Button>
-        <Button onClick={() => a.prev()} disabled={s().status !== "ready" || s().playing}>Prev</Button>
+      <section class="flex items-center justify-center gap-3" aria-label="Transport">
+        <IconButton label="Restart" onClick={() => a.restart()} disabled={s().status !== "ready"}>
+          <path d="M6 5h2v14H6zM19 5v14l-10-7z" />
+        </IconButton>
+        <IconButton label="Previous beat" onClick={() => a.prev()} disabled={s().status !== "ready" || s().playing}>
+          <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        </IconButton>
         <button
           type="button"
           onClick={() => void a.toggle()}
           disabled={s().status !== "ready"}
-          class="min-w-24 rounded-md bg-amber-600 px-5 py-2 font-semibold text-white shadow-sm hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-gray-900"
+          aria-label={s().playing ? "Stop" : "Start"}
+          title={s().playing ? "Stop" : "Start"}
+          class="flex h-14 w-14 items-center justify-center rounded-full bg-amber-600 text-white shadow-sm hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-gray-900"
         >
-          {s().playing ? "Stop" : "Start"}
+          <svg viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7" aria-hidden="true">
+            <Show when={s().playing} fallback={<path d="M8 5v14l11-7z" />}>
+              <rect x="6" y="6" width="12" height="12" rx="1.5" />
+            </Show>
+          </svg>
         </button>
-        <Button onClick={() => a.next()} disabled={s().status !== "ready" || s().playing}>Next</Button>
+        <IconButton label="Next beat" onClick={() => a.next()} disabled={s().status !== "ready" || s().playing}>
+          <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        </IconButton>
       </section>
 
       <section class="grid w-full max-w-md gap-4">
@@ -91,30 +103,48 @@ export function PlayerView(props: { state: Accessor<PlayerState>; actions: Playe
               bpm
             </span>
           </div>
-          <input
-            id="tempo"
-            type="range"
-            min={MIN_TEMPO}
-            max={MAX_TEMPO}
-            value={s().tempo}
-            onInput={(e) => a.setTempo(e.currentTarget.valueAsNumber)}
-            class="w-full accent-amber-600"
-          />
+          <Stepper
+            label="tempo"
+            unit="1 bpm"
+            onDown={() => a.setTempo(s().tempo - TEMPO_STEP)}
+            onUp={() => a.setTempo(s().tempo + TEMPO_STEP)}
+            atMin={s().tempo <= MIN_TEMPO}
+            atMax={s().tempo >= MAX_TEMPO}
+          >
+            <input
+              id="tempo"
+              type="range"
+              min={MIN_TEMPO}
+              max={MAX_TEMPO}
+              value={s().tempo}
+              onInput={(e) => a.setTempo(e.currentTarget.valueAsNumber)}
+              class="w-full accent-amber-600"
+            />
+          </Stepper>
         </div>
         <div>
           <div class="mb-1 flex items-center justify-between">
             <label for="volume" class="text-sm font-medium">Volume</label>
             <span class="text-sm tabular-nums text-gray-500 dark:text-gray-400">{s().volume}%</span>
           </div>
-          <input
-            id="volume"
-            type="range"
-            min={0}
-            max={100}
-            value={s().volume}
-            onInput={(e) => a.setVolume(e.currentTarget.valueAsNumber)}
-            class="w-full accent-amber-600"
-          />
+          <Stepper
+            label="volume"
+            unit={`${VOLUME_STEP}%`}
+            onDown={() => a.setVolume(s().volume - VOLUME_STEP)}
+            onUp={() => a.setVolume(s().volume + VOLUME_STEP)}
+            atMin={s().volume <= 0}
+            atMax={s().volume >= 100}
+          >
+            <input
+              id="volume"
+              type="range"
+              min={0}
+              max={100}
+              value={s().volume}
+              onInput={(e) => a.setVolume(e.currentTarget.valueAsNumber)}
+              class="w-full accent-amber-600"
+            />
+          </Stepper>
         </div>
       </section>
 
@@ -181,16 +211,57 @@ export function PlayerView(props: { state: Accessor<PlayerState>; actions: Playe
 const SELECT =
   "w-full rounded-md border-gray-300 bg-white py-1.5 text-sm text-gray-900 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
 
-function Button(props: { onClick: () => void; disabled?: boolean; children: JSX.Element }) {
+const TEMPO_STEP = 1;
+const VOLUME_STEP = 5;
+
+/** A round icon button; `label` is its accessible name and tooltip. */
+function IconButton(props: { label: string; onClick: () => void; disabled?: boolean; children: JSX.Element }) {
   return (
     <button
       type="button"
       onClick={() => props.onClick()}
       disabled={props.disabled}
-      class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+      aria-label={props.label}
+      title={props.label}
+      class="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
     >
-      {props.children}
+      <svg viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+        {props.children}
+      </svg>
     </button>
+  );
+}
+
+/** A slider with − and + buttons either side for single-step adjustment. */
+function Stepper(props: {
+  label: string;
+  unit: string;
+  onDown: () => void;
+  onUp: () => void;
+  atMin: boolean;
+  atMax: boolean;
+  children: JSX.Element;
+}) {
+  const step = (dir: "Decrease" | "Increase", onClick: () => void, disabled: boolean, d: string) => (
+    <button
+      type="button"
+      onClick={() => onClick()}
+      disabled={disabled}
+      aria-label={`${dir} ${props.label} by ${props.unit}`}
+      title={`${dir} ${props.label} by ${props.unit}`}
+      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+    >
+      <svg viewBox="0 0 24 24" class="h-4 w-4" aria-hidden="true">
+        <path d={d} fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+      </svg>
+    </button>
+  );
+  return (
+    <div class="flex items-center gap-3">
+      {step("Decrease", props.onDown, props.atMin, "M5 12h14")}
+      <div class="flex-1">{props.children}</div>
+      {step("Increase", props.onUp, props.atMax, "M5 12h14M12 5v14")}
+    </div>
   );
 }
 
