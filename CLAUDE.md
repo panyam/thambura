@@ -122,9 +122,19 @@ One-time setup, run by an owner of the project from a machine with `gcloud`
 4. `make domains` maps thambura.com and www.thambura.com with Google-managed
    certificates, and prints the DNS records to add at the registrar (A and
    AAAA records for the bare domain, a CNAME to `ghs.googlehosted.com` for www).
+   It skips names that are already mapped, so rerun it to reprint the records.
 5. `make domainstatus` shows the mappings. The certificates are issued once
    DNS resolves, which can take a few hours, and HTTPS on the custom domain
    fails until then.
+
+DNS for thambura.com is on Namecheap (BasicDNS, `dns1/dns2.registrar-servers.com`).
+The records were set on 2026-09-18 through the Namecheap API
+(`NAMECHEAP_API_USER` / `NAMECHEAP_API_KEY`, which only work from IPs
+whitelisted under Profile > Tools > API Access). `namecheap.domains.dns.setHosts`
+replaces every record at once, so any change must read with `getHosts` first
+and write back the merged set, passing `EmailType` through. Otherwise the
+`google-site-verification` TXT record and email forwarding are lost. Namecheap
+published the change within a minute.
 
 ## PRs
 

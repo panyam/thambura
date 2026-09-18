@@ -7,8 +7,8 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [ ] Listen to it on a real machine. Headless Chromium has no audio device, so
       only scheduled times were verified.
 - [ ] Try iOS Safari, where the ringer switch can mute Web Audio.
-- [ ] First deploy to the `thambura` project and map thambura.com (the
-      one-time steps under "Deploying" in CLAUDE.md).
+- [ ] First deploy to the `thambura` project (DNS for thambura.com is already
+      pointed at App Engine; see "Deploying" in CLAUDE.md).
 
 ## Features
 
