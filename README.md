@@ -32,4 +32,4 @@ web/src/engine/         pure TS: tala tables, beat cursor, sequencer, asset grou
 web/src/player/         audio mixer, look-ahead transport, presenter, Solid view
 ```
 
-See [CLAUDE.md](CLAUDE.md) for how the pieces fit together.
+See [CLAUDE.md](CLAUDE.md) for how the pieces fit together and [NEXTSTEPS.md](NEXTSTEPS.md) for what comes next.
