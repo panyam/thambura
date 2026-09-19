@@ -3,12 +3,14 @@ package web
 import (
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -53,7 +55,6 @@ func TestHomePageRenders(t *testing.T) {
 		`id="theme-toggle-button"`,
 		`src="/static/app.js"`,
 		`href="/static/css/tailwind.css"`,
-		`href="/legacy/"`,
 		`id="thambura-toggle"`,
 		`id="thambura-play"`,
 	} {
@@ -80,6 +81,10 @@ func TestHomePageMetadata(t *testing.T) {
 		`<meta property="og:image:width" content="1200">`,
 		`<meta name="twitter:card" content="summary_large_image">`,
 		`<link rel="manifest" href="/static/manifest.json">`,
+		`<meta name="apple-mobile-web-app-capable" content="yes">`,
+		`<meta name="apple-mobile-web-app-title" content="Thambura">`,
+		`id="install-app"`,
+		`id="install-hint"`,
 		`<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">`,
 		`<h1 id="about-heading"`,
 	} {
@@ -126,18 +131,68 @@ func TestRootFiles(t *testing.T) {
 		t.Errorf("favicon.ico = %d, not an icon file", resp.code)
 	}
 
+	// The service worker makes the app installable, so it has to be served
+	// from the root: a worker only controls pages under its own path. Like
+	// app.js it is built, so a clone that hasn't run `make ui` skips this.
+	if _, err := os.Stat(filepath.Join("..", "..", "web", "static", "sw.js")); err != nil {
+		t.Skip("web/static/sw.js is missing; run `make ui`")
+	}
+	resp = fetch(t, srv.URL+"/sw.js")
+	if resp.code != http.StatusOK || !strings.Contains(resp.contentType, "javascript") {
+		t.Errorf("GET /sw.js = %d (%s)", resp.code, resp.contentType)
+	}
+	if !strings.Contains(resp.body, "addEventListener") {
+		t.Error("/sw.js has no event handlers; the browser won't offer to install")
+	}
+	if cc := resp.cacheControl; !strings.Contains(cc, "no-cache") {
+		t.Errorf("/sw.js Cache-Control = %q, want no-cache so updates are picked up", cc)
+	}
+
 	resp = fetch(t, srv.URL+"/static/manifest.json")
 	var manifest struct {
-		Name  string
-		Icons []struct{ Src string }
+		Name        string
+		StartUrl    string `json:"start_url"`
+		Display     string
+		Icons       []struct{ Src, Sizes, Purpose string }
+		Screenshots []struct {
+			Src        string
+			Sizes      string
+			FormFactor string `json:"form_factor"`
+		}
 	}
-	if err := json.Unmarshal([]byte(resp.body), &manifest); err != nil || manifest.Name == "" || len(manifest.Icons) == 0 {
+	if err := json.Unmarshal([]byte(resp.body), &manifest); err != nil || manifest.Name == "" {
 		t.Fatalf("manifest.json: %v %+v", err, manifest)
+	}
+	// What a browser needs before it will offer to install.
+	if manifest.StartUrl != "/" || manifest.Display != "standalone" {
+		t.Errorf("manifest start_url/display = %q/%q", manifest.StartUrl, manifest.Display)
+	}
+	for _, want := range []string{"192x192", "512x512"} {
+		if !slices.ContainsFunc(manifest.Icons, func(i struct{ Src, Sizes, Purpose string }) bool { return i.Sizes == want }) {
+			t.Errorf("manifest has no %s icon", want)
+		}
 	}
 	for _, icon := range manifest.Icons {
 		if code, _ := get(t, srv.URL+icon.Src); code != http.StatusOK {
 			t.Errorf("manifest icon %s = %d", icon.Src, code)
 		}
+	}
+	// Screenshots give the install dialog something to show; each must be
+	// served and be the size the manifest claims.
+	for _, shot := range manifest.Screenshots {
+		resp := fetch(t, srv.URL+shot.Src)
+		if resp.code != http.StatusOK {
+			t.Errorf("screenshot %s = %d", shot.Src, resp.code)
+			continue
+		}
+		w := binary.BigEndian.Uint32([]byte(resp.body[16:20]))
+		h := binary.BigEndian.Uint32([]byte(resp.body[20:24]))
+		if got := fmt.Sprintf("%dx%d", w, h); got != shot.Sizes {
+			t.Errorf("screenshot %s is %s, manifest says %s", shot.Src, got, shot.Sizes)
+		}
+	}
+	if len(manifest.Screenshots) < 2 {
+		t.Error("manifest wants a narrow and a wide screenshot")
 	}
 
 	// The preview image is the size og:image:width/height promise.
@@ -165,10 +220,11 @@ func TestLegacyIsNoindex(t *testing.T) {
 }
 
 type response struct {
-	code        int
-	contentType string
-	robots      string
-	body        string
+	code         int
+	contentType  string
+	cacheControl string
+	robots       string
+	body         string
 }
 
 func fetch(t *testing.T, url string) response {
@@ -179,7 +235,7 @@ func fetch(t *testing.T, url string) response {
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
-	return response{resp.StatusCode, resp.Header.Get("Content-Type"), resp.Header.Get("X-Robots-Tag"), string(body)}
+	return response{resp.StatusCode, resp.Header.Get("Content-Type"), resp.Header.Get("Cache-Control"), resp.Header.Get("X-Robots-Tag"), string(body)}
 }
 
 func TestUnknownPathIs404(t *testing.T) {

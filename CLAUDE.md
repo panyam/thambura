@@ -43,7 +43,9 @@ Sadhana).
   `BasePage.html` turns it into the canonical link, Open Graph and Twitter
   tags, icons, manifest and JSON-LD. Absolute URLs come from `brand.URL`
   (`https://thambura.com`), so the www and appspot copies point at it. Go
-  serves `/robots.txt`, `/sitemap.xml` and `/favicon.ico`. `HomePage.html`
+  serves `/robots.txt`, `/sitemap.xml`, `/favicon.ico` and `/sw.js` (the
+  service worker has to come from the root to cover the site, and goes out
+  with `Cache-Control: no-cache`). `HomePage.html`
   has a visible About section under the player, the page's only `<h1>` and
   the only text a crawler that doesn't run JavaScript sees. The PNGs
   (`web/static/og.png`, `web/static/icons/`, `favicon.ico`) come from
@@ -51,8 +53,8 @@ Sadhana).
   which needs `PLAYWRIGHT_CORE` and `CHROMIUM` pointed at an install.
 - `/legacy/` serves the 2016 app from `web/legacy/`, copied from the
   `pre-sadhana-port` tag with its `/static/` paths moved under
-  `/legacy/static/` (see `web/legacy/README.md`). The header's "Legacy" link
-  goes there. `app.yaml` needs a separate `static_files` line for
+  `/legacy/static/` (see `web/legacy/README.md`). Nothing links to it from
+  the app; it links back. `app.yaml` needs a separate `static_files` line for
   `/legacy/`, since `static_dir` serves no index page. Both it and the Go
   server send `X-Robots-Tag: noindex` for `/legacy`.
 
@@ -242,6 +244,20 @@ unit-tested:
   current as…"); the Lab lists them to rename, delete, copy, or Share, which
   opens the `.github/ISSUE_TEMPLATE/share-a-preset.yml` form filled in, so
   listeners can offer sounds to become built-in presets.
+- `sw.ts` is the service worker (its own esbuild bundle, classic script, no
+  source map, `__BUILD__` set to the git revision so each deploy gets a fresh
+  cache). Pages are network-first, everything else cache-first with a
+  background refresh. It makes the app installable (browsers want a manifest
+  plus a worker handling `fetch`) and it runs the whole app offline. It needs
+  WebWorker types, not DOM, so `tsconfig.json` excludes it and
+  `tsconfig.sw.json` checks it; `pnpm typecheck` runs both.
+- `install.ts` keeps the `beforeinstallprompt` event and shows the header's
+  `#install-app` button, since browsers only hint at installing. iOS never
+  fires it, so `#install-hint` in the About text points at Share -> Add to
+  Home Screen instead. Both stay hidden in an installed app.
+  `web/static/manifest.json` carries the icons and the two screenshots the
+  install dialog shows (regenerate them the way `design/render-images.mjs`
+  renders the icons: a browser at 390x844 and 1280x720).
 - `keepAwake.ts`: `KeepAwake` holds a Screen Wake Lock while either island
   reports playing (through `onPlaying`), and takes it again when the page is
   shown, since browsers drop it on hidden pages. `usePlaybackSession` sets
