@@ -100,7 +100,7 @@ unit-tested:
   one-count beat).
 - `tambura.ts` renders a pluck as a sum of decaying harmonics. `pluckVoice(s,
   string)` has three characters. The jawari voice (mode `jawari`, shown as
-  "Tambura") was fitted to a recording of a real C tambura: it starts dark,
+  "Tambura", the default and the Raagini's TMB) was fitted to a recording of a real C tambura: it starts dark,
   and a band around 1.3 kHz swells by up to about 40 dB, peaks near 1.4 s and
   falls back (the `formant*` fields; the low Sa blooms about half as much).
   The bloom mostly moves energy rather than adding it (`formantEnergy`), and

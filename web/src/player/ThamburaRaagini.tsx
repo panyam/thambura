@@ -192,9 +192,9 @@ function Power(props: { on: boolean; onClick: () => void }) {
 // The plucked modes on the LCD, which tells the two tambura voices apart.
 const LCD_MODES: Record<ThamburaMode, string> = { jawari: "tmb", tambura: "tmb c", guitar: "gtr", custom: "cst", sruti: "sruti" };
 
-// The switch's positions. Moving to TMB selects the classic voice, the default.
+// The switch's positions. Moving to TMB selects the default tambura voice.
 const MODES: { mode: ThamburaMode; label: string }[] = [
-  { mode: "tambura", label: "TMB" },
+  { mode: "jawari", label: "TMB" },
   { mode: "guitar", label: "GTR" },
   { mode: "sruti", label: "SRUTI" },
 ];
