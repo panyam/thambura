@@ -5,6 +5,14 @@ handlers:
 - url: /static
   static_dir: web/static
   secure: always
+# The 2016 app (web/legacy). static_dir serves no index, so /legacy/ needs its own line.
+- url: /legacy/?
+  static_files: web/legacy/index.html
+  upload: web/legacy/index\.html
+  secure: always
+- url: /legacy
+  static_dir: web/legacy
+  secure: always
 - url: /.*
   script: auto
   secure: always
