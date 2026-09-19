@@ -41,6 +41,7 @@ export function ThamburaStudio(props: ThamburaViewProps) {
             value={s().mode}
             options={[
               { value: "tambura", label: "Tambura" },
+              { value: "guitar", label: "Guitar" },
               { value: "sruti", label: "Sruti" },
             ]}
             onChange={(mode) => set({ mode })}

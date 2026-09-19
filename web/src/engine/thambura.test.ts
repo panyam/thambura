@@ -14,7 +14,7 @@ import {
   tunedTonicHz,
   type ThamburaSettings,
 } from "./shruthi";
-import { pluckVoice, renderPluck, reedSpectrum } from "./tambura";
+import { PluckRender, pluckVoice, renderPluck, reedSpectrum } from "./tambura";
 import { ThamburaSequencer, type PluckEvent } from "./thamburaSequencer";
 
 const settings = (patch: Partial<ThamburaSettings> = {}): ThamburaSettings => ({ ...DEFAULT_THAMBURA, ...patch });
@@ -92,6 +92,12 @@ describe("normalizeThambura", () => {
     expect(s.volume).toBe(100);
   });
 
+  it("knows the three modes", () => {
+    expect(normalizeThambura({ mode: "guitar" }).mode).toBe("guitar");
+    expect(normalizeThambura({ mode: "sruti" }).mode).toBe("sruti");
+    expect(normalizeThambura({ mode: "banjo" }).mode).toBe("tambura");
+  });
+
   it("returns the defaults for junk", () => {
     expect(normalizeThambura(null)).toEqual(DEFAULT_THAMBURA);
     expect(normalizeThambura("x")).toEqual(DEFAULT_THAMBURA);
@@ -149,11 +155,17 @@ describe("renderPluck", () => {
   });
 
   it("decays, and rings longer with more sustain", () => {
-    const short = renderPluck(130.8128, SR, pluckVoice({ ...DEFAULT_THAMBURA, sustain: 0 }), 1);
-    const long = renderPluck(130.8128, SR, pluckVoice({ ...DEFAULT_THAMBURA, sustain: 100 }), 1);
+    const guitar = { ...DEFAULT_THAMBURA, mode: "guitar" as const };
+    const short = renderPluck(130.8128, SR, pluckVoice({ ...guitar, sustain: 0 }), 1);
+    const long = renderPluck(130.8128, SR, pluckVoice({ ...guitar, sustain: 100 }), 1);
     expect(rms(long, SR * 2, SR * 2.2)).toBeLessThan(rms(long, SR * 0.1, SR * 0.3));
     const tail = (x: Float32Array) => rms(x, SR * 1.8, SR * 2) / rms(x, SR * 0.1, SR * 0.3);
     expect(tail(long)).toBeGreaterThan(tail(short) * 2);
+
+    const tShort = renderPluck(130.8128, SR, pluckVoice({ ...DEFAULT_THAMBURA, sustain: 0 }), 1);
+    const tLong = renderPluck(130.8128, SR, pluckVoice({ ...DEFAULT_THAMBURA, sustain: 100 }), 1);
+    const late = (x: Float32Array) => rms(x, SR * 4, SR * 4.2) / rms(x, SR * 0.1, SR * 0.3);
+    expect(late(tLong)).toBeGreaterThan(late(tShort) * 2);
   });
 
   it("is the same for the same seed", () => {
@@ -172,6 +184,65 @@ describe("renderPluck", () => {
       return d / rms(x, SR * 0.2, SR * 0.4);
     };
     expect(edge(renderPluck(130.8, SR, bright, 1))).toBeGreaterThan(edge(renderPluck(130.8, SR, dark, 1)));
+  });
+});
+
+describe("tambura and guitar plucks", () => {
+  const SR = 48000;
+  const tambura = pluckVoice({ ...DEFAULT_THAMBURA, mode: "tambura" });
+  const guitar = pluckVoice({ ...DEFAULT_THAMBURA, mode: "guitar" });
+  // Loudness at `at` seconds relative to just after the attack.
+  const level = (x: Float32Array, at: number) => rms(x, SR * at, SR * (at + 0.2)) / rms(x, SR * 0.2, SR * 0.4);
+  // Mean first difference over RMS: weighs high harmonics, so it tracks brightness.
+  const edge = (x: Float32Array, at: number) => {
+    let d = 0;
+    for (let i = SR * at; i < SR * (at + 0.2); i++) d += Math.abs(x[i] - x[i - 1]);
+    return d / (SR * 0.2) / rms(x, SR * at, SR * (at + 0.2));
+  };
+
+  it("renders a tambura long enough to ring into the next round", () => {
+    expect(renderPluck(130.81, SR, tambura, 1).length / SR).toBeGreaterThanOrEqual(8.5);
+    expect(renderPluck(130.81, SR, guitar, 1).length / SR).toBeLessThanOrEqual(6);
+  });
+
+  it("fades a tambura slowly and a guitar quickly", () => {
+    const t = renderPluck(130.81, SR, tambura, 1);
+    const g = renderPluck(130.81, SR, guitar, 1);
+    expect(level(t, 4)).toBeGreaterThan(0.35);
+    expect(level(g, 4)).toBeLessThan(0.2);
+  });
+
+  it("keeps a tambura's high harmonics ringing while a guitar's dull", () => {
+    const t = renderPluck(130.81, SR, tambura, 1);
+    const g = renderPluck(130.81, SR, guitar, 1);
+    const kept = (x: Float32Array) => edge(x, 3) / edge(x, 0.3);
+    expect(kept(t)).toBeGreaterThan(kept(g) * 1.5);
+  });
+
+  it.each(["tambura", "guitar"] as const)("sounds in tune as a %s", (mode) => {
+    const voice = pluckVoice({ ...DEFAULT_THAMBURA, mode });
+    for (const hz of [65.4064, 196.1]) {
+      const x = renderPluck(hz, SR, voice, 5);
+      const found = detectHz(x, SR, SR * 2, SR / 4, hz * 0.8, hz * 1.25);
+      expect(Math.abs(cents(found, hz))).toBeLessThan(1);
+    }
+  });
+
+  it("renders the same in slices as in one go", () => {
+    const whole = renderPluck(98, 16000, tambura, 4);
+    const r = new PluckRender(98, 16000, tambura, 4);
+    let steps = 0;
+    while (!r.step(200_000)) steps++;
+    expect(steps).toBeGreaterThan(3);
+    const sliced = r.result();
+    expect(sliced.length).toBe(whole.length);
+    expect(sliced.every((v, i) => v === whole[i])).toBe(true);
+  });
+
+  it("reports its work so callers can size the slices", () => {
+    const r = new PluckRender(130.81, 16000, tambura, 1);
+    expect(r.work).toBe(r.partials * r.length);
+    expect(r.partials).toBeGreaterThan(20);
   });
 });
 

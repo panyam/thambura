@@ -1,5 +1,5 @@
 import { For, type JSX } from "solid-js";
-import { KEYS, MAX_CENTS, MAX_CYCLE, MIN_CYCLE, RAAGINI_CYCLE, type Swara } from "../engine/shruthi";
+import { KEYS, MAX_CENTS, MAX_CYCLE, MIN_CYCLE, RAAGINI_CYCLE, type Swara, type ThamburaMode } from "../engine/shruthi";
 import { Knob } from "./Knob";
 import { centsLabel, keyOptionLabel, type ThamburaViewProps } from "./thamburaControls";
 
@@ -91,7 +91,7 @@ export function ThamburaRaagini(props: ThamburaViewProps) {
                 )}
               </For>
             </div>
-            <ModeSwitch sruti={s().mode === "sruti"} onClick={() => a.set({ mode: s().mode === "sruti" ? "tambura" : "sruti" })} />
+            <ModeSwitch mode={s().mode} onChange={(mode) => a.set({ mode })} />
             <div class="flex items-center gap-3">
               <div class="grid grid-cols-2 gap-x-2 gap-y-1" aria-hidden="true">
                 <For each={RAAGINI_CYCLE}>
@@ -130,7 +130,7 @@ function Lcd(props: ThamburaViewProps) {
       </div>
       <div class="flex justify-between gap-3 text-[11px] uppercase tracking-wider">
         <span>{s().firstString}</span>
-        <span>{s().mode === "sruti" ? "sruti" : `tmb ${s().cycleSeconds.toFixed(1)}s`}</span>
+        <span>{s().mode === "sruti" ? "sruti" : `${s().mode === "guitar" ? "gtr" : "tmb"} ${s().cycleSeconds.toFixed(1)}s`}</span>
       </div>
     </div>
   );
@@ -180,25 +180,51 @@ function Power(props: { on: boolean; onClick: () => void }) {
   );
 }
 
-function ModeSwitch(props: { sruti: boolean; onClick: () => void }) {
+const MODES: { mode: ThamburaMode; label: string }[] = [
+  { mode: "tambura", label: "TMB" },
+  { mode: "guitar", label: "GTR" },
+  { mode: "sruti", label: "SRUTI" },
+];
+
+/**
+ * A three-position slide switch: tambura, guitar, sruti. Click a position's
+ * label, or the slider to step along it.
+ */
+function ModeSwitch(props: { mode: ThamburaMode; onChange: (mode: ThamburaMode) => void }) {
+  const index = () => Math.max(0, MODES.findIndex((m) => m.mode === props.mode));
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={props.sruti}
-      aria-label="Sruti (reed) mode"
-      onClick={() => props.onClick()}
-      class="flex items-center gap-1.5 rounded text-[9px] font-semibold tracking-wider text-stone-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-    >
-      TMB
-      <span class="relative h-3 w-7 rounded-full bg-stone-950 shadow-inner">
+    <div role="radiogroup" aria-label="Sound" class="flex flex-col items-center gap-1">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        onClick={() => props.onChange(MODES[(index() + 1) % MODES.length].mode)}
+        class="relative h-3 w-16 rounded-full bg-stone-950 shadow-inner"
+      >
         <span
           class="absolute top-[-2px] h-4 w-4 rounded-full transition-all duration-150"
-          style={{ left: props.sruti ? "0.75rem" : "-0.1rem", background: "radial-gradient(circle at 35% 30%,#f5f5f4,#78716c)" }}
+          style={{
+            left: `calc(${index() * 50}% - ${index() * 0.5}rem)`,
+            background: "radial-gradient(circle at 35% 30%,#f5f5f4,#78716c)",
+          }}
         />
-      </span>
-      SRUTI
-    </button>
+      </button>
+      <div class="flex w-24 justify-between">
+        {MODES.map((m) => (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={props.mode === m.mode}
+            onClick={() => props.onChange(m.mode)}
+            class={`rounded px-0.5 text-[9px] font-semibold tracking-wider focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
+              props.mode === m.mode ? "text-stone-100" : "text-stone-500"
+            }`}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

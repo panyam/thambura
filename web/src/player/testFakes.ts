@@ -21,6 +21,7 @@ export class FakeAudio implements AudioOut {
   dropped: string[] = [];
   played: { url: string; bus: Bus; when: number; opts?: PlayOptions }[] = [];
   cancelled: Bus[] = [];
+  released: { bus: Bus; seconds: number }[] = [];
   tones: FakeTone[] = [];
   get heardNow() {
     return this.now - this.latency;
@@ -44,6 +45,9 @@ export class FakeAudio implements AudioOut {
   }
   cancel(bus: Bus) {
     this.cancelled.push(bus);
+  }
+  release(bus: Bus, seconds: number) {
+    this.released.push({ bus, seconds });
   }
   startTone(bus: Bus, spec: ToneSpec): ToneHandle {
     const tone: FakeTone = { bus, spec: { ...spec }, stopped: false };

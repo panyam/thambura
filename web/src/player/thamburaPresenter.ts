@@ -7,7 +7,7 @@ import {
   MAX_CENTS,
   type ThamburaSettings,
 } from "../engine/shruthi";
-import { pluckVoice, reedSpectrum, renderPluck } from "../engine/tambura";
+import { PluckRender, pluckVoice, reedSpectrum } from "../engine/tambura";
 import { ThamburaSequencer, type PluckEvent, type ThamburaTiming } from "../engine/thamburaSequencer";
 import type { AudioOut, ToneHandle } from "./audio";
 import type { FrameLoop } from "./presenter";
@@ -47,10 +47,10 @@ export interface ThamburaDeps {
   ticker: Ticker;
   frames: FrameLoop;
   /**
-   * Runs `cb` soon, outside the current call. Plucks are rendered there, since
-   * a render takes tens of ms and would make a slider or knob stutter.
+   * Runs `cb` after `ms`, outside the current call. Plucks are rendered
+   * there, a slice at a time, so a slider or knob doesn't stutter.
    */
-  defer(cb: () => void): void;
+  defer(cb: () => void, ms: number): void;
   store?: ThamburaStore;
   rng?: () => number;
 }
@@ -58,6 +58,19 @@ export interface ThamburaDeps {
 // Loudness and stereo place of each string: first, Sa, Sa, low Sa.
 const STRING_GAIN = [0.8, 0.7, 0.7, 1];
 const STRING_PAN = [-0.25, 0.1, -0.1, 0.25];
+// In tambura mode the second Sa string sits a shade sharp of the first, so the
+// pair beats slowly, as two strings tuned by ear do.
+const TAMBURA_DETUNE = [0, 0, 1.5, 0];
+// Tambura plucks ring into each other, so they play a little softer.
+const TAMBURA_LEVEL = 0.7;
+// Work per deferred render call, in harmonic-samples (see PluckRender.step):
+// about 20 ms, inside the transport's 75 ms margin.
+const RENDER_BUDGET = 6_000_000;
+// After a settings change, rendering waits this long so a knob turned through
+// several keys renders once. Later slices, and the first render on Start, don't wait.
+const RENDER_SETTLE_MS = 60;
+// How long the strings take to fade after Stop, in seconds.
+const STOP_FADE = 1.5;
 // Loudness of the sruti drone's three tones: low, Sa, upper Sa.
 const SRUTI_GAIN = [0.22, 0.3, 0.12];
 // How long a string stays lit after its pluck is heard, in seconds.
@@ -84,6 +97,10 @@ export class ThamburaPresenter {
   private readonly rendered = new Set<string>();
   private stale = true;
   private renderQueued = false;
+  // The pluck being rendered across deferred calls, and whether the transport
+  // should start once every string has its samples.
+  private job: { key: string; render: PluckRender } | null = null;
+  private startWhenReady = false;
   // Plucks waiting to be heard, in time order, and when each string goes dark.
   private cues: { time: number; string: number }[] = [];
   private litUntil = [-Infinity, -Infinity, -Infinity, -Infinity];
@@ -147,13 +164,10 @@ export class ThamburaPresenter {
     if (next.volume !== prev.volume) this.deps.audio.setBusVolume("drone", next.volume);
     this.timing.cycleSeconds = next.cycleSeconds;
 
-    const retimbred = (["key", "a4", "firstString", "temperament", "voice", "tone", "pluck", "sustain"] as const).some(
-      (k) => next[k] !== prev[k],
-    );
-    if (retimbred) this.invalidate();
+    if (sampleKeys(next).join() !== sampleKeys(prev).join()) this.invalidate();
 
     if (!this.state.playing) return;
-    if (next.mode !== prev.mode) {
+    if (isPlucked(next.mode) !== isPlucked(prev.mode)) {
       this.stopVoice(prev.mode);
       this.startVoice();
     } else if (next.mode === "sruti") {
@@ -190,9 +204,16 @@ export class ThamburaPresenter {
   private startVoice(): void {
     if (this.state.settings.mode === "sruti") {
       this.startTones();
-      return;
+    } else if (this.stale) {
+      // Rendering takes a moment; the first pluck waits for it.
+      this.startWhenReady = true;
+      this.queueRender();
+    } else {
+      this.startPlucking();
     }
-    if (this.stale) this.renderAll();
+  }
+
+  private startPlucking(): void {
     this.transport.start();
     this.runFrames();
   }
@@ -203,8 +224,10 @@ export class ThamburaPresenter {
       this.tones = [];
       return;
     }
+    this.startWhenReady = false;
     this.transport.stop();
     this.deps.audio.cancel("drone");
+    this.deps.audio.release("drone", STOP_FADE);
     this.cues = [];
   }
 
@@ -222,46 +245,52 @@ export class ThamburaPresenter {
     srutiFrequencies(s).forEach((frequency, i) => this.tones[i]?.set({ frequency, detune: s.cents, spectrum }));
   }
 
-  /** Marks the plucks stale; while playing, starts re-rendering them soon. */
+  /** Marks the plucks stale; while plucking, starts re-rendering them soon. */
   private invalidate(): void {
     this.stale = true;
-    if (this.state.playing && this.state.settings.mode === "tambura") this.queueRender();
+    if (this.state.playing && isPlucked(this.state.settings.mode)) this.queueRender(RENDER_SETTLE_MS);
   }
 
   /**
-   * Renders one pluck per deferred call, since three at once (100-150 ms)
-   * would stall the main thread past the transport's 75 ms margin and make
-   * the tala late. The strings keep their old samples until all are ready.
+   * Renders a slice of a pluck per deferred call. A whole 9 s tambura pluck
+   * takes about 100 ms, which would stall the main thread past the
+   * transport's 75 ms margin and make the tala late. The strings keep their
+   * old samples until every new one is ready.
    */
-  private queueRender(): void {
+  private queueRender(delayMs = 0): void {
     if (this.renderQueued) return;
     this.renderQueued = true;
     this.deps.defer(() => {
       this.renderQueued = false;
-      if (this.stale && this.renderStep()) this.queueRender();
-    });
-  }
-
-  private renderAll(): void {
-    while (this.renderStep());
+      if (this.stale && this.renderStep()) {
+        this.queueRender();
+      } else if (this.startWhenReady) {
+        this.startWhenReady = false;
+        this.startPlucking();
+      }
+    }, delayMs);
   }
 
   /**
-   * Renders one sample the current settings need and returns true, or, when
-   * none are missing, switches the strings over to them, drops samples no
-   * string uses, and returns false.
+   * Renders a slice of one sample the current settings need and returns true,
+   * or, when none are missing, switches the strings over to them, drops
+   * samples no string uses, and returns false.
    */
   private renderStep(): boolean {
     const s = this.state.settings;
-    const voice = pluckVoice(s);
     const { audio } = this.deps;
-    const voiceId = [voice.brightness, voice.firmness, voice.ringSeconds, voice.jawari].map((v) => v.toFixed(3)).join("/");
-    const freqs = stringFrequencies(s);
-    const keys = freqs.map((hz) => `thambura/${hz.toFixed(3)}/${voiceId}`);
+    const keys = sampleKeys(s);
     const missing = keys.findIndex((k) => !this.rendered.has(k));
     if (missing >= 0) {
-      audio.addSamples(keys[missing], renderPluck(freqs[missing], audio.sampleRate, voice, missing + 1));
-      this.rendered.add(keys[missing]);
+      if (this.job?.key !== keys[missing]) {
+        const hz = stringFrequencies(s)[missing];
+        this.job = { key: keys[missing], render: new PluckRender(hz, audio.sampleRate, pluckVoice(s), missing + 1) };
+      }
+      if (this.job.render.step(RENDER_BUDGET)) {
+        audio.addSamples(this.job.key, this.job.render.result());
+        this.rendered.add(this.job.key);
+        this.job = null;
+      }
       return true;
     }
     for (const key of this.rendered) {
@@ -275,10 +304,13 @@ export class ThamburaPresenter {
   }
 
   private pluck(e: PluckEvent): void {
+    const s = this.state.settings;
+    const tambura = s.mode === "tambura";
     this.deps.audio.play(this.stringKeys[e.string], "drone", e.time, {
-      detune: this.state.settings.cents,
-      gain: e.gain * STRING_GAIN[e.string],
+      detune: s.cents + (tambura ? TAMBURA_DETUNE[e.string] : 0),
+      gain: e.gain * STRING_GAIN[e.string] * (tambura ? TAMBURA_LEVEL : 1),
       pan: STRING_PAN[e.string],
+      choke: `thambura/string${e.string}`,
     });
     this.cues.push({ time: e.time, string: e.string });
   }
@@ -314,6 +346,22 @@ export class ThamburaPresenter {
     this.state = { ...this.state, ...patch };
     this.view?.setState(this.state);
   }
+}
+
+function isPlucked(mode: ThamburaSettings["mode"]): boolean {
+  return mode !== "sruti";
+}
+
+/**
+ * The sample each string plays: its pitch plus everything that shapes the
+ * pluck. Two settings with the same keys can share samples; sruti mode keys
+ * like tambura, so switching to it and back re-renders nothing.
+ */
+function sampleKeys(s: ThamburaSettings): string[] {
+  const voice = Object.values(pluckVoice(s))
+    .map((v) => v.toFixed(3))
+    .join("/");
+  return stringFrequencies(s).map((hz) => `thambura/${hz.toFixed(3)}/${voice}`);
 }
 
 function loadSafely(store: ThamburaStore | undefined): unknown {
