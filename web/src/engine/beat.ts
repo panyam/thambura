@@ -1,19 +1,21 @@
+import { ONE, parseRatio, ZERO, type Ratio } from "./ratio";
+
 /**
  * The unit of rhythm the player steps through.
  *
  * A beat lasts `duration` counts (one count = one tempo beat, 60/bpm seconds)
  * and shows one image. Its ticks are the sounds struck within it, each at an
  * `offset` that is a fraction of the beat's own duration, so a tick at 0.5 in a
- * 2-count beat lands one count in.
+ * 2-count beat lands one count in. Both are exact ratios (see ratio.ts).
  */
 export interface Tick {
   sound: string;
-  offset: number;
+  offset: Ratio;
 }
 
 export interface Beat {
   image: string;
-  duration: number;
+  duration: Ratio;
   ticks: Tick[];
 }
 
@@ -32,27 +34,12 @@ export type BeatEntry =
 
 export function toBeat(entry: BeatEntry): Beat {
   if (typeof entry === "string") {
-    return { image: entry, duration: 1, ticks: [{ sound: entry, offset: 0 }] };
+    return { image: entry, duration: ONE, ticks: [{ sound: entry, offset: ZERO }] };
   }
   const image = entry.name || "down";
-  const duration = parseNumber(entry.duration, 1);
+  const duration = parseRatio(entry.duration, ONE);
   const ticks = entry.ticks
-    ? entry.ticks.map((t) => ({ sound: t.sound || image, offset: parseNumber(t.offset, 0) }))
-    : [{ sound: image, offset: 0 }];
+    ? entry.ticks.map((t) => ({ sound: t.sound || image, offset: parseRatio(t.offset, ZERO) }))
+    : [{ sound: image, offset: ZERO }];
   return { image, duration, ticks };
-}
-
-/** Parses a number or a "p/q" fraction string, falling back when unparseable. */
-export function parseNumber(value: number | string | undefined, fallback = 0): number {
-  if (value === undefined || value === "") return fallback;
-  if (typeof value === "number") return Number.isFinite(value) ? value : fallback;
-  const slash = value.indexOf("/");
-  if (slash < 0) {
-    const n = parseFloat(value);
-    return Number.isNaN(n) ? fallback : n;
-  }
-  const num = parseFloat(value.slice(0, slash));
-  const den = parseFloat(value.slice(slash + 1));
-  if (Number.isNaN(num) || Number.isNaN(den) || den === 0) return fallback;
-  return num / den;
 }

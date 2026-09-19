@@ -1,4 +1,5 @@
 import type { Sequencer } from "../engine/sequencer";
+import type { TempoMap } from "../engine/tempoMap";
 
 /** Calls back on a fixed interval. */
 export interface Ticker {
@@ -12,19 +13,28 @@ export interface Ticker {
  * which schedules them on the audio clock. The timer only needs to be roughly
  * on time; the audio clock does the precise timing.
  *
- * All tracks start together on one clock, so a mridangam sequencer added later
- * lands on the same grid as the tala.
+ * All tracks start together on one clock. With a TempoMap, they also share
+ * one musical timeline: the map puts count 0 at the start time and hears how
+ * far each tick has pulled, so a tempo change lands past everything already
+ * booked, at the same instant for every track.
  */
 export class Transport {
   private readonly tracks: { seq: Sequencer<unknown>; handle: (e: unknown) => void }[] = [];
   private running = false;
 
+  private readonly tempo: TempoMap | undefined;
+  private readonly lookahead: number;
+  private readonly intervalMs: number;
+
   constructor(
     private readonly clock: { readonly now: number },
     private readonly ticker: Ticker,
-    private readonly lookahead = 0.1,
-    private readonly intervalMs = 25,
-  ) {}
+    opts: { tempo?: TempoMap; lookahead?: number; intervalMs?: number } = {},
+  ) {
+    this.tempo = opts.tempo;
+    this.lookahead = opts.lookahead ?? 0.1;
+    this.intervalMs = opts.intervalMs ?? 25;
+  }
 
   get isRunning(): boolean {
     return this.running;
@@ -38,6 +48,7 @@ export class Transport {
   start(at = this.clock.now + 0.05): void {
     if (this.running) this.stop();
     this.running = true;
+    this.tempo?.start(at);
     for (const t of this.tracks) t.seq.start(at);
     this.tick();
     this.ticker.start(this.intervalMs, () => this.tick());
@@ -49,13 +60,16 @@ export class Transport {
     this.ticker.stop();
     const now = this.clock.now;
     for (const t of this.tracks) t.seq.stop(now);
+    this.tempo?.stop();
   }
 
   private tick(): void {
     const now = this.clock.now;
+    const until = now + this.lookahead;
     for (const t of this.tracks) {
-      for (const e of t.seq.pull(now, now + this.lookahead)) t.handle(e);
+      for (const e of t.seq.pull(now, until)) t.handle(e);
     }
+    this.tempo?.reach(until);
   }
 }
 

@@ -23,8 +23,8 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       worker.
 - [ ] Thambura extras outside sound quality: raga presets that set the first
       string, a mic tuner, and lock-screen controls (MediaSession).
-- [ ] **Musical timeline refactor.** Shared tempo map; sequencers emit in
-      musical time with exact fractions. Needed before a second rhythmic voice.
+- [x] **Musical timeline refactor.** A shared `TempoMap`; the tala emits
+      steps and ticks at exact fractional positions.
 - [ ] **Mridangam / tabla.** Per-stroke sequencer on the `percussion` bus, with
       choke groups, several takes per stroke, eduppu/korvai alignment to the
       tala, and tuning to the shruthi tonic.

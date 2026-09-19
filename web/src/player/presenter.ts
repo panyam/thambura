@@ -7,7 +7,8 @@ import {
   DEFAULT_TEMPO,
   type TalaSettings,
 } from "../engine/selection";
-import { TalaSequencer, type StepEvent, type Tempo } from "../engine/sequencer";
+import { TalaSequencer, type TalaEvent } from "../engine/sequencer";
+import { TempoMap } from "../engine/tempoMap";
 import type { AudioOut } from "./audio";
 import { Transport, type Ticker } from "./transport";
 
@@ -66,7 +67,7 @@ export class PlayerPresenter {
   private view: PlayerView | null = null;
   private catalog: AssetCatalog = { soundGroups: [], imageGroups: [] };
   private readonly cursor = new BeatCursor();
-  private readonly tempo: Tempo = { bpm: DEFAULT_TEMPO };
+  private readonly tempo = new TempoMap(DEFAULT_TEMPO);
   private readonly seq: TalaSequencer;
   private readonly transport: Transport;
   // Images waiting for their sound to reach the speakers, in time order.
@@ -75,7 +76,7 @@ export class PlayerPresenter {
 
   constructor(private readonly deps: PlayerDeps) {
     this.seq = new TalaSequencer(this.cursor, this.tempo, deps.rng);
-    this.transport = new Transport(deps.audio, deps.ticker);
+    this.transport = new Transport(deps.audio, deps.ticker, { tempo: this.tempo });
     this.transport.add(this.seq, (e) => this.schedule(e));
     this.state = {
       status: "loading",
@@ -173,7 +174,7 @@ export class PlayerPresenter {
 
   setTempo(bpm: number): void {
     const tempo = clampTempo(bpm);
-    this.tempo.bpm = tempo;
+    this.tempo.setTempo(tempo);
     this.update({ tempo });
   }
 
@@ -220,25 +221,24 @@ export class PlayerPresenter {
   /** Plays the cursor's current beat once, now. */
   private async playOne(): Promise<void> {
     await this.deps.audio.unlock();
-    const step = this.seq.stepAt(this.deps.audio.now + 0.01);
-    if (!step) return;
-    this.schedule(step);
+    const events = this.seq.beatAt(this.deps.audio.now + 0.01);
+    if (events.length === 0) return;
+    for (const e of events) this.schedule(e);
     this.runFrames();
   }
 
-  private schedule(step: StepEvent): void {
-    const sounds = this.findGroup(this.catalog.soundGroups, this.state.soundGroup);
-    if (sounds) {
-      for (const s of step.sounds) {
-        const url = resolveAsset(sounds, s.sound, step.variant);
-        if (url) this.deps.audio.play(url, "tala", s.time);
-      }
+  private schedule(e: TalaEvent): void {
+    if (e.kind === "tick") {
+      const sounds = this.findGroup(this.catalog.soundGroups, this.state.soundGroup);
+      const url = sounds ? resolveAsset(sounds, e.sound, e.variant) : null;
+      if (url) this.deps.audio.play(url, "tala", e.time);
+      return;
     }
     const images = this.findGroup(this.catalog.imageGroups, this.state.imageGroup);
     this.cues.push({
-      time: step.time,
-      image: images ? resolveAsset(images, step.beat.image, step.variant) : null,
-      position: step.position,
+      time: e.time,
+      image: images ? resolveAsset(images, e.beat.image, e.variant) : null,
+      position: e.position,
     });
   }
 
