@@ -17,16 +17,16 @@
 export type BeatMotion = "swing" | "dip" | "fade" | "decay" | "pop" | "lift" | "off";
 
 export const MOTION_OPTIONS: { id: BeatMotion; label: string }[] = [
+  { id: "lift", label: "Lift and drop" },
   { id: "dip", label: "Eased dip" },
   { id: "swing", label: "Size swing" },
   { id: "fade", label: "Fade swing" },
   { id: "decay", label: "Fade after the strike" },
   { id: "pop", label: "Pop on the beat" },
-  { id: "lift", label: "Lift and drop" },
   { id: "off", label: "Off" },
 ];
 
-export const DEFAULT_MOTION: BeatMotion = "dip";
+export const DEFAULT_MOTION: BeatMotion = "lift";
 
 export function isBeatMotion(v: unknown): v is BeatMotion {
   return MOTION_OPTIONS.some((o) => o.id === v);

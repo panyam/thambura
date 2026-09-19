@@ -117,6 +117,23 @@ export function clampTempo(bpm: number): number {
   return Math.min(MAX_TEMPO, Math.max(MIN_TEMPO, Math.round(bpm)));
 }
 
+/**
+ * Valid settings from anything (a saved record from an older version, or a
+ * hand-edited one): each field that isn't one of the menu's choices falls
+ * back to its default.
+ */
+export function normalizeSettings(raw: unknown): TalaSettings {
+  const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
+  const pick = <T extends string | number>(v: unknown, options: Option<T>[], fallback: T): T =>
+    options.some((o) => o.value === v) ? (v as T) : fallback;
+  return {
+    tala: pick(r.tala, TALA_OPTIONS.flatMap((g) => g.options), DEFAULT_SETTINGS.tala),
+    jaathi: pick(r.jaathi, GATI_OPTIONS, DEFAULT_SETTINGS.jaathi),
+    nadai: pick(r.nadai, GATI_OPTIONS, DEFAULT_SETTINGS.nadai),
+    kalai: pick(r.kalai, KALAI_OPTIONS, DEFAULT_SETTINGS.kalai),
+  };
+}
+
 function splitTalaId(id: TalaId): ["sapta" | "chaapu" | "custom", string] {
   const i = id.indexOf("_");
   return [id.slice(0, i) as "sapta" | "chaapu" | "custom", id.slice(i + 1)];

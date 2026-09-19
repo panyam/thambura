@@ -4,6 +4,7 @@ import {
   beatsFor,
   clampTempo,
   DEFAULT_SETTINGS,
+  normalizeSettings,
   DEFAULT_TEMPO,
   type TalaSettings,
 } from "../engine/selection";
@@ -44,7 +45,10 @@ export interface PlayerView {
   setPose?(pose: BeatPose): void;
 }
 
-/** Where the player's preferences are kept between visits. */
+/**
+ * Where the player's choices are kept between visits: one record of the
+ * motion, tala settings, tempo, volume and sound and image groups.
+ */
 export interface PlayerStore {
   load(): unknown;
   save(value: unknown): void;
@@ -95,8 +99,11 @@ export class PlayerPresenter {
   private heard: Cue | null = null;
   private pose: BeatPose = REST;
   private frameId: number | null = null;
+  // What the last visit saved; load() takes its groups once the catalog is in.
+  private readonly saved: Record<string, unknown>;
 
   constructor(private readonly deps: PlayerDeps) {
+    this.saved = loadSafely(deps.store);
     this.seq = new TalaSequencer(this.cursor, this.tempo, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker, { tempo: this.tempo });
     this.transport.add(this.seq, (e) => this.schedule(e));
@@ -104,19 +111,20 @@ export class PlayerPresenter {
       status: "loading",
       error: null,
       playing: false,
-      tempo: DEFAULT_TEMPO,
-      volume: DEFAULT_VOLUME,
-      settings: DEFAULT_SETTINGS,
+      tempo: typeof this.saved.tempo === "number" ? clampTempo(this.saved.tempo) : DEFAULT_TEMPO,
+      volume: typeof this.saved.volume === "number" ? clampVolume(this.saved.volume) : DEFAULT_VOLUME,
+      settings: normalizeSettings(this.saved.settings ?? DEFAULT_SETTINGS),
       soundGroups: [],
       imageGroups: [],
       soundGroup: "",
       imageGroup: "",
-      motion: loadMotion(deps.store),
+      motion: isBeatMotion(this.saved.motion) ? this.saved.motion : DEFAULT_MOTION,
       image: null,
       position: { beat: 0, repeat: 0 },
       beatCount: 0,
     };
-    deps.audio.setBusVolume("tala", DEFAULT_VOLUME);
+    this.tempo.setTempo(this.state.tempo);
+    deps.audio.setBusVolume("tala", this.state.volume);
     this.rebuild();
   }
 
@@ -132,13 +140,14 @@ export class PlayerPresenter {
       this.update({ status: "error", error: `Could not load ${fixturesUrl}: ${String(err)}` });
       return;
     }
-    const soundGroup = this.catalog.soundGroups[0]?.name ?? "";
-    const imageGroup = this.catalog.imageGroups[0]?.name ?? "";
+    // The saved groups if the fixture still has them, else its first ones.
+    const soundGroup = this.findGroup(this.catalog.soundGroups, String(this.saved.soundGroup)) ?? this.catalog.soundGroups[0];
+    const imageGroup = this.findGroup(this.catalog.imageGroups, String(this.saved.imageGroup)) ?? this.catalog.imageGroups[0];
     this.update({
       soundGroups: this.catalog.soundGroups.map((g) => g.name),
       imageGroups: this.catalog.imageGroups.map((g) => g.name),
     });
-    await Promise.all([this.setSoundGroup(soundGroup), this.setImageGroup(imageGroup)]);
+    await Promise.all([this.applySoundGroup(soundGroup?.name ?? ""), this.applyImageGroup(imageGroup?.name ?? "")]);
     this.update({ status: "ready" });
   }
 
@@ -201,12 +210,14 @@ export class PlayerPresenter {
     const tempo = clampTempo(bpm);
     this.tempo.setTempo(tempo);
     this.update({ tempo });
+    this.save();
   }
 
   setVolume(percent: number): void {
-    const volume = Math.min(100, Math.max(0, Math.round(Number.isFinite(percent) ? percent : DEFAULT_VOLUME)));
+    const volume = clampVolume(percent);
     this.deps.audio.setBusVolume("tala", volume);
     this.update({ volume });
+    this.save();
   }
 
   /** Changes the tala, jaathi, nadai or kalai; the cycle starts over. */
@@ -215,36 +226,53 @@ export class PlayerPresenter {
     if (wasPlaying) this.stop();
     this.update({ settings: { ...this.state.settings, ...patch } });
     this.rebuild();
+    this.save();
     if (wasPlaying) void this.start();
   }
 
   async setSoundGroup(name: string): Promise<void> {
-    const group = this.findGroup(this.catalog.soundGroups, name);
-    if (!group) return;
-    const failed = await this.deps.audio.load(assetUrls(group));
-    if (failed.length > 0) console.warn(`sound group ${name}: ${failed.length} sample(s) failed`, failed);
-    this.update({ soundGroup: name });
+    if (await this.applySoundGroup(name)) this.save();
   }
 
   async setImageGroup(name: string): Promise<void> {
-    const group = this.findGroup(this.catalog.imageGroups, name);
-    if (!group) return;
-    await this.deps.preloadImages(assetUrls(group));
-    // Show the group's clap image as a preview; random groups have none.
-    this.update({ imageGroup: name, image: group.entries["down"] ?? null });
+    if (await this.applyImageGroup(name)) this.save();
   }
 
   setMotion(motion: BeatMotion): void {
     if (!isBeatMotion(motion)) return;
     this.update({ motion });
-    try {
-      this.deps.store?.save({ motion });
-    } catch {
-      // Storage can be full or blocked; the choice still holds for this visit.
-    }
+    this.save();
   }
 
   // ---- internals ---------------------------------------------------------
+
+  private async applySoundGroup(name: string): Promise<boolean> {
+    const group = this.findGroup(this.catalog.soundGroups, name);
+    if (!group) return false;
+    const failed = await this.deps.audio.load(assetUrls(group));
+    if (failed.length > 0) console.warn(`sound group ${name}: ${failed.length} sample(s) failed`, failed);
+    this.update({ soundGroup: name });
+    return true;
+  }
+
+  private async applyImageGroup(name: string): Promise<boolean> {
+    const group = this.findGroup(this.catalog.imageGroups, name);
+    if (!group) return false;
+    await this.deps.preloadImages(assetUrls(group));
+    // Show the group's clap image as a preview; random groups have none.
+    this.update({ imageGroup: name, image: group.entries["down"] ?? null });
+    return true;
+  }
+
+  /** Keeps the student's choices for the next visit. Loading never calls this. */
+  private save(): void {
+    const { motion, settings, tempo, volume, soundGroup, imageGroup } = this.state;
+    try {
+      this.deps.store?.save({ motion, settings, tempo, volume, soundGroup, imageGroup });
+    } catch {
+      // Storage can be full or blocked; the choices still hold for this visit.
+    }
+  }
 
   private rebuild(): void {
     const beats = beatsFor(this.state.settings);
@@ -325,11 +353,15 @@ export class PlayerPresenter {
   }
 }
 
-function loadMotion(store: PlayerStore | undefined): BeatMotion {
+function loadSafely(store: PlayerStore | undefined): Record<string, unknown> {
   try {
-    const saved = store?.load() as { motion?: unknown } | null | undefined;
-    return isBeatMotion(saved?.motion) ? saved.motion : DEFAULT_MOTION;
+    const saved = store?.load();
+    return typeof saved === "object" && saved !== null ? (saved as Record<string, unknown>) : {};
   } catch {
-    return DEFAULT_MOTION;
+    return {};
   }
+}
+
+function clampVolume(percent: number): number {
+  return Math.min(100, Math.max(0, Math.round(Number.isFinite(percent) ? percent : DEFAULT_VOLUME)));
 }
