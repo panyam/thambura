@@ -1,7 +1,7 @@
 {
-  "name": "Thambura: tanpura drone and tala keeper",
+  "name": "Thambura: shruthi drone and tala keeper",
   "short_name": "Thambura",
-  "description": "A free online tanpura (thambura) drone and Carnatic tala keeper.",
+  "description": "A free online thambura (tanpura) drone and Carnatic tala keeper.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
