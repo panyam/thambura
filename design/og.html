@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+The link-preview image (web/static/og.png, 1200x630), rendered by
+design/render-images.mjs. It uses the site's own logo and a hand from the
+Right hand set, read from web/static, so it follows them when they change.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; }
+  body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    font-family: Figtree, ui-sans-serif, system-ui, sans-serif;
+    color: #1c1917;
+    background:
+      radial-gradient(circle at 88% 30%, #fde68a 0, rgba(253, 230, 138, 0) 46%),
+      linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    align-items: center;
+    gap: 40px;
+    padding: 0 80px;
+    box-sizing: border-box;
+  }
+  .brand { display: flex; align-items: center; gap: 20px; }
+  .brand img { width: 84px; height: 84px; }
+  .brand span { font-size: 92px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+  h1 { margin: 34px 0 0; font-size: 48px; font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; }
+  h1 em { font-style: normal; color: #b45309; white-space: nowrap; }
+  p { margin: 26px 0 0; font-size: 27px; font-weight: 500; color: #57534e; }
+  .url { margin-top: 46px; font-size: 26px; font-weight: 700; color: #b45309; letter-spacing: 0.02em; }
+  .card {
+    width: 420px;
+    height: 420px;
+    background: #fff;
+    border-radius: 36px;
+    box-shadow: 0 30px 60px -20px rgba(120, 53, 15, 0.35), 0 0 0 1px rgba(120, 53, 15, 0.08);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .card img { width: 360px; height: 360px; margin-top: 60px; }
+</style>
+</head>
+<body>
+  <div>
+    <div class="brand"><img src="../web/static/favicon.svg" alt=""><span>Thambura</span></div>
+    <h1>Online <em>tanpura drone</em><br>and Carnatic <em>tala keeper</em></h1>
+    <p>Free · in your browser · any kattai</p>
+    <div class="url">thambura.com</div>
+  </div>
+  <div class="card"><img src="../web/static/Resources/Images/RightHand/two.svg" alt=""></div>
+</body>
+</html>

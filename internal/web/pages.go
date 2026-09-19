@@ -5,6 +5,8 @@
 package web
 
 import (
+	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"os"
@@ -25,19 +27,80 @@ type Header struct {
 	AppName string
 }
 
-// HomePage is the practice page: a shell for the player island.
-type HomePage struct {
+// SitePage is what every page's shell renders: goapplib's page fields (title,
+// description, canonical URL), our header, and the link-preview and search
+// metadata that BasePage.html writes into <head>.
+type SitePage struct {
 	goal.BasePage
 	Header Header
+	// Social is the Open Graph / Twitter preview. Its Image must be an
+	// absolute URL; preview bots don't resolve relative ones.
+	Social Social
+	// StructuredData is JSON-LD for search engines, or empty for none.
+	StructuredData template.JS
 }
+
+// Social describes a page's link preview on chat apps and social sites.
+type Social struct {
+	Image       string
+	ImageAlt    string
+	ImageWidth  int
+	ImageHeight int
+}
+
+// HomePage is the practice page: a shell for the player island.
+type HomePage struct {
+	SitePage
+}
+
+// The home page's search and preview text. The title and description name
+// what people search for (tanpura more than thambura, tala and metronome
+// more than tala keeper) and stay near the lengths results show in full.
+const (
+	homeTitle       = brand.Name + ": online tanpura drone and Carnatic tala keeper"
+	homeDescription = "A free online tanpura (thambura) drone in any kattai, and a Carnatic tala keeper for " +
+		"sapta and chaapu talas with finger-count hand images. Runs in the browser."
+)
 
 // Load implements the goapplib View.
 func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*App]) (error, bool) {
 	p.Title = brand.Name
-	p.MetaDescription = brand.Name + ": a practice companion for Carnatic music (tala keeper)."
+	p.MetaTitle = homeTitle
+	p.MetaDescription = homeDescription
+	p.CanonicalUrl = brand.URL + "/"
 	p.DisableSplashScreen = true
 	p.Header.AppName = brand.Name
+	p.Social = Social{
+		Image:       brand.URL + "/static/og.png",
+		ImageAlt:    "Thambura: a hand keeping tala beside the words online tanpura drone and Carnatic tala keeper",
+		ImageWidth:  1200,
+		ImageHeight: 630,
+	}
+	p.StructuredData = webApplicationLD()
 	return nil, false
+}
+
+// webApplicationLD describes the site to search engines as a free web app.
+func webApplicationLD() template.JS {
+	ld, err := json.Marshal(map[string]any{
+		"@context":               "https://schema.org",
+		"@type":                  "WebApplication",
+		"name":                   brand.Name,
+		"url":                    brand.URL + "/",
+		"description":            homeDescription,
+		"applicationCategory":    "MultimediaApplication",
+		"applicationSubCategory": "Music practice",
+		"operatingSystem":        "Any (runs in a web browser)",
+		"browserRequirements":    "Requires JavaScript and Web Audio",
+		"inLanguage":             "en",
+		"isAccessibleForFree":    true,
+		"offers":                 map[string]any{"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+		"image":                  brand.URL + "/static/og.png",
+	})
+	if err != nil {
+		return ""
+	}
+	return template.JS(ld)
 }
 
 // NewApp builds the goapplib App with templates from templatesDir. The folder's
@@ -62,11 +125,37 @@ func NewApp(templatesDir string) (*goal.App[*App], error) {
 
 // Register mounts the pages and the static-asset servers onto mux. /legacy/
 // serves the 2016 Laya Gnana app as it was at the pre-sadhana-port tag
-// (web/legacy, see its README.md).
+// (web/legacy, see its README.md), marked noindex so it doesn't compete with
+// the app in search. On App Engine, app.yaml serves /static and /legacy
+// itself (and sends the same header); everything else comes here.
 func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
+	static := filepath.Join(webDir, "static")
 	goal.Register[*HomePage](app, mux, "/{$}")
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(webDir, "static")))))
-	mux.Handle("/legacy/", http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy")))))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
+	mux.Handle("/legacy/", noindex(http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy"))))))
+	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(static, "favicon.ico"))
+	})
+	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		fmt.Fprintf(w, "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n", brand.URL)
+	})
+	mux.HandleFunc("GET /sitemap.xml", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+		fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>%s/</loc></url>
+</urlset>
+`, brand.URL)
+	})
+}
+
+// noindex asks search engines to leave a response out of their index.
+func noindex(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Robots-Tag", "noindex")
+		h.ServeHTTP(w, r)
+	})
 }
 
 // MissingAssets lists the built frontend files that are absent under webDir.

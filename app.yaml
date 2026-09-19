@@ -6,13 +6,19 @@ handlers:
   static_dir: web/static
   secure: always
 # The 2016 app (web/legacy). static_dir serves no index, so /legacy/ needs its own line.
+# noindex keeps it out of search results next to the app (the Go server sends
+# the same header when it serves /legacy locally).
 - url: /legacy/?
   static_files: web/legacy/index.html
   upload: web/legacy/index\.html
   secure: always
+  http_headers:
+    X-Robots-Tag: noindex
 - url: /legacy
   static_dir: web/legacy
   secure: always
+  http_headers:
+    X-Robots-Tag: noindex
 - url: /.*
   script: auto
   secure: always
