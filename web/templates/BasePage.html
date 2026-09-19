@@ -30,11 +30,17 @@ defaults for them), and render "BasePage".
      buttons float over the page instead (HomePage.html), where they are easy
      to find and to reach on a phone. The thambura island
      binds the play button (start/stop from anywhere on the page, also T) and
-     the bar's toggle. Legacy opens the 2016 app (web/legacy) for comparison. */}}
+     the bar's toggle. The header carries only the install button, which
+     player/install.ts shows when the browser offers to install the app and
+     hides once it is installed; goapplib's theme toggle follows this block. */}}
 {{ define "SiteHeaderActions" }}
-<a href="/legacy/"
-   class="px-2 py-1 rounded-md text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-   title="The 2016 Laya Gnana app, before the rewrite">Legacy</a>
+<button id="install-app" type="button" hidden
+        class="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 3v12M8 11l4 4 4-4M4 19h16"/>
+    </svg>
+    Install
+</button>
 {{ end }}
 
 {{ define "SiteHeaderSection" }}
@@ -51,6 +57,12 @@ defaults for them), and render "BasePage".
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <link rel="manifest" href="/static/manifest.json">
+{{/* iOS ignores the manifest: these make "Add to Home Screen" open the app
+     without browser chrome, and name the icon. */}}
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="{{ brand }}">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">

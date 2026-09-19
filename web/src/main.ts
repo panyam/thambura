@@ -1,6 +1,7 @@
 import { BasePage, type LCMComponent } from "@panyam/tsappkit";
 import { AudioEngine } from "./player/audio";
 import { createPlayerIsland } from "./player/island";
+import { isIOS, isInstalled, wireInstall } from "./player/install";
 import { KeepAwake, usePlaybackSession, type WakeLockLike } from "./player/keepAwake";
 import { createThamburaIsland } from "./player/thamburaIsland";
 
@@ -10,6 +11,10 @@ import { createThamburaIsland } from "./player/thamburaIsland";
  * the header's theme toggle, and this page mounts the tala player and the
  * thambura bar. Both play through one AudioEngine, so they share a clock and
  * a mixer, and either one playing keeps the phone's screen awake.
+ *
+ * It also registers the service worker (src/sw.ts), which makes the app
+ * installable and lets it run without a network, and offers the install
+ * button.
  */
 class HomePage extends BasePage {
   protected override initializeSpecificComponents(): LCMComponent[] {
@@ -29,6 +34,18 @@ class HomePage extends BasePage {
         play: document.getElementById("thambura-play"),
       };
       components.push(createThamburaIsland(thambura, this.eventBus, audio, controls, (on) => awake.set("thambura", on)));
+    }
+    wireInstall(
+      window,
+      { button: document.getElementById("install-app"), hint: document.getElementById("install-hint") },
+      { installed: isInstalled(window, navigator as { standalone?: boolean }), ios: isIOS(navigator) },
+    );
+    // After load: the worker's first install fetches the app shell, and that
+    // shouldn't compete with the page's own assets.
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch((err) => console.warn("service worker:", err));
+      });
     }
     return components;
   }

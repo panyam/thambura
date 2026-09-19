@@ -77,6 +77,6 @@ domainstatus:
 	gcloud app domain-mappings list --project $(GCP_PROJECT)
 
 clean:
-	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/css/tailwind.css
+	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css
 
 .PHONY: all ui uiprod server build run watch test templates resymlink checklinks deploy prodlogs verifydomain domains domainstatus clean
