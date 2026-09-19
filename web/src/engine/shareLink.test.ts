@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mulberry32 } from "./tambura";
 import { decodeLink, encodeLink, type SharedSetup } from "./shareLink";
 import { DEFAULT_THAMBURA, KEYS, SWARAS, type ThamburaSettings } from "./shruthi";
-import { FIELD_SPECS, planFor, setGap, writeField, type ThamburaPlan } from "./thamburaPlan";
+import { FIELD_SPECS, planFor, readField, setGap, writeField, type ThamburaPlan } from "./thamburaPlan";
 
 const current = { settings: { ...DEFAULT_THAMBURA, volume: 37 } };
 const jawari = planFor({ ...DEFAULT_THAMBURA, mode: "jawari" });
@@ -116,6 +116,18 @@ describe("share links", () => {
     const plan = { ...classic, strings: classic.strings.map((s) => ({ ...low, level: s.level, pan: s.pan })) as ThamburaPlan["strings"] };
     const d = decodeLink(encodeLink(setup({ mode: "custom" }, plan)), current)!;
     expect(d.custom!.strings).toEqual(plan.strings);
+  });
+
+  it.each(FIELD_SPECS.map((spec) => [spec.label, spec] as const))("carries a change to %s alone", (_, spec) => {
+    // A field added to the Lab but not to the link format would come back unchanged.
+    const start = jawari.strings[1];
+    const shown = spec.display ? spec.display(readField(start, spec.field)) : readField(start, spec.field);
+    const target = shown + spec.step <= spec.max ? spec.max : spec.min;
+    const value = spec.fromDisplay ? spec.fromDisplay(target) : target;
+    const strings = [...jawari.strings] as ThamburaPlan["strings"];
+    strings[1] = writeField(start, spec.field, value);
+    const plan = { ...jawari, strings };
+    expectSamePlan(decodeLink(encodeLink(setup({ mode: "custom" }, plan)), current)!.custom!, plan);
   });
 
   it("notices when the starting sound has changed since the link was made", () => {
