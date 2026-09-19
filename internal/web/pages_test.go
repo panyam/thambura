@@ -70,15 +70,28 @@ func TestUnknownPathIs404(t *testing.T) {
 	}
 }
 
+// Every sound and image the fixtures name is served.
 func TestStaticServesResources(t *testing.T) {
-	srv := newServer(t)
-	for _, p := range []string{
-		"/static/Resources/TalasFixtures.json",
-		"/static/Resources/Sounds/Clap/high1.wav",
-		"/static/Resources/Images/Simple/down_hand.GIF",
-	} {
-		if code, _ := get(t, srv.URL+p); code != http.StatusOK {
-			t.Errorf("GET %s = %d", p, code)
+	checkFixtureAssets(t, newServer(t), "/static/")
+}
+
+// checkFixtureAssets fetches the TalasFixtures.json under root and every
+// asset path it names, which must all lie under root.
+func checkFixtureAssets(t *testing.T, srv *httptest.Server, root string) {
+	t.Helper()
+	code, fixtures := get(t, srv.URL+root+"Resources/TalasFixtures.json")
+	if code != http.StatusOK {
+		t.Fatalf("GET %sResources/TalasFixtures.json = %d", root, code)
+	}
+	paths := regexp.MustCompile(`"(/[^"]+)"`).FindAllStringSubmatch(fixtures, -1)
+	if len(paths) == 0 {
+		t.Fatal("fixtures name no assets")
+	}
+	for _, m := range paths {
+		if !strings.HasPrefix(m[1], root) {
+			t.Errorf("fixtures path %q is outside %s", m[1], root)
+		} else if code, _ := get(t, srv.URL+m[1]); code != http.StatusOK {
+			t.Errorf("GET %s = %d", m[1], code)
 		}
 	}
 }
@@ -96,21 +109,7 @@ func TestLegacyServesOldApp(t *testing.T) {
 			t.Errorf("legacy page missing %q", want)
 		}
 	}
-	code, fixtures := get(t, srv.URL+"/legacy/static/Resources/TalasFixtures.json")
-	if code != http.StatusOK {
-		t.Fatalf("GET legacy fixtures = %d", code)
-	}
-	paths := regexp.MustCompile(`"(/[^"]+)"`).FindAllStringSubmatch(fixtures, -1)
-	if len(paths) == 0 {
-		t.Fatal("legacy fixtures name no assets")
-	}
-	for _, m := range paths {
-		if !strings.HasPrefix(m[1], "/legacy/static/") {
-			t.Errorf("legacy fixtures path %q is outside /legacy/static/", m[1])
-		} else if code, _ := get(t, srv.URL+m[1]); code != http.StatusOK {
-			t.Errorf("GET %s = %d", m[1], code)
-		}
-	}
+	checkFixtureAssets(t, srv, "/legacy/static/")
 }
 
 func TestMissingAssets(t *testing.T) {

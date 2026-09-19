@@ -39,6 +39,24 @@
             "four": "/static/Resources/Images/Simple/laghu_4.GIF",
             "five": "/static/Resources/Images/Simple/laghu_5.GIF"
         },
+        "Right hand": {
+            "down": "/static/Resources/Images/RightHand/down.svg",
+            "open": "/static/Resources/Images/RightHand/open.svg",
+            "one": "/static/Resources/Images/RightHand/one.svg",
+            "two": "/static/Resources/Images/RightHand/two.svg",
+            "three": "/static/Resources/Images/RightHand/three.svg",
+            "four": "/static/Resources/Images/RightHand/four.svg",
+            "five": "/static/Resources/Images/RightHand/five.svg"
+        },
+        "Left hand": {
+            "down": "/static/Resources/Images/LeftHand/down.svg",
+            "open": "/static/Resources/Images/LeftHand/open.svg",
+            "one": "/static/Resources/Images/LeftHand/one.svg",
+            "two": "/static/Resources/Images/LeftHand/two.svg",
+            "three": "/static/Resources/Images/LeftHand/three.svg",
+            "four": "/static/Resources/Images/LeftHand/four.svg",
+            "five": "/static/Resources/Images/LeftHand/five.svg"
+        },
         "SaRiGaMa": {
             "Sa": "/static/Resources/Images/SaRiGaMa/Sa.png",
             "Ri": "/static/Resources/Images/SaRiGaMa/Ri.png",
