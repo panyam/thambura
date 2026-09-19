@@ -35,6 +35,8 @@ export interface ThamburaState {
   custom: ThamburaPlan;
   /** A note for the listener about the link they opened, until dismissed. */
   notice: string | null;
+  /** Setups saved by name, newest first. */
+  presets: ThamburaPreset[];
   /** Strings whose pluck was heard a moment ago, for the glow and the LEDs. */
   lit: [boolean, boolean, boolean, boolean];
 }
@@ -48,6 +50,23 @@ export interface ThamburaStore {
   load(): unknown;
   save(value: unknown): void;
 }
+
+/**
+ * A setup saved by name: its share link (engine/shareLink.ts), which holds the
+ * sound, so a preset is also something to send. `auto` marks the one kept
+ * when a shared link replaced the listener's own setup.
+ */
+export interface ThamburaPreset {
+  id: string;
+  name: string;
+  link: string;
+  auto?: boolean;
+}
+
+/** The name of the preset that keeps a listener's setup when they open someone's link. */
+export const BEFORE_LINK_PRESET = "Before shared link";
+// Presets kept, most recent first. Each is a few dozen bytes.
+const MAX_PRESETS = 200;
 
 /**
  * The shareable link in the address bar (engine/shareLink.ts). `read` gives
@@ -69,6 +88,8 @@ export interface ThamburaDeps {
    */
   defer(cb: () => void, ms: number): void;
   store?: ThamburaStore;
+  /** Where presets are kept, apart from the settings so neither can spoil the other. */
+  presets?: ThamburaStore;
   link?: ThamburaLink;
   rng?: () => number;
 }
@@ -129,11 +150,17 @@ export class ThamburaPresenter {
     let view: ThamburaViewId = VIEW_IDS.includes(saved.view as ThamburaViewId) ? (saved.view as ThamburaViewId) : "studio";
     let open = saved.open === true;
     let notice: string | null = null;
+    let presets = normalizePresets(loadSafely(deps.presets));
     // A shared link wins over what this browser saved.
     const link = deps.link?.read();
     if (link) {
       const shared = decodeLink(link, { settings });
       if (shared) {
+        // Keep the listener's own setup, if they had one and the link changes it.
+        const own = encodeLink({ settings, custom, view, open });
+        if (saved.settings && soundOf(own) !== soundOf(link)) {
+          presets = [{ id: presetId(), name: BEFORE_LINK_PRESET, link: own, auto: true }, ...presets.filter((p) => !p.auto)];
+        }
         ({ settings, view, open } = shared);
         custom = shared.custom ?? custom;
         notice = shared.drifted
@@ -143,7 +170,7 @@ export class ThamburaPresenter {
         notice = "The link in the address bar isn't one this version can read, so your own setup is playing.";
       }
     }
-    this.state = { settings, playing: false, open, view, custom, notice, lit: DARK };
+    this.state = { settings, playing: false, open, view, custom, notice, presets, lit: DARK };
     this.timing = { cycleSeconds: settings.cycleSeconds, pattern: patternOf(this.plan()) };
     const seq = new ThamburaSequencer(this.timing, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker);
@@ -152,6 +179,7 @@ export class ThamburaPresenter {
     // The address bar shows the current setup from the start. A shared one
     // isn't saved over this browser's own until the listener changes something.
     deps.link?.write(this.shareLink());
+    this.savePresets();
   }
 
   attach(view: ThamburaView): void {
@@ -257,6 +285,38 @@ export class ThamburaPresenter {
 
   dismissNotice(): void {
     this.update({ notice: null });
+  }
+
+  /** Saves the current sound by name, newest first. A blank name gets a numbered one. */
+  savePreset(name: string): ThamburaPreset {
+    const preset = { id: presetId(), name: name.trim() || `Preset ${this.state.presets.length + 1}`, link: this.shareLink() };
+    this.update({ presets: [preset, ...this.state.presets].slice(0, MAX_PRESETS) });
+    this.savePresets();
+    return preset;
+  }
+
+  /**
+   * Plays a preset's sound: every setting but the volume, and its Custom
+   * plan if it has one. The view and the bar stay as they are, and a notice
+   * about an opened link goes, since it no longer describes what's playing.
+   */
+  applyPreset(id: string): void {
+    const preset = this.state.presets.find((p) => p.id === id);
+    const shared = preset && decodeLink(preset.link, { settings: this.state.settings });
+    if (!shared) return;
+    this.update({ notice: null });
+    this.apply(shared.settings, shared.custom ?? this.state.custom);
+  }
+
+  renamePreset(id: string, name: string): void {
+    if (!name.trim()) return;
+    this.update({ presets: this.state.presets.map((p) => (p.id === id ? { ...p, name: name.trim(), auto: undefined } : p)) });
+    this.savePresets();
+  }
+
+  deletePreset(id: string): void {
+    this.update({ presets: this.state.presets.filter((p) => p.id !== id) });
+    this.savePresets();
   }
 
   /** The current setup as a link's `s` parameter (engine/shareLink.ts). */
@@ -411,6 +471,14 @@ export class ThamburaPresenter {
     this.deps.link?.write(this.shareLink());
   }
 
+  private savePresets(): void {
+    try {
+      this.deps.presets?.save(this.state.presets);
+    } catch {
+      // As with the settings: they just won't be remembered.
+    }
+  }
+
   private update(patch: Partial<ThamburaState>): void {
     this.state = { ...this.state, ...patch };
     this.view?.setState(this.state);
@@ -443,6 +511,26 @@ function sampleKeys(s: ThamburaSettings, plan: ThamburaPlan): string[] {
 export function pluckOptions(plan: ThamburaPlan, cents: number, e: PluckEvent): PlayOptions {
   const p = plan.strings[e.string];
   return { detune: cents + p.detune, gain: e.gain * p.level, pan: p.pan, choke: `thambura/string${e.string}` };
+}
+
+/** Saved presets made safe: well-formed entries only, at most MAX_PRESETS. */
+function normalizePresets(raw: unknown): ThamburaPreset[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((p): p is ThamburaPreset => !!p && typeof p.id === "string" && typeof p.name === "string" && typeof p.link === "string")
+    .map((p) => ({ id: p.id, name: p.name, link: p.link, ...(p.auto === true && { auto: true }) }))
+    .slice(0, MAX_PRESETS);
+}
+
+let presetCount = 0;
+function presetId(): string {
+  return `${Date.now().toString(36)}-${(presetCount++).toString(36)}`;
+}
+
+/** A link without the view and the bar's state, which a preset doesn't apply. */
+function soundOf(link: string): string {
+  const d = decodeLink(link, { settings: DEFAULT_THAMBURA });
+  return d ? encodeLink({ ...d, custom: d.custom ?? planFor({ ...d.settings, mode: "jawari" }), view: "studio", open: false }) : link;
 }
 
 function loadSafely(store: ThamburaStore | undefined): unknown {

@@ -6,6 +6,7 @@ import { ThamburaPresenter, type ThamburaLink, type ThamburaState, type Thambura
 import { workerTicker } from "./transport";
 
 const STORAGE_KEY = "thambura.drone";
+const PRESETS_KEY = "thambura.presets";
 // The query parameter that carries a shared setup (engine/shareLink.ts).
 const LINK_PARAM = "s";
 // Address bar updates wait for this long after the last change: Safari throws
@@ -34,6 +35,7 @@ export function createThamburaIsland(
     },
     defer: (cb, ms) => setTimeout(cb, ms),
     store: localStore(STORAGE_KEY),
+    presets: localStore(PRESETS_KEY),
     link: addressBarLink(),
   });
   const [state, setState] = signalView(presenter.state);
@@ -53,7 +55,7 @@ export function createThamburaIsland(
     "thambura",
     el,
     () => (
-      <ThamburaBar state={state} actions={presenter} onHeight={onHeight} copyLink={() => copyLink(linkUrl(presenter.shareLink()))} />
+      <ThamburaBar state={state} actions={presenter} onHeight={onHeight} shareUrl={linkUrl} />
     ),
     eventBus,
   );
@@ -87,15 +89,6 @@ function linkUrl(link: string): string {
   const url = new URL(location.href);
   url.searchParams.set(LINK_PARAM, link);
   return url.toString();
-}
-
-async function copyLink(url: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(url);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /** localStorage under one key, as JSON. Throws are caught by the presenter. */

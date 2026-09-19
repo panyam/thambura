@@ -194,7 +194,11 @@ unit-tested:
   switch to it; loading a mode sounds the same and renders nothing. A link
   in `deps.link` wins over the saved setup (keeping the listener's volume)
   but isn't saved over it until the listener changes something; every change
-  writes the current link back. Pitch and timbre
+  writes the current link back. Presets (`ThamburaPreset`) are a name and a
+  share link, kept apart from the settings in `deps.presets`; applying one
+  sets the sound but not the view or volume. Opening a link that changes a
+  saved setup first keeps it as the "Before shared link" preset (only the
+  latest). Pitch and timbre
   changes re-render the plucks in about 20 ms slices through `deps.defer`
   (60 ms settle after a change, none between slices), and Start waits for them,
   about 0.35 s from cold. Fine tune is only `detune`. In both tambura modes the
@@ -217,7 +221,10 @@ unit-tested:
 - `thamburaIsland.tsx` wires the link to the address bar: `replaceState`, no
   history entries, 400 ms after the last change, since Safari throws after
   100 calls in 30 s and a slider drag changes the setup on every step. The
-  bar's header has a Copy link button.
+  bar's header has a Copy link button and a Presets menu (play one, or "Save
+  current as…"); the Lab lists them to rename, delete, copy, or Share, which
+  opens the `.github/ISSUE_TEMPLATE/share-a-preset.yml` form filled in, so
+  listeners can offer sounds to become built-in presets.
 - `keepAwake.ts`: `KeepAwake` holds a Screen Wake Lock while either island
   reports playing (through `onPlaying`), and takes it again when the page is
   shown, since browsers drop it on hidden pages. `usePlaybackSession` sets
@@ -338,7 +345,9 @@ The tala's transport buttons are icons, so select them by label:
 "Start" also finds Restart. The
 thambura opens with `#thambura-toggle`, its views are
 `button[role="radio"]:has-text("Raagini")` and so on, its mode is
-`select[aria-label="Sound"]`, `button[aria-label="Copy link"]` copies the
+`select[aria-label="Sound"]`, `select[aria-label="Presets"]` holds the presets (its "Save current as…"
+entry opens a `prompt`, so answer it with a `dialog` handler),
+`button[aria-label="Copy link"]` copies the
 page's `?s=` link (give the context the clipboard permissions to read it back;
 a fresh context opening that URL is the second listener), the Lab's controls are ranges labelled by field
 (`input[aria-label="Attack"]`, tabs under `[aria-label="String"]`) with the

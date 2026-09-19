@@ -1,23 +1,24 @@
 import { createEffect, createSignal, For, Match, onCleanup, onMount, Show, Switch } from "solid-js";
 import { THAMBURA_MODES, type ThamburaMode } from "../engine/shruthi";
 import { THAMBURA_VIEWS } from "./thamburaPresenter";
-import { Segmented, SMALL_SELECT, type ThamburaViewProps } from "./thamburaControls";
+import { copyText, Segmented, SMALL_SELECT, type ThamburaViewProps } from "./thamburaControls";
 import { ThamburaLab } from "./ThamburaLab";
 import { ThamburaMini } from "./ThamburaMini";
 import { ThamburaRaagini } from "./ThamburaRaagini";
 import { ThamburaStudio } from "./ThamburaStudio";
+
+// The Presets menu's "Save current as…" entry.
+const SAVE = "__save";
 
 /**
  * The floating thambura bar. It slides up from the bottom of the window when
  * open. Its header holds the sound (mode) menu, which applies whichever view
  * is showing, and a switch between the views, all of which drive the same
  * presenter. `onHeight` reports the space it covers (0 when hidden) so the
- * page can leave room for it. `copyLink` copies a link to the current setup
- * and says whether it could.
+ * page can leave room for it. With `shareUrl` the header can copy a link to
+ * the current setup. The Presets menu plays a saved setup or saves this one.
  */
-export function ThamburaBar(
-  props: ThamburaViewProps & { onHeight?: (px: number) => void; copyLink?: () => Promise<boolean> },
-) {
+export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number) => void }) {
   const st = () => props.state();
   const a = props.actions;
   let panel!: HTMLDivElement;
@@ -25,7 +26,7 @@ export function ThamburaBar(
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
   onCleanup(() => clearTimeout(copiedTimer));
   const copy = async () => {
-    const ok = (await props.copyLink?.()) ?? false;
+    const ok = props.shareUrl ? await copyText(props.shareUrl(a.shareLink())) : false;
     setCopied(ok ? "Link copied" : "Copy the address bar instead");
     clearTimeout(copiedTimer);
     copiedTimer = setTimeout(() => setCopied(""), 2500);
@@ -65,8 +66,26 @@ export function ThamburaBar(
               <For each={THAMBURA_MODES}>{(m) => <option value={m.id} selected={m.id === st().settings.mode}>{m.label}</option>}</For>
             </select>
             <Segmented label="Thambura view" size="sm" value={st().view} options={THAMBURA_VIEWS.map((v) => ({ value: v.id, label: v.label }))} onChange={(v) => a.setView(v)} />
+            <select
+              aria-label="Presets"
+              class={SMALL_SELECT}
+              onChange={(e) => {
+                const choice = e.currentTarget.value;
+                e.currentTarget.value = "";
+                if (choice === SAVE) {
+                  const name = window.prompt("Name this preset");
+                  if (name !== null) a.savePreset(name);
+                } else if (choice) a.applyPreset(choice);
+              }}
+            >
+              <option value="" selected>
+                Presets
+              </option>
+              <For each={st().presets}>{(p) => <option value={p.id}>{p.name}</option>}</For>
+              <option value={SAVE}>Save current as…</option>
+            </select>
           </div>
-          <Show when={props.copyLink}>
+          <Show when={props.shareUrl}>
             <button
               type="button"
               aria-label="Copy link"
@@ -116,7 +135,7 @@ export function ThamburaBar(
               <ThamburaRaagini state={props.state} actions={a} />
             </Match>
             <Match when={st().view === "lab"}>
-              <ThamburaLab state={props.state} actions={a} />
+              <ThamburaLab state={props.state} actions={a} shareUrl={props.shareUrl} />
             </Match>
           </Switch>
         </div>

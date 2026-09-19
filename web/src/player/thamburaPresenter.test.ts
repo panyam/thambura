@@ -3,7 +3,7 @@ import { DEFAULT_THAMBURA, KEY_G3, srutiFrequencies, type ThamburaSettings } fro
 import { decodeLink, encodeLink } from "../engine/shareLink";
 import { planFor } from "../engine/thamburaPlan";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
-import { ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
+import { BEFORE_LINK_PRESET, ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
 
 class FakeLink {
   writes: string[] = [];
@@ -32,18 +32,21 @@ describe("ThamburaPresenter", () => {
   let ticker: FakeTicker;
   let frames: FakeFrames;
   let store: FakeStore;
+  let presetStore: FakeStore;
   let deferred: (() => void)[];
   let delays: number[];
   let p: ThamburaPresenter;
   let views: ThamburaState[];
 
-  const make = (saved?: unknown, link?: FakeLink) => {
+  const make = (saved?: unknown, link?: FakeLink, presets?: unknown) => {
     store = new FakeStore(saved);
+    presetStore = new FakeStore(presets);
     p = new ThamburaPresenter({
       audio,
       ticker,
       frames,
       store,
+      presets: presetStore,
       link,
       defer: (cb, ms) => {
         deferred.push(cb);
@@ -516,6 +519,84 @@ describe("ThamburaPresenter", () => {
       expect(p.state.notice).toMatch(/isn't one this version can read/);
       p.dismissNotice();
       expect(p.state.notice).toBeNull();
+    });
+  });
+
+  describe("presets", () => {
+    it("saves the current sound by name and plays it back, keeping the volume and view", () => {
+      p.loadCustom("guitar");
+      set({ key: 9, cents: 3 });
+      const guitar = p.state.custom;
+      const preset = p.savePreset("  Bright G  ");
+      expect(preset.name).toBe("Bright G");
+      expect(p.state.presets[0]).toEqual(preset);
+      expect(presetStore.saved).toEqual([preset]);
+
+      p.loadCustom("tambura");
+      set({ key: 2, cents: 0, volume: 15 });
+      p.setView("raagini");
+      p.applyPreset(preset.id);
+      expect(p.state.settings).toMatchObject({ key: 9, cents: 3, mode: "custom", volume: 15 });
+      expect(p.state.custom).toEqual(guitar);
+      expect(p.state.view).toBe("raagini");
+    });
+
+    it("names a nameless preset by number, newest first", () => {
+      p.savePreset("");
+      p.savePreset("");
+      expect(p.state.presets.map((x) => x.name)).toEqual(["Preset 2", "Preset 1"]);
+    });
+
+    it("renames and deletes, and keeps them across visits", () => {
+      const a = p.savePreset("a");
+      const b = p.savePreset("b");
+      p.renamePreset(a.id, "alpha");
+      p.renamePreset(b.id, "   ");
+      p.deletePreset(b.id);
+      expect(p.state.presets.map((x) => x.name)).toEqual(["alpha"]);
+      make(undefined, undefined, presetStore.saved);
+      expect(p.state.presets.map((x) => x.name)).toEqual(["alpha"]);
+    });
+
+    it("drops malformed saved presets", () => {
+      make(undefined, undefined, [{ id: "x", name: "ok", link: "ARw" }, { id: 1 }, null, "junk"]);
+      expect(p.state.presets).toEqual([{ id: "x", name: "ok", link: "ARw" }]);
+      make(undefined, undefined, { not: "a list" });
+      expect(p.state.presets).toEqual([]);
+    });
+
+    it("ignores a preset whose link can't be read", () => {
+      make(undefined, undefined, [{ id: "x", name: "broken", link: "nope" }]);
+      const before = p.state.settings;
+      p.applyPreset("x");
+      expect(p.state.settings).toBe(before);
+    });
+
+    it("keeps the listener's own setup when a shared link replaces it, and only the latest", () => {
+      const shared = (key: number) =>
+        new FakeLink(encodeLink({ settings: { ...DEFAULT_THAMBURA, key }, custom: planFor(DEFAULT_THAMBURA), view: "lab", open: true }));
+      const own = { settings: { ...DEFAULT_THAMBURA, key: 3 } };
+      make(own, shared(9));
+      const [kept] = p.state.presets;
+      expect(kept).toMatchObject({ name: BEFORE_LINK_PRESET, auto: true });
+      expect(p.state.notice).toBe("Opened a shared setup.");
+      p.applyPreset(kept.id);
+      expect(p.state.settings.key).toBe(3);
+      expect(p.state.notice).toBeNull();
+
+      const mine = p.savePreset("mine");
+      make(own, shared(10), presetStore.saved);
+      expect(p.state.presets.filter((x) => x.auto)).toHaveLength(1);
+      expect(p.state.presets.map((x) => x.id)).toContain(mine.id);
+    });
+
+    it("keeps nothing extra when there was no setup, or the link plays the same sound", () => {
+      const link = (settings: typeof DEFAULT_THAMBURA, view: "lab" | "mini") =>
+        new FakeLink(encodeLink({ settings, custom: planFor(DEFAULT_THAMBURA), view, open: true }));
+      make(undefined, link({ ...DEFAULT_THAMBURA, key: 9 }, "lab"));
+      expect(p.state.presets).toEqual([]);
+      make({ settings: { ...DEFAULT_THAMBURA, key: 9 }, view: "studio" }, link({ ...DEFAULT_THAMBURA, key: 9 }, "mini"));
+      expect(p.state.presets).toEqual([]);
     });
   });
 
