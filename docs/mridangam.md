@@ -15,8 +15,8 @@ which summarises measurements of the book's studio recordings. We call it
 
 ## What the existing apps do
 
-We looked at the apps people actually use. The short version is that nearly
-all of them play fixed recorded loops, and only one lets you compose.
+We looked at the apps people actually use. The short version is that pretty
+much all of them play fixed recorded loops, and only one lets you compose.
 
 | App | What it is | Worth borrowing | What users complain about |
 |---|---|---|---|
@@ -68,7 +68,7 @@ dheem about 0.535×) and from
 [Mysore Vadiraj](http://mysorevadiraj.blogspot.com/2016/04/basic-strokes-of-mridangam.html)
 and [classicmridangam](http://classicmridangam.blogspot.com/2015/08/advance-strokes-in-mridangam.html).
 They disagree in three places (arai chapu, nam and the thoppi's pitch), and
-the names aren't standard either. The one public stroke dataset labels its
+the names aren't standard either, as far as we can tell. The one public stroke dataset labels its
 classes Bheem, Cha, Dheem, Dhin, Num, Ta, Tha, Tham, Thi and Thom, and we
 couldn't find what Bheem is. So the plan doesn't hard-code any pitch from the
 literature. Each sample's pitch gets measured from the recording itself (see
@@ -150,12 +150,12 @@ Three options, and we'd like your call on them (see Open questions).
    the authors. It also only covers the men's range.
 2. **Record our own.** A player, a men's and a women's drum, each tuned to
    two or three tonics, every primitive stroke three or four times, each hit
-   let to ring out, in a quiet room with no effects. That's perhaps an hour
-   in a room, and it gives us a kit we own and can ship.
+   let to ring out, in a quiet room with no effects. That's probably an hour
+   or so in a room, and it gives us a kit we own and can ship.
 3. **Synthesize.** The open right-head strokes (chapu, arai chapu, nam,
    dheem) are a handful of decaying harmonics at known ratios, much like a
    tambura pluck, and they'd tune to any key exactly. The closed strokes and
-   the thoppi are noisier and harder. Nobody has published a mridangam synth
+   the thoppi are noisier and quite a bit harder. Nobody has published a mridangam synth
    that we could find, so this is an experiment.
 
 Our suggestion is to build the engine against the dataset locally (kept out
@@ -184,16 +184,16 @@ and the `percussion` bus has its own volume. The additions:
 
 ### The layers
 
-- **Stroke**: one primitive or composite at a musical position.
-- **Phrase**: a short named group, the way a player thinks in "tha dhi thom
-  nam".
-- **Pattern**: phrases and strokes laid out over some number of aksharas, with
-  a role. A *theka* is the basic loop for a tala, nadai and speed. A
+- A **stroke** is one primitive or composite at a musical position.
+- A **phrase** is a short named group, the way a player thinks in "tha dhi
+  thom nam".
+- A **pattern** lays phrases and strokes out over some number of aksharas,
+  and has a role. A *theka* is the basic loop for a tala, nadai and speed. A
   *variation* is another loop of the same length to swap in. A *fill* replaces
   the end of a cycle. A *mohra* or *korvai* is a multi-cycle ending that lands
   on sam (or on the eduppu).
-- **Arrangement**: the rule for what plays each cycle. Theka, a variation now
-  and then, a fill every few cycles, and a korvai when asked.
+- An **arrangement** decides what plays each cycle: mostly the theka, a
+  variation now and then, a fill every few cycles, and a korvai when asked.
 
 ### Writing patterns down
 
@@ -251,7 +251,7 @@ tempo changes. The new pieces:
 What to play for each tala and nadai has three sources, in order: a curated
 pattern from the library, a pattern that fits the tempo (sparser thekas at
 high tempos, the iTablaPro idea), and a generated fallback. The fallback is
-simple on purpose: tham on sam, a stroke on each beat that follows the tala's
+kept simple on purpose: tham on sam, a stroke on each beat that follows the tala's
 angas (a bass stroke on the claps, lighter strokes on the finger counts, chapu
 on the waves), and a stock phrase for the nadai inside each count. It means
 every tala in the menu gets something, even the rare ones, while the
@@ -282,7 +282,7 @@ kit gets tham for free once it has nam and thom.
 
 The files are mono, trimmed to where the ring falls to silence, normalized,
 and compressed. AAC in `.m4a` or MP3 decodes in every browser we target;
-Ogg doesn't in older Safari. The sizes are small if we're careful:
+Ogg doesn't in older Safari. The sizes stay fairly small if we're careful:
 
 | | Estimate |
 |---|---|
@@ -310,26 +310,26 @@ The mridangam shares the tala's Start and Stop, so its controls sit in the
 tala player, not in a second floating bar like the thambura's.
 
 - **A Mridangam panel** under the tala settings, collapsed until turned on:
-  - on/off
-  - the pattern: "Auto" by default, or a pick from the library filtered to
-    the current tala and nadai
-  - speed (1st, 2nd, 3rd)
-  - variety (off, some, lots) and a fill every N cycles
-  - a Korvai button
-  - volume, with a left/right balance
-  - the tuning, shown as "follows the thambura: C3 (1 kattai)", with a
+  - an on/off switch
+  - the pattern, "Auto" by default or picked from the library for the
+    current tala and nadai
+  - the speed (1st, 2nd, 3rd)
+  - the variety (off, some, lots) and a fill every N cycles
+  - a korvai button
+  - the volume, with a left/right balance
+  - the tuning, shown as "follows the thambura, C3 (1 kattai)", with a
     thoppi-pitch nudge
-- **A stroke lane** under the beat image: the current cycle's aksharas, with
-  the pattern's strokes (and solkattu, when written) in each one, and the
+- **A stroke lane** under the beat image shows the current cycle's aksharas,
+  with the pattern's strokes (and solkattu, when written) in each one, and the
   stroke being heard lit up. It's driven by `heardNow` cues, as the images
   are, so it lights with the sound and not when it was booked.
-- **A stroke pad**: the two drum heads drawn as pads, one per stroke, each
+- **A stroke pad** draws the two drum heads as pads, one per stroke, each
   labelled with its name and where it's struck. Tapping one plays it at the
   current shruthi. It's the first thing to build, because it's how we check
   every sample and the tuning by ear, and it doubles as a way to learn the
   strokes.
-- **A pattern editor**, later: a grid of aksharas by slots with the anga
-  marks drawn in, where tapping a slot picks a stroke from a palette (the My
+- **A pattern editor** comes later. It's a grid of aksharas by slots with
+  the anga marks drawn in, where tapping a slot picks a stroke from a palette (the My
   TalaVadyam tiles), plus a text mode for typing, audition of a single
   akshara, looping a section, and save and share.
 
