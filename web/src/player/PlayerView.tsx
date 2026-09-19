@@ -80,20 +80,21 @@ export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accesso
         </p>
       </section>
 
-      {/* How the beat looks and sounds, next to the image it changes. */}
-      <section class="grid w-full max-w-md grid-cols-3 gap-2 sm:gap-3" aria-label="Display">
+      {/* How the beat looks and sounds, next to the image it changes: a row of
+          three, stacked on a phone so the choices' names fit. */}
+      <section class="grid w-full max-w-md grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-3" aria-label="Display">
         <Field label="Animation" id="motion">
-          <select id="motion" class={NARROW_SELECT} onChange={(e) => a.setMotion(e.currentTarget.value as BeatMotion)}>
+          <select id="motion" class={SELECT} onChange={(e) => a.setMotion(e.currentTarget.value as BeatMotion)}>
             <For each={MOTION_OPTIONS}>{(o) => <option value={o.id} selected={o.id === s().motion}>{o.label}</option>}</For>
           </select>
         </Field>
         <Field label="Images" id="images">
-          <select id="images" class={NARROW_SELECT} onChange={(e) => void a.setImageGroup(e.currentTarget.value)}>
+          <select id="images" class={SELECT} onChange={(e) => void a.setImageGroup(e.currentTarget.value)}>
             <For each={s().imageGroups}>{(g) => <option value={g} selected={g === s().imageGroup}>{g}</option>}</For>
           </select>
         </Field>
         <Field label="Sounds" id="sounds">
-          <select id="sounds" class={NARROW_SELECT} onChange={(e) => void a.setSoundGroup(e.currentTarget.value)}>
+          <select id="sounds" class={SELECT} onChange={(e) => void a.setSoundGroup(e.currentTarget.value)}>
             <For each={s().soundGroups}>{(g) => <option value={g} selected={g === s().soundGroup}>{g}</option>}</For>
           </select>
         </Field>
@@ -242,10 +243,6 @@ export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accesso
 
 const SELECT =
   "w-full rounded-md border-gray-300 bg-white py-1.5 text-sm text-gray-900 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
-
-// Three to a row on a phone: less padding round the arrow, so the choice's
-// name isn't clipped.
-const NARROW_SELECT = `${SELECT} pl-2 pr-7 sm:pl-3 sm:pr-10`;
 
 const TEMPO_STEP = 1;
 const VOLUME_STEP = 5;
