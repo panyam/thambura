@@ -41,6 +41,10 @@ Sadhana).
 
 ## Frontend (web/src)
 
+`docs/architecture.md` explains how the sounds are made and timed, timed vs
+continuous voices, and what changed from the 2016 app. The notes below are
+the file-by-file reference.
+
 **engine/** is pure TypeScript with no DOM, audio or timers, and is fully
 unit-tested:
 
@@ -50,12 +54,20 @@ unit-tested:
 - `selection.ts` holds the settings (`TalaSettings`, `TalaId` is
   `sapta_*`/`chaapu_*`/`custom_*`), the UI option catalogs, and `beatsFor`.
 - `cursor.ts` walks the beats, repeating each one kalai times.
+- `ratio.ts` is exact fractions. Beat durations, tick offsets and musical
+  positions are all `Ratio`s, so voices reaching the same point by different
+  sums agree exactly.
+- `tempoMap.ts` (`TempoMap`) turns musical time (counts since Start) into
+  audio seconds for every voice on one transport. The transport starts it and
+  reports its horizon after each tick; a tempo change is anchored at the
+  horizon, so nothing already booked moves and every voice switches at the
+  same instant.
 - `sequencer.ts` has `Sequencer<E>` (the look-ahead contract) and
-  `TalaSequencer`, which turns the cursor into timed `StepEvent`s on the audio
-  clock. On stop it rewinds the cursor to the first step not yet heard. It
-  hands out a whole beat, ticks included, once the beat's *start* enters the
-  window. That's harmless for short beats, but a Misra Chaapu at 10 bpm is one
-  21 s beat, so a tempo change can't reach ticks already scheduled.
+  `TalaSequencer`, which emits a `StepEvent` per beat (for the image) and a
+  `TickEvent` per sound, each at an exact musical position, converted to
+  seconds through the map only when pulled. So a tempo change reaches the
+  rest of a long beat (a Misra Chaapu at 10 bpm is one 21 s beat). On stop it
+  rewinds the cursor to the first step not yet heard.
 - `assets.ts` parses sound/image groups from `TalasFixtures.json`. Groups named
   in `RandomGroups` pick an entry per step from the step's `variant` draw
   (the SaRiGaMa "randomness mode").
@@ -90,7 +102,7 @@ unit-tested:
   `heardNow` is the audio time minus output latency.
 - `transport.ts`: every 25 ms, driven by a Web Worker timer so background tabs
   aren't throttled, it pulls events up to 100 ms ahead from each sequencer. All
-  tracks share one start time and the shared `Tempo`. The 25/100 ms numbers are
+  tracks share one start time and, when given one, a `TempoMap`. The 25/100 ms numbers are
   the defaults from "A Tale of Two Clocks" (web.dev), not tuned. They tolerate
   about 75 ms (look-ahead minus interval) of main-thread stall before a note
   plays late. A late note is clamped to `currentTime`, and later notes stay on
@@ -138,13 +150,11 @@ See NEXTSTEPS.md for the order.
   sruti mode is the continuous voice. The mridangam and tabla dayan should tune
   to its tonic (`tunedTonicHz`). Sound-quality work (matching a real tambura
   recording, by-ear checks) is tracked in issue #8.
-- **Mridangam / tabla:** do the musical-timeline refactor first. Each sequencer
-  currently advances its own `nextTime += duration`, so two of them apply a
-  tempo change at different event boundaries and drift apart. Sequencers should
-  emit events in musical time (cycle, akshara, exact fraction) and one shared
-  tempo map converts that to seconds. Then add a `Sequencer<StrokeEvent>` that
-  emits per stroke (not per beat), reads the tala's position for eduppu and
-  korvai alignment, and plays on the `percussion` bus.
+- **Mridangam / tabla:** the musical timeline is in (`ratio.ts`,
+  `tempoMap.ts`). Add a `Sequencer<StrokeEvent>` on the tala's `TempoMap` and
+  `Transport` that emits per stroke at exact positions, reads the tala's
+  position for eduppu and korvai alignment (nothing exposes the cycle and beat
+  for a count yet), and plays on the `percussion` bus.
 - Drum playback needs choke groups (a damped stroke cuts a ringing one on the
   same head), so give each sounding note its own gain node and fade it out over
   5-10 ms rather than calling `stop()`, which clicks. Also plan for 2-3 takes per
