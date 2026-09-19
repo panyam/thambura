@@ -104,12 +104,13 @@ unit-tested:
   `normalizeThambura`, which clamps anything (saved JSON, a patch) to valid
   settings.
 - `motion.ts` is how the beat image moves between beats, chosen from the
-  Motion menu under the image (`MOTION_OPTIONS`: lift and drop, the
-  default, then eased dip, size swing, two fades, pop, off). `motionAt` returns a `BeatPose` (scale, opacity,
-  lift) that is at rest when a beat sounds. The swing-style ones follow a
-  parabola, hold still through a beat's first part when it is longer than
-  0.8 s, and fade out between 0.5 s and 0.25 s beats (120 to 240 bpm for a
-  one-count beat).
+  Animation menu under the image, in a row with Images and Sounds
+  (`MOTION_OPTIONS`: lift and drop, the default, then eased dip, size swing,
+  two fades, pop, off). `motionAt` returns a `BeatPose` (scale, opacity, lift)
+  that is at rest when a beat sounds. The swing-style ones follow a parabola,
+  hold still through a beat's first part when it is longer than 0.8 s, and
+  fade out between 0.5 s and 0.25 s beats (120 to 240 bpm for a one-count
+  beat).
 - `tambura.ts` renders a pluck as a sum of decaying harmonics. `pluckVoice(s,
   string)` has three characters. The jawari voice (mode `jawari`, shown as
   "Tambura", the default and the Raagini's TMB) was fitted to a recording of a real C tambura: it starts dark,

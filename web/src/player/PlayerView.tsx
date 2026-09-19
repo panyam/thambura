@@ -78,16 +78,26 @@ export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accesso
             </Show>
           </Show>
         </p>
-        <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          Motion
-          <select
-            id="motion"
-            class="rounded-md border-gray-300 bg-white py-1 pl-2 pr-8 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-            onChange={(e) => a.setMotion(e.currentTarget.value as BeatMotion)}
-          >
+      </section>
+
+      {/* How the beat looks and sounds, next to the image it changes: a row of
+          three, stacked on a phone so the choices' names fit. */}
+      <section class="grid w-full max-w-md grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-3" aria-label="Display">
+        <Field label="Animation" id="motion">
+          <select id="motion" class={SELECT} onChange={(e) => a.setMotion(e.currentTarget.value as BeatMotion)}>
             <For each={MOTION_OPTIONS}>{(o) => <option value={o.id} selected={o.id === s().motion}>{o.label}</option>}</For>
           </select>
-        </label>
+        </Field>
+        <Field label="Images" id="images">
+          <select id="images" class={SELECT} onChange={(e) => void a.setImageGroup(e.currentTarget.value)}>
+            <For each={s().imageGroups}>{(g) => <option value={g} selected={g === s().imageGroup}>{g}</option>}</For>
+          </select>
+        </Field>
+        <Field label="Sounds" id="sounds">
+          <select id="sounds" class={SELECT} onChange={(e) => void a.setSoundGroup(e.currentTarget.value)}>
+            <For each={s().soundGroups}>{(g) => <option value={g} selected={g === s().soundGroup}>{g}</option>}</For>
+          </select>
+        </Field>
       </section>
 
       <section class="flex items-center justify-center gap-3" aria-label="Transport">
@@ -182,7 +192,7 @@ export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accesso
       </section>
 
       <section class="grid w-full max-w-md grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2" aria-label="Tala settings">
-        <Field label="Thaala" id="tala">
+        <Field label="Tala" id="tala">
           <select
             id="tala"
             class={SELECT}
@@ -210,7 +220,7 @@ export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accesso
             </For>
           </select>
         </Field>
-        <Field label="Jaathi" id="jaathi" hint={usesJaathi(tala()) ? undefined : "Only sapta thaalas have a laghu"}>
+        <Field label="Jaathi" id="jaathi" hint={usesJaathi(tala()) ? undefined : "Only sapta talas have a laghu"}>
           <GatiSelect
             id="jaathi"
             value={s().settings.jaathi}
@@ -225,16 +235,6 @@ export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accesso
             disabled={!usesNadai(tala())}
             onChange={(nadai) => a.setSettings({ nadai })}
           />
-        </Field>
-        <Field label="Sounds" id="sounds">
-          <select id="sounds" class={SELECT} onChange={(e) => void a.setSoundGroup(e.currentTarget.value)}>
-            <For each={s().soundGroups}>{(g) => <option value={g} selected={g === s().soundGroup}>{g}</option>}</For>
-          </select>
-        </Field>
-        <Field label="Images" id="images">
-          <select id="images" class={SELECT} onChange={(e) => void a.setImageGroup(e.currentTarget.value)}>
-            <For each={s().imageGroups}>{(g) => <option value={g} selected={g === s().imageGroup}>{g}</option>}</For>
-          </select>
         </Field>
       </section>
     </div>
