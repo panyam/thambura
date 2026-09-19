@@ -100,10 +100,15 @@ describe("normalizeThambura", () => {
     expect(s.volume).toBe(100);
   });
 
+  it("defaults to the jawari voice, the one shown as Tambura", () => {
+    expect(normalizeThambura(null).mode).toBe("jawari");
+    expect(THAMBURA_MODES.find((m) => m.id === DEFAULT_THAMBURA.mode)?.label).toBe("Tambura");
+  });
+
   it("knows the three modes", () => {
     expect(normalizeThambura({ mode: "guitar" }).mode).toBe("guitar");
     expect(normalizeThambura({ mode: "sruti" }).mode).toBe("sruti");
-    expect(normalizeThambura({ mode: "banjo" }).mode).toBe("tambura");
+    expect(normalizeThambura({ mode: "banjo" }).mode).toBe(DEFAULT_THAMBURA.mode);
   });
 
   it("lists every mode it accepts, once, with a label", () => {

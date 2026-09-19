@@ -118,7 +118,7 @@ export const DEFAULT_THAMBURA: ThamburaSettings = {
   firstString: "Pa",
   temperament: "just",
   a4: 440,
-  mode: "tambura",
+  mode: "jawari",
   cycleSeconds: 4.5,
   volume: 60,
   tone: 50,

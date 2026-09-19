@@ -99,6 +99,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("plucks first, Sa, Sa, low Sa on the drone bus", async () => {
+    set({ mode: "tambura" }); // the classic voice: even slots, strings ring on
     await start();
     expect(audio.unlocked).toBe(1);
     expect(p.state.playing).toBe(true);
@@ -180,6 +181,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("changes speed from the next pluck", async () => {
+    set({ mode: "tambura" }); // the classic voice: even slots, strings ring on
     await start();
     run(0.1);
     set({ cycleSeconds: 2.5 });
@@ -251,6 +253,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("doesn't re-render when switching to sruti and back", async () => {
+    set({ mode: "tambura" }); // the classic voice: even slots, strings ring on
     await start();
     const keys = [...audio.samples.keys()];
     set({ mode: "sruti" });
@@ -260,6 +263,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("sets the second Sa string a shade sharp in tambura mode only", async () => {
+    set({ mode: "tambura" }); // the classic voice: even slots, strings ring on
     set({ cents: 4 });
     await start();
     run(1.9);
@@ -297,6 +301,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("lets strings ring into their next pluck in the classic mode", async () => {
+    set({ mode: "tambura" }); // the classic voice: even slots, strings ring on
     await start();
     run(10);
     expect(audio.played.length).toBeGreaterThan(8);
@@ -358,6 +363,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("switches between tambura and sruti while playing", async () => {
+    set({ mode: "tambura" }); // the classic voice: even slots, strings ring on
     await start();
     set({ mode: "sruti" });
     expect(ticker.onTick).toBeNull();
