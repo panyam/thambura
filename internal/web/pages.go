@@ -58,7 +58,7 @@ type HomePage struct {
 // more than tala keeper) and stay near the lengths results show in full.
 const (
 	homeTitle       = brand.Name + ": online tanpura drone and Carnatic tala keeper"
-	homeDescription = "A free online tanpura (thambura) drone in any kattai, and a Carnatic tala keeper for " +
+	homeDescription = "A free online tanpura (thambura) drone in any shruthi, and a Carnatic tala keeper for " +
 		"sapta and chaapu talas with finger-count hand images. Runs in the browser."
 )
 
