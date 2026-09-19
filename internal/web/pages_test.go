@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -20,7 +21,7 @@ func newServer(t *testing.T) *httptest.Server {
 		t.Fatalf("NewApp: %v", err)
 	}
 	mux := http.NewServeMux()
-	Register(app, mux, filepath.Join(webDir, "static"))
+	Register(app, mux, webDir)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return srv
@@ -49,6 +50,7 @@ func TestHomePageRenders(t *testing.T) {
 		`id="theme-toggle-button"`,
 		`src="/static/app.js"`,
 		`href="/static/css/tailwind.css"`,
+		`href="/legacy/"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("home page missing %q", want)
@@ -77,6 +79,36 @@ func TestStaticServesResources(t *testing.T) {
 	} {
 		if code, _ := get(t, srv.URL+p); code != http.StatusOK {
 			t.Errorf("GET %s = %d", p, code)
+		}
+	}
+}
+
+// The 2016 app is served whole: its page, its scripts and the assets its
+// fixtures name, all under /legacy/.
+func TestLegacyServesOldApp(t *testing.T) {
+	srv := newServer(t)
+	code, body := get(t, srv.URL+"/legacy/")
+	if code != http.StatusOK {
+		t.Fatalf("GET /legacy/ = %d", code)
+	}
+	for _, want := range []string{"<title>LayaGnana", `src="/legacy/static/js/lgview.js"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("legacy page missing %q", want)
+		}
+	}
+	code, fixtures := get(t, srv.URL+"/legacy/static/Resources/TalasFixtures.json")
+	if code != http.StatusOK {
+		t.Fatalf("GET legacy fixtures = %d", code)
+	}
+	paths := regexp.MustCompile(`"(/[^"]+)"`).FindAllStringSubmatch(fixtures, -1)
+	if len(paths) == 0 {
+		t.Fatal("legacy fixtures name no assets")
+	}
+	for _, m := range paths {
+		if !strings.HasPrefix(m[1], "/legacy/static/") {
+			t.Errorf("legacy fixtures path %q is outside /legacy/static/", m[1])
+		} else if code, _ := get(t, srv.URL+m[1]); code != http.StatusOK {
+			t.Errorf("GET %s = %d", m[1], code)
 		}
 	}
 }

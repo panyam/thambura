@@ -37,6 +37,11 @@ name (it was briefly called Sadhana).
   actions, no HTMX, no header drawer. Pages must define both `BodySection` and
   `PageScripts`; Go templates reject a second definition, so the base can't give
   them defaults.
+- `/legacy/` serves the 2016 app from `web/legacy/`, copied from the
+  `pre-sadhana-port` tag with its `/static/` paths moved under
+  `/legacy/static/` (see `web/legacy/README.md`). The header's "Legacy" link
+  goes there. `app.yaml` needs a separate `static_files` line for
+  `/legacy/`, since `static_dir` serves no index page.
 
 ## Frontend (web/src)
 
@@ -233,8 +238,7 @@ Follow the `start_pr` description format. For before/after evidence:
   pushing a commit there by hash from zsh, brace the variable
   (`git push origin "${c}:refs/heads/pr-assets"`), since zsh reads `$c:r` as
   a filename modifier.
-- **The old app** runs from a worktree of the `pre-sadhana-port` tag, served
-  with `python3 -m http.server`, at `/templates/home.html`.
+- **The old app** is at `/legacy/` on any running server.
 - **Audio timing** is measured by wrapping `AudioBufferSourceNode.prototype.start`
   in an init script and recording each `when`. That captures the scheduled audio
   time; image-change timing only shows animation-frame jitter.

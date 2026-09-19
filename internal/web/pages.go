@@ -1,7 +1,7 @@
 // Package web serves Thambura's pages: goapplib page shells rendered through
 // templar, each hosting a Solid island. The pages own no data; everything the
 // player needs (sounds, images, tala fixtures) is fetched from /static by the
-// browser.
+// browser. /legacy/ serves the original 2016 app, untouched but for its paths.
 package web
 
 import (
@@ -60,10 +60,13 @@ func NewApp(templatesDir string) (*goal.App[*App], error) {
 	return goal.NewApp(&App{}, templates), nil
 }
 
-// Register mounts the pages and the static-asset server onto mux.
-func Register(app *goal.App[*App], mux *http.ServeMux, staticDir string) {
+// Register mounts the pages and the static-asset servers onto mux. /legacy/
+// serves the 2016 Laya Gnana app as it was at the pre-sadhana-port tag
+// (web/legacy, see its README.md).
+func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	goal.Register[*HomePage](app, mux, "/{$}")
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(filepath.Join(webDir, "static")))))
+	mux.Handle("/legacy/", http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy")))))
 }
 
 // MissingAssets lists the built frontend files that are absent under webDir.

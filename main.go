@@ -29,7 +29,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	web.Register(app, mux, filepath.Join(*webDir, "static"))
+	web.Register(app, mux, *webDir)
 
 	log.Printf("%s listening on %s", brand.Name, addr)
 	log.Fatal(http.ListenAndServe(addr, mux))

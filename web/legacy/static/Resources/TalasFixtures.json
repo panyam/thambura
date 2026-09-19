@@ -1,0 +1,144 @@
+{
+    "SoundGroups": {
+        "Clap": {
+            "down": "/legacy/static/Resources/Sounds/Clap/high1.wav" ,
+            "open": "/legacy/static/Resources/Sounds/Clap/low1.wav" ,
+            "one": "/legacy/static/Resources/Sounds/Clap/low1.wav" ,
+            "two": "/legacy/static/Resources/Sounds/Clap/low1.wav" ,
+            "three": "/legacy/static/Resources/Sounds/Clap/low1.wav" ,
+            "four": "/legacy/static/Resources/Sounds/Clap/low1.wav" ,
+            "five": "/legacy/static/Resources/Sounds/Clap/low1.wav"
+        },
+        "Metronome": {
+            "down": "/legacy/static/Resources/Sounds/Metronome/tick_hi.wav" ,
+            "open": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "one": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "two": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "three": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "four": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "five": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav"
+        },
+        "SaRiGaMa": {
+            "down": "/legacy/static/Resources/Sounds/Metronome/tick_hi.wav" ,
+            "open": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "one": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "two": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "three": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "four": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav" ,
+            "five": "/legacy/static/Resources/Sounds/Metronome/tick_lo.wav"
+        }
+	},
+    "ImageGroups": {
+        "Simple": {
+            "down": "/legacy/static/Resources/Images/Simple/down_hand.GIF",
+            "open": "/legacy/static/Resources/Images/Simple/open_hand.GIF",
+            "one": "/legacy/static/Resources/Images/Simple/laghu_1.GIF",
+            "two": "/legacy/static/Resources/Images/Simple/laghu_2.GIF",
+            "three": "/legacy/static/Resources/Images/Simple/laghu_3.GIF",
+            "four": "/legacy/static/Resources/Images/Simple/laghu_4.GIF",
+            "five": "/legacy/static/Resources/Images/Simple/laghu_5.GIF"
+        },
+        "SaRiGaMa": {
+            "Sa": "/legacy/static/Resources/Images/SaRiGaMa/Sa.png",
+            "Ri": "/legacy/static/Resources/Images/SaRiGaMa/Ri.png",
+            "Ga": "/legacy/static/Resources/Images/SaRiGaMa/Ga.png",
+            "Ma": "/legacy/static/Resources/Images/SaRiGaMa/Ma.png",
+            "Pa": "/legacy/static/Resources/Images/SaRiGaMa/Pa.png",
+            "Da": "/legacy/static/Resources/Images/SaRiGaMa/Da.png",
+            "Ni": "/legacy/static/Resources/Images/SaRiGaMa/Ni.png",
+            "UpperSa": "/legacy/static/Resources/Images/SaRiGaMa/UpperSa.png"
+        }
+    },
+    "Angas": [
+        {"name": "Thisra Chaapu",
+         "children": [{"name": "down", "duration": "1/2"}, "down"]},
+        {"name": "Khanda Chaapu",
+         "children": ["down", {"name": "down", "duration": "1/2"}, "down"]},
+        {"name": "Misra Chaapu",
+         "children": [{"name": "open", "duration": "1/2"}, "open", "down", "down"]},
+        {"name": "Viloma Chaapu",
+         "children": ["down", "down",
+                      {"name": "open", "duration": "1/2"}, "open"]},
+        {"name": "Sankeerna Chaapu",
+         "children": ["down", "down", "down",
+                      {"name": "open", "duration": "1/2"},
+                      "open" ]},
+        {"name": "Laghu",
+         "children": {"class": "TBSpliceAction",
+                      "length": "jaathi",
+                      "children": [{"class": "TBChoiceAction",
+                                    "length": "mukhi",
+                                    "options": {
+                                        "3": "Thisra Chaapu",
+                                        "4": "down",
+                                        "5": "Khanda Chaapu",
+                                        "7": "Misra Chaapu",
+                                        "9": "Sankeerna Chaapu"
+                                    }},
+                                    "one", "two", "three", "four", "five",
+                                    "one", "two", "three", "four", "five"]}},
+        {"name": "Dhrutham", "children": [{"class": "TBChoiceAction",
+                                           "length": "mukhi",
+                                           "options": {
+                                            "3": "Thisra Chaapu",
+                                            "4": "down",
+                                            "5": "Khanda Chaapu",
+                                            "7": "Misra Chaapu",
+                                            "9": "Sankeerna Chaapu"
+                                          }}, "open" ]},
+        {"name": "AnuDhrutham", "children": [ "down" ]},
+        {"name": "Guru",
+         "children": [ "guru_1", "guru_2", "guru_3", "guru_4",
+                       "guru_5", "guru_6", "guru_7", "guru_8"]},
+        {"name": "Plutam",
+         "children": [ "plutam_1", "plutam_2", "plutam_3", "plutam_4",
+                       "plutam_5", "plutam_6", "plutam_7", "plutam_8",
+                       "plutam_9", "plutam_10", "plutam_11", "plutam_12"]},
+        {"name": "KKPaadam", 
+         "children": ["kkpdm_1", "kkpdm_2", "kkpdm_3", "kkpdm_4",
+                      "kkpdm_5", "kkpdm_6", "kkpdm_7", "kkpdm_8",
+                      "kkpdm_9", "kkpdm_10", "kkpdm_11", "kkpdm_12",
+                      "kkpdm_13", "kkpdm_14", "kkpdm_15", "kkpdm_16"]}
+    ],
+    "Talas": [
+        {"name": "Eka Talam", "children": [ "Laghu" ]},
+        {"name": "Dhruva Talam", "children": [ "Laghu", "Dhrutham", "Laghu", "Laghu" ]},
+        {"name": "Matya Talam", "children": [ "Laghu", "Dhrutham", "Laghu" ]},
+        {"name": "Rupaka Talam", "children": [ "Dhrutham", "Laghu" ]},
+        {"name": "Jhumpa Talam", "children": [ "Laghu", "AnuDhrutham", "Dhrutham" ]},
+        {"name": "Thriputa Talam", "children": [ "Laghu", "Dhrutham", "Dhrutham" ]},
+        {"name": "Ata Talam", "children": [ "Laghu", "Laghu", "Dhrutham", "Dhrutham" ]},
+
+
+        {"name": "Thisra Chaapu", "children": "Thisra Chaapu"},
+        {"name": "Khanda Chaapu", "children": "Khanda Chaapu"},
+        {"name": "Misra Chaapu", "children": "Misra Chaapu"},
+        {"name": "Viloma Chaapu", "children": "Viloma Chaapu"},
+        {"name": "Sankeerna Chaapu", "children": "Sankeerna Chaapu"},
+
+        {"name": "Adi Thalam", "alias": "Thriputa Talam", "jaathi": 4 },
+        {"name": "Short Rupakam", "children": [ "down", "down", "open" ]}
+    ],
+
+    "TalaGroups": [
+        {"name": "Faves", "children": [ "Short Rupakam", "Adi Thalam" ]},
+        {"name": "Sapta Talas",
+         "children": [ "Eka Talam", "Rupaka Talam", "Matya Talam", "Jhumpa Talam",
+                       "Thriputa Talam", "Ata Talam", "Dhruva Talam"]},
+        {"name": "Chaapu Talas",
+         "children": [ "Thisra Chaapu", "Khanda Chaapu", 
+                       "Misra Chaapu", "Viloma Chaapu", "Sankeerna Chaapu"]}
+    ],
+
+    "Defaults": {
+        "jaathi": 4,
+        "kalai": 1,
+        "nadai": 4,
+        "mukhi": 4,
+        "tala": "Thriputa Talam",
+        "speed": 80,
+        "image_group": "SaRiGaMa",
+        "sound_group": "Clap"
+    }
+}
+

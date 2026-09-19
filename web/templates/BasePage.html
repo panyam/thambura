@@ -27,8 +27,12 @@ defaults for them), and render "BasePage".
 {{ end }}
 
 {{/* goapplib renders these just before its theme toggle. The thambura island
-     binds the button and shows the dot while the thambura plays. */}}
+     binds the button and shows the dot while the thambura plays. Legacy opens
+     the 2016 app (web/legacy) for comparison. */}}
 {{ define "SiteHeaderActions" }}
+<a href="/legacy/"
+   class="px-2 py-1 rounded-md text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+   title="The 2016 Laya Gnana app, before the rewrite">Legacy</a>
 <button id="thambura-toggle" type="button" aria-expanded="false" aria-controls="thambura"
         class="relative p-2 rounded-md text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 aria-expanded:text-amber-600 dark:aria-expanded:text-amber-400"
         aria-label="Thambura" title="Thambura">
