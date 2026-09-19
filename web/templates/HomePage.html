@@ -7,6 +7,42 @@
          data-fixtures-url="/static/Resources/TalasFixtures.json">
         <noscript>Thambura needs JavaScript to play.</noscript>
     </div>
+    <!-- What the app is, in words: for people scrolling past the player, and
+         for search engines, since the player itself is drawn by JavaScript.
+         The bottom padding clears the floating thambura bar. -->
+    <section aria-labelledby="about-heading" class="mx-auto w-full max-w-3xl px-4 pb-32">
+        <div class="border-t border-gray-200 pt-8 text-sm leading-relaxed text-gray-600 dark:border-gray-700 dark:text-gray-400">
+            <h1 id="about-heading" class="text-base font-semibold text-gray-900 dark:text-gray-100">
+                An online tanpura and tala keeper for Carnatic practice
+            </h1>
+            <p class="mt-2">
+                {{ brand }} keeps the tala and plays the drone while you practise. It is free,
+                runs in your browser, and needs no account or install.
+            </p>
+            <div class="mt-6 grid gap-6 sm:grid-cols-2">
+                <div>
+                    <h2 class="font-semibold text-gray-900 dark:text-gray-100">Tala keeper</h2>
+                    <p class="mt-1">
+                        All seven sapta talas (Eka, Rupakam, Matya, Jhumpa, Thriputa, Ata and Dhruva)
+                        in any of the five jaathis, the chaapu talas (Thisra, Khanda, Misra, Viloma and
+                        Sankeerna) and Adi. Pick the nadai and kalai, and any tempo from 10 to 300 bpm.
+                        Each beat shows its kriya on a right or left hand, the clap, the finger count or
+                        the wave, and the hand lifts and drops with the beat as it does when you keep thalam.
+                    </p>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-gray-900 dark:text-gray-100">Tanpura drone</h2>
+                    <p class="mt-1">
+                        The thambura (tambura or tanpura) plucks its four strings, the first on Pa, Ma, Ni
+                        or any swarasthana, then Sa, Sa and low Sa, at any of 15 pitches from A to B named
+                        by kattai (C is 1, G is 5). Its main voice was fitted to a recording of a real
+                        tambura, and there is also a classic synthesized tambura, a guitar-like pluck and a
+                        sruti box reed drone. Play it on its own or with the tala.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
 </main>
 <!-- The thambura bar (web/src/player/ThamburaBar.tsx) mounts here; it floats over the page. -->
 <div id="thambura"></div>

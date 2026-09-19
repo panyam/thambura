@@ -52,8 +52,29 @@ defaults for them), and render "BasePage".
 </div>
 {{ end }}
 
+{{/* Pages render a SitePage (internal/web/pages.go). The link preview needs an
+     absolute image URL; `og:*` covers Facebook, WhatsApp, Slack and LinkedIn,
+     and X reads them too once `twitter:card` asks for the large image. */}}
 {{ define "SiteExtraHead" }}
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ brand }}">
+<meta property="og:title" content="{{ or .MetaTitle .Title }}">
+{{ with .MetaDescription }}<meta property="og:description" content="{{ . }}">{{ end }}
+{{ with .CanonicalUrl }}<meta property="og:url" content="{{ . }}">{{ end }}
+{{ with .Social.Image }}
+<meta property="og:image" content="{{ . }}">
+<meta property="og:image:width" content="{{ $.Social.ImageWidth }}">
+<meta property="og:image:height" content="{{ $.Social.ImageHeight }}">
+<meta property="og:image:alt" content="{{ $.Social.ImageAlt }}">
+<meta name="twitter:card" content="summary_large_image">
+{{ end }}
+{{ with .StructuredData }}<script type="application/ld+json">{{ . }}</script>{{ end }}
 {{ end }}
 
 {{/* No HTMX: the pages are static shells. */}}

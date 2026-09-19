@@ -1,6 +1,8 @@
 package web
 
 import (
+	"encoding/binary"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -45,7 +47,8 @@ func TestHomePageRenders(t *testing.T) {
 		t.Fatalf("GET / = %d, body:\n%s", code, body)
 	}
 	for _, want := range []string{
-		"<title>Thambura</title>",
+		"<title>" + homeTitle + "</title>",
+		`<link rel="canonical" href="https://thambura.com/">`,
 		`id="player"`,
 		`id="theme-toggle-button"`,
 		`src="/static/app.js"`,
@@ -61,6 +64,114 @@ func TestHomePageRenders(t *testing.T) {
 			t.Errorf("home page should not contain %q", unwanted)
 		}
 	}
+}
+
+// What link-preview bots and search engines read from the head.
+func TestHomePageMetadata(t *testing.T) {
+	srv := newServer(t)
+	_, body := get(t, srv.URL+"/")
+	for _, want := range []string{
+		`<meta name="description" content="` + homeDescription + `">`,
+		`<meta property="og:title" content="` + homeTitle + `">`,
+		`<meta property="og:url" content="https://thambura.com/">`,
+		`<meta property="og:image" content="https://thambura.com/static/og.png">`,
+		`<meta property="og:image:width" content="1200">`,
+		`<meta name="twitter:card" content="summary_large_image">`,
+		`<link rel="manifest" href="/static/manifest.json">`,
+		`<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">`,
+		`<h1 id="about-heading"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("home page missing %q", want)
+		}
+	}
+	if n := len(homeDescription); n > 170 {
+		t.Errorf("description is %d characters; results cut it off past about 160", n)
+	}
+
+	m := regexp.MustCompile(`(?s)<script type="application/ld\+json">(.*?)</script>`).FindStringSubmatch(body)
+	if m == nil {
+		t.Fatal("home page has no JSON-LD")
+	}
+	var ld map[string]any
+	if err := json.Unmarshal([]byte(m[1]), &ld); err != nil {
+		t.Fatalf("JSON-LD doesn't parse: %v\n%s", err, m[1])
+	}
+	if ld["@type"] != "WebApplication" || ld["url"] != "https://thambura.com/" || ld["isAccessibleForFree"] != true {
+		t.Errorf("JSON-LD = %v", ld)
+	}
+}
+
+// The files crawlers and browsers ask for at the root, and the manifest's icons.
+func TestRootFiles(t *testing.T) {
+	srv := newServer(t)
+	resp := fetch(t, srv.URL+"/robots.txt")
+	if !strings.Contains(resp.body, "Sitemap: https://thambura.com/sitemap.xml") || !strings.Contains(resp.body, "Allow: /") {
+		t.Errorf("robots.txt = %q", resp.body)
+	}
+	resp = fetch(t, srv.URL+"/sitemap.xml")
+	if !strings.Contains(resp.body, "<loc>https://thambura.com/</loc>") || !strings.HasPrefix(resp.contentType, "application/xml") {
+		t.Errorf("sitemap.xml (%s) = %q", resp.contentType, resp.body)
+	}
+	resp = fetch(t, srv.URL+"/favicon.ico")
+	if resp.code != http.StatusOK || !strings.HasPrefix(resp.body, "\x00\x00\x01\x00") {
+		t.Errorf("favicon.ico = %d, not an icon file", resp.code)
+	}
+
+	resp = fetch(t, srv.URL+"/static/manifest.json")
+	var manifest struct {
+		Name  string
+		Icons []struct{ Src string }
+	}
+	if err := json.Unmarshal([]byte(resp.body), &manifest); err != nil || manifest.Name == "" || len(manifest.Icons) == 0 {
+		t.Fatalf("manifest.json: %v %+v", err, manifest)
+	}
+	for _, icon := range manifest.Icons {
+		if code, _ := get(t, srv.URL+icon.Src); code != http.StatusOK {
+			t.Errorf("manifest icon %s = %d", icon.Src, code)
+		}
+	}
+
+	// The preview image is the size og:image:width/height promise.
+	resp = fetch(t, srv.URL+"/static/og.png")
+	if len(resp.body) < 24 || resp.body[1:4] != "PNG" {
+		t.Fatalf("og.png = %d, not a PNG", resp.code)
+	}
+	w := binary.BigEndian.Uint32([]byte(resp.body[16:20]))
+	h := binary.BigEndian.Uint32([]byte(resp.body[20:24]))
+	if w != 1200 || h != 630 {
+		t.Errorf("og.png is %dx%d, want 1200x630", w, h)
+	}
+}
+
+func TestLegacyIsNoindex(t *testing.T) {
+	srv := newServer(t)
+	for _, p := range []string{"/legacy/", "/legacy/static/js/lgview.js"} {
+		if got := fetch(t, srv.URL+p).robots; got != "noindex" {
+			t.Errorf("GET %s: X-Robots-Tag = %q, want noindex", p, got)
+		}
+	}
+	if got := fetch(t, srv.URL+"/").robots; got != "" {
+		t.Errorf("GET /: X-Robots-Tag = %q, want none", got)
+	}
+}
+
+type response struct {
+	code        int
+	contentType string
+	robots      string
+	body        string
+}
+
+func fetch(t *testing.T, url string) response {
+	t.Helper()
+	resp, err := http.Get(url)
+	if err != nil {
+		t.Fatalf("GET %s: %v", url, err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	return response{resp.StatusCode, resp.Header.Get("Content-Type"), resp.Header.Get("X-Robots-Tag"), string(body)}
 }
 
 func TestUnknownPathIs404(t *testing.T) {

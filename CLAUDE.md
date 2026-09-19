@@ -38,11 +38,23 @@ Sadhana).
   actions, no HTMX, no header drawer. Pages must define both `BodySection` and
   `PageScripts`; Go templates reject a second definition, so the base can't give
   them defaults.
+- Search and link previews: pages render a `SitePage` (goapplib's
+  `BasePage` plus our `Header`, `Social` and `StructuredData`), and
+  `BasePage.html` turns it into the canonical link, Open Graph and Twitter
+  tags, icons, manifest and JSON-LD. Absolute URLs come from `brand.URL`
+  (`https://thambura.com`), so the www and appspot copies point at it. Go
+  serves `/robots.txt`, `/sitemap.xml` and `/favicon.ico`. `HomePage.html`
+  has a visible About section under the player, the page's only `<h1>` and
+  the only text a crawler that doesn't run JavaScript sees. The PNGs
+  (`web/static/og.png`, `web/static/icons/`, `favicon.ico`) come from
+  `node design/render-images.mjs` (preview layout in `design/og.html`),
+  which needs `PLAYWRIGHT_CORE` and `CHROMIUM` pointed at an install.
 - `/legacy/` serves the 2016 app from `web/legacy/`, copied from the
   `pre-sadhana-port` tag with its `/static/` paths moved under
   `/legacy/static/` (see `web/legacy/README.md`). The header's "Legacy" link
   goes there. `app.yaml` needs a separate `static_files` line for
-  `/legacy/`, since `static_dir` serves no index page.
+  `/legacy/`, since `static_dir` serves no index page. Both it and the Go
+  server send `X-Robots-Tag: noindex` for `/legacy`.
 
 ## Frontend (web/src)
 
