@@ -35,18 +35,6 @@ export function ThamburaStudio(props: ThamburaViewProps) {
             {hzLabel(s())} · {centsLabel(s().cents)}
           </div>
         </div>
-        <div class="ml-auto">
-          <Segmented
-            label="Mode"
-            value={s().mode}
-            options={[
-              { value: "tambura", label: "Tambura" },
-              { value: "guitar", label: "Guitar" },
-              { value: "sruti", label: "Sruti" },
-            ]}
-            onChange={(mode) => set({ mode })}
-          />
-        </div>
       </div>
 
       <div class="flex flex-wrap items-end justify-between gap-4">

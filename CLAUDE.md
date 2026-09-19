@@ -131,9 +131,11 @@ unit-tested:
   mixes its three tones swara-first (0.40 / 0.25 / 0.08, panned apart), since
   the octave Sa's otherwise fuse into one note and bury the swara.
 - `ThamburaBar.tsx` is the bar that slides up from the bottom when the header's
-  `#thambura-toggle` is clicked, with a switch between three views over the
-  same presenter: `ThamburaMini`, `ThamburaStudio` and `ThamburaRaagini` (the
-  2000s Raagini box, with `Knob.tsx`). Shared bits are in
+  `#thambura-toggle` is clicked. Its header holds the Sound menu (the mode,
+  from `THAMBURA_MODES`, so it applies in every view) and a switch between
+  three views over the same presenter: `ThamburaMini`, `ThamburaStudio` and
+  `ThamburaRaagini` (the 2000s Raagini box, with `Knob.tsx`, which keeps its
+  own TMB/GTR/SRUTI slide switch as part of the replica). Shared bits are in
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
 - `keepAwake.ts`: `KeepAwake` holds a Screen Wake Lock while either island
@@ -254,7 +256,8 @@ The tala's transport buttons are icons, so select them by label:
 `getByRole`, pass `exact: true`: name matching is a substring match, so
 "Start" also finds Restart. The
 thambura opens with `#thambura-toggle`, its views are
-`button[role="radio"]:has-text("Raagini")` and so on, and it plays with
+`button[role="radio"]:has-text("Raagini")` and so on, its mode is
+`select[aria-label="Sound"]`, and it plays with
 `button[aria-label="Start thambura"]`. The theme toggle cycles system, light,
 dark, so dark takes two clicks (or launch the page with `colorScheme: "dark"`).
 
