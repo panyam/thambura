@@ -232,7 +232,7 @@ unit-tested:
   bottom right in `HomePage.html` (`#thambura-controls`): `#thambura-play`
   (start/stop from anywhere on the page, bar open or not; `reflect` flips its
   icon via `data-playing` and its label), `#thambura-toggle` (opens the bar: a
-  shruthi box icon, which is the whole button on a phone, in a pill with the
+  tilted tambura icon, the whole button on a phone, in a pill with the
   "Shruthi box" label from `sm` up), and
   the T key (`shortcuts.ts`: not while typing in a field, not with
   Ctrl/Cmd/Alt, not on key repeat). It wires the link to the address bar: `replaceState`, no
