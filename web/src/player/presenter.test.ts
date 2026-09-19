@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { motionAt, REST, SWING_DEPTH, type BeatPose } from "../engine/motion";
+import { DEFAULT_MOTION, motionAt, REST, SWING_DEPTH, type BeatPose } from "../engine/motion";
+import { DEFAULT_SETTINGS } from "../engine/selection";
 import { PlayerPresenter, type PlayerState } from "./presenter";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 
@@ -153,15 +154,71 @@ describe("PlayerPresenter", () => {
     });
   });
 
-  it("keeps the motion between visits", () => {
-    const saved: unknown[] = [];
-    const store = { load: () => ({ motion: "lift" }), save: (v: unknown) => saved.push(v) };
-    const q = new PlayerPresenter({ audio, ticker, frames, fetchJson: async () => FIXTURES, preloadImages: async () => {}, store });
-    expect(q.state.motion).toBe("lift");
-    q.setMotion("pop");
-    expect(saved).toEqual([{ motion: "pop" }]);
-    const bad = new PlayerPresenter({ audio, ticker, frames, fetchJson: async () => FIXTURES, preloadImages: async () => {}, store: { load: () => ({ motion: "spin" }), save: () => {} } });
-    expect(bad.state.motion).toBe("dip");
+  describe("saved choices", () => {
+    const make = (saved: unknown, writes: unknown[] = []) =>
+      new PlayerPresenter({
+        audio,
+        ticker,
+        frames,
+        fetchJson: async () => FIXTURES,
+        preloadImages: async () => {},
+        store: { load: () => saved, save: (v) => writes.push(v) },
+      });
+
+    it("restores every choice from the last visit", async () => {
+      const settings = { tala: "chaapu_misram", jaathi: "khandam", nadai: "thisram", kalai: 2 };
+      const q = make({ motion: "pop", settings, tempo: 72, volume: 30, soundGroup: "Metronome", imageGroup: "Swaras" });
+      await q.load("/fixtures.json");
+      expect(q.state).toMatchObject({ motion: "pop", settings, tempo: 72, volume: 30, soundGroup: "Metronome", imageGroup: "Swaras" });
+      expect(audio.busVolume.tala).toBe(30);
+      expect(q.state.beatCount).toBe(1); // a chaapu is one beat
+    });
+
+    it("saves on each change, and never while loading", async () => {
+      const writes: unknown[] = [];
+      const q = make(null, writes);
+      await q.load("/fixtures.json");
+      expect(writes).toEqual([]);
+      q.setTempo(96);
+      q.setSettings({ kalai: 3 });
+      await q.setImageGroup("Swaras");
+      expect(writes).toHaveLength(3);
+      expect(writes.at(-1)).toEqual({
+        motion: DEFAULT_MOTION,
+        settings: { ...DEFAULT_SETTINGS, kalai: 3 },
+        tempo: 96,
+        volume: 50,
+        soundGroup: "Clap",
+        imageGroup: "Swaras",
+      });
+    });
+
+    it("falls back to defaults for anything missing or no longer valid", async () => {
+      const q = make({ motion: "spin", settings: { tala: "sapta_gone" }, tempo: 900, volume: "loud", imageGroup: "Deleted" });
+      await q.load("/fixtures.json");
+      expect(q.state).toMatchObject({ motion: DEFAULT_MOTION, settings: DEFAULT_SETTINGS, tempo: 300, volume: 50, imageGroup: "Simple" });
+    });
+
+    it("carries on when storage throws", async () => {
+      const q = new PlayerPresenter({
+        audio,
+        ticker,
+        frames,
+        fetchJson: async () => FIXTURES,
+        preloadImages: async () => {},
+        store: {
+          load: () => {
+            throw new Error("blocked");
+          },
+          save: () => {
+            throw new Error("full");
+          },
+        },
+      });
+      await q.load("/fixtures.json");
+      q.setTempo(90);
+      expect(q.state.tempo).toBe(90);
+    });
   });
 
   it("shows no image for a name the group lacks", async () => {

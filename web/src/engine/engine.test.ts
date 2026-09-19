@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { toBeat } from "./beat";
 import { chaapuBeats, customTalaBeats, laghuBeats, saptaTalaBeats, TICK_OFFSETS } from "./carnatic";
 import { BeatCursor } from "./cursor";
-import { beatsFor, clampTempo, usesJaathi, usesNadai } from "./selection";
+import { beatsFor, clampTempo, DEFAULT_SETTINGS, normalizeSettings, usesJaathi, usesNadai } from "./selection";
 import { ONE, ratio, ZERO } from "./ratio";
 import { parseCatalog, resolveAsset } from "./assets";
 
@@ -76,6 +76,17 @@ describe("selection", () => {
     expect(clampTempo(500)).toBe(300);
     expect(clampTempo(NaN)).toBe(80);
     expect(clampTempo(90.4)).toBe(90);
+  });
+  it("normalizes saved settings field by field", () => {
+    const good = { tala: "chaapu_misram", jaathi: "khandam", nadai: "thisram", kalai: 3 };
+    expect(normalizeSettings(good)).toEqual(good);
+    expect(normalizeSettings({ ...good, tala: "sapta_gone", kalai: 9 })).toEqual({
+      ...good,
+      tala: DEFAULT_SETTINGS.tala,
+      kalai: DEFAULT_SETTINGS.kalai,
+    });
+    expect(normalizeSettings(null)).toEqual(DEFAULT_SETTINGS);
+    expect(normalizeSettings("junk")).toEqual(DEFAULT_SETTINGS);
   });
 });
 
