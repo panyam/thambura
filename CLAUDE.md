@@ -85,7 +85,10 @@ unit-tested:
   string)` has three characters. The jawari voice (mode `jawari`, shown as
   "Tambura") was fitted to a recording of a real C tambura: it starts dark,
   and a band around 1.3 kHz swells by up to about 40 dB, peaks near 1.4 s and
-  falls back (the `formant*` fields; the low Sa blooms about half as much). The
+  falls back (the `formant*` fields; the low Sa blooms about half as much).
+  The bloom mostly moves energy rather than adding it (`formantEnergy`), and
+  the render is scaled by its attack, not its peak (`attackLevel`), so the
+  mix stays level and every pluck is heard. The
   classic voice (mode `tambura`, "Tambura (classic)") sweeps a resonance down
   through the harmonics, rings 12-36 s (to -60 dB) and keeps its high
   harmonics. In guitar mode it rings 2.5-8 s and dulls quickly. The classic

@@ -75,8 +75,14 @@ for the jawari's bloom:
   tambura (issue #8). A pluck starts dark. Harmonics around 1.3 kHz (a band
   about 1.2 octaves wide) then swell by up to about 40 dB over the first
   second, peak around 1.4 s, fall back within the next second and leave a
-  little brightness behind. So the note gets louder after the pluck, as the
-  recording's does. The low Sa, a thicker string, blooms about half as much.
+  little brightness behind. Most of that is energy moved up from the low
+  harmonics, as a jawari does, so the note brightens more than it swells
+  (`formantEnergy` 0.3: 30% of the boost is new energy). The low Sa, a
+  thicker string, blooms about half as much. Every string is scaled by its
+  attack rather than its peak (`attackLevel`), so all four are plucked
+  equally hard. Scaling by the peak made a big-bloom string's attack about
+  15 dB quieter than a small-bloom one's, which buried the first Sa pluck
+  and made the low Sa's stand out.
   Measured the same way, the fitted voice's loudness and spectral centroid
   over time follow the recording's to within a few dB.
 - **Tambura (classic)** (`tambura`) sweeps a resonance slowly down through

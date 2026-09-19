@@ -294,23 +294,39 @@ describe("jawari tambura plucks", () => {
     }
     return 10 * Math.log10(power);
   };
-  const bloom = (x: Float32Array, f0: number, at: number) => bandDb(x, f0, 1000, 2500, at);
+  // The 1-2.5 kHz band's share of all the harmonics, in dB: how far the bloom has moved energy up.
+  const share = (x: Float32Array, f0: number, at: number) => bandDb(x, f0, 1000, 2500, at) - bandDb(x, f0, 1, 7900, at);
+  const total = (x: Float32Array, f0: number, at: number) => bandDb(x, f0, 1, 7900, at);
 
-  it("swells the harmonics around 1-2.5 kHz for about a second after the pluck, then lets them fall back", () => {
+  it("moves energy up to 1-2.5 kHz for about a second after the pluck, then lets it fall back", () => {
     const pa = renderPluck(98.1, SR, pluckVoice(jawari, 0), 1);
-    expect(bloom(pa, 98.1, 1.3) - bloom(pa, 98.1, 0.02)).toBeGreaterThan(15);
-    expect(bloom(pa, 98.1, 1.3) - bloom(pa, 98.1, 3)).toBeGreaterThan(8);
+    expect(share(pa, 98.1, 1.3) - share(pa, 98.1, 0.02)).toBeGreaterThan(8);
+    expect(share(pa, 98.1, 1.3) - share(pa, 98.1, 3)).toBeGreaterThan(6);
 
     const classic = renderPluck(98.1, SR, pluckVoice({ ...jawari, mode: "tambura" }), 1);
-    expect(Math.abs(bloom(classic, 98.1, 1.3) - bloom(classic, 98.1, 0.02))).toBeLessThan(6);
+    expect(Math.abs(share(classic, 98.1, 1.3) - share(classic, 98.1, 0.02))).toBeLessThan(5);
   });
 
   it("blooms less on the thicker low Sa string", () => {
-    const rise = (string: number) => {
-      const x = renderPluck(65.4, SR, pluckVoice(jawari, string), 1);
-      return bloom(x, 65.4, 1.3) - bloom(x, 65.4, 0.02);
+    const steel = renderPluck(65.4, SR, pluckVoice(jawari, 0), 1);
+    const lowSa = renderPluck(65.4, SR, pluckVoice(jawari, 3), 1);
+    expect(share(lowSa, 65.4, 1.3)).toBeLessThan(share(steel, 65.4, 1.3) - 3);
+  });
+
+  it("brightens without much getting louder, unless the bloom is set to add energy", () => {
+    const voice = pluckVoice(jawari, 0);
+    const swell = (v: typeof voice) => {
+      const x = renderPluck(98.1, SR, v, 1);
+      return total(x, 98.1, 1.3) - total(x, 98.1, 0.02);
     };
-    expect(rise(3)).toBeLessThan(rise(0) - 8);
+    expect(swell(voice)).toBeLessThan(5);
+    expect(swell({ ...voice, formantEnergy: 1 })).toBeGreaterThan(10);
+  });
+
+  it("plucks every jawari string at the same attack level", () => {
+    const attack = (x: Float32Array) => rms(x, 0, SR * 0.1);
+    const levels = [0, 1, 2, 3].map((i) => attack(renderPluck(98.1, SR, pluckVoice(jawari, i), 1)));
+    for (const l of levels) expect(l).toBeCloseTo(levels[0], 6);
   });
 
   it("blooms higher with tone and deeper with a firmer pluck", () => {
