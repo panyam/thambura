@@ -26,7 +26,7 @@ diffpp uses.
 | solid-js | ^1.9 | Player UI |
 | tailwindcss + @tailwindcss/forms | ^3.4 / ^0.5 | Styling, `darkMode: 'class'` |
 | esbuild + esbuild-plugin-solid | ^0.28 / ^0.6 | Bundling |
-| vitest | ^3.2 | Engine and presenter tests |
+| vitest | ^5.0 | Engine and presenter tests (bumped by Dependabot, PR #3) |
 
 ## Project Conventions
 

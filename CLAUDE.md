@@ -109,13 +109,21 @@ unit-tested:
   changes re-render the plucks in about 20 ms slices through `deps.defer`
   (60 ms settle after a change, none between slices), and Start waits for them,
   about 0.35 s from cold. Fine tune is only `detune`. In tambura mode the
-  second Sa string plays 1.5 cents sharp, so the pair beats slowly.
+  second Sa string plays 1.5 cents sharp, so the pair beats slowly. Sruti mode
+  mixes its three tones swara-first (0.40 / 0.25 / 0.08, panned apart), since
+  the octave Sa's otherwise fuse into one note and bury the swara.
 - `ThamburaBar.tsx` is the bar that slides up from the bottom when the header's
   `#thambura-toggle` is clicked, with a switch between three views over the
   same presenter: `ThamburaMini`, `ThamburaStudio` and `ThamburaRaagini` (the
   2000s Raagini box, with `Knob.tsx`). Shared bits are in
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
+- `keepAwake.ts`: `KeepAwake` holds a Screen Wake Lock while either island
+  reports playing (through `onPlaying`), and takes it again when the page is
+  shown, since browsers drop it on hidden pages. `usePlaybackSession` sets
+  Safari's `navigator.audioSession.type` to "playback" so the silent switch
+  doesn't mute us. Nothing a web page does keeps Web Audio alive on iOS after
+  a power-button lock.
 
 `build.mjs` aliases solid-js to a single copy. Two copies silently break
 reactivity across tsappkit-solid.
@@ -126,8 +134,9 @@ See NEXTSTEPS.md for the order.
 
 - **Shruthi box:** done as the thambura (see above). Its tambura and guitar
   modes are a sequencer on its own clock and speed, not the tala's tempo; its
-  sruti mode is the continuous voice. The mridangam and tabla dayan should tune to its tonic
-  (`tunedTonicHz`).
+  sruti mode is the continuous voice. The mridangam and tabla dayan should tune
+  to its tonic (`tunedTonicHz`). Sound-quality work (matching a real tambura
+  recording, by-ear checks) is tracked in issue #8.
 - **Mridangam / tabla:** do the musical-timeline refactor first. Each sequencer
   currently advances its own `nextTime += duration`, so two of them apply a
   tempo change at different event boundaries and drift apart. Sequencers should
@@ -181,6 +190,23 @@ and write back the merged set, passing `EmailType` through. Otherwise the
 `google-site-verification` TXT record and email forwarding are lost. Namecheap
 published the change within a minute.
 
+## Working alongside other sessions
+
+Several Claude sessions often work in this checkout at once. A branch switch
+here changes which branch everyone commits to (two doc commits once landed on
+the wrong PR that way), and `git add -A` sweeps up someone else's half-done
+edits. So:
+
+- Don't switch branches in the shared checkout. Start each piece of work in
+  its own worktree: `git worktree add -b <branch> <dir> origin/master`, then
+  `cd <dir>/web && pnpm install`.
+- Stage explicit paths, and check `git status` for files you didn't touch.
+- Serve a worktree on its own port: `(cd web && pnpm buildcss && pnpm build)`,
+  then `PORT=8001 go run .` from the worktree root. Whatever runs on :8000 is
+  serving the shared checkout's branch, which may be stale.
+- Put `pr-assets` screenshots through a worktree of `origin/pr-assets` too.
+- If another session's work is affected, tell it with SendMessage.
+
 ## PRs
 
 Follow the `start_pr` description format. For before/after evidence:
@@ -199,8 +225,22 @@ Follow the `start_pr` description format. For before/after evidence:
 Playwright's Chromium is at `~/.cache/ms-playwright/chromium-1234/`, and
 `playwright-core` can be required from another project's node_modules (e.g.
 `../Agni/main/web`). Launch with `--autoplay-policy=no-user-gesture-required`.
-`text=Start` also matches the Restart button, so select the play button with
-`button.min-w-24`. The thambura opens with `#thambura-toggle`, its views are
+The tala's transport buttons are icons, so select them by label:
+`button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). The
+thambura opens with `#thambura-toggle`, its views are
 `button[role="radio"]:has-text("Raagini")` and so on, and it plays with
 `button[aria-label="Start thambura"]`. The theme toggle cycles system, light,
 dark, so dark takes two clicks (or launch the page with `colorScheme: "dark"`).
+
+A few probes that worked, all set up in an init script:
+
+- Wrap `AudioParam.prototype.linearRampToValueAtTime` / `setTargetAtTime` to
+  count choke fades and the Stop release, and `createStereoPanner` to read
+  pans.
+- A `PerformanceObserver` for `longtask` shows any main-thread stall over
+  50 ms, which is how the render slicing was checked with the tala playing.
+- Headless Chromium can't test a real wake lock or audio session, so define
+  stand-in `navigator.wakeLock` and `navigator.audioSession` objects and log
+  the calls.
+- `pkill -f <pattern>` can match the shell running it and kill it; kill a
+  server by port (`fuser -k 8001/tcp`) instead.
