@@ -1,9 +1,10 @@
 # How Thambura makes sound
 
-This covers where each sound comes from, how the app decides when to play
-it, how a steady drone differs from a beat, and what changed from the 2016
-Laya Gnana app this grew out of. CLAUDE.md has the file-by-file reference;
-this is the picture that ties those files together.
+Where each sound comes from, how we decide when to play it, how a steady
+drone differs from a beat, and what changed from the 2016 Laya Gnana app
+this grew out of. CLAUDE.md has the file-by-file notes, and this is the
+picture that ties those files together, written once the port had drifted
+far enough from the original that the notes alone no longer explained it.
 
 ## The layers
 
@@ -64,7 +65,8 @@ per sound group. `AudioEngine.load` fetches and decodes each file once and
 keeps the `AudioBuffer` under its URL.
 
 **Rendered samples.** The thambura's tambura and guitar modes have no
-recordings behind them. `tambura.ts` builds each string's pluck in code as a
+recordings behind them (we don't have a recording of a real tambura yet,
+which is what issue #8 is waiting on). `tambura.ts` builds each string's pluck in code as a
 sum of harmonics. Each harmonic starts at a level set by the pluck position
 and a rolloff, then decays at its own rate, with the high ones dying faster.
 A resonance sweeps down through the harmonics after the attack and wanders
@@ -74,9 +76,9 @@ it in the same cache as the WAVs under a key such as
 `thambura/130.813/<voice params>`. From there a pluck plays exactly the way a
 clap does.
 
-Rendering is the slow part. A 9 s tambura string takes about 100 ms at
-48 kHz, long enough to make the tala late (see the timing numbers below). So
-`PluckRender` works a few harmonics at a time and `ThamburaPresenter` feeds
+Rendering is quite slow. A 9 s tambura string takes about 100 ms at
+48 kHz, which is enough to make the tala late (see the timing numbers
+below). So `PluckRender` works a few harmonics at a time and `ThamburaPresenter` feeds
 it about 20 ms of work per `setTimeout`. Any setting that changes the sound
 (key, first string, temperament, A4, mode, voice, tone, pluck, sustain) changes the
 four keys and starts a new render 60 ms later. The strings keep playing their
@@ -85,10 +87,11 @@ because it is applied as `detune` on each note.
 
 **Live tones.** Sruti mode is a reed box, not a plucked instrument, so it has
 no samples at all. `reedSpectrum` gives the amplitudes of 24 harmonics, and
-`startTone` hands them to a Web Audio `PeriodicWave` on an `OscillatorNode`
-that runs until stopped. The three tones (the first string's swara, Sa, upper
-Sa) each get their own oscillator, level and pan. A slow 0.12-0.2 Hz
-oscillator wobbles each tone's gain by 6% to suggest the bellows.
+`startTone` turns them into a Web Audio `PeriodicWave`. Each of the three
+tones (the first string's swara, Sa, upper Sa) is one `OscillatorNode`
+playing that wave at its own level and pan until it is stopped. A second,
+much slower oscillator (0.12-0.2 Hz) moves each tone's gain up and down by
+6%, which is our fairly rough stand-in for the bellows.
 
 **The mixer.** Every note lands on a bus: `tala`, `drone` or `percussion`
 (reserved for the mridangam). Each bus has its own volume, squared so the
@@ -109,7 +112,7 @@ A browser has two clocks, and neither can do the whole job alone.
   tens of milliseconds to a whole second.
 
 The fix is the look-ahead scheduler from Chris Wilson's "A Tale of Two
-Clocks". A timer wakes up often and loosely. Each time it asks "what is due in
+Clocks". A timer wakes up often and only roughly on time. Each time it asks "what is due in
 the next 100 ms?" and books those notes on the audio clock, which then plays
 them on time.
 
@@ -136,14 +139,15 @@ that track's handler. The timer runs in a Web Worker, because browsers slow a
 background tab's main-thread timers to about once a second, and a 100 ms
 look-ahead would run dry long before that.
 
-Those numbers set the margin. A tick can be up to 75 ms late (the 100 ms
+With those numbers a tick can be up to 75 ms late (the 100 ms
 window minus the 25 ms interval) before any note misses its time. A note that
 does miss is clamped to `currentTime` and plays at once, and the notes after
 it stay on the grid, since their times came from the grid and not from when
 the timer fired. This margin is why nothing may hold the main thread for
 longer than about 75 ms, and why plucks render in 20 ms slices.
 
-Tempo isn't capped by the window. At 300 bpm in sankeernam, ticks are about
+The 25 and 100 ms are the article's defaults, and we haven't tuned them.
+Tempo isn't capped by the window either. At 300 bpm in sankeernam, ticks are about
 22 ms apart, several land in one pull, and each still gets its own exact
 time.
 
@@ -163,14 +167,13 @@ Each event comes out exactly once. Times are in audio-clock seconds.
 
 **`TalaSequencer`** walks a `BeatCursor` through the tala's beats, repeating
 each one kalai times. For each beat it makes a `StepEvent` with the beat's
-start time, its duration (beat length in counts × 60/bpm) and the times of its
-ticks, which are the nadai's accent offsets scaled to that duration. Then it
-adds the duration to `nextTime` and moves on. The tempo is read afresh for
-each beat, so a tempo change is heard from the next beat.
+start time, its length in seconds (counts × 60/bpm) and the times of its
+ticks, which are the nadai's accent offsets scaled to that length. Then it
+moves `nextTime` on by the same amount. The tempo is read afresh for each
+beat, so a tempo change is heard from the next beat.
 
-Two details matter. The sequencer hands out a whole beat, ticks included,
-once the beat's *start* is inside the window. For a normal one-count beat
-that's harmless. A Misra Chaapu at 10 bpm is a single 21 s beat, though, so
+The sequencer hands out a whole beat, ticks included, once the beat's
+*start* is inside the window. That's fine for a normal one-count beat. A Misra Chaapu at 10 bpm is a single 21 s beat, though, so
 its ticks are booked 21 s ahead and a tempo change can't reach them. And on
 stop, the sequencer rewinds the cursor to the first step that hadn't started
 yet, so Start picks up where the student stopped hearing, not a beat or two
@@ -185,11 +188,11 @@ lateness and up to 15% less force, so no two rounds are identical.
 
 ### Stopping
 
-Stopping is where "booked ahead" bites: up to 100 ms of notes are already on
-the audio clock. `AudioEngine.cancel(bus)` stops every note on the bus that
+When Stop is pressed, up to 100 ms of notes are already booked on the
+audio clock, so stopping means taking some of them back. `AudioEngine.cancel(bus)` stops every note on the bus that
 hasn't started and undoes any fade it had booked on the note before it. A
 note already sounding is left alone, because cutting a waveform mid-cycle
-clicks. The tala stops like that. The thambura also calls
+clicks. That is all the tala does. The thambura also calls
 `release("drone", 1.5)`, which fades whatever is still ringing over about
 1.5 s, as a player's hand damps the strings.
 
@@ -199,9 +202,10 @@ The images and the thambura's string lights follow what reaches the
 speakers, not what was booked. Each scheduled event leaves a cue with its
 audio time. A `requestAnimationFrame` loop compares the cues with
 `heardNow`, the audio clock minus the output latency, and shows each cue once
-its time has passed. So an image appears with its clap, not 100 ms early
-when it was booked, and not early by the latency of Bluetooth headphones
-either, as far as the browser reports that latency.
+its time has passed. So an image appears with its clap rather than when it
+was booked, up to 100 ms earlier. The output latency is taken off as well,
+at least as far as the browser reports it (Safari mostly doesn't, and
+Bluetooth headphones add 150-250 ms).
 
 ## Timed sounds and continuous sounds
 
@@ -235,7 +239,7 @@ constant, so a new key or fine tune bends into place instead of jumping or
 waiting for a boundary. Changing the tone swaps the `PeriodicWave` in place.
 Stopping ramps the gain to zero and stops the oscillators a moment later.
 
-The two kinds meet in the choke groups. A tambura string rings for 12-36 s,
+Long timed notes need one more piece that clicks don't. A tambura string rings for 12-36 s,
 far longer than a round, so the same string is still sounding when it is
 plucked again. The re-pluck fades the old note out over 80 ms as it starts,
 the way a finger on a string stops its old vibration, instead of letting two
@@ -248,7 +252,8 @@ ringing `dhin` on the same head.
 
 The 2016 app (the `pre-sadhana-port` tag, jQuery and Bootstrap on the old
 App Engine Go runtime) had the same tala tables and the same WAV files. Its
-player was about 40 lines in `static/js/lgcore.js`:
+player was pretty small, about 40 lines in `static/js/lgcore.js`, and this
+is the heart of it:
 
 ```js
 lg.BeatPlayer.prototype._nextStep = function() {
@@ -283,6 +288,11 @@ offsets within them.
 
 ## Known limits
 
+None of this has been checked by ear yet. Headless Chromium has no audio
+device, so every check so far is a number: pitch within a cent, decay
+tables, and the `when` of each `AudioBufferSourceNode.start` call. The
+limits we know about are these.
+
 - **Each sequencer keeps its own time.** `TalaSequencer` adds each beat's
   duration to its own `nextTime`. A second rhythmic voice (the mridangam)
   would do the same with its own events, and after a tempo change the two
@@ -298,6 +308,6 @@ offsets within them.
   things the recording in issue #8 should settle.
 - **Rendering is on the main thread**, sliced to stay inside the 75 ms margin.
   A worker would take it off entirely (issue #8).
-- **Output latency is only what the browser reports.** Safari doesn't report
-  `outputLatency`, and Bluetooth adds 150-250 ms, so the images can lead the
-  sound there. A calibration setting is in NEXTSTEPS.md.
+- **Output latency is only what the browser reports**, so on Safari or
+  Bluetooth the images can lead the sound. A calibration setting is in
+  NEXTSTEPS.md.
