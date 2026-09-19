@@ -314,8 +314,8 @@ describe("ThamburaPresenter", () => {
       .map((e) => e.when)
       .map((t, i, a) => (i > 0 ? t - a[i - 1] : 0))
       .slice(1, 5)
-      .map((g) => Number((g / 4.5).toFixed(2)));
-    expect([...gaps].sort()).toEqual([0.17, 0.24, 0.29, 0.3]);
+      .map((g) => Number((g / 4.5).toFixed(3)));
+    expect([...gaps].sort()).toEqual([0.205, 0.205, 0.29, 0.3]);
   });
 
   it("lights each string as its pluck is heard, then lets it go dark", async () => {

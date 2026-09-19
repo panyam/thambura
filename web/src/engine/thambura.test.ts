@@ -402,12 +402,12 @@ describe("ThamburaSequencer", () => {
     expect(pullEvents(seq, 0, 8).some((e) => "damp" in e)).toBe(false);
   });
 
-  it("plucks the played pattern's uneven gaps", () => {
+  it("plucks the played pattern's gaps, the two Sa strings evenly", () => {
     const seq = new ThamburaSequencer({ cycleSeconds: 10, pattern: PLAYED_PATTERN }, () => 0);
     seq.start(0);
     const plucks = pullAll(seq, 0, 19.9);
     expect(plucks.map((e) => e.string)).toEqual([0, 1, 2, 3, 0, 1, 2, 3]);
-    expect(plucks.map((e) => round9(e.time))).toEqual([0, 3, 5.4, 7.1, 10, 13, 15.4, 17.1]);
+    expect(plucks.map((e) => round9(e.time))).toEqual([0, 3, 5.05, 7.1, 10, 13, 15.05, 17.1]);
   });
 
   it("damps each string shortly before its next pluck, from the second round", () => {
@@ -418,7 +418,7 @@ describe("ThamburaSequencer", () => {
     expect(damps.map((e) => [e.string, round9(e.time)])).toEqual([
       [0, 9.1],
       [1, 11.8],
-      [2, 14.2],
+      [2, 13.85],
       [3, 15.5],
       [0, 19.1],
     ]);

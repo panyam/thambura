@@ -34,13 +34,15 @@ export interface PluckPattern {
 export const EVEN_PATTERN: PluckPattern = { gaps: [1 / 5, 1 / 5, 1 / 5, 2 / 5], damp: null };
 
 /**
- * The player in the recording from issue #8, whose round was 5.83 s: 1.74 s from the
- * first string to Sa, 1.39 s to the second Sa, 1.02 s to the low Sa and 1.68 s
- * back to the first string. Each string was stopped 0.55-0.95 s before its
- * next pluck (measured for the first string and the low Sa; the Sa strings,
+ * After the player in the recording from issue #8 (docs/sound-analysis.md), whose
+ * round was 5.8 s: 30% of the round from the first string to Sa and 29% from
+ * the low Sa back to the first string. The recording spaced the two Sa strings
+ * 24% and 18% apart; here they share that time evenly, since by ear the first
+ * Sa's longer note stood out. Each string is stopped 9-16% of the round before
+ * its next pluck (measured for the first string and the low Sa; the Sa strings,
  * which the low Sa's harmonics hide, are set between).
  */
-export const PLAYED_PATTERN: PluckPattern = { gaps: [0.3, 0.24, 0.17, 0.29], damp: [0.09, 0.12, 0.12, 0.16] };
+export const PLAYED_PATTERN: PluckPattern = { gaps: [0.3, 0.205, 0.205, 0.29], damp: [0.09, 0.12, 0.12, 0.16] };
 
 /** The thambura's speed and pattern. Mutable: a change applies from the next event not yet handed out. */
 export interface ThamburaTiming {
