@@ -47,8 +47,13 @@ Sadhana).
 ## Frontend (web/src)
 
 `docs/architecture.md` explains how the sounds are made and timed, timed vs
-continuous voices, and what changed from the 2016 app. The notes below are
-the file-by-file reference.
+continuous voices, and what changed from the 2016 app.
+`docs/sound-analysis.md` explains how the jawari voice was fitted to a
+recording, and how to rerun it: `pnpm render-mix` (web/scripts, over
+`src/tools/thamburaMix.ts`) renders the thambura offline to WAV, and the
+Python in `tools/sound-analysis/` measures and charts it against a recording
+kept in the gitignored `recordings/`. The notes below are the file-by-file
+reference.
 
 **engine/** is pure TypeScript with no DOM, audio or timers, and is fully
 unit-tested:

@@ -18,7 +18,7 @@ import {
   type PluckPattern,
   type ThamburaTiming,
 } from "../engine/thamburaSequencer";
-import type { AudioOut, ToneHandle } from "./audio";
+import type { AudioOut, PlayOptions, ToneHandle } from "./audio";
 import type { FrameLoop } from "./presenter";
 import { Transport, type Ticker } from "./transport";
 
@@ -80,8 +80,8 @@ const RENDER_BUDGET = 6_000_000;
 // After a settings change, rendering waits this long so a knob turned through
 // several keys renders once. Later slices, and the first render on Start, don't wait.
 const RENDER_SETTLE_MS = 60;
-// How long a damped string takes to fall silent, in seconds: a finger, not a click.
-const DAMP_FADE = 0.2;
+/** How long a damped string takes to fall silent, in seconds: a finger, not a click. */
+export const DAMP_FADE = 0.2;
 // How long the strings take to fade after Stop, in seconds.
 const STOP_FADE = 1.5;
 // Loudness and stereo place of the sruti drone's three tones: the first
@@ -322,14 +322,7 @@ export class ThamburaPresenter {
   }
 
   private pluck(e: PluckEvent): void {
-    const s = this.state.settings;
-    const tambura = isTamburaMode(s.mode);
-    this.deps.audio.play(this.stringKeys[e.string], "drone", e.time, {
-      detune: s.cents + (tambura ? TAMBURA_DETUNE[e.string] : 0),
-      gain: e.gain * STRING_GAIN[e.string] * (s.mode === "tambura" ? TAMBURA_LEVEL : 1),
-      pan: STRING_PAN[e.string],
-      choke: `thambura/string${e.string}`,
-    });
+    this.deps.audio.play(this.stringKeys[e.string], "drone", e.time, pluckOptions(this.state.settings, e));
     this.cues.push({ time: e.time, string: e.string });
   }
 
@@ -388,8 +381,22 @@ function sampleKeys(s: ThamburaSettings): string[] {
   });
 }
 
+/**
+ * How a pluck plays: fine tune plus the second Sa's slight sharpness in the
+ * tambura modes, the string's level and stereo place, and its choke group.
+ * Exported for tools/thamburaMix, which renders the drone offline.
+ */
+export function pluckOptions(s: ThamburaSettings, e: PluckEvent): PlayOptions {
+  return {
+    detune: s.cents + (isTamburaMode(s.mode) ? TAMBURA_DETUNE[e.string] : 0),
+    gain: e.gain * STRING_GAIN[e.string] * (s.mode === "tambura" ? TAMBURA_LEVEL : 1),
+    pan: STRING_PAN[e.string],
+    choke: `thambura/string${e.string}`,
+  };
+}
+
 /** The jawari tambura plucks as the recorded player did; the others keep even slots. */
-function patternFor(s: ThamburaSettings): PluckPattern {
+export function patternFor(s: ThamburaSettings): PluckPattern {
   return s.mode === "jawari" ? PLAYED_PATTERN : EVEN_PATTERN;
 }
 

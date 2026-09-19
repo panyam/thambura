@@ -92,8 +92,8 @@ export interface AudioOut {
 const FADE_IN = 0.15;
 const FADE_OUT = 0.12;
 const GLIDE = 0.03;
-// How fast a choked note fades, in seconds: quick, but not a click.
-const CHOKE_FADE = 0.08;
+/** How fast a choked note fades, in seconds: quick, but not a click. */
+export const CHOKE_FADE = 0.08;
 
 /** A scheduled sample, until it ends. */
 interface Note {

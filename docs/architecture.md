@@ -224,7 +224,8 @@ with Adi and Misra Chaapu through three tempo changes.
 **`ThamburaSequencer`** has nothing to do with the tala's tempo. It plucks
 first string, Sa, Sa, low Sa in a pattern. The classic tambura and the guitar
 use five equal slots, the last one a rest. The jawari tambura uses the
-recorded player's gaps (30%, 24%, 17% and 29% of the round) and also emits a
+recorded player's rhythm (30%, 20.5%, 20.5% and 29% of the round; see
+[sound-analysis.md](sound-analysis.md)) and also emits a
 damp event for each string, 9-16% of the round before its next pluck, which
 the presenter turns into a 0.2 s fade (`AudioOut.damp`), like a finger
 stopping the string. The round's length (2-8 s) is its own setting. The
