@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { SWING_DEPTH, swingScale } from "../engine/swing";
 import { PlayerPresenter, type PlayerState } from "./presenter";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 
@@ -95,6 +96,48 @@ describe("PlayerPresenter", () => {
     advance(1.07); // heard 1.05: second step ("one")
     expect(p.state.image).toBe("/one.gif");
     expect(p.state.position.beat).toBe(1);
+  });
+
+  describe("swing", () => {
+    let swings: number[];
+    const swing = () => swings.at(-1) ?? 1;
+    beforeEach(() => {
+      swings = [];
+      p.attach({ setState: () => {}, setSwing: (x) => swings.push(x) });
+    });
+
+    it("holds, then arcs over the beat's last 0.8 s and lands on the next", async () => {
+      p.setTempo(60); // beats at 0.05, 1.05, …
+      await p.start();
+      advance(0.2);
+      expect(swing()).toBe(1);
+      advance(0.65); // halfway through the arc from 0.25 to 1.05
+      expect(swing()).toBeCloseTo(1 - SWING_DEPTH);
+      advance(1.0); // the next step is booked now and ends the arc
+      expect(swing()).toBeCloseTo(swingScale(0.95, 1));
+      advance(1.06);
+      expect(swing()).toBe(1);
+    });
+
+    it("moves the landing with a tempo change mid-beat", async () => {
+      p.setTempo(60);
+      await p.start();
+      advance(0.3); // pulled to 0.4
+      p.setTempo(120); // the beat's last 0.65 counts take 0.325 s from 0.4
+      advance(0.5);
+      expect(swing()).toBeCloseTo(swingScale(0.45, 0.675));
+      advance(0.65); // the next beat is booked where the swing lands
+      expect(audio.played.at(-1)!.when).toBeCloseTo(0.725);
+      expect(swing()).toBeCloseTo(swingScale(0.6, 0.675));
+    });
+
+    it("rests at full size once stopped", async () => {
+      p.setTempo(60);
+      await p.start();
+      advance(0.65);
+      p.stop();
+      expect(swing()).toBe(1);
+    });
   });
 
   it("shows no image for a name the group lacks", async () => {

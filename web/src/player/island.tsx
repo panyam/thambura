@@ -1,5 +1,6 @@
 import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
+import { createSignal } from "solid-js";
 import type { AudioEngine } from "./audio";
 import { PlayerPresenter } from "./presenter";
 import { PlayerView } from "./PlayerView";
@@ -34,17 +35,19 @@ export function createPlayerIsland(
     preloadImages,
   });
   const [state, setState] = signalView(presenter.state);
+  const [swing, setSwing] = createSignal(1);
   presenter.attach({
     setState(s) {
       setState(s);
       onPlaying?.(s.playing);
     },
+    setSwing,
   });
   void presenter.load(el.dataset.fixturesUrl || DEFAULT_FIXTURES_URL);
 
   // Drop the <noscript> fallback; the island owns the element's children.
   el.replaceChildren();
-  return new SolidIsland("player", el, () => <PlayerView state={state} actions={presenter} />, eventBus);
+  return new SolidIsland("player", el, () => <PlayerView state={state} swing={swing} actions={presenter} />, eventBus);
 }
 
 /** Resolves once every image has loaded or failed, so the first beats don't flicker in. */

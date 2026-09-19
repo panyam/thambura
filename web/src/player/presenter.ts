@@ -7,7 +7,9 @@ import {
   DEFAULT_TEMPO,
   type TalaSettings,
 } from "../engine/selection";
+import { add, type Ratio } from "../engine/ratio";
 import { TalaSequencer, type TalaEvent } from "../engine/sequencer";
+import { swingScale } from "../engine/swing";
 import { TempoMap } from "../engine/tempoMap";
 import type { AudioOut } from "./audio";
 import { Transport, type Ticker } from "./transport";
@@ -32,6 +34,12 @@ export interface PlayerState {
 
 export interface PlayerView {
   setState(state: PlayerState): void;
+  /**
+   * The beat image's scale (see engine/swing.ts), set every animation frame
+   * while playing. It is kept out of PlayerState so a frame doesn't re-render
+   * the player.
+   */
+  setSwing?(scale: number): void;
 }
 
 /** requestAnimationFrame, injectable for tests. */
@@ -53,6 +61,8 @@ export const DEFAULT_VOLUME = 50;
 
 interface Cue {
   time: number;
+  /** Where the next beat starts, in counts, for the swing. */
+  endAt: Ratio;
   image: string | null;
   position: Position;
 }
@@ -72,6 +82,9 @@ export class PlayerPresenter {
   private readonly transport: Transport;
   // Images waiting for their sound to reach the speakers, in time order.
   private cues: Cue[] = [];
+  // The beat being heard, while playing.
+  private heard: Cue | null = null;
+  private swing = 1;
   private frameId: number | null = null;
 
   constructor(private readonly deps: PlayerDeps) {
@@ -135,6 +148,8 @@ export class PlayerPresenter {
     this.deps.audio.cancel("tala");
     // Drop images for steps that won't sound now; the one showing stays.
     this.cues = [];
+    this.heard = null;
+    this.setSwing(1);
     this.update({ playing: false });
   }
 
@@ -237,6 +252,7 @@ export class PlayerPresenter {
     const images = this.findGroup(this.catalog.imageGroups, this.state.imageGroup);
     this.cues.push({
       time: e.time,
+      endAt: add(e.at, e.beat.duration),
       image: images ? resolveAsset(images, e.beat.image, e.variant) : null,
       position: e.position,
     });
@@ -251,9 +267,31 @@ export class PlayerPresenter {
       let due: Cue | undefined;
       while (this.cues.length > 0 && this.cues[0].time <= heard) due = this.cues.shift();
       if (due) this.update({ image: due.image, position: due.position });
+      if (this.state.playing) {
+        if (due) this.heard = due;
+        this.setSwing(this.swingAt(heard));
+      }
       if (this.state.playing || this.cues.length > 0) this.frameId = this.deps.frames.request(frame);
     };
     this.frameId = this.deps.frames.request(frame);
+  }
+
+  /**
+   * The swing for the heard beat. It ends where the next step is booked, or,
+   * before that step is pulled, where the tempo map puts it now, so a tempo
+   * change mid-beat moves the landing with the sound.
+   */
+  private swingAt(heard: number): number {
+    const beat = this.heard;
+    if (!beat) return 1;
+    const end = this.cues[0]?.time ?? this.tempo.secondsAt(beat.endAt);
+    return swingScale(heard - beat.time, end - beat.time);
+  }
+
+  private setSwing(scale: number): void {
+    if (scale === this.swing) return;
+    this.swing = scale;
+    this.view?.setSwing?.(scale);
   }
 
   private findGroup(groups: AssetGroup[], name: string): AssetGroup | undefined {
