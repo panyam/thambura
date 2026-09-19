@@ -23,9 +23,10 @@ so a deploy still uploads them.
 The product is **Thambura** everywhere: the display name
 (`internal/brand.Name`), the GitHub repo (`panyam/thambura`), the Go module
 (`github.com/panyam/thambura`), the App Engine project and thambura.com. The
-drone feature inside the app is also called the thambura. The local folder is
-still `layaguide`, and the `pre-sadhana-port` tag keeps the port's working
-name (it was briefly called Sadhana).
+drone feature inside the app is also called the thambura. The local
+checkouts live under `thambura/` (it used to be `layaguide`), and the
+`pre-sadhana-port` tag keeps the port's working name (it was briefly called
+Sadhana).
 
 ## Server (Go)
 

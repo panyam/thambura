@@ -6,9 +6,7 @@
  * picks one of its entries per step using the step's variant draw. The SaRiGaMa
  * group uses this to flash a random swara for each beat.
  *
- * The fixture also has Angas, Talas, TalaGroups and Defaults sections, an
- * early declarative form of the tala tables that nothing reads; carnatic.ts
- * holds the tables actually used.
+ * The tala tables themselves are in carnatic.ts, not the fixture.
  */
 export interface AssetGroup {
   name: string;

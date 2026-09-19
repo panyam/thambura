@@ -41,9 +41,9 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 
 - [x] Delete the unreferenced `PlayerImages/` and move `icons.xcf` to
       `design/`, out of the deployed static folder.
-- [ ] Decide whether to keep or drop the unused `Angas`/`Talas`/`TalaGroups`/
-      `Defaults` sections of `TalasFixtures.json`.
+- [x] Drop the unused `Angas`/`Talas`/`TalaGroups`/`Defaults` sections of
+      `TalasFixtures.json` (an early declarative form of the tala tables).
 - [x] Rename everything to Thambura (repo, module, display name).
-- [ ] Rename the local `layaguide` folder, with no sessions open in it.
+- [x] Rename the local `layaguide` folder (now `thambura/`).
 - [ ] Decide whether www.thambura.com should redirect to the bare domain
       (both serve the app as mapped).
