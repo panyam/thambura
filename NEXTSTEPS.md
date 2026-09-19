@@ -2,13 +2,15 @@
 
 In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the design notes.
 
-## Before merging the port (PR #1)
+## Live app
 
+- [x] First deploy. thambura.appspot.com, thambura.com and www.thambura.com
+      all serve over HTTPS (checked 2026-09-19).
+- [ ] Redeploy from `master` (`make deploy`). The live build predates the icon
+      transport controls and the thambura.
 - [ ] Listen to it on a real machine. Headless Chromium has no audio device, so
       only scheduled times were verified.
 - [ ] Try iOS Safari, where the ringer switch can mute Web Audio.
-- [ ] First deploy to the `thambura` project (DNS for thambura.com is already
-      pointed at App Engine; see "Deploying" in CLAUDE.md).
 
 ## Features
 
@@ -38,4 +40,3 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [ ] Rename the GitHub repo (`layaguide`) to match.
 - [ ] Decide whether www.thambura.com should redirect to the bare domain
       (both serve the app as mapped).
-- [ ] Delete the `pr-assets` screenshot branch after PR #1 merges, if unwanted.
