@@ -126,6 +126,10 @@ takes its pluck lift from +1.2 dB to +2.2 dB, against the recording's
 again. Pasting JSON into the Lab's "Settings JSON" box loads it back, so a
 sound can travel both ways.
 
+To share a sound with other listeners, send the page's address: the `?s=`
+parameter carries the whole setup, the Custom plan included, and the bar's
+link button copies it. Opening it plays the same sound in the same view.
+
 ## How the measurements work
 
 **One mono mix, four strings.** A recording is a mix of all four strings, so

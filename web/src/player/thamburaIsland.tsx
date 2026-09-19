@@ -2,10 +2,16 @@ import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
 import type { AudioEngine } from "./audio";
 import { ThamburaBar } from "./ThamburaBar";
-import { ThamburaPresenter, type ThamburaState, type ThamburaStore } from "./thamburaPresenter";
+import { ThamburaPresenter, type ThamburaLink, type ThamburaState, type ThamburaStore } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
 const STORAGE_KEY = "thambura.drone";
+// The query parameter that carries a shared setup (engine/shareLink.ts).
+const LINK_PARAM = "s";
+// Address bar updates wait for this long after the last change: Safari throws
+// if replaceState is called more than 100 times in 30 s, and a slider drag
+// changes the setup on every step.
+const LINK_SETTLE_MS = 400;
 
 /**
  * Mounts the thambura bar on `el` and wires the header's thambura button
@@ -28,6 +34,7 @@ export function createThamburaIsland(
     },
     defer: (cb, ms) => setTimeout(cb, ms),
     store: localStore(STORAGE_KEY),
+    link: addressBarLink(),
   });
   const [state, setState] = signalView(presenter.state);
   presenter.attach({
@@ -45,7 +52,9 @@ export function createThamburaIsland(
   return new SolidIsland(
     "thambura",
     el,
-    () => <ThamburaBar state={state} actions={presenter} onHeight={onHeight} />,
+    () => (
+      <ThamburaBar state={state} actions={presenter} onHeight={onHeight} copyLink={() => copyLink(linkUrl(presenter.shareLink()))} />
+    ),
     eventBus,
   );
 }
@@ -54,6 +63,39 @@ export function createThamburaIsland(
 function reflect(toggle: HTMLElement, s: ThamburaState): void {
   toggle.setAttribute("aria-expanded", String(s.open));
   toggle.querySelector("[data-playing]")?.classList.toggle("hidden", !s.playing);
+}
+
+/**
+ * The `s` parameter of the address bar, kept current without adding history
+ * entries. Other parameters on the page are left as they are.
+ */
+function addressBarLink(): ThamburaLink {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return {
+    read: () => new URLSearchParams(location.search).get(LINK_PARAM),
+    write: (link) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const url = linkUrl(link);
+        if (url !== location.href) history.replaceState(history.state, "", url);
+      }, LINK_SETTLE_MS);
+    },
+  };
+}
+
+function linkUrl(link: string): string {
+  const url = new URL(location.href);
+  url.searchParams.set(LINK_PARAM, link);
+  return url.toString();
+}
+
+async function copyLink(url: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(url);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** localStorage under one key, as JSON. Throws are caught by the presenter. */

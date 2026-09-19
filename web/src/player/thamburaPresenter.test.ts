@@ -1,8 +1,20 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_THAMBURA, KEY_G3, srutiFrequencies, type ThamburaSettings } from "../engine/shruthi";
+import { decodeLink, encodeLink } from "../engine/shareLink";
 import { planFor } from "../engine/thamburaPlan";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 import { ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
+
+class FakeLink {
+  writes: string[] = [];
+  constructor(public initial: string | null = null) {}
+  read() {
+    return this.initial;
+  }
+  write(link: string) {
+    this.writes.push(link);
+  }
+}
 
 class FakeStore {
   saved: unknown = undefined;
@@ -25,13 +37,14 @@ describe("ThamburaPresenter", () => {
   let p: ThamburaPresenter;
   let views: ThamburaState[];
 
-  const make = (saved?: unknown) => {
+  const make = (saved?: unknown, link?: FakeLink) => {
     store = new FakeStore(saved);
     p = new ThamburaPresenter({
       audio,
       ticker,
       frames,
       store,
+      link,
       defer: (cb, ms) => {
         deferred.push(cb);
         delays.push(ms);
@@ -454,6 +467,56 @@ describe("ThamburaPresenter", () => {
     expect(p.state.custom).toEqual(saved.custom);
     make({ custom: { strings: 42 } });
     expect(p.state.custom).toEqual(planFor({ ...DEFAULT_THAMBURA, mode: "jawari" }));
+  });
+
+  describe("share links", () => {
+    const decode = (l: string) => decodeLink(l, { settings: DEFAULT_THAMBURA })!;
+
+    it("shows the current setup in the address bar from the start, and after each change", () => {
+      const link = new FakeLink();
+      make(undefined, link);
+      expect(decode(link.writes[0]).settings.key).toBe(DEFAULT_THAMBURA.key);
+      set({ key: 7 });
+      p.setView("lab");
+      const last = decode(link.writes.at(-1)!);
+      expect(last.settings.key).toBe(7);
+      expect(last.view).toBe("lab");
+    });
+
+    it("plays a shared setup over the saved one, keeping the listener's volume", () => {
+      const shared = encodeLink({
+        settings: { ...DEFAULT_THAMBURA, key: 9, mode: "guitar", volume: 90 },
+        custom: planFor({ ...DEFAULT_THAMBURA, mode: "jawari" }),
+        view: "lab",
+        open: true,
+      });
+      make({ settings: { ...DEFAULT_THAMBURA, key: 3, volume: 20 } }, new FakeLink(shared));
+      expect(p.state.settings).toMatchObject({ key: 9, mode: "guitar", volume: 20 });
+      expect(p.state).toMatchObject({ view: "lab", open: true, notice: "Opened a shared setup." });
+      // The listener's own setup stays saved until they change something.
+      expect(store.saved).toBeUndefined();
+      p.nudgeCents(1);
+      expect((store.saved as { settings: { key: number } }).settings.key).toBe(9);
+    });
+
+    it("takes a Custom sound from a link, and leaves the listener's own alone otherwise", () => {
+      const mine = planFor({ ...DEFAULT_THAMBURA, mode: "guitar" });
+      const theirs = planFor({ ...DEFAULT_THAMBURA, mode: "tambura" });
+      const link = (mode: "custom" | "jawari") =>
+        new FakeLink(encodeLink({ settings: { ...DEFAULT_THAMBURA, mode }, custom: theirs, view: "lab", open: true }));
+      make({ custom: mine }, link("custom"));
+      expect(p.state.custom).toEqual(theirs);
+      make({ custom: mine }, link("jawari"));
+      expect(p.state.custom).toEqual(mine);
+    });
+
+    it("says so when the link can't be read, and plays the saved setup", () => {
+      make({ settings: { ...DEFAULT_THAMBURA, key: 3 } }, new FakeLink("not-a-link!"));
+      expect(p.state.settings.key).toBe(3);
+      expect(p.state.notice).toMatch(/isn't one this version can read/);
+      p.dismissNotice();
+      expect(p.state.notice).toBeNull();
+    });
   });
 
   it("saves settings, view and open state", () => {

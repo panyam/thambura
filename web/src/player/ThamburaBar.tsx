@@ -1,4 +1,4 @@
-import { createEffect, For, Match, onCleanup, onMount, Switch } from "solid-js";
+import { createEffect, createSignal, For, Match, onCleanup, onMount, Show, Switch } from "solid-js";
 import { THAMBURA_MODES, type ThamburaMode } from "../engine/shruthi";
 import { THAMBURA_VIEWS } from "./thamburaPresenter";
 import { Segmented, SMALL_SELECT, type ThamburaViewProps } from "./thamburaControls";
@@ -12,12 +12,24 @@ import { ThamburaStudio } from "./ThamburaStudio";
  * open. Its header holds the sound (mode) menu, which applies whichever view
  * is showing, and a switch between the views, all of which drive the same
  * presenter. `onHeight` reports the space it covers (0 when hidden) so the
- * page can leave room for it.
+ * page can leave room for it. `copyLink` copies a link to the current setup
+ * and says whether it could.
  */
-export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number) => void }) {
+export function ThamburaBar(
+  props: ThamburaViewProps & { onHeight?: (px: number) => void; copyLink?: () => Promise<boolean> },
+) {
   const st = () => props.state();
   const a = props.actions;
   let panel!: HTMLDivElement;
+  const [copied, setCopied] = createSignal<"" | "Link copied" | "Copy the address bar instead">("");
+  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+  onCleanup(() => clearTimeout(copiedTimer));
+  const copy = async () => {
+    const ok = (await props.copyLink?.()) ?? false;
+    setCopied(ok ? "Link copied" : "Copy the address bar instead");
+    clearTimeout(copiedTimer);
+    copiedTimer = setTimeout(() => setCopied(""), 2500);
+  };
 
   const report = () => props.onHeight?.(st().open ? panel.offsetHeight : 0);
   onMount(() => {
@@ -54,6 +66,20 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
             </select>
             <Segmented label="Thambura view" size="sm" value={st().view} options={THAMBURA_VIEWS.map((v) => ({ value: v.id, label: v.label }))} onChange={(v) => a.setView(v)} />
           </div>
+          <Show when={props.copyLink}>
+            <button
+              type="button"
+              aria-label="Copy link"
+              title="Copy a link to this setup"
+              onClick={() => void copy()}
+              class="shrink-0 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:hover:bg-gray-800 dark:hover:text-white"
+            >
+              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M11.5 3.6a3.5 3.5 0 0 1 4.9 4.9l-2.1 2.1a3.5 3.5 0 0 1-4.95 0 .75.75 0 1 1 1.06-1.06 2 2 0 0 0 2.83 0l2.1-2.1a2 2 0 0 0-2.83-2.83l-.7.7a.75.75 0 1 1-1.06-1.06z" />
+                <path d="M8.5 16.4a3.5 3.5 0 0 1-4.9-4.9l2.1-2.1a3.5 3.5 0 0 1 4.95 0 .75.75 0 1 1-1.06 1.06 2 2 0 0 0-2.83 0l-2.1 2.1a2 2 0 0 0 2.83 2.83l.7-.7a.75.75 0 1 1 1.06 1.06z" />
+              </svg>
+            </button>
+          </Show>
           <button
             type="button"
             aria-label="Hide thambura"
@@ -65,6 +91,19 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
             </svg>
           </button>
         </div>
+        <Show when={copied() || st().notice}>
+          <div
+            role="status"
+            class="flex items-start gap-2 border-b border-gray-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-900 dark:border-gray-700 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            <span class="flex-1">{copied() || st().notice}</span>
+            <Show when={!copied()}>
+              <button type="button" aria-label="Dismiss" class="shrink-0 rounded px-1 hover:bg-amber-100 dark:hover:bg-amber-900/50" onClick={() => a.dismissNotice()}>
+                ×
+              </button>
+            </Show>
+          </div>
+        </Show>
         <div class="max-h-[70vh] overflow-y-auto p-3 sm:p-4">
           <Switch>
             <Match when={st().view === "mini"}>
