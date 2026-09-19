@@ -71,8 +71,12 @@ const RENDER_BUDGET = 6_000_000;
 const RENDER_SETTLE_MS = 60;
 // How long the strings take to fade after Stop, in seconds.
 const STOP_FADE = 1.5;
-// Loudness of the sruti drone's three tones: low, Sa, upper Sa.
-const SRUTI_GAIN = [0.22, 0.3, 0.12];
+// Loudness and stereo place of the sruti drone's three tones: the first
+// string's swara below Sa, Sa, upper Sa. The swara leads (it is lower, so it
+// needs more level to be heard as loud) and sits apart from the two Sa's,
+// which otherwise blend into one note.
+const SRUTI_GAIN = [0.4, 0.25, 0.08];
+const SRUTI_PAN = [-0.35, 0.2, 0.3];
 // How long a string stays lit after its pluck is heard, in seconds.
 const GLOW = 0.3;
 
@@ -235,7 +239,7 @@ export class ThamburaPresenter {
     const s = this.state.settings;
     const spectrum = reedSpectrum(s.tone);
     this.tones = srutiFrequencies(s).map((frequency, i) =>
-      this.deps.audio.startTone("drone", { frequency, detune: s.cents, gain: SRUTI_GAIN[i], spectrum }),
+      this.deps.audio.startTone("drone", { frequency, detune: s.cents, gain: SRUTI_GAIN[i], pan: SRUTI_PAN[i], spectrum }),
     );
   }
 
