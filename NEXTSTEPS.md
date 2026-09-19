@@ -10,7 +10,8 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       transport controls and the thambura.
 - [ ] Listen to it on a real machine. Headless Chromium has no audio device, so
       only scheduled times were verified.
-- [ ] Try iOS Safari, where the ringer switch can mute Web Audio.
+- [ ] Try iOS Safari with the silent switch on. `navigator.audioSession.type` is
+      now "playback", which should stop the switch muting it (Safari 16.4+).
 
 ## Features
 
@@ -29,7 +30,12 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       tala, and tuning to the shruthi tonic.
 - [ ] Output-latency calibration setting (Bluetooth headphones add
       150-250 ms, and Safari doesn't report `outputLatency`).
-- [ ] Screen Wake Lock during practice, so a locked phone doesn't suspend audio.
+- [x] Screen Wake Lock while the tala or thambura plays, so the screen doesn't
+      time out mid-practice.
+- [ ] Check on real phones what a power-button lock does. iOS suspends Web
+      Audio regardless; Android Chrome usually keeps playing (more reliably
+      with Chrome's battery setting on Unrestricted). Media Session controls
+      on the lock screen would be the next step there.
 
 ## Cleanup
 

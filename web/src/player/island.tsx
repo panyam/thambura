@@ -10,9 +10,15 @@ const DEFAULT_FIXTURES_URL = "/static/Resources/TalasFixtures.json";
 /**
  * Wires the real browser pieces (the page's AudioEngine, a worker ticker,
  * animation frames, fetch) into a presenter and mounts its view on `el`. The
- * page shell names the fixtures file in `data-fixtures-url`.
+ * page shell names the fixtures file in `data-fixtures-url`. `onPlaying` hears
+ * whenever the tala starts or stops.
  */
-export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, audio: AudioEngine): SolidIsland {
+export function createPlayerIsland(
+  el: HTMLElement,
+  eventBus: EventBus,
+  audio: AudioEngine,
+  onPlaying?: (playing: boolean) => void,
+): SolidIsland {
   const presenter = new PlayerPresenter({
     audio,
     ticker: workerTicker(),
@@ -28,7 +34,12 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, audio: A
     preloadImages,
   });
   const [state, setState] = signalView(presenter.state);
-  presenter.attach({ setState });
+  presenter.attach({
+    setState(s) {
+      setState(s);
+      onPlaying?.(s.playing);
+    },
+  });
   void presenter.load(el.dataset.fixturesUrl || DEFAULT_FIXTURES_URL);
 
   // Drop the <noscript> fallback; the island owns the element's children.

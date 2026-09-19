@@ -10,13 +10,14 @@ const STORAGE_KEY = "sadhana.thambura";
 /**
  * Mounts the thambura bar on `el` and wires the header's thambura button
  * (`toggle`) to open and close it. It plays through the page's shared
- * AudioEngine, on the drone bus.
+ * AudioEngine, on the drone bus. `onPlaying` hears whenever it starts or stops.
  */
 export function createThamburaIsland(
   el: HTMLElement,
   eventBus: EventBus,
   audio: AudioEngine,
   toggle: HTMLElement | null,
+  onPlaying?: (playing: boolean) => void,
 ): SolidIsland {
   const presenter = new ThamburaPresenter({
     audio,
@@ -33,6 +34,7 @@ export function createThamburaIsland(
     setState(s) {
       setState(s);
       if (toggle) reflect(toggle, s);
+      onPlaying?.(s.playing);
     },
   });
   toggle?.addEventListener("click", () => presenter.toggleOpen());
