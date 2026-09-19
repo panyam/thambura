@@ -30,7 +30,7 @@ export const THAMBURA_MODES: { id: ThamburaMode; label: string }[] = [
   { id: "tambura", label: "Tambura (classic)" },
   { id: "guitar", label: "Guitar" },
   { id: "custom", label: "Custom" },
-  { id: "sruti", label: "Sruti" },
+  { id: "sruti", label: "Shruthi box" },
 ];
 
 /** Either tambura voice. */

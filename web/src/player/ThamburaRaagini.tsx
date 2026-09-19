@@ -139,7 +139,7 @@ function Lcd(props: ThamburaViewProps) {
       </div>
       <div class="flex justify-between gap-3 text-[11px] uppercase tracking-wider">
         <span>{s().firstString}</span>
-        <span>{s().mode === "sruti" ? "sruti" : `${LCD_MODES[s().mode]} ${s().cycleSeconds.toFixed(1)}s`}</span>
+        <span>{s().mode === "sruti" ? "shruthi" : `${LCD_MODES[s().mode]} ${s().cycleSeconds.toFixed(1)}s`}</span>
       </div>
     </div>
   );
@@ -190,13 +190,13 @@ function Power(props: { on: boolean; onClick: () => void }) {
 }
 
 // The plucked modes on the LCD, which tells the two tambura voices apart.
-const LCD_MODES: Record<ThamburaMode, string> = { jawari: "tmb", tambura: "tmb c", guitar: "gtr", custom: "cst", sruti: "sruti" };
+const LCD_MODES: Record<ThamburaMode, string> = { jawari: "tmb", tambura: "tmb c", guitar: "gtr", custom: "cst", sruti: "shruthi" };
 
 // The switch's positions. Moving to TMB selects the default tambura voice.
 const MODES: { mode: ThamburaMode; label: string }[] = [
   { mode: "jawari", label: "TMB" },
   { mode: "guitar", label: "GTR" },
-  { mode: "sruti", label: "SRUTI" },
+  { mode: "sruti", label: "SHRUTHI" },
 ];
 
 /** The switch position showing `mode`: both tambura voices and Custom sit at TMB. */

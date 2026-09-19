@@ -59,9 +59,9 @@ type HomePage struct {
 // The home page's search and preview text, near the lengths results show in
 // full. It says thambura, as South India does, and the description adds
 // tanpura, the North Indian name many people search with. The title says
-// shruthi drone rather than just drone, which reads as the flying kind.
+// shruthi box, the name students grew up with for the drone.
 const (
-	homeTitle       = brand.Name + ": online shruthi drone and Carnatic tala keeper"
+	homeTitle       = brand.Name + ": online shruthi box and Carnatic tala keeper"
 	homeDescription = "A free online thambura (tanpura) drone in any shruthi, and a Carnatic tala keeper for " +
 		"sapta and chaapu talas with finger-count hand images. Runs in the browser."
 	homeSocialDescription = "A free online thambura (tanpura) drone in any shruthi, and a Carnatic tala keeper. " +
@@ -79,7 +79,7 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 	p.Social = Social{
 		Description: homeSocialDescription,
 		Image:       brand.URL + "/static/og.png",
-		ImageAlt:    "Thambura: a hand keeping tala beside the words online shruthi drone and Carnatic tala keeper",
+		ImageAlt:    "Thambura: a hand keeping tala beside the words online shruthi box and Carnatic tala keeper",
 		ImageWidth:  1200,
 		ImageHeight: 630,
 	}
