@@ -29,7 +29,16 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [ ] **Thambura sound, what's left of #8:** the second Sa's pluck is quieter
       than the recording's (+1.2 dB against +2.8), the synthesized attack is
       sharper than a finger's, and only one key (C) was measured. Also a 5th
-      string, a second tambura, and rendering in a worker.
+      string and a second tambura.
+- [ ] **Faster thambura renders** (tracking issue #36). The render is the wait
+      on a cold Start and after every pitch or tone change, about 300 ms for
+      four strings on a fast desktop. In order: a benchmark (#37), four
+      harmonics per loop (#38, about 3x), Web Workers with the strings in
+      parallel (#39, up to about 4x), and an IndexedDB cache between visits
+      (#40). Then decide on WebAssembly with SIMD (#41) and live synthesis in
+      an AudioWorklet (#42).
+- [ ] **Hand images for Guru, Plutham and Kakapadam** (#22): the kriyas to
+      draw, and talas in the menu that use them.
 - [ ] Turn good "Share a preset" submissions (issues labelled `preset`) into
       built-in presets.
 - [ ] Thambura extras outside sound quality: raga presets that set the first
