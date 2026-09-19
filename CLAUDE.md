@@ -40,6 +40,10 @@ name (it was briefly called Sadhana).
 
 ## Frontend (web/src)
 
+`docs/architecture.md` explains how the sounds are made and timed, timed vs
+continuous voices, and what changed from the 2016 app. The notes below are
+the file-by-file reference.
+
 **engine/** is pure TypeScript with no DOM, audio or timers, and is fully
 unit-tested:
 
