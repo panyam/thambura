@@ -7,6 +7,7 @@
  * group uses this to flash a random swara for each beat.
  *
  * The tala tables themselves are in carnatic.ts, not the fixture.
+ * design/tala-tables-2016.json keeps an early declarative sketch of them.
  */
 export interface AssetGroup {
   name: string;

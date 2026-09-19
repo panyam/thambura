@@ -41,8 +41,10 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 
 - [x] Delete the unreferenced `PlayerImages/` and move `icons.xcf` to
       `design/`, out of the deployed static folder.
-- [x] Drop the unused `Angas`/`Talas`/`TalaGroups`/`Defaults` sections of
-      `TalasFixtures.json` (an early declarative form of the tala tables).
+- [x] Move the unused `Angas`/`Talas`/`TalaGroups`/`Defaults` sections of
+      `TalasFixtures.json` to `design/tala-tables-2016.json`. Neither app ever
+      read them, but they sketch ideas `carnatic.ts` doesn't have: chaapus as
+      several half- and whole-count beats, a Faves group, and a `mukhi` default.
 - [x] Rename everything to Thambura (repo, module, display name).
 - [x] Rename the local `layaguide` folder (now `thambura/`).
 - [ ] Decide whether www.thambura.com should redirect to the bare domain
