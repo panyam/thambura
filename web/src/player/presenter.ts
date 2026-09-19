@@ -9,7 +9,7 @@ import {
 } from "../engine/selection";
 import { add, type Ratio } from "../engine/ratio";
 import { TalaSequencer, type TalaEvent } from "../engine/sequencer";
-import { swingScale } from "../engine/swing";
+import { DEFAULT_MOTION, isBeatMotion, motionAt, REST, type BeatMotion, type BeatPose } from "../engine/motion";
 import { TempoMap } from "../engine/tempoMap";
 import type { AudioOut } from "./audio";
 import { Transport, type Ticker } from "./transport";
@@ -25,6 +25,8 @@ export interface PlayerState {
   imageGroups: string[];
   soundGroup: string;
   imageGroup: string;
+  /** How the beat image moves between beats (engine/motion.ts). */
+  motion: BeatMotion;
   /** The image for the step being heard, or null for none. */
   image: string | null;
   /** The step being heard, and how many beats the cycle has. */
@@ -35,11 +37,17 @@ export interface PlayerState {
 export interface PlayerView {
   setState(state: PlayerState): void;
   /**
-   * The beat image's scale (see engine/swing.ts), set every animation frame
+   * The beat image's pose (see engine/motion.ts), set every animation frame
    * while playing. It is kept out of PlayerState so a frame doesn't re-render
    * the player.
    */
-  setSwing?(scale: number): void;
+  setPose?(pose: BeatPose): void;
+}
+
+/** Where the player's preferences are kept between visits. */
+export interface PlayerStore {
+  load(): unknown;
+  save(value: unknown): void;
 }
 
 /** requestAnimationFrame, injectable for tests. */
@@ -54,6 +62,7 @@ export interface PlayerDeps {
   frames: FrameLoop;
   fetchJson(url: string): Promise<unknown>;
   preloadImages(urls: string[]): Promise<void>;
+  store?: PlayerStore;
   rng?: () => number;
 }
 
@@ -61,7 +70,7 @@ export const DEFAULT_VOLUME = 50;
 
 interface Cue {
   time: number;
-  /** Where the next beat starts, in counts, for the swing. */
+  /** Where the next beat starts, in counts, for the motion. */
   endAt: Ratio;
   image: string | null;
   position: Position;
@@ -84,7 +93,7 @@ export class PlayerPresenter {
   private cues: Cue[] = [];
   // The beat being heard, while playing.
   private heard: Cue | null = null;
-  private swing = 1;
+  private pose: BeatPose = REST;
   private frameId: number | null = null;
 
   constructor(private readonly deps: PlayerDeps) {
@@ -102,6 +111,7 @@ export class PlayerPresenter {
       imageGroups: [],
       soundGroup: "",
       imageGroup: "",
+      motion: loadMotion(deps.store),
       image: null,
       position: { beat: 0, repeat: 0 },
       beatCount: 0,
@@ -149,7 +159,7 @@ export class PlayerPresenter {
     // Drop images for steps that won't sound now; the one showing stays.
     this.cues = [];
     this.heard = null;
-    this.setSwing(1);
+    this.setPose(REST);
     this.update({ playing: false });
   }
 
@@ -224,6 +234,16 @@ export class PlayerPresenter {
     this.update({ imageGroup: name, image: group.entries["down"] ?? null });
   }
 
+  setMotion(motion: BeatMotion): void {
+    if (!isBeatMotion(motion)) return;
+    this.update({ motion });
+    try {
+      this.deps.store?.save({ motion });
+    } catch {
+      // Storage can be full or blocked; the choice still holds for this visit.
+    }
+  }
+
   // ---- internals ---------------------------------------------------------
 
   private rebuild(): void {
@@ -269,7 +289,7 @@ export class PlayerPresenter {
       if (due) this.update({ image: due.image, position: due.position });
       if (this.state.playing) {
         if (due) this.heard = due;
-        this.setSwing(this.swingAt(heard));
+        this.setPose(this.poseAt(heard));
       }
       if (this.state.playing || this.cues.length > 0) this.frameId = this.deps.frames.request(frame);
     };
@@ -277,21 +297,22 @@ export class PlayerPresenter {
   }
 
   /**
-   * The swing for the heard beat. It ends where the next step is booked, or,
-   * before that step is pulled, where the tempo map puts it now, so a tempo
-   * change mid-beat moves the landing with the sound.
+   * The image's pose in the heard beat. The beat ends where the next step is
+   * booked, or, before that step is pulled, where the tempo map puts it now,
+   * so a tempo change mid-beat moves the landing with the sound.
    */
-  private swingAt(heard: number): number {
+  private poseAt(heard: number): BeatPose {
     const beat = this.heard;
-    if (!beat) return 1;
+    if (!beat) return REST;
     const end = this.cues[0]?.time ?? this.tempo.secondsAt(beat.endAt);
-    return swingScale(heard - beat.time, end - beat.time);
+    return motionAt(this.state.motion, heard - beat.time, end - beat.time);
   }
 
-  private setSwing(scale: number): void {
-    if (scale === this.swing) return;
-    this.swing = scale;
-    this.view?.setSwing?.(scale);
+  private setPose(pose: BeatPose): void {
+    const p = this.pose;
+    if (pose.scale === p.scale && pose.opacity === p.opacity && pose.lift === p.lift) return;
+    this.pose = pose;
+    this.view?.setPose?.(pose);
   }
 
   private findGroup(groups: AssetGroup[], name: string): AssetGroup | undefined {
@@ -301,5 +322,14 @@ export class PlayerPresenter {
   private update(patch: Partial<PlayerState>): void {
     this.state = { ...this.state, ...patch };
     this.view?.setState(this.state);
+  }
+}
+
+function loadMotion(store: PlayerStore | undefined): BeatMotion {
+  try {
+    const saved = store?.load() as { motion?: unknown } | null | undefined;
+    return isBeatMotion(saved?.motion) ? saved.motion : DEFAULT_MOTION;
+  } catch {
+    return DEFAULT_MOTION;
   }
 }

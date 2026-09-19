@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SWING_DEPTH, swingScale } from "../engine/swing";
+import { motionAt, REST, SWING_DEPTH, type BeatPose } from "../engine/motion";
 import { PlayerPresenter, type PlayerState } from "./presenter";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 
@@ -98,12 +98,14 @@ describe("PlayerPresenter", () => {
     expect(p.state.position.beat).toBe(1);
   });
 
-  describe("swing", () => {
-    let swings: number[];
-    const swing = () => swings.at(-1) ?? 1;
+  describe("motion", () => {
+    let poses: BeatPose[];
+    const swing = () => (poses.at(-1) ?? REST).scale;
+    const swingScale = (e: number, L: number) => motionAt("swing", e, L).scale;
     beforeEach(() => {
-      swings = [];
-      p.attach({ setState: () => {}, setSwing: (x) => swings.push(x) });
+      poses = [];
+      p.setMotion("swing");
+      p.attach({ setState: () => {}, setPose: (x) => poses.push(x) });
     });
 
     it("holds, then arcs over the beat's last 0.8 s and lands on the next", async () => {
@@ -136,8 +138,30 @@ describe("PlayerPresenter", () => {
       await p.start();
       advance(0.65);
       p.stop();
-      expect(swing()).toBe(1);
+      expect(poses.at(-1)).toEqual(REST);
     });
+
+    it("switches motion while playing", async () => {
+      p.setTempo(60);
+      await p.start();
+      p.setMotion("fade");
+      advance(0.65);
+      expect(poses.at(-1)).toEqual(motionAt("fade", 0.6, 1));
+      p.setMotion("off");
+      advance(0.7);
+      expect(poses.at(-1)).toEqual(REST);
+    });
+  });
+
+  it("keeps the motion between visits", () => {
+    const saved: unknown[] = [];
+    const store = { load: () => ({ motion: "lift" }), save: (v: unknown) => saved.push(v) };
+    const q = new PlayerPresenter({ audio, ticker, frames, fetchJson: async () => FIXTURES, preloadImages: async () => {}, store });
+    expect(q.state.motion).toBe("lift");
+    q.setMotion("pop");
+    expect(saved).toEqual([{ motion: "pop" }]);
+    const bad = new PlayerPresenter({ audio, ticker, frames, fetchJson: async () => FIXTURES, preloadImages: async () => {}, store: { load: () => ({ motion: "spin" }), save: () => {} } });
+    expect(bad.state.motion).toBe("dip");
   });
 
   it("shows no image for a name the group lacks", async () => {

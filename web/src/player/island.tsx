@@ -1,12 +1,14 @@
 import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
 import { createSignal } from "solid-js";
+import { REST } from "../engine/motion";
 import type { AudioEngine } from "./audio";
 import { PlayerPresenter } from "./presenter";
 import { PlayerView } from "./PlayerView";
 import { workerTicker } from "./transport";
 
 const DEFAULT_FIXTURES_URL = "/static/Resources/TalasFixtures.json";
+const STORAGE_KEY = "thambura.player";
 
 /**
  * Wires the real browser pieces (the page's AudioEngine, a worker ticker,
@@ -33,21 +35,25 @@ export function createPlayerIsland(
       return r.json();
     },
     preloadImages,
+    store: {
+      load: () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null"),
+      save: (v) => localStorage.setItem(STORAGE_KEY, JSON.stringify(v)),
+    },
   });
   const [state, setState] = signalView(presenter.state);
-  const [swing, setSwing] = createSignal(1);
+  const [pose, setPose] = createSignal(REST);
   presenter.attach({
     setState(s) {
       setState(s);
       onPlaying?.(s.playing);
     },
-    setSwing,
+    setPose,
   });
   void presenter.load(el.dataset.fixturesUrl || DEFAULT_FIXTURES_URL);
 
   // Drop the <noscript> fallback; the island owns the element's children.
   el.replaceChildren();
-  return new SolidIsland("player", el, () => <PlayerView state={state} swing={swing} actions={presenter} />, eventBus);
+  return new SolidIsland("player", el, () => <PlayerView state={state} pose={pose} actions={presenter} />, eventBus);
 }
 
 /** Resolves once every image has loaded or failed, so the first beats don't flicker in. */
