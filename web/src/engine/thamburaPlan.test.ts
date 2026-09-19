@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_THAMBURA, type ThamburaMode } from "./shruthi";
-import { FIELD_SPECS, normalizePlan, patternOf, planFor, readField, setGap, writeField } from "./thamburaPlan";
+import { copyString, copyToAll, FIELD_SPECS, normalizePlan, patternOf, planFor, readField, setGap, writeField } from "./thamburaPlan";
 import { EVEN_PATTERN, PLAYED_PATTERN } from "./thamburaSequencer";
 
 const plan = (mode: ThamburaMode, patch = {}) => planFor({ ...DEFAULT_THAMBURA, ...patch, mode });
@@ -85,5 +85,25 @@ describe("Lab fields", () => {
     expect(gaps[0]).toBe(0.5);
     expect(gaps.reduce((a, b) => a + b)).toBeCloseTo(1, 12);
     expect(gaps[1] / gaps[3]).toBeCloseTo(0.2 / 0.3, 12);
+  });
+});
+
+describe("copying between strings", () => {
+  it("gives one string another's sound, keeping its own place in the mix", () => {
+    const p = plan("jawari");
+    const c = copyString(p, 3, 1);
+    expect(c.strings[1].voice).toEqual(p.strings[3].voice);
+    expect(c.strings[1].damp).toBe(p.strings[3].damp);
+    expect(c.strings[1]).toMatchObject({ level: p.strings[1].level, pan: p.strings[1].pan, detune: p.strings[1].detune });
+    expect([c.strings[0], c.strings[2], c.strings[3]]).toEqual([p.strings[0], p.strings[2], p.strings[3]]);
+  });
+
+  it("gives every string one string's sound", () => {
+    const p = plan("jawari");
+    const c = copyToAll(p, 0);
+    for (const [i, s] of c.strings.entries()) {
+      expect(s.voice).toEqual(p.strings[0].voice);
+      expect(s.level).toBe(p.strings[i].level);
+    }
   });
 });

@@ -37,6 +37,12 @@ export interface ThamburaState {
   notice: string | null;
   /** Setups saved by name, newest first. */
   presets: ThamburaPreset[];
+  /**
+   * Strings silenced in the Lab, to hear the others alone. A listening aid,
+   * not part of the sound: left out of links and presets, and cleared on
+   * leaving the Lab.
+   */
+  muted: [boolean, boolean, boolean, boolean];
   /** Strings whose pluck was heard a moment ago, for the glow and the LEDs. */
   lit: [boolean, boolean, boolean, boolean];
 }
@@ -114,6 +120,9 @@ const SRUTI_PAN = [-0.35, 0.2, 0.3];
 const GLOW = 0.3;
 
 const DARK: ThamburaState["lit"] = [false, false, false, false];
+const NONE_MUTED: ThamburaState["muted"] = [false, false, false, false];
+// How fast a muted string's ringing note fades, in seconds.
+const MUTE_FADE = 0.15;
 const VIEW_IDS = THAMBURA_VIEWS.map((v) => v.id);
 
 /**
@@ -170,7 +179,7 @@ export class ThamburaPresenter {
         notice = "The link in the address bar isn't one this version can read, so your own setup is playing.";
       }
     }
-    this.state = { settings, playing: false, open, view, custom, notice, presets, lit: DARK };
+    this.state = { settings, playing: false, open, view, custom, notice, presets, muted: NONE_MUTED, lit: DARK };
     this.timing = { cycleSeconds: settings.cycleSeconds, pattern: patternOf(this.plan()) };
     const seq = new ThamburaSequencer(this.timing, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker);
@@ -270,8 +279,21 @@ export class ThamburaPresenter {
   }
 
   setView(view: ThamburaViewId): void {
-    this.update({ view });
+    this.update(view === "lab" ? { view } : { view, muted: NONE_MUTED });
     this.save();
+  }
+
+  /** Silences or restores one string. A string still ringing fades out, as a stopped string does. */
+  setMuted(string: number, muted: boolean): void {
+    const next = [...this.state.muted] as ThamburaState["muted"];
+    next[string] = muted;
+    this.setMutes(next);
+  }
+
+  /** Plays only `string`; if it is already the only one playing, brings the others back. */
+  solo(string: number): void {
+    const alone = this.state.muted.every((m, i) => m === (i !== string));
+    this.setMutes(alone ? NONE_MUTED : (NONE_MUTED.map((_, i) => i !== string) as ThamburaState["muted"]));
   }
 
   setOpen(open: boolean): void {
@@ -430,7 +452,15 @@ export class ThamburaPresenter {
     return false;
   }
 
+  private setMutes(muted: ThamburaState["muted"]): void {
+    muted.forEach((m, i) => {
+      if (m && !this.state.muted[i]) this.deps.audio.damp(`thambura/string${i}`, this.deps.audio.now, MUTE_FADE);
+    });
+    this.update({ muted });
+  }
+
   private pluck(e: PluckEvent): void {
+    if (this.state.muted[e.string]) return;
     this.deps.audio.play(this.stringKeys[e.string], "drone", e.time, pluckOptions(this.plan(), this.state.settings.cents, e));
     this.cues.push({ time: e.time, string: e.string });
   }

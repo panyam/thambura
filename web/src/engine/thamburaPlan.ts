@@ -72,7 +72,7 @@ export interface FieldSpec {
   label: string;
   /** One line on what it does, shown as the control's hint. */
   help: string;
-  group: "pluck" | "ring" | "tone" | "bloom" | "sweep" | "place";
+  group: "pluck" | "ring" | "tone" | "bloom" | "bloomTime" | "sweep" | "place";
   min: number;
   max: number;
   step: number;
@@ -108,10 +108,10 @@ export const FIELD_SPECS: FieldSpec[] = [
   { field: v("formantDb"), label: "Bloom", help: "How far the jawari band is boosted at its peak. 0 turns the bloom off.", group: "bloom", min: 0, max: 60, step: 0.5, unit: "dB" },
   { field: v("formantHz"), label: "Bloom centre", help: "The middle of the band the jawari boosts.", group: "bloom", min: 200, max: 5000, step: 10, unit: "Hz" },
   { field: v("formantOctaves"), label: "Bloom width", help: "The band's width on a log-frequency scale.", group: "bloom", min: 0.2, max: 3, step: 0.05, unit: "oct" },
-  { field: v("formantRise"), label: "Bloom rise", help: "Time constant of the swell after the pluck.", group: "bloom", min: 0.02, max: 3, step: 0.01, unit: "s" },
-  { field: v("formantHold"), label: "Bloom hold", help: "When the bloom starts to fall back.", group: "bloom", min: 0, max: 4, step: 0.05, unit: "s" },
-  { field: v("formantFall"), label: "Bloom fall", help: "How fast it falls back.", group: "bloom", min: 0.1, max: 3, step: 0.05, unit: "s" },
-  { field: v("formantRest"), label: "Bloom rest", help: "The share of the bloom left after it falls back.", group: "bloom", min: 0, max: 1, step: 0.01, unit: "" },
+  { field: v("formantRise"), label: "Bloom rise", help: "Time constant of the swell after the pluck.", group: "bloomTime", min: 0.02, max: 3, step: 0.01, unit: "s" },
+  { field: v("formantHold"), label: "Bloom hold", help: "When the bloom starts to fall back.", group: "bloomTime", min: 0, max: 4, step: 0.05, unit: "s" },
+  { field: v("formantFall"), label: "Bloom fall", help: "How fast it falls back.", group: "bloomTime", min: 0.1, max: 3, step: 0.05, unit: "s" },
+  { field: v("formantRest"), label: "Bloom rest", help: "The share of the bloom left after it falls back.", group: "bloomTime", min: 0, max: 1, step: 0.01, unit: "" },
   { field: v("formantEnergy"), label: "Bloom energy", help: "How much of the boost is new energy. 0 only moves energy up, as a jawari does.", group: "bloom", min: 0, max: 1, step: 0.01, unit: "" },
   { field: v("sweepFrom"), label: "Sweep from", help: "The classic voice's resonance starts at this harmonic…", group: "sweep", min: 1, max: 60, step: 0.5, unit: "" },
   { field: v("sweepTo"), label: "Sweep to", help: "…and sweeps down towards this one.", group: "sweep", min: 1, max: 30, step: 0.5, unit: "" },
@@ -138,6 +138,22 @@ export function writeField(p: StringPlan, f: PlanField, value: number): StringPl
   const voice = { ...p.voice, [f.key]: value };
   if (f.key === "ringSeconds") voice.seconds = Math.min(value, MAX_TAMBURA_SECONDS);
   return { ...p, voice };
+}
+
+/**
+ * String `to` takes string `from`'s sound (voice and damping) and keeps its
+ * own level, pan and detune, which place it in the mix.
+ */
+export function copyString(plan: ThamburaPlan, from: number, to: number): ThamburaPlan {
+  const strings = [...plan.strings] as ThamburaPlan["strings"];
+  const t = strings[to];
+  strings[to] = { ...plan.strings[from], level: t.level, pan: t.pan, detune: t.detune };
+  return { ...plan, strings };
+}
+
+/** Every string takes string `from`'s sound, as in copyString. */
+export function copyToAll(plan: ThamburaPlan, from: number): ThamburaPlan {
+  return [0, 1, 2, 3].reduce((p, to) => (to === from ? p : copyString(p, from, to)), plan);
 }
 
 /** One gap is set; the others shrink or grow in proportion, so the round still sums to 1. */
