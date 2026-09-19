@@ -1,5 +1,6 @@
 import { For, Show, type Accessor, type JSX } from "solid-js";
 import type { Gati } from "../engine/carnatic";
+import { MOTION_OPTIONS, REST, type BeatMotion, type BeatPose } from "../engine/motion";
 import {
   GATI_OPTIONS,
   KALAI_OPTIONS,
@@ -23,16 +24,18 @@ export type PlayerActions = Pick<
   | "setSettings"
   | "setSoundGroup"
   | "setImageGroup"
+  | "setMotion"
 >;
 
 /**
  * The tala player: beat image, transport, tempo and volume, and the tala
  * settings. Renders PlayerState and sends every change to the presenter.
  */
-export function PlayerView(props: { state: Accessor<PlayerState>; swing?: Accessor<number>; actions: PlayerActions }) {
+export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accessor<BeatPose>; actions: PlayerActions }) {
   const s = props.state;
   const a = props.actions;
   const tala = () => s().settings.tala;
+  const pose = () => props.pose?.() ?? REST;
 
   return (
     <div class="flex flex-col items-center gap-6">
@@ -44,15 +47,25 @@ export function PlayerView(props: { state: Accessor<PlayerState>; swing?: Access
 
       <section class="flex flex-col items-center gap-3">
         {/* The beat images are drawn for a white background, so the frame stays white in dark mode.
-            The image swings with the beat (engine/swing.ts), unless the viewer asks for reduced motion. */}
-        <div class="flex h-64 w-64 items-center justify-center overflow-hidden rounded-xl border-2 border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600">
+            The image moves with the beat (engine/motion.ts), unless the viewer asks for reduced motion. */}
+        <div class="relative flex h-64 w-64 items-center justify-center overflow-hidden rounded-xl border-2 border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600">
+          <Show when={s().motion === "lift"}>
+            <div
+              aria-hidden="true"
+              class="absolute bottom-3 left-1/2 h-3 w-28 rounded-[50%] bg-[radial-gradient(closest-side,rgba(17,24,39,0.28),transparent)] motion-reduce:!transform-none motion-reduce:!opacity-100"
+              style={{ transform: `translateX(-50%) scale(${1 - 0.35 * pose().lift})`, opacity: 1 - 0.6 * pose().lift }}
+            />
+          </Show>
           <Show when={s().image}>
             {(src) => (
               <img
                 src={src()}
                 alt=""
-                class="max-h-full max-w-full object-contain will-change-transform motion-reduce:!transform-none"
-                style={{ transform: `scale(${props.swing?.() ?? 1})` }}
+                class="relative max-h-full max-w-full object-contain will-change-transform motion-reduce:!transform-none motion-reduce:!opacity-100"
+                style={{
+                  transform: `translateY(${(-16 * pose().lift).toFixed(2)}px) scale(${pose().scale})`,
+                  opacity: pose().opacity,
+                }}
               />
             )}
           </Show>
@@ -65,6 +78,16 @@ export function PlayerView(props: { state: Accessor<PlayerState>; swing?: Access
             </Show>
           </Show>
         </p>
+        <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          Motion
+          <select
+            id="motion"
+            class="rounded-md border-gray-300 bg-white py-1 pl-2 pr-8 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+            onChange={(e) => a.setMotion(e.currentTarget.value as BeatMotion)}
+          >
+            <For each={MOTION_OPTIONS}>{(o) => <option value={o.id} selected={o.id === s().motion}>{o.label}</option>}</For>
+          </select>
+        </label>
       </section>
 
       <section class="flex items-center justify-center gap-3" aria-label="Transport">

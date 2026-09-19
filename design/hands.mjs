@@ -1,5 +1,5 @@
-// Generates the RightHand and LeftHand image groups: line-art hands in a ring,
-// after the "Simple" set's poses. Run from the repo root:
+// Generates the RightHand and LeftHand image groups: line-art hands, after the
+// "Simple" set's poses. Run from the repo root:
 //
 //   node design/hands.mjs
 //
@@ -15,7 +15,6 @@ const INK = "#2f2a26";
 const DETAIL = "#6b625b";
 const SKIN = "#f4f1ec";
 const SHADE = "#b3aca4";
-const RING = "#e8dcc4";
 
 // Base centre on the webbing line, lean in degrees (+ leans right), length,
 // width at the base and just below the tip. The sides run straight between
@@ -38,14 +37,14 @@ function at(f, x, y) {
   return `${(f.x + x * Math.cos(r) - y * Math.sin(r)).toFixed(1)},${(f.y + x * Math.sin(r) + y * Math.cos(r)).toFixed(1)}`;
 }
 
-// Wrist, up the thenar (the heel of the thumb) to the thumb's tip, down its
-// inner edge to the crotch, up the side of the palm to the index knuckle,
-// across the webbing (seen only between fingers) and down the little-finger
-// side. The palm's sides leave the index and little fingers along their own
+// Wrist (below the image's bottom edge; the image fades it out), up the
+// thenar (the heel of the thumb) to the thumb's tip, down its inner edge to
+// the crotch, up the side of the palm to the index knuckle, across the
+// webbing (seen only between fingers) and down the little-finger side. The palm's sides leave the index and little fingers along their own
 // edges, so the outline has no step there.
 const { index: I, little: L } = FINGERS;
 const PALM = [
-  "M158,384",
+  "M163,420",
   "C138,352 112,312 101,272",
   "C95,248 82,222 72,200",
   "A16.5,16.5 0 0 1 101,184.5",
@@ -53,7 +52,7 @@ const PALM = [
   `C142,250 ${at(I, -I.wb / 2, 30)} ${at(I, -I.wb / 2, 0)}`,
   `C190,180 252,178 ${at(L, L.wb / 2, 0)}`,
   `C${at(L, L.wb / 2, 24)} 300,262 294,292`,
-  "C288,320 280,342 268,384 Z",
+  "C288,320 278,352 262,420 Z",
 ].join(" ");
 
 // A lit thumb is the palm's outline clipped to the thumb: past a line
@@ -111,45 +110,48 @@ const PALM_DETAILS = () => [
   // Heart, head and life lines.
   `<path d="M298,226 C262,216 222,210 186,200"/>`,
   `<path d="M145,240 C190,244 240,260 284,284"/>`,
-  `<path d="M144,238 C182,262 196,320 190,384"/>`,
+  `<path d="M144,238 C182,262 196,320 192,420"/>`,
 ];
 
 /**
- * One image. `lit` is the digit shaded for a count, "all" for the clap, or
- * null. `palm` shows the palm side (the wave).
+ * One image. `lit` is the digit shaded for a count, or null for the clap and
+ * the wave. `palm` shows the palm side (the wave).
  */
 function hand({ left, palm, lit }) {
   const mirror = left !== palm;
   const shapes = [`<path d="${PALM}"/>`, ...DIGITS.map((f) => fingerShape(f, ""))].join("");
-  const body = lit === "all" ? SHADE : SKIN;
   let shade = "";
   if (lit === "thumb") shade = `<path d="${PALM}" fill="${SHADE}" clip-path="url(#thumb)"/>`;
   // The palm goes on again over a lit finger, so its shading stops at the web.
-  else if (lit && lit !== "all") shade = `${fingerShape(FINGERS[lit], `fill="${SHADE}"`)}<path d="${PALM}" fill="${body}"/>`;
+  else if (lit) shade = `${fingerShape(FINGERS[lit], `fill="${SHADE}"`)}<path d="${PALM}" fill="${SKIN}"/>`;
   // The union outline: every shape stroked, then every shape filled over the
   // inner half of the strokes.
   const g = [
     `<g stroke="${INK}" stroke-width="6" stroke-linejoin="round" fill="${INK}">${shapes}</g>`,
-    `<g fill="${body}">${shapes}</g>`,
+    `<g fill="${SKIN}">${shapes}</g>`,
     shade,
     `<g fill="none" stroke="${DETAIL}" stroke-width="2.2" stroke-linecap="round">${(palm ? PALM_DETAILS() : BACK_DETAILS()).join("")}</g>`,
   ].join("\n    ");
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
   <defs>
-    <clipPath id="inside"><circle cx="200" cy="200" r="174"/></clipPath>
     <clipPath id="thumb"><path d="${THUMB_CLIP}"/></clipPath>
+    <linearGradient id="wrist" x1="0" y1="0" x2="0" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0.8" stop-color="#fff"/>
+      <stop offset="0.97" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="fade" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400">
+      <rect width="400" height="400" fill="url(#wrist)"/>
+    </mask>
   </defs>
-  <circle cx="200" cy="200" r="174" fill="#fff"/>
-  <g clip-path="url(#inside)"${mirror ? ` transform="translate(400 0) scale(-1 1)"` : ""}>
+  <g mask="url(#fade)"><g${mirror ? ` transform="translate(400 0) scale(-1 1)"` : ""}>
     ${g}
-  </g>
-  <circle cx="200" cy="200" r="184" fill="none" stroke="${RING}" stroke-width="20"/>
+  </g></g>
 </svg>
 `;
 }
 
 const POSES = {
-  down: { palm: false, lit: "all" },
+  down: { palm: false, lit: null },
   open: { palm: true, lit: null },
   ...Object.fromEntries(Object.entries(COUNTS).map(([count, digit]) => [count, { palm: false, lit: digit }])),
 };

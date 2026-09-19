@@ -89,10 +89,13 @@ unit-tested:
   is timbre, not octave), the 12 swarasthanas with just ratios, and
   `normalizeThambura`, which clamps anything (saved JSON, a patch) to valid
   settings.
-- `swing.ts` is the beat image's swing: `swingScale` shrinks the image in a
-  parabola (up to 20%) and lands it back at full size on the next beat. A
-  beat longer than 0.8 s holds still first, and the depth fades out between
-  0.5 s and 0.25 s beats (120 to 240 bpm for a one-count beat).
+- `motion.ts` is how the beat image moves between beats, chosen from the
+  Motion menu under the image (`MOTION_OPTIONS`: eased dip, size swing, two
+  fades, pop, lift, off). `motionAt` returns a `BeatPose` (scale, opacity,
+  lift) that is at rest when a beat sounds. The swing-style ones follow a
+  parabola, hold still through a beat's first part when it is longer than
+  0.8 s, and fade out between 0.5 s and 0.25 s beats (120 to 240 bpm for a
+  one-count beat).
 - `tambura.ts` renders a pluck as a sum of decaying harmonics. `pluckVoice(s,
   string)` has three characters. The jawari voice (mode `jawari`, shown as
   "Tambura") was fitted to a recording of a real C tambura: it starts dark,
@@ -145,9 +148,10 @@ unit-tested:
 - `presenter.ts` (`PlayerPresenter`): owns the engine and the transport, turns
   steps into `audio.play` calls plus image cues, and shows each cue in a
   `requestAnimationFrame` loop once `heardNow` reaches it. The same loop
-  sends the swing through `PlayerView.setSwing`, a signal apart from
-  `PlayerState`, so a frame only restyles the image. The swing ends at the
-  next booked step, or at the `TempoMap`'s time for it before it's booked. It doesn't import
+  sends the image's pose through `PlayerView.setPose`, a signal apart from
+  `PlayerState`, so a frame only restyles the image. The beat ends at the
+  next booked step, or at the `TempoMap`'s time for it before it's booked.
+  The chosen motion is saved in localStorage under `thambura.player`. It doesn't import
   Solid, and its tests run it under fakes.
 - `PlayerView.tsx`: renders `PlayerState` and calls the presenter's intents.
   `island.tsx` wires the real browser dependencies in, and `main.ts` mounts it
