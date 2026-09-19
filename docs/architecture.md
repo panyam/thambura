@@ -13,6 +13,7 @@ flowchart LR
   subgraph engine["engine/ (pure TypeScript)"]
     tables["carnatic.ts, selection.ts<br/>tala tables"] --> cursor["cursor.ts<br/>BeatCursor"]
     cursor --> talaSeq["sequencer.ts<br/>TalaSequencer"]
+    tempo["tempoMap.ts, ratio.ts<br/>musical time → seconds"] --> talaSeq
     thSeq["thamburaSequencer.ts<br/>ThamburaSequencer"]
     synth["tambura.ts<br/>PluckRender, reedSpectrum"]
     pitch["shruthi.ts<br/>keys, swaras, settings"]
@@ -166,18 +167,41 @@ interface Sequencer<E> {
 Each event comes out exactly once. Times are in audio-clock seconds.
 
 **`TalaSequencer`** walks a `BeatCursor` through the tala's beats, repeating
-each one kalai times. For each beat it makes a `StepEvent` with the beat's
-start time, its length in seconds (counts × 60/bpm) and the times of its
-ticks, which are the nadai's accent offsets scaled to that length. Then it
-moves `nextTime` on by the same amount. The tempo is read afresh for each
-beat, so a tempo change is heard from the next beat.
+each one kalai times, and works in musical time rather than seconds. Every
+event has a position `at`, counted in beats of the tempo since Start, as an
+exact fraction (`ratio.ts`). A beat gives a `StepEvent` at its start, for the
+image, and a `TickEvent` for each sound in it, at the beat's start plus the
+nadai's accent offset times the beat's length. A Misra Chaapu's third tick,
+for instance, sits at 3/7 of 7/2, which is exactly 3/2 counts in. We use
+fractions because floats summed over an hour drift a little, and two voices
+reaching the same point by different sums should agree exactly.
 
-The sequencer hands out a whole beat, ticks included, once the beat's
-*start* is inside the window. That's fine for a normal one-count beat. A Misra Chaapu at 10 bpm is a single 21 s beat, though, so
-its ticks are booked 21 s ahead and a tempo change can't reach them. And on
-stop, the sequencer rewinds the cursor to the first step that hadn't started
-yet, so Start picks up where the student stopped hearing, not a beat or two
-past it.
+The sequencer turns a position into seconds only when that event is pulled,
+through the transport's shared `TempoMap`. Each tick is its own event, so a
+long beat isn't booked all at once. A Misra Chaapu at 10 bpm is a single
+21 s beat, and a tempo change still reaches the ticks later in it. (Before
+the map, the sequencer booked a whole beat as soon as its start was in the
+window, so those ticks were fixed up to 21 s ahead.) On stop, the sequencer
+rewinds the cursor to the first step that hadn't started yet, so Start picks
+up where the student stopped hearing, not a beat or two past it.
+
+### The tempo map
+
+`TempoMap` (`engine/tempoMap.ts`) converts musical time to seconds for every
+voice on one transport. `Transport.start` puts count 0 at the start time,
+and after each tick the transport tells the map how far it has pulled, the
+horizon. A tempo change takes effect at the horizon. Everything before it has
+already been handed out and booked, so nothing booked moves, and the new
+tempo is heard within one 100 ms window. It can land in the middle of a
+beat: going from 60 to 120 bpm in the browser gave beat gaps of 1, 1, 1,
+0.62, 0.5, 0.5 s, the 0.62 being the beat that straddled the change.
+
+We built the map mostly for the mridangam. With each sequencer adding durations to
+its own clock, as the tala did before, two voices would switch tempo at their
+own next event and drift apart, since a one-count beat and a 7/2-count
+chaapu beat don't end together. On one map, a stroke and a clap at the same
+position always get the same time. `player/transport.test.ts` checks this
+with Adi and Misra Chaapu through three tempo changes.
 
 **`ThamburaSequencer`** has nothing to do with the tala's tempo. A thambura
 cycle is five equal slots: first string, Sa, Sa, low Sa, then a rest. Its
@@ -219,16 +243,17 @@ halves of Web Audio.
 | Source | WAV file | PCM rendered in JS | WAV takes per stroke | `OscillatorNode` + `PeriodicWave` |
 | Web Audio node | `AudioBufferSourceNode`, one per note | same | same | one oscillator per tone, for as long as it plays |
 | Who decides when | `TalaSequencer` via `Transport` | `ThamburaSequencer` via its own `Transport` | a stroke sequencer on the tala's timeline | nobody: it starts on Start |
-| Clock | tala tempo | thambura speed | tala tempo | none |
+| Clock | the tala's `TempoMap` | thambura speed | the tala's `TempoMap` | none |
 | Bus | `tala` | `drone` | `percussion` | `drone` |
-| A setting change | next beat | next pluck, or after a re-render | next stroke | glides in about 30 ms |
+| A tempo or speed change | within 100 ms | next pluck | within 100 ms | n/a |
+| A pitch change | n/a | after a re-render | n/a | glides in about 30 ms |
 | Overlap | none needed | a re-pluck chokes the same string over 80 ms | damped strokes choke ringing ones on the same head | n/a |
 | Stop | cancel what hasn't started | cancel, then 1.5 s release | cancel, short release | gain glides to zero, then stop |
 
 The timed voices share one shape: a sequencer emits events, the transport
 books them ahead, and each event becomes a fresh `AudioBufferSourceNode`
-that plays once and is thrown away. A setting change can only affect notes
-not yet booked, so it lands at the next event boundary. Everything that shapes
+that plays once and is thrown away. A change can only affect notes not yet
+booked, so it lands past the look-ahead horizon. Everything that shapes
 a timed note (sample, time, detune, gain, pan, choke group) is fixed when it
 is booked.
 
@@ -293,16 +318,10 @@ device, so every check so far is a number: pitch within a cent, decay
 tables, and the `when` of each `AudioBufferSourceNode.start` call. The
 limits we know about are these.
 
-- **Each sequencer keeps its own time.** `TalaSequencer` adds each beat's
-  duration to its own `nextTime`. A second rhythmic voice (the mridangam)
-  would do the same with its own events, and after a tempo change the two
-  would switch speed at different boundaries and drift apart. The fix is the
-  musical-timeline refactor in NEXTSTEPS.md: sequencers emit positions in
-  musical time (cycle, beat, exact fraction) and one shared tempo map turns
-  those into seconds.
-- **A long beat is booked all at once**, so a tempo change can't reach its
-  ticks (the Misra Chaapu case above). The same refactor fixes it, since ticks
-  become events of their own.
+- **Only the tala is on the tempo map so far.** A mridangam sequencer will
+  also need to read the tala's position (which beat of which cycle) for
+  eduppu and korvai alignment. It can work that out from the same counts,
+  but nothing exposes it yet.
 - **Tambura renders stop at 9 s**, and a re-plucked string chokes its old
   ring. Whether a real tambura rings through its own next pluck is one of the
   things the recording in issue #8 should settle.
