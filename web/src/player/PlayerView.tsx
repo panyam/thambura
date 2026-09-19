@@ -29,7 +29,7 @@ export type PlayerActions = Pick<
  * The tala player: beat image, transport, tempo and volume, and the tala
  * settings. Renders PlayerState and sends every change to the presenter.
  */
-export function PlayerView(props: { state: Accessor<PlayerState>; actions: PlayerActions }) {
+export function PlayerView(props: { state: Accessor<PlayerState>; swing?: Accessor<number>; actions: PlayerActions }) {
   const s = props.state;
   const a = props.actions;
   const tala = () => s().settings.tala;
@@ -43,9 +43,19 @@ export function PlayerView(props: { state: Accessor<PlayerState>; actions: Playe
       </Show>
 
       <section class="flex flex-col items-center gap-3">
-        {/* The beat images are drawn for a white background, so the frame stays white in dark mode. */}
+        {/* The beat images are drawn for a white background, so the frame stays white in dark mode.
+            The image swings with the beat (engine/swing.ts), unless the viewer asks for reduced motion. */}
         <div class="flex h-64 w-64 items-center justify-center overflow-hidden rounded-xl border-2 border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600">
-          <Show when={s().image}>{(src) => <img src={src()} alt="" class="max-h-full max-w-full object-contain" />}</Show>
+          <Show when={s().image}>
+            {(src) => (
+              <img
+                src={src()}
+                alt=""
+                class="max-h-full max-w-full object-contain will-change-transform motion-reduce:!transform-none"
+                style={{ transform: `scale(${props.swing?.() ?? 1})` }}
+              />
+            )}
+          </Show>
         </div>
         <p class="text-sm tabular-nums text-gray-500 dark:text-gray-400" aria-live="off">
           <Show when={s().beatCount > 0} fallback={<>&nbsp;</>}>

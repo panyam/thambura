@@ -84,6 +84,10 @@ unit-tested:
   is timbre, not octave), the 12 swarasthanas with just ratios, and
   `normalizeThambura`, which clamps anything (saved JSON, a patch) to valid
   settings.
+- `swing.ts` is the beat image's swing: `swingScale` shrinks the image in a
+  parabola (up to 20%) and lands it back at full size on the next beat. A
+  beat longer than 0.8 s holds still first, and the depth fades out between
+  0.5 s and 0.25 s beats (120 to 240 bpm for a one-count beat).
 - `tambura.ts` renders a pluck as a sum of decaying harmonics with a resonance
   sweeping down through them (a stand-in for the jawari). `pluckVoice` has two
   characters. In tambura mode a string rings 12-36 s (to -60 dB) and keeps its
@@ -118,7 +122,10 @@ unit-tested:
   about 22 ms apart, every tick still gets its exact audio time.
 - `presenter.ts` (`PlayerPresenter`): owns the engine and the transport, turns
   steps into `audio.play` calls plus image cues, and shows each cue in a
-  `requestAnimationFrame` loop once `heardNow` reaches it. It doesn't import
+  `requestAnimationFrame` loop once `heardNow` reaches it. The same loop
+  sends the swing through `PlayerView.setSwing`, a signal apart from
+  `PlayerState`, so a frame only restyles the image. The swing ends at the
+  next booked step, or at the `TempoMap`'s time for it before it's booked. It doesn't import
   Solid, and its tests run it under fakes.
 - `PlayerView.tsx`: renders `PlayerState` and calls the presenter's intents.
   `island.tsx` wires the real browser dependencies in, and `main.ts` mounts it
