@@ -35,6 +35,7 @@ SOURCES = {
     "jawari": dict(label="Tambura (new)", color="#2a78d6", ls="-", lw=2),
     "tambura": dict(label="Tambura (classic)", color="#eb6834", ls="--", lw=2),
     "guitar": dict(label="Guitar", color="#1baf7a", ls=":", lw=2),
+    "custom": dict(label="Custom (Lab)", color="#eda100", ls="-.", lw=2),
 }
 FINE_TIMES = list(np.round(np.arange(0.05, 4.51, 0.05), 2))
 
@@ -108,7 +109,7 @@ def line_chart(path: Path, title: str, ylabel: str, panels: list[tuple[str, dict
 
 
 def timing_chart(path: Path, results: dict[str, sl.Analysis]) -> None:
-    names = [k for k in ("recording", "jawari", "tambura") if k in results]
+    names = [k for k in ("recording", "jawari", "tambura", "custom") if k in results]
     fig, ax = plt.subplots(figsize=(8, 0.9 + 0.7 * len(names)))
     marks = ["o", "s", "D", "^"]
     for row, k in enumerate(reversed(names)):
@@ -133,7 +134,7 @@ def timing_chart(path: Path, results: dict[str, sl.Analysis]) -> None:
 
 
 def lift_chart(path: Path, results: dict[str, sl.Analysis]) -> None:
-    names = [k for k in ("recording", "jawari", "tambura") if k in results]
+    names = [k for k in ("recording", "jawari", "tambura", "custom") if k in results]
     fig, ax = plt.subplots(figsize=(7.5, 3.4))
     width = 0.8 / len(names)
     for j, k in enumerate(names):
@@ -188,7 +189,7 @@ def main() -> None:
     inputs: dict[str, tuple[sl.Audio, list[float], sl.Plucks | None]] = {}
     rec = sl.load(args.recording)
     inputs["recording"] = (rec, sl.string_pitches(args.sa), None)
-    for k in ("jawari", "tambura", "guitar"):
+    for k in ("jawari", "tambura", "guitar", "custom"):
         wav = Path(args.renders) / f"{k}.wav"
         if wav.exists():
             plucks, pitches = sl.load_plucks(wav.with_suffix(".json"))

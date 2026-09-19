@@ -5,8 +5,12 @@
 //   pnpm render-mix [--modes jawari,tambura,guitar] [--key C3] [--cycle 5.8]
 //                   [--seconds 30] [--rate 44100] [--tone 50] [--pluck 50]
 //                   [--sustain 60] [--voice gents] [--out ../recordings/renders]
+//                   [--custom lab.json]
+//
+// --custom plays the Lab view's "Copy settings" JSON; with it, --modes
+// defaults to custom.
 import { build } from "esbuild";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -14,7 +18,8 @@ import { parseArgs } from "node:util";
 const web = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const { values: opt } = parseArgs({
   options: {
-    modes: { type: "string", default: "jawari,tambura,guitar" },
+    modes: { type: "string" },
+    custom: { type: "string" },
     key: { type: "string", default: "C3" },
     cycle: { type: "string", default: "5.8" },
     seconds: { type: "string", default: "30" },
@@ -31,6 +36,7 @@ const { values: opt } = parseArgs({
 const bundle = await build({
   stdin: {
     contents: `export { mixThambura } from "./src/tools/thamburaMix";
+               export { normalizePlan, planFor } from "./src/engine/thamburaPlan";
                export { DEFAULT_THAMBURA, KEYS, normalizeThambura } from "./src/engine/shruthi";`,
     resolveDir: web,
     loader: "ts",
@@ -47,8 +53,12 @@ const key = lib.KEYS.findIndex((k) => `${k.note}${k.octave}` === opt.key);
 if (key < 0) throw new Error(`unknown key ${opt.key}; use e.g. C3, G#2, B3`);
 const rate = Number(opt.rate);
 mkdirSync(opt.out, { recursive: true });
+const custom = opt.custom
+  ? lib.normalizePlan(JSON.parse(readFileSync(opt.custom, "utf8")), lib.planFor({ ...lib.DEFAULT_THAMBURA, mode: "jawari" }))
+  : undefined;
+const modes = opt.modes ?? (custom ? "custom" : "jawari,tambura,guitar");
 
-for (const mode of opt.modes.split(",")) {
+for (const mode of modes.split(",")) {
   const s = lib.normalizeThambura({
     ...lib.DEFAULT_THAMBURA,
     key,
@@ -59,7 +69,7 @@ for (const mode of opt.modes.split(",")) {
     ...(opt.sustain && { sustain: Number(opt.sustain) }),
     ...(opt.voice && { voice: opt.voice }),
   });
-  const m = lib.mixThambura(s, Number(opt.seconds), rate);
+  const m = lib.mixThambura(s, Number(opt.seconds), rate, 1, custom);
   const base = join(opt.out, mode);
   writeFileSync(`${base}.wav`, wav(m.left, m.right, rate));
   writeFileSync(

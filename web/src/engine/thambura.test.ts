@@ -107,7 +107,7 @@ describe("normalizeThambura", () => {
   });
 
   it("lists every mode it accepts, once, with a label", () => {
-    expect(THAMBURA_MODES.map((m) => m.id)).toEqual(["jawari", "tambura", "guitar", "sruti"]);
+    expect(THAMBURA_MODES.map((m) => m.id)).toEqual(["jawari", "tambura", "guitar", "custom", "sruti"]);
     for (const m of THAMBURA_MODES) {
       expect(normalizeThambura({ mode: m.id }).mode).toBe(m.id);
       expect(m.label).not.toBe("");

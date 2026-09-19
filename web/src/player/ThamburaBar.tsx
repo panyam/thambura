@@ -2,6 +2,7 @@ import { createEffect, For, Match, onCleanup, onMount, Switch } from "solid-js";
 import { THAMBURA_MODES, type ThamburaMode } from "../engine/shruthi";
 import { THAMBURA_VIEWS } from "./thamburaPresenter";
 import { Segmented, SMALL_SELECT, type ThamburaViewProps } from "./thamburaControls";
+import { ThamburaLab } from "./ThamburaLab";
 import { ThamburaMini } from "./ThamburaMini";
 import { ThamburaRaagini } from "./ThamburaRaagini";
 import { ThamburaStudio } from "./ThamburaStudio";
@@ -74,6 +75,9 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
             </Match>
             <Match when={st().view === "raagini"}>
               <ThamburaRaagini state={props.state} actions={a} />
+            </Match>
+            <Match when={st().view === "lab"}>
+              <ThamburaLab state={props.state} actions={a} />
             </Match>
           </Switch>
         </div>

@@ -1,6 +1,5 @@
 import {
   DEFAULT_THAMBURA,
-  isTamburaMode,
   nextRaaginiString,
   normalizeThambura,
   srutiFrequencies,
@@ -8,27 +7,21 @@ import {
   MAX_CENTS,
   type ThamburaSettings,
 } from "../engine/shruthi";
-import { PluckRender, pluckVoice, reedSpectrum } from "../engine/tambura";
-import {
-  EVEN_PATTERN,
-  PLAYED_PATTERN,
-  ThamburaSequencer,
-  type DampEvent,
-  type PluckEvent,
-  type PluckPattern,
-  type ThamburaTiming,
-} from "../engine/thamburaSequencer";
+import { PluckRender, reedSpectrum } from "../engine/tambura";
+import { normalizePlan, patternOf, planFor, type ThamburaPlan } from "../engine/thamburaPlan";
+import { ThamburaSequencer, type DampEvent, type PluckEvent, type ThamburaTiming } from "../engine/thamburaSequencer";
 import type { AudioOut, PlayOptions, ToneHandle } from "./audio";
 import type { FrameLoop } from "./presenter";
 import { Transport, type Ticker } from "./transport";
 
-export type ThamburaViewId = "mini" | "studio" | "raagini";
+export type ThamburaViewId = "mini" | "studio" | "raagini" | "lab";
 
 /** The views the bar's switch offers, in order. */
 export const THAMBURA_VIEWS: { id: ThamburaViewId; label: string }[] = [
   { id: "mini", label: "Mini" },
   { id: "studio", label: "Studio" },
   { id: "raagini", label: "Raagini" },
+  { id: "lab", label: "Lab" },
 ];
 
 export interface ThamburaState {
@@ -37,6 +30,8 @@ export interface ThamburaState {
   /** Whether the floating bar is showing. Hiding it doesn't stop the sound. */
   open: boolean;
   view: ThamburaViewId;
+  /** The plan the Custom mode plays, edited in the Lab view. */
+  custom: ThamburaPlan;
   /** Strings whose pluck was heard a moment ago, for the glow and the LEDs. */
   lit: [boolean, boolean, boolean, boolean];
 }
@@ -64,16 +59,6 @@ export interface ThamburaDeps {
   rng?: () => number;
 }
 
-// Loudness and stereo place of each string: first, Sa, Sa, low Sa.
-const STRING_GAIN = [0.8, 0.7, 0.7, 1];
-const STRING_PAN = [-0.25, 0.1, -0.1, 0.25];
-// In both tambura modes the second Sa string sits a shade sharp of the first, so the
-// pair beats slowly, as two strings tuned by ear do.
-const TAMBURA_DETUNE = [0, 0, 1.5, 0];
-// Classic tambura plucks ring into each other, so they play a little softer.
-// The jawari's are damped before they're plucked again and bloom from a quiet
-// attack; at full level they match the classic's loudness (RMS within 0.1 dB).
-const TAMBURA_LEVEL = 0.7;
 // Work per deferred render call, in harmonic-samples (see PluckRender.step):
 // about 20 ms, inside the transport's 75 ms margin.
 const RENDER_BUDGET = 6_000_000;
@@ -125,14 +110,16 @@ export class ThamburaPresenter {
 
   constructor(private readonly deps: ThamburaDeps) {
     const saved = (loadSafely(deps.store) ?? {}) as Record<string, unknown>;
+    const settings = normalizeThambura(saved.settings, DEFAULT_THAMBURA);
     this.state = {
-      settings: normalizeThambura(saved.settings, DEFAULT_THAMBURA),
+      settings,
       playing: false,
       open: saved.open === true,
       view: VIEW_IDS.includes(saved.view as ThamburaViewId) ? (saved.view as ThamburaViewId) : "studio",
+      custom: normalizePlan(saved.custom, planFor({ ...settings, mode: "jawari" })),
       lit: DARK,
     };
-    this.timing = { cycleSeconds: this.state.settings.cycleSeconds, pattern: patternFor(this.state.settings) };
+    this.timing = { cycleSeconds: settings.cycleSeconds, pattern: patternOf(this.plan()) };
     const seq = new ThamburaSequencer(this.timing, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker);
     this.transport.add(seq, (e) => ("damp" in e ? this.damp(e) : this.pluck(e)));
@@ -175,14 +162,37 @@ export class ThamburaPresenter {
   set(patch: Partial<ThamburaSettings>): void {
     const prev = this.state.settings;
     const next = normalizeThambura({ ...prev, ...patch }, prev);
-    this.update({ settings: next });
+    this.apply(next, this.state.custom);
+  }
+
+  /**
+   * Replaces the Custom mode's plan (clamped to the Lab's ranges) and
+   * switches to Custom, so the change is heard. Voice changes re-render the
+   * strings they touch shortly after; level, pan, detune and timing apply at
+   * the next pluck.
+   */
+  setCustom(plan: ThamburaPlan): void {
+    const custom = normalizePlan(plan, this.state.custom);
+    this.apply({ ...this.state.settings, mode: "custom" }, custom);
+  }
+
+  /** Starts the Custom plan from another plucked mode's, which sounds the same until edited. */
+  loadCustom(from: ThamburaSettings["mode"]): void {
+    this.setCustom(planFor({ ...this.state.settings, mode: from }, this.state.custom));
+  }
+
+  private apply(next: ThamburaSettings, custom: ThamburaPlan): void {
+    const prev = this.state.settings;
+    const prevKeys = sampleKeys(prev, planFor(prev, this.state.custom));
+    this.update({ settings: next, custom });
     this.save();
 
+    const plan = this.plan();
     if (next.volume !== prev.volume) this.deps.audio.setBusVolume("drone", next.volume);
     this.timing.cycleSeconds = next.cycleSeconds;
-    this.timing.pattern = patternFor(next);
+    this.timing.pattern = patternOf(plan);
 
-    if (sampleKeys(next).join() !== sampleKeys(prev).join()) this.invalidate();
+    if (sampleKeys(next, plan).join() !== prevKeys.join()) this.invalidate();
 
     if (!this.state.playing) return;
     if (isPlucked(next.mode) !== isPlucked(prev.mode)) {
@@ -297,12 +307,13 @@ export class ThamburaPresenter {
   private renderStep(): boolean {
     const s = this.state.settings;
     const { audio } = this.deps;
-    const keys = sampleKeys(s);
+    const plan = this.plan();
+    const keys = sampleKeys(s, plan);
     const missing = keys.findIndex((k) => !this.rendered.has(k));
     if (missing >= 0) {
       if (this.job?.key !== keys[missing]) {
         const hz = stringFrequencies(s)[missing];
-        this.job = { key: keys[missing], render: new PluckRender(hz, audio.sampleRate, pluckVoice(s, missing), missing + 1) };
+        this.job = { key: keys[missing], render: new PluckRender(hz, audio.sampleRate, plan.strings[missing].voice, missing + 1) };
       }
       if (this.job.render.step(RENDER_BUDGET)) {
         audio.addSamples(this.job.key, this.job.render.result());
@@ -322,7 +333,7 @@ export class ThamburaPresenter {
   }
 
   private pluck(e: PluckEvent): void {
-    this.deps.audio.play(this.stringKeys[e.string], "drone", e.time, pluckOptions(this.state.settings, e));
+    this.deps.audio.play(this.stringKeys[e.string], "drone", e.time, pluckOptions(this.plan(), this.state.settings.cents, e));
     this.cues.push({ time: e.time, string: e.string });
   }
 
@@ -348,10 +359,14 @@ export class ThamburaPresenter {
     this.frameId = this.deps.frames.request(frame);
   }
 
+  private plan(): ThamburaPlan {
+    return planFor(this.state.settings, this.state.custom);
+  }
+
   private save(): void {
-    const { settings, view, open } = this.state;
+    const { settings, view, open, custom } = this.state;
     try {
-      this.deps.store?.save({ settings, view, open });
+      this.deps.store?.save({ settings, view, open, custom });
     } catch {
       // Storage can be full or blocked; the settings just won't be remembered.
     }
@@ -372,9 +387,9 @@ function isPlucked(mode: ThamburaSettings["mode"]): boolean {
  * pluck. Two settings with the same keys can share samples; sruti mode keys
  * like tambura, so switching to it and back re-renders nothing.
  */
-function sampleKeys(s: ThamburaSettings): string[] {
+function sampleKeys(s: ThamburaSettings, plan: ThamburaPlan): string[] {
   return stringFrequencies(s).map((hz, i) => {
-    const voice = Object.values(pluckVoice(s, i))
+    const voice = Object.values(plan.strings[i].voice)
       .map((v) => v.toFixed(3))
       .join("/");
     return `thambura/${hz.toFixed(3)}/${voice}`;
@@ -382,22 +397,13 @@ function sampleKeys(s: ThamburaSettings): string[] {
 }
 
 /**
- * How a pluck plays: fine tune plus the second Sa's slight sharpness in the
- * tambura modes, the string's level and stereo place, and its choke group.
- * Exported for tools/thamburaMix, which renders the drone offline.
+ * How a pluck plays: fine tune plus the string's detune, its level and
+ * stereo place, and its choke group. Exported for tools/thamburaMix, which
+ * renders the drone offline.
  */
-export function pluckOptions(s: ThamburaSettings, e: PluckEvent): PlayOptions {
-  return {
-    detune: s.cents + (isTamburaMode(s.mode) ? TAMBURA_DETUNE[e.string] : 0),
-    gain: e.gain * STRING_GAIN[e.string] * (s.mode === "tambura" ? TAMBURA_LEVEL : 1),
-    pan: STRING_PAN[e.string],
-    choke: `thambura/string${e.string}`,
-  };
-}
-
-/** The jawari tambura plucks as the recorded player did; the others keep even slots. */
-export function patternFor(s: ThamburaSettings): PluckPattern {
-  return s.mode === "jawari" ? PLAYED_PATTERN : EVEN_PATTERN;
+export function pluckOptions(plan: ThamburaPlan, cents: number, e: PluckEvent): PlayOptions {
+  const p = plan.strings[e.string];
+  return { detune: cents + p.detune, gain: e.gain * p.level, pan: p.pan, choke: `thambura/string${e.string}` };
 }
 
 function loadSafely(store: ThamburaStore | undefined): unknown {

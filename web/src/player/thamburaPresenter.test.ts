@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_THAMBURA, KEY_G3, srutiFrequencies, type ThamburaSettings } from "../engine/shruthi";
+import { planFor } from "../engine/thamburaPlan";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 import { ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
 
@@ -382,11 +383,78 @@ describe("ThamburaPresenter", () => {
     expect(p.state.settings.firstString).toBe("Pa");
   });
 
+  it("starts the custom plan from a mode, sounding the same and rendering nothing new", async () => {
+    set({ mode: "jawari" });
+    await start();
+    run(12);
+    const jawari = audio.played.slice(-4);
+    const samples = [...audio.samples.keys()];
+    p.loadCustom("jawari");
+    expect(p.state.settings.mode).toBe("custom");
+    expect(deferred).toHaveLength(0);
+    expect([...audio.samples.keys()]).toEqual(samples);
+    const n = audio.played.length;
+    run(24);
+    const custom = audio.played.slice(n).slice(0, 4);
+    const strip = (e: (typeof custom)[number]) => ({ url: e.url, opts: e.opts });
+    expect(custom.map(strip).sort((a, b) => a.url.localeCompare(b.url))).toEqual(
+      jawari.map(strip).sort((a, b) => a.url.localeCompare(b.url)),
+    );
+  });
+
+  it("re-renders only the string whose voice the Lab changed", async () => {
+    p.loadCustom("jawari");
+    await start();
+    const before = [...audio.samples.keys()];
+    const plan = p.state.custom;
+    const strings = [...plan.strings] as typeof plan.strings;
+    strings[2] = { ...strings[2], voice: { ...strings[2].voice, attack: 0.03 } };
+    p.setCustom({ ...plan, strings });
+    flushDeferred();
+    const after = [...audio.samples.keys()];
+    // The Sa strings shared one sample; the first Sa keeps it and the second gets its own.
+    expect(before).toHaveLength(3);
+    expect(after.filter((k) => !before.includes(k))).toHaveLength(1);
+    expect(before.every((k) => after.includes(k))).toBe(true);
+  });
+
+  it("applies a custom level, pan and detune at the next pluck without re-rendering", async () => {
+    p.loadCustom("jawari");
+    await start();
+    const plan = p.state.custom;
+    const strings = plan.strings.map((s) => ({ ...s, level: 0.5, pan: 0.5, detune: 3 })) as typeof plan.strings;
+    p.setCustom({ ...plan, strings });
+    expect(deferred).toHaveLength(0);
+    const n = audio.played.length;
+    run(8);
+    const e = audio.played[n];
+    expect(e.opts).toMatchObject({ detune: 3, pan: 0.5 });
+    expect(e.opts!.gain! / 0.5).toBeGreaterThan(0.84);
+  });
+
+  it("stops no string when the custom plan damps none", async () => {
+    const plan = p.state.custom;
+    p.setCustom({ ...plan, strings: plan.strings.map((s) => ({ ...s, damp: 0 })) as typeof plan.strings });
+    await start();
+    run(12);
+    expect(audio.played.length).toBeGreaterThan(8);
+    expect(audio.damped).toEqual([]);
+  });
+
+  it("remembers the custom plan, and falls back to the jawari's for a broken one", () => {
+    p.loadCustom("guitar");
+    const saved = store.saved as { custom: unknown };
+    make(store.saved);
+    expect(p.state.custom).toEqual(saved.custom);
+    make({ custom: { strings: 42 } });
+    expect(p.state.custom).toEqual(planFor({ ...DEFAULT_THAMBURA, mode: "jawari" }));
+  });
+
   it("saves settings, view and open state", () => {
     set({ key: 7 });
     p.setView("mini");
     p.toggleOpen();
-    expect(store.saved).toEqual({ settings: { ...DEFAULT_THAMBURA, key: 7 }, view: "mini", open: true });
+    expect(store.saved).toEqual({ settings: { ...DEFAULT_THAMBURA, key: 7 }, view: "mini", open: true, custom: p.state.custom });
     expect(views.at(-1)?.view).toBe("mini");
   });
 

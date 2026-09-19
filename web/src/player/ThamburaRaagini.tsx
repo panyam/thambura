@@ -190,7 +190,7 @@ function Power(props: { on: boolean; onClick: () => void }) {
 }
 
 // The plucked modes on the LCD, which tells the two tambura voices apart.
-const LCD_MODES: Record<ThamburaMode, string> = { jawari: "tmb", tambura: "tmb c", guitar: "gtr", sruti: "sruti" };
+const LCD_MODES: Record<ThamburaMode, string> = { jawari: "tmb", tambura: "tmb c", guitar: "gtr", custom: "cst", sruti: "sruti" };
 
 // The switch's positions. Moving to TMB selects the classic voice, the default.
 const MODES: { mode: ThamburaMode; label: string }[] = [
@@ -199,7 +199,7 @@ const MODES: { mode: ThamburaMode; label: string }[] = [
   { mode: "sruti", label: "SRUTI" },
 ];
 
-/** The switch position showing `mode`: both tambura voices sit at TMB. */
+/** The switch position showing `mode`: both tambura voices and Custom sit at TMB. */
 function position(mode: ThamburaMode): number {
   return isTamburaMode(mode) ? 0 : Math.max(0, MODES.findIndex((m) => m.mode === mode));
 }

@@ -1,8 +1,9 @@
 import { stringFrequencies, type ThamburaSettings } from "../engine/shruthi";
-import { pluckVoice, renderPluck } from "../engine/tambura";
+import { renderPluck } from "../engine/tambura";
+import { patternOf, planFor, type ThamburaPlan } from "../engine/thamburaPlan";
 import { ThamburaSequencer, type ThamburaEvent } from "../engine/thamburaSequencer";
 import { CHOKE_FADE } from "../player/audio";
-import { DAMP_FADE, patternFor, pluckOptions } from "../player/thamburaPresenter";
+import { DAMP_FADE, pluckOptions } from "../player/thamburaPresenter";
 
 /** A rendered drone: stereo samples and what was played when. */
 export interface ThamburaMix {
@@ -20,15 +21,17 @@ export interface ThamburaMix {
  * AudioEngine do in the browser: the same renders, sequencer, per-pluck
  * options (level, pan, detune), 80 ms choke on a re-pluck and damp fades.
  * For listening to a mode and measuring it (docs/sound-analysis.md); only
- * the limiter and the bus volume are left out.
+ * the limiter and the bus volume are left out. Custom mode plays `custom`,
+ * as exported from the Lab view.
  */
-export function mixThambura(s: ThamburaSettings, seconds: number, sampleRate: number, seed = 1): ThamburaMix {
+export function mixThambura(s: ThamburaSettings, seconds: number, sampleRate: number, seed = 1, custom?: ThamburaPlan): ThamburaMix {
+  const plan = planFor(s, custom);
   const frequencies = stringFrequencies(s);
-  const samples = frequencies.map((hz, i) => renderPluck(hz, sampleRate, pluckVoice(s, i), i + 1));
+  const samples = frequencies.map((hz, i) => renderPluck(hz, sampleRate, plan.strings[i].voice, i + 1));
   let state = seed;
   // The presenter uses Math.random; a seeded draw keeps a mix repeatable.
   const rng = () => ((state = (state * 16807) % 2147483647) - 1) / 2147483646;
-  const seq = new ThamburaSequencer({ cycleSeconds: s.cycleSeconds, pattern: patternFor(s) }, rng);
+  const seq = new ThamburaSequencer({ cycleSeconds: s.cycleSeconds, pattern: patternOf(plan) }, rng);
   seq.start(0.25);
   const events = seq.pull(0, seconds);
 
@@ -50,7 +53,7 @@ export function mixThambura(s: ThamburaSettings, seconds: number, sampleRate: nu
       continue;
     }
     if (prev && prev.fadeAt === Infinity) Object.assign(prev, { fadeAt: e.time, fade: CHOKE_FADE });
-    const o = pluckOptions(s, e);
+    const o = pluckOptions(plan, s.cents, e);
     const note = { string: e.string, at: e.time, gain: o.gain ?? 1, rate: 2 ** ((o.detune ?? 0) / 1200), pan: o.pan ?? 0, fadeAt: Infinity, fade: 0 };
     notes.push(note);
     latest[e.string] = note;
