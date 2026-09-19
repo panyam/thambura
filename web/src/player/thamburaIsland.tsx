@@ -16,8 +16,8 @@ const LINK_PARAM = "s";
 const LINK_SETTLE_MS = 400;
 
 /**
- * Mounts the thambura bar on `el` and wires the site header's thambura
- * buttons: `play` starts and stops it from anywhere on the page, as does the
+ * Mounts the thambura bar on `el` and wires the page's floating thambura
+ * controls: `play` starts and stops it from anywhere on the page, as does the
  * T key, and `toggle` opens and closes the bar. It plays through the page's
  * shared AudioEngine, on the drone bus. `onPlaying` hears whenever it starts
  * or stops.
@@ -26,10 +26,10 @@ export function createThamburaIsland(
   el: HTMLElement,
   eventBus: EventBus,
   audio: AudioEngine,
-  header: { toggle: HTMLElement | null; play: HTMLElement | null },
+  controls: { root: HTMLElement | null; toggle: HTMLElement | null; play: HTMLElement | null },
   onPlaying?: (playing: boolean) => void,
 ): SolidIsland {
-  const { toggle, play } = header;
+  const { toggle, play } = controls;
   const presenter = new ThamburaPresenter({
     audio,
     ticker: workerTicker(),
@@ -46,7 +46,7 @@ export function createThamburaIsland(
   presenter.attach({
     setState(s) {
       setState(s);
-      reflect(header, s);
+      reflect(controls, s);
       onPlaying?.(s.playing);
     },
   });
@@ -71,10 +71,23 @@ export function createThamburaIsland(
   );
 }
 
-/** Shows on the header's buttons whether the thambura is playing and the bar open. */
-function reflect(header: { toggle: HTMLElement | null; play: HTMLElement | null }, s: ThamburaState): void {
-  header.toggle?.setAttribute("aria-expanded", String(s.open));
-  const play = header.play;
+/** Shows on the floating buttons whether the thambura is playing and the bar open. */
+function reflect(controls: { root: HTMLElement | null; toggle: HTMLElement | null; play: HTMLElement | null }, s: ThamburaState): void {
+  // The open bar carries its own play and hide buttons, and on a phone it
+  // leaves no room below it, so the floating pair fades out while it's open.
+  const root = controls.root;
+  if (root) {
+    root.classList.toggle("opacity-0", s.open);
+    root.classList.toggle("translate-y-6", s.open);
+    root.inert = s.open;
+  }
+  const toggle = controls.toggle;
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", String(s.open));
+    toggle.setAttribute("aria-label", s.open ? "Hide the shruthi box" : "Shruthi box");
+    toggle.title = s.open ? "Hide the shruthi box" : "Show the shruthi box";
+  }
+  const play = controls.play;
   if (!play) return;
   play.dataset.playing = String(s.playing);
   play.setAttribute("aria-pressed", String(s.playing));

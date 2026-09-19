@@ -46,6 +46,34 @@
 </main>
 <!-- The thambura bar (web/src/player/ThamburaBar.tsx) mounts here; it floats over the page. -->
 <div id="thambura"></div>
+<!-- The thambura's floating controls: start/stop, and open the bar.
+     thamburaIsland.tsx binds them by id and keeps their state in step. They
+     step aside while the bar is open, which carries the same two controls in
+     its own header. -->
+<div id="thambura-controls"
+     class="pointer-events-none fixed right-4 z-40 flex flex-col items-end gap-3 transition-[opacity,transform] duration-200 ease-out print:hidden"
+     style="bottom: calc(1rem + env(safe-area-inset-bottom, 0px))">
+    <button id="thambura-play" type="button" data-playing="false" aria-pressed="false"
+            class="group pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-lg hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 data-[playing=true]:border-amber-600 data-[playing=true]:bg-amber-600 data-[playing=true]:text-white dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:focus-visible:ring-offset-gray-900"
+            aria-label="Start thambura" title="Start the thambura (T)">
+        <svg class="h-5 w-5 group-data-[playing=true]:hidden" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4v12l10-6z"/></svg>
+        <svg class="hidden h-5 w-5 group-data-[playing=true]:block" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="1.5"/></svg>
+    </button>
+    <button id="thambura-toggle" type="button" aria-expanded="false" aria-controls="thambura"
+            class="group pointer-events-auto flex h-14 items-center gap-2 rounded-full bg-amber-600 pl-4 pr-5 text-white shadow-lg hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 aria-expanded:pr-4 dark:focus-visible:ring-offset-gray-900"
+            aria-label="Shruthi box" title="Show the shruthi box">
+        <svg class="h-6 w-6 shrink-0 group-aria-expanded:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+            <path d="M11 2.5h2M11 13V3.5M13 13V3.5"/>
+            <path d="M8.8 5h2.2M13 5h2.2M8.8 8h2.2M13 8h2.2"/>
+            <path d="M11 13.2a5 5 0 1 0 2 0"/>
+            <path d="M12 3.5V20"/>
+        </svg>
+        <svg class="hidden h-6 w-6 shrink-0 group-aria-expanded:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6"/>
+        </svg>
+        <span class="text-sm font-semibold group-aria-expanded:hidden">Shruthi box</span>
+    </button>
+</div>
 {{ end }}
 
 {{ define "PageScripts" }}

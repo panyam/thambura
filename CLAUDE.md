@@ -207,8 +207,8 @@ unit-tested:
   released so the re-pluck's choke leaves it alone. Sruti mode
   mixes its three tones swara-first (0.40 / 0.25 / 0.08, panned apart), since
   the octave Sa's otherwise fuse into one note and bury the swara.
-- `ThamburaBar.tsx` is the bar that slides up from the bottom when the header's
-  `#thambura-toggle` is clicked. Its header holds the one start/stop button
+- `ThamburaBar.tsx` is the bar that slides up from the bottom when the
+  floating `#thambura-toggle` is clicked. Its header holds the one start/stop button
   every view shares (the views have none of their own, except the Raagini's
   power switch, part of the replica), the Sound menu (the mode,
   from `THAMBURA_MODES`, so it applies in every view) and a switch between
@@ -228,9 +228,11 @@ unit-tested:
   and the spectrum with the bloom band shaded. Shared bits are in
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
-- `thamburaIsland.tsx` wires the site header's `#thambura-play` (start/stop
-  from anywhere on the page, bar open or not; `reflect` flips its icon via
-  `data-playing` and its label), `#thambura-toggle` (open/close the bar), and
+- `thamburaIsland.tsx` wires the page's floating controls, the stack at the
+  bottom right in `HomePage.html` (`#thambura-controls`): `#thambura-play`
+  (start/stop from anywhere on the page, bar open or not; `reflect` flips its
+  icon via `data-playing` and its label), `#thambura-toggle` (the labelled
+  "Shruthi box" pill that opens the bar, a chevron once open), and
   the T key (`shortcuts.ts`: not while typing in a field, not with
   Ctrl/Cmd/Alt, not on key repeat). It wires the link to the address bar: `replaceState`, no
   history entries, 400 ms after the last change, since Safari throws after
@@ -364,7 +366,7 @@ The tala's transport buttons are icons, so select them by label:
 `button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). With
 `getByRole`, pass `exact: true`: name matching is a substring match, so
 "Start" also finds Restart. The
-thambura opens with `#thambura-toggle`, its views are
+thambura opens with the floating `#thambura-toggle`, its views are
 `button[role="radio"]:has-text("Raagini")` and so on, its mode is
 `select[aria-label="Sound"]`, `select[aria-label="Presets"]` holds the presets (its "Save current as…"
 entry opens a `prompt`, so answer it with a `dialog` handler),
@@ -373,10 +375,12 @@ page's `?s=` link (give the context the clipboard permissions to read it back;
 a fresh context opening that URL is the second listener), the Lab's controls are ranges labelled by field
 (`input[aria-label="Attack"]`, tabs under `[aria-label="String"]`, mute dots
 `button[aria-label="Mute string 3 · Sa"]`, `select[aria-label="Copy"]`) with the
-plan in `textarea[aria-label="Settings JSON"]`. It plays with `#thambura-play`
-in the site header, or `page.keyboard.press("t")`. Once the bar is open,
-"Start thambura" labels two buttons (the site header's and the bar's), so
-scope the bar's to `[role="region"][aria-label="Thambura"]`. The theme toggle cycles system, light,
+plan in `textarea[aria-label="Settings JSON"]`. It plays with the floating
+`#thambura-play`, or `page.keyboard.press("t")`. Once the bar is open, the
+floating pair fades out and goes `inert` (the bar carries the same two
+controls), so drive the bar's own buttons then: scope to
+`[role="region"][aria-label="Thambura"]`, and hide it again with
+`button[aria-label="Hide thambura"]`. The theme toggle cycles system, light,
 dark, so dark takes two clicks (or launch the page with `colorScheme: "dark"`).
 
 A few probes that worked, all set up in an init script:

@@ -129,7 +129,7 @@ sound can travel both ways.
 To share a sound with other listeners, send the page's address: the `?s=`
 parameter carries the whole setup, the Custom plan included, and the bar's
 link button copies it. Opening it plays the same sound in the same view.
-Save sounds you like as presets (the Lab's Presets section, or the header's
+Save sounds you like as presets (the Lab's Presets section, or the bar's
 Presets menu). A preset's Share button opens a "Share a preset" issue on
 GitHub with its link filled in, which is how good sounds from listeners can
 become built-in presets.
