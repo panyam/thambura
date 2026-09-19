@@ -4,7 +4,6 @@ import {
   centsLabel,
   hzLabel,
   keyOptionLabel,
-  PlayButton,
   RepeatButton,
   Segmented,
   SMALL_BUTTON,
@@ -26,7 +25,6 @@ export function ThamburaStudio(props: ThamburaViewProps) {
   return (
     <div class="grid gap-5">
       <div class="flex flex-wrap items-center gap-3">
-        <PlayButton playing={st().playing} onClick={() => void a.toggle()} class="h-12 w-12" />
         <div class="min-w-0">
           <div class="text-2xl font-semibold tabular-nums">
             {keyOptionLabel(s().key)} <span class="text-sm font-normal text-gray-500 dark:text-gray-400">kattai</span>

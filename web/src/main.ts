@@ -23,8 +23,8 @@ class HomePage extends BasePage {
     }
     const thambura = document.getElementById("thambura");
     if (thambura) {
-      const toggle = document.getElementById("thambura-toggle");
-      components.push(createThamburaIsland(thambura, this.eventBus, audio, toggle, (on) => awake.set("thambura", on)));
+      const header = { toggle: document.getElementById("thambura-toggle"), play: document.getElementById("thambura-play") };
+      components.push(createThamburaIsland(thambura, this.eventBus, audio, header, (on) => awake.set("thambura", on)));
     }
     return components;
   }

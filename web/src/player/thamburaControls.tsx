@@ -68,6 +68,7 @@ export function keyOptionLabel(key: number): string {
   return `${k.note}${k.octave} · ${k.kattai}`;
 }
 
+/** Start/stop, round and amber. The bar's header has the one every view shares. */
 export function PlayButton(props: { playing: boolean; onClick: () => void; class?: string }) {
   return (
     <button
@@ -75,6 +76,7 @@ export function PlayButton(props: { playing: boolean; onClick: () => void; class
       onClick={() => props.onClick()}
       aria-label={props.playing ? "Stop thambura" : "Start thambura"}
       aria-pressed={props.playing}
+      title={props.playing ? "Stop (T)" : "Start (T)"}
       class={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white shadow-sm hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 ${props.class ?? ""}`}
     >
       {props.playing ? (
