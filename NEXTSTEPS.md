@@ -17,12 +17,12 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 
 - [x] **Shruthi box.** The thambura: synthesized tambura and sruti modes,
       with Mini, Studio and Raagini views in a floating bar.
-- [ ] Thambura follow-ups: a jawari control, a 5th string, raga presets that
-      set the first string, a second tambura panned apart, a mic tuner, sampled
-      tamburas, rendering plucks in a worker, and lock-screen controls
-      (MediaSession).
-- [ ] Listen to the thambura against a tuner app or a real sruti box, and tune
-      the synth (the jawari sweep, string balance) by ear.
+- [ ] **Thambura sound quality** (issue #8). Compare with a real tambura
+      recording the user will supply, fit the synth to it, check by ear. Also
+      the jawari control, a 5th string, a second tambura, and rendering in a
+      worker.
+- [ ] Thambura extras outside sound quality: raga presets that set the first
+      string, a mic tuner, and lock-screen controls (MediaSession).
 - [ ] **Musical timeline refactor.** Shared tempo map; sequencers emit in
       musical time with exact fractions. Needed before a second rhythmic voice.
 - [ ] **Mridangam / tabla.** Per-stroke sequencer on the `percussion` bus, with
