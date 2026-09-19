@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Native controls (select popups, range tracks) follow the theme. */
+html.dark {
+  color-scheme: dark;
+}
+
+/* goapplib's header renders a mobile menu button for its actions drawer.
+   Sadhana has no drawer (it only holds login links), so hide the button. */
+#header-actions-menu-btn {
+  display: none;
+}
+
+/* Room below the page content for the open thambura bar, whose island sets
+   the variable to the bar's height (0 when hidden). */
+main {
+  padding-bottom: var(--thambura-bar-height, 0px);
+}

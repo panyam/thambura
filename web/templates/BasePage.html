@@ -1,0 +1,67 @@
+<!-- sadhana/web/templates/BasePage.html -->
+<!--
+Extends goapplib's BasePage (vendored under templar_modules/ by `templar get`).
+It keeps goapplib's theme bootstrap and header with its light/dark toggle, and
+swaps in our logo with no login actions (the app has no accounts). goapplib's
+header actions drawer is login-only, so it is left out.
+
+Pages include this file, define "BodySection" and "PageScripts" (both are
+required: Go templates reject a second definition, so this file cannot carry
+defaults for them), and render "BasePage".
+-->
+{{# namespace "GoalBase" "@goapplib/BasePage.html" #}}
+
+{{# extend "GoalBase:Header" "SadhanaHeader"
+           "GoalBase:HeaderLogo" "SadhanaHeaderLogo"
+           "GoalBase:HeaderActions" "SadhanaHeaderActions" #}}
+
+{{ define "SadhanaHeaderLogo" }}
+<a href="/" class="flex items-center space-x-2">
+    <svg class="h-8 w-8 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <path stroke-linecap="round" d="M12 3v3M12 18v3M3 12h3M18 12h3"/>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+    </svg>
+    <span class="font-bold text-xl text-gray-900 dark:text-white">{{ .AppName }}</span>
+</a>
+{{ end }}
+
+{{/* goapplib renders these just before its theme toggle. The thambura island
+     binds the button and shows the dot while the thambura plays. */}}
+{{ define "SadhanaHeaderActions" }}
+<button id="thambura-toggle" type="button" aria-expanded="false" aria-controls="thambura"
+        class="relative p-2 rounded-md text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 aria-expanded:text-amber-600 dark:aria-expanded:text-amber-400"
+        aria-label="Thambura" title="Thambura">
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+        <path d="M11 2.5h2M11 13V3.5M13 13V3.5"/>
+        <path d="M8.8 5h2.2M13 5h2.2M8.8 8h2.2M13 8h2.2"/>
+        <path d="M11 13.2a5 5 0 1 0 2 0"/>
+        <path d="M12 3.5V20"/>
+    </svg>
+    <span data-playing class="hidden absolute right-1 top-1 h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+</button>
+{{ end }}
+
+{{ define "SadhanaHeaderSection" }}
+<div class="print:hidden sticky left-0 top-0 z-20 border-b border-gray-200 dark:border-gray-700">
+    {{ template "SadhanaHeader" .Header }}
+</div>
+{{ end }}
+
+{{ define "SadhanaExtraHead" }}
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+{{ end }}
+
+{{/* No HTMX: the pages are static shells. */}}
+{{ define "SadhanaHTMX" }}{{ end }}
+
+{{ define "SadhanaScripts" }}
+{{ template "PageScripts" . }}
+{{ end }}
+
+{{# extend "GoalBase:BasePage" "BasePage"
+           "GoalBase:HTMXSection" "SadhanaHTMX"
+           "GoalBase:ExtraHeadSection" "SadhanaExtraHead"
+           "GoalBase:HeaderSection" "SadhanaHeaderSection"
+           "GoalBase:BodySection" "BodySection"
+           "GoalBase:PostScriptsSection" "SadhanaScripts" #}}

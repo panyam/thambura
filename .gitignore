@@ -1,0 +1,10 @@
+/bin/
+/locallinks/
+
+# Frontend build output (make ui)
+/web/node_modules/
+/web/static/app.js
+/web/static/app.js.map
+/web/static/css/tailwind.css
+
+.DS_Store

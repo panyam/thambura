@@ -1,0 +1,19 @@
+{{# include "./BasePage.html" #}}
+
+{{ define "BodySection" }}
+<main class="flex-1 overflow-auto">
+    <!-- The player island (web/src/player/PlayerView.tsx) mounts here. -->
+    <div id="player" class="mx-auto w-full max-w-3xl px-4 py-6 sm:py-10"
+         data-fixtures-url="/static/Resources/TalasFixtures.json">
+        <noscript>Sadhana needs JavaScript to play.</noscript>
+    </div>
+</main>
+<!-- The thambura bar (web/src/player/ThamburaBar.tsx) mounts here; it floats over the page. -->
+<div id="thambura"></div>
+{{ end }}
+
+{{ define "PageScripts" }}
+<script type="module" src="/static/app.js"></script>
+{{ end }}
+
+{{ define "HomePage" }}{{ template "BasePage" . }}{{ end }}

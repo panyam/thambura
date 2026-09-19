@@ -1,9 +1,10 @@
-application: layagnana
-version: 1
-runtime: go
-api_version: go1
+# App Engine standard. The runtime must be at least the go directive in go.mod.
+runtime: go126
 
 handlers:
+- url: /static
+  static_dir: web/static
+  secure: always
 - url: /.*
-  script: _go_app
-
+  script: auto
+  secure: always
