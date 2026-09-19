@@ -8,3 +8,8 @@
 /web/static/css/tailwind.css
 
 .DS_Store
+
+# Tambura recordings and offline renders for tools/sound-analysis (docs/sound-analysis.md)
+/recordings/
+/tools/sound-analysis/.venv/
+__pycache__/

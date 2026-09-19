@@ -16,7 +16,14 @@ import {
   type ThamburaSettings,
 } from "./shruthi";
 import { PluckRender, pluckVoice, renderPluck, reedSpectrum } from "./tambura";
-import { ThamburaSequencer, type PluckEvent } from "./thamburaSequencer";
+import {
+  EVEN_PATTERN,
+  PLAYED_PATTERN,
+  ThamburaSequencer,
+  type DampEvent,
+  type PluckEvent,
+  type ThamburaEvent,
+} from "./thamburaSequencer";
 
 const settings = (patch: Partial<ThamburaSettings> = {}): ThamburaSettings => ({ ...DEFAULT_THAMBURA, ...patch });
 const cents = (a: number, b: number) => 1200 * Math.log2(a / b);
@@ -100,7 +107,7 @@ describe("normalizeThambura", () => {
   });
 
   it("lists every mode it accepts, once, with a label", () => {
-    expect(THAMBURA_MODES.map((m) => m.id)).toEqual(["tambura", "guitar", "sruti"]);
+    expect(THAMBURA_MODES.map((m) => m.id)).toEqual(["jawari", "tambura", "guitar", "sruti"]);
     for (const m of THAMBURA_MODES) {
       expect(normalizeThambura({ mode: m.id }).mode).toBe(m.id);
       expect(m.label).not.toBe("");
@@ -228,7 +235,7 @@ describe("tambura and guitar plucks", () => {
     expect(kept(t)).toBeGreaterThan(kept(g) * 1.5);
   });
 
-  it.each(["tambura", "guitar"] as const)("sounds in tune as a %s", (mode) => {
+  it.each(["jawari", "tambura", "guitar"] as const)("sounds in tune as a %s", (mode) => {
     const voice = pluckVoice({ ...DEFAULT_THAMBURA, mode });
     for (const hz of [65.4064, 196.1]) {
       const x = renderPluck(hz, SR, voice, 5);
@@ -253,6 +260,81 @@ describe("tambura and guitar plucks", () => {
     expect(r.work).toBe(r.partials * r.length);
     expect(r.partials).toBeGreaterThan(20);
   });
+
+  it("renders the classic tambura and the guitar exactly as before the jawari voice", () => {
+    // Fingerprints of the renders at 691cd8b, before the jawari voice was added.
+    const fingerprint = (x: Float32Array) => {
+      let h = 0;
+      for (let i = 0; i < x.length; i++) h = (h * 31 + Math.round(x[i] * 1e6)) % 1_000_000_007;
+      return [x.length, h];
+    };
+    expect(fingerprint(renderPluck(130.81, 16000, tambura, 3))).toEqual([144000, -736842932]);
+    expect(fingerprint(renderPluck(130.81, 16000, guitar, 3))).toEqual([92800, -8523484]);
+  });
+});
+
+describe("jawari tambura plucks", () => {
+  const SR = 16000;
+  const jawari = { ...DEFAULT_THAMBURA, mode: "jawari" as const };
+  // Power (dB) in the harmonics of f0 between lo and hi Hz, over 0.2 s from `at`.
+  const bandDb = (x: Float32Array, f0: number, lo: number, hi: number, at: number) => {
+    const n = SR * 0.2;
+    const from = Math.round(SR * at);
+    let power = 0;
+    for (let k = Math.ceil(lo / f0); k * f0 < hi; k++) {
+      const w = (2 * Math.PI * k * f0) / SR;
+      let re = 0;
+      let im = 0;
+      for (let i = 0; i < n; i++) {
+        const v = x[from + i] * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / n));
+        re += v * Math.cos(w * i);
+        im += v * Math.sin(w * i);
+      }
+      power += re * re + im * im;
+    }
+    return 10 * Math.log10(power);
+  };
+  // The 1-2.5 kHz band's share of all the harmonics, in dB: how far the bloom has moved energy up.
+  const share = (x: Float32Array, f0: number, at: number) => bandDb(x, f0, 1000, 2500, at) - bandDb(x, f0, 1, 7900, at);
+  const total = (x: Float32Array, f0: number, at: number) => bandDb(x, f0, 1, 7900, at);
+
+  it("moves energy up to 1-2.5 kHz for about a second after the pluck, then lets it fall back", () => {
+    const pa = renderPluck(98.1, SR, pluckVoice(jawari, 0), 1);
+    expect(share(pa, 98.1, 1.3) - share(pa, 98.1, 0.02)).toBeGreaterThan(8);
+    expect(share(pa, 98.1, 1.3) - share(pa, 98.1, 3)).toBeGreaterThan(6);
+
+    const classic = renderPluck(98.1, SR, pluckVoice({ ...jawari, mode: "tambura" }), 1);
+    expect(Math.abs(share(classic, 98.1, 1.3) - share(classic, 98.1, 0.02))).toBeLessThan(5);
+  });
+
+  it("blooms less on the thicker low Sa string", () => {
+    const steel = renderPluck(65.4, SR, pluckVoice(jawari, 0), 1);
+    const lowSa = renderPluck(65.4, SR, pluckVoice(jawari, 3), 1);
+    expect(share(lowSa, 65.4, 1.3)).toBeLessThan(share(steel, 65.4, 1.3) - 3);
+  });
+
+  it("brightens without much getting louder, unless the bloom is set to add energy", () => {
+    const voice = pluckVoice(jawari, 0);
+    const swell = (v: typeof voice) => {
+      const x = renderPluck(98.1, SR, v, 1);
+      return total(x, 98.1, 1.3) - total(x, 98.1, 0.02);
+    };
+    expect(swell(voice)).toBeLessThan(5);
+    expect(swell({ ...voice, formantEnergy: 1 })).toBeGreaterThan(10);
+  });
+
+  it("plucks every jawari string at the same attack level", () => {
+    const attack = (x: Float32Array) => rms(x, 0, SR * 0.1);
+    const levels = [0, 1, 2, 3].map((i) => attack(renderPluck(98.1, SR, pluckVoice(jawari, i), 1)));
+    for (const l of levels) expect(l).toBeCloseTo(levels[0], 6);
+  });
+
+  it("blooms higher with tone and deeper with a firmer pluck", () => {
+    const dark = pluckVoice({ ...jawari, tone: 0 });
+    const bright = pluckVoice({ ...jawari, tone: 100 });
+    expect(bright.formantHz).toBeGreaterThan(dark.formantHz);
+    expect(pluckVoice({ ...jawari, pluck: 100 }).formantDb).toBeGreaterThan(pluckVoice({ ...jawari, pluck: 0 }).formantDb);
+  });
 });
 
 describe("reedSpectrum", () => {
@@ -267,11 +349,14 @@ describe("reedSpectrum", () => {
 });
 
 describe("ThamburaSequencer", () => {
-  const pullAll = (seq: ThamburaSequencer, from: number, to: number, step = 0.025) => {
-    const out: PluckEvent[] = [];
+  const pullEvents = (seq: ThamburaSequencer, from: number, to: number, step = 0.025) => {
+    const out: ThamburaEvent[] = [];
     for (let t = from; t < to; t += step) out.push(...seq.pull(t, t + 0.1));
     return out;
   };
+  const pullAll = (seq: ThamburaSequencer, from: number, to: number, step = 0.025) =>
+    pullEvents(seq, from, to, step).filter((e): e is PluckEvent => !("damp" in e));
+  const round9 = (t: number) => Number(t.toFixed(9));
 
   it("plucks first, Sa, Sa, low Sa, then rests a slot", () => {
     const timing = { cycleSeconds: 5 };
@@ -309,6 +394,52 @@ describe("ThamburaSequencer", () => {
     expect(second.time - 1).toBeLessThan(0.03);
     expect(first.gain).toBeGreaterThan(0.8);
     expect(first.gain).toBeLessThan(1);
+  });
+
+  it("never damps in the even pattern", () => {
+    const seq = new ThamburaSequencer({ cycleSeconds: 2, pattern: EVEN_PATTERN }, () => 0);
+    seq.start(0);
+    expect(pullEvents(seq, 0, 8).some((e) => "damp" in e)).toBe(false);
+  });
+
+  it("plucks the played pattern's gaps, the two Sa strings evenly", () => {
+    const seq = new ThamburaSequencer({ cycleSeconds: 10, pattern: PLAYED_PATTERN }, () => 0);
+    seq.start(0);
+    const plucks = pullAll(seq, 0, 19.9);
+    expect(plucks.map((e) => e.string)).toEqual([0, 1, 2, 3, 0, 1, 2, 3]);
+    expect(plucks.map((e) => round9(e.time))).toEqual([0, 3, 5.05, 7.1, 10, 13, 15.05, 17.1]);
+  });
+
+  it("damps each string shortly before its next pluck, from the second round", () => {
+    const seq = new ThamburaSequencer({ cycleSeconds: 10, pattern: PLAYED_PATTERN }, () => 0);
+    seq.start(0);
+    const ev = pullEvents(seq, 0, 19.9);
+    const damps = ev.filter((e): e is DampEvent => "damp" in e);
+    expect(damps.map((e) => [e.string, round9(e.time)])).toEqual([
+      [0, 9.1],
+      [1, 11.8],
+      [2, 13.85],
+      [3, 15.5],
+      [0, 19.1],
+    ]);
+    // Each string's damp comes after its previous pluck and before its next, in time order.
+    expect(ev.map((e) => e.time)).toEqual([...ev.map((e) => e.time)].sort((a, b) => a - b));
+  });
+
+  it("keeps every played damp inside the gap before its string's pluck", () => {
+    const { gaps, damp } = PLAYED_PATTERN;
+    expect(gaps.reduce((a, b) => a + b)).toBeCloseTo(1, 12);
+    damp!.forEach((d, i) => expect(d).toBeLessThan(gaps[(i + 3) % 4]));
+  });
+
+  it("forgets which strings sounded when restarted", () => {
+    const seq = new ThamburaSequencer({ cycleSeconds: 10, pattern: PLAYED_PATTERN }, () => 0);
+    seq.start(0);
+    pullEvents(seq, 0, 12);
+    seq.stop(12);
+    seq.start(20);
+    // The first round after a restart has nothing ringing to damp.
+    expect(pullEvents(seq, 20, 28.9).some((e) => "damp" in e)).toBe(false);
   });
 
   it("stops and restarts from the first string", () => {

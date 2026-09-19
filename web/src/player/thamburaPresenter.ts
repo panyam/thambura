@@ -1,5 +1,6 @@
 import {
   DEFAULT_THAMBURA,
+  isTamburaMode,
   nextRaaginiString,
   normalizeThambura,
   srutiFrequencies,
@@ -8,8 +9,16 @@ import {
   type ThamburaSettings,
 } from "../engine/shruthi";
 import { PluckRender, pluckVoice, reedSpectrum } from "../engine/tambura";
-import { ThamburaSequencer, type PluckEvent, type ThamburaTiming } from "../engine/thamburaSequencer";
-import type { AudioOut, ToneHandle } from "./audio";
+import {
+  EVEN_PATTERN,
+  PLAYED_PATTERN,
+  ThamburaSequencer,
+  type DampEvent,
+  type PluckEvent,
+  type PluckPattern,
+  type ThamburaTiming,
+} from "../engine/thamburaSequencer";
+import type { AudioOut, PlayOptions, ToneHandle } from "./audio";
 import type { FrameLoop } from "./presenter";
 import { Transport, type Ticker } from "./transport";
 
@@ -58,10 +67,12 @@ export interface ThamburaDeps {
 // Loudness and stereo place of each string: first, Sa, Sa, low Sa.
 const STRING_GAIN = [0.8, 0.7, 0.7, 1];
 const STRING_PAN = [-0.25, 0.1, -0.1, 0.25];
-// In tambura mode the second Sa string sits a shade sharp of the first, so the
+// In both tambura modes the second Sa string sits a shade sharp of the first, so the
 // pair beats slowly, as two strings tuned by ear do.
 const TAMBURA_DETUNE = [0, 0, 1.5, 0];
-// Tambura plucks ring into each other, so they play a little softer.
+// Classic tambura plucks ring into each other, so they play a little softer.
+// The jawari's are damped before they're plucked again and bloom from a quiet
+// attack; at full level they match the classic's loudness (RMS within 0.1 dB).
 const TAMBURA_LEVEL = 0.7;
 // Work per deferred render call, in harmonic-samples (see PluckRender.step):
 // about 20 ms, inside the transport's 75 ms margin.
@@ -69,6 +80,8 @@ const RENDER_BUDGET = 6_000_000;
 // After a settings change, rendering waits this long so a knob turned through
 // several keys renders once. Later slices, and the first render on Start, don't wait.
 const RENDER_SETTLE_MS = 60;
+/** How long a damped string takes to fall silent, in seconds: a finger, not a click. */
+export const DAMP_FADE = 0.2;
 // How long the strings take to fade after Stop, in seconds.
 const STOP_FADE = 1.5;
 // Loudness and stereo place of the sruti drone's three tones: the first
@@ -119,10 +132,10 @@ export class ThamburaPresenter {
       view: VIEW_IDS.includes(saved.view as ThamburaViewId) ? (saved.view as ThamburaViewId) : "studio",
       lit: DARK,
     };
-    this.timing = { cycleSeconds: this.state.settings.cycleSeconds };
+    this.timing = { cycleSeconds: this.state.settings.cycleSeconds, pattern: patternFor(this.state.settings) };
     const seq = new ThamburaSequencer(this.timing, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker);
-    this.transport.add(seq, (e) => this.pluck(e));
+    this.transport.add(seq, (e) => ("damp" in e ? this.damp(e) : this.pluck(e)));
     deps.audio.setBusVolume("drone", this.state.settings.volume);
   }
 
@@ -167,6 +180,7 @@ export class ThamburaPresenter {
 
     if (next.volume !== prev.volume) this.deps.audio.setBusVolume("drone", next.volume);
     this.timing.cycleSeconds = next.cycleSeconds;
+    this.timing.pattern = patternFor(next);
 
     if (sampleKeys(next).join() !== sampleKeys(prev).join()) this.invalidate();
 
@@ -288,7 +302,7 @@ export class ThamburaPresenter {
     if (missing >= 0) {
       if (this.job?.key !== keys[missing]) {
         const hz = stringFrequencies(s)[missing];
-        this.job = { key: keys[missing], render: new PluckRender(hz, audio.sampleRate, pluckVoice(s), missing + 1) };
+        this.job = { key: keys[missing], render: new PluckRender(hz, audio.sampleRate, pluckVoice(s, missing), missing + 1) };
       }
       if (this.job.render.step(RENDER_BUDGET)) {
         audio.addSamples(this.job.key, this.job.render.result());
@@ -308,15 +322,12 @@ export class ThamburaPresenter {
   }
 
   private pluck(e: PluckEvent): void {
-    const s = this.state.settings;
-    const tambura = s.mode === "tambura";
-    this.deps.audio.play(this.stringKeys[e.string], "drone", e.time, {
-      detune: s.cents + (tambura ? TAMBURA_DETUNE[e.string] : 0),
-      gain: e.gain * STRING_GAIN[e.string] * (tambura ? TAMBURA_LEVEL : 1),
-      pan: STRING_PAN[e.string],
-      choke: `thambura/string${e.string}`,
-    });
+    this.deps.audio.play(this.stringKeys[e.string], "drone", e.time, pluckOptions(this.state.settings, e));
     this.cues.push({ time: e.time, string: e.string });
+  }
+
+  private damp(e: DampEvent): void {
+    this.deps.audio.damp(`thambura/string${e.string}`, e.time, DAMP_FADE);
   }
 
   /** Lights each string once its pluck is heard; runs while there is anything to show. */
@@ -362,10 +373,31 @@ function isPlucked(mode: ThamburaSettings["mode"]): boolean {
  * like tambura, so switching to it and back re-renders nothing.
  */
 function sampleKeys(s: ThamburaSettings): string[] {
-  const voice = Object.values(pluckVoice(s))
-    .map((v) => v.toFixed(3))
-    .join("/");
-  return stringFrequencies(s).map((hz) => `thambura/${hz.toFixed(3)}/${voice}`);
+  return stringFrequencies(s).map((hz, i) => {
+    const voice = Object.values(pluckVoice(s, i))
+      .map((v) => v.toFixed(3))
+      .join("/");
+    return `thambura/${hz.toFixed(3)}/${voice}`;
+  });
+}
+
+/**
+ * How a pluck plays: fine tune plus the second Sa's slight sharpness in the
+ * tambura modes, the string's level and stereo place, and its choke group.
+ * Exported for tools/thamburaMix, which renders the drone offline.
+ */
+export function pluckOptions(s: ThamburaSettings, e: PluckEvent): PlayOptions {
+  return {
+    detune: s.cents + (isTamburaMode(s.mode) ? TAMBURA_DETUNE[e.string] : 0),
+    gain: e.gain * STRING_GAIN[e.string] * (s.mode === "tambura" ? TAMBURA_LEVEL : 1),
+    pan: STRING_PAN[e.string],
+    choke: `thambura/string${e.string}`,
+  };
+}
+
+/** The jawari tambura plucks as the recorded player did; the others keep even slots. */
+export function patternFor(s: ThamburaSettings): PluckPattern {
+  return s.mode === "jawari" ? PLAYED_PATTERN : EVEN_PATTERN;
 }
 
 function loadSafely(store: ThamburaStore | undefined): unknown {

@@ -47,8 +47,13 @@ Sadhana).
 ## Frontend (web/src)
 
 `docs/architecture.md` explains how the sounds are made and timed, timed vs
-continuous voices, and what changed from the 2016 app. The notes below are
-the file-by-file reference.
+continuous voices, and what changed from the 2016 app.
+`docs/sound-analysis.md` explains how the jawari voice was fitted to a
+recording, and how to rerun it: `pnpm render-mix` (web/scripts, over
+`src/tools/thamburaMix.ts`) renders the thambura offline to WAV, and the
+Python in `tools/sound-analysis/` measures and charts it against a recording
+kept in the gitignored `recordings/`. The notes below are the file-by-file
+reference.
 
 **engine/** is pure TypeScript with no DOM, audio or timers, and is fully
 unit-tested:
@@ -84,17 +89,26 @@ unit-tested:
   is timbre, not octave), the 12 swarasthanas with just ratios, and
   `normalizeThambura`, which clamps anything (saved JSON, a patch) to valid
   settings.
-- `tambura.ts` renders a pluck as a sum of decaying harmonics with a resonance
-  sweeping down through them (a stand-in for the jawari). `pluckVoice` has two
-  characters. In tambura mode a string rings 12-36 s (to -60 dB) and keeps its
-  high harmonics, so it is still sounding when its next pluck comes. In guitar
-  mode it rings 2.5-8 s and dulls quickly. A 9 s tambura render takes about
+- `tambura.ts` renders a pluck as a sum of decaying harmonics. `pluckVoice(s,
+  string)` has three characters. The jawari voice (mode `jawari`, shown as
+  "Tambura") was fitted to a recording of a real C tambura: it starts dark,
+  and a band around 1.3 kHz swells by up to about 40 dB, peaks near 1.4 s and
+  falls back (the `formant*` fields; the low Sa blooms about half as much).
+  The bloom mostly moves energy rather than adding it (`formantEnergy`), and
+  the render is scaled by its attack, not its peak (`attackLevel`), so the
+  mix stays level and every pluck is heard. The
+  classic voice (mode `tambura`, "Tambura (classic)") sweeps a resonance down
+  through the harmonics, rings 12-36 s (to -60 dB) and keeps its high
+  harmonics. In guitar mode it rings 2.5-8 s and dulls quickly. The classic
+  and guitar renders are pinned by fingerprints in `thambura.test.ts`. A 9 s tambura render takes about
   100 ms at 48 kHz, so `PluckRender` renders a few harmonics per `step(budget)`
   and gives the same samples however the work is sliced. Never render inside a
   transport tick. `reedSpectrum` gives the sruti drone's PeriodicWave.
-- `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa, then rests a slot. It
-  works out each pluck's time only when asked, so a speed change is heard at
-  the next pluck.
+- `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa in a `PluckPattern`:
+  `EVEN_PATTERN` (four slots and a rest) or, for the jawari mode,
+  `PLAYED_PATTERN` (the recorded player's uneven gaps, plus a `DampEvent`
+  that stops each string shortly before its next pluck). It works out each
+  event's time only when asked, so a speed change is heard at the next pluck.
 
 **player/** is the browser side:
 
@@ -106,7 +120,8 @@ unit-tested:
   group fades the earlier one over 80 ms, as a re-plucked string does);
   `startTone` runs a continuous PeriodicWave tone. `cancel(bus)` stops only
   samples that haven't started, and takes back the choke fades they scheduled.
-  `release(bus, s)` fades out what's sounding.
+  `release(bus, s)` fades out what's sounding, and `damp(group, when, s)`
+  fades the latest note in a choke group, as a finger stops a string.
   `heardNow` is the audio time minus output latency.
 - `transport.ts`: every 25 ms, driven by a Web Worker timer so background tabs
   aren't throttled, it pulls events up to 100 ms ahead from each sequencer. All
@@ -129,8 +144,10 @@ unit-tested:
   floating bar's open/view state, saved to localStorage. Pitch and timbre
   changes re-render the plucks in about 20 ms slices through `deps.defer`
   (60 ms settle after a change, none between slices), and Start waits for them,
-  about 0.35 s from cold. Fine tune is only `detune`. In tambura mode the
-  second Sa string plays 1.5 cents sharp, so the pair beats slowly. Sruti mode
+  about 0.35 s from cold. Fine tune is only `detune`. In both tambura modes the
+  second Sa string plays 1.5 cents sharp, so the pair beats slowly. Damp
+  events fade a string over 0.2 s through `audio.damp`, which marks the note
+  released so the re-pluck's choke leaves it alone. Sruti mode
   mixes its three tones swara-first (0.40 / 0.25 / 0.08, panned apart), since
   the octave Sa's otherwise fuse into one note and bury the swara.
 - `ThamburaBar.tsx` is the bar that slides up from the bottom when the header's
@@ -155,11 +172,12 @@ reactivity across tsappkit-solid.
 
 See NEXTSTEPS.md for the order.
 
-- **Shruthi box:** done as the thambura (see above). Its tambura and guitar
-  modes are a sequencer on its own clock and speed, not the tala's tempo; its
-  sruti mode is the continuous voice. The mridangam and tabla dayan should tune
-  to its tonic (`tunedTonicHz`). Sound-quality work (matching a real tambura
-  recording, by-ear checks) is tracked in issue #8.
+- **Shruthi box:** done as the thambura (see above). Its plucked modes are a
+  sequencer on its own clock and speed, not the tala's tempo; its sruti mode
+  is the continuous voice. The mridangam and tabla dayan should tune to its
+  tonic (`tunedTonicHz`). Sound-quality work is tracked in issue #8: the
+  jawari voice is the fit to a real recording, and by-ear checks decide
+  whether it becomes the default.
 - **Mridangam / tabla:** the musical timeline is in (`ratio.ts`,
   `tempoMap.ts`). Add a `Sequencer<StrokeEvent>` on the tala's `TempoMap` and
   `Transport` that emits per stroke at exact positions, reads the tala's
