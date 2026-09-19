@@ -14,8 +14,7 @@ the items below close.
   "Deploying" in CLAUDE.md). A deploy after any further merge needs the user,
   since `gcloud` is only on their Mac.
 - The repo is `panyam/thambura` and the Go module `github.com/panyam/thambura`.
-  The local folder is still `layaguide`; renaming it waits until no sessions
-  are open in it.
+  The local checkouts are under `thambura/` (`main` is the shared one).
 - Issue #8 holds the sound-quality plan: compare with a real tambura
   recording, fit `pluckVoice`, by-ear checks, jawari control, 5th string,
   worker rendering. That's the next piece of work. Start there.
@@ -63,7 +62,7 @@ choke. Put before/after plots or tables in the PR.
 
 ## Environment
 
-- The shared checkout (`/workspace/repos/projects/layaguide`) is on master
+- The shared checkout (`/workspace/repos/projects/thambura/main`) is on master
   and clean, with no extra worktrees. Keep it that way and work in your own
   worktree (CLAUDE.md, "Working alongside other sessions").
 - Nothing is serving on :8000 any more. Serve a worktree build on its own

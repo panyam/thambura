@@ -1,6 +1,5 @@
 // Package brand holds the product's display name. The drone feature inside
-// the app is also called the thambura; the local folder (layaguide) predates
-// the rename.
+// the app is also called the thambura.
 package brand
 
 // Name is shown in page titles and the header.
