@@ -104,6 +104,13 @@ unit-tested:
   100 ms at 48 kHz, so `PluckRender` renders a few harmonics per `step(budget)`
   and gives the same samples however the work is sliced. Never render inside a
   transport tick. `reedSpectrum` gives the sruti drone's PeriodicWave.
+- `thamburaPlan.ts`: a `ThamburaPlan` is everything that decides how the
+  plucked thambura plays: per string a `PluckVoice`, level, pan, detune and
+  damp lead, plus the four gaps. `planFor` builds one for any mode (the
+  string levels, pans and the 1.5-cent Sa detune live here); Custom mode
+  plays the plan the Lab view edits. `FIELD_SPECS` lists the Lab's controls
+  and their ranges, which cover every built-in mode's values, and
+  `normalizePlan` clamps a saved or pasted plan to them.
 - `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa in a `PluckPattern`:
   `EVEN_PATTERN` (four slots and a rest) or, for the jawari mode,
   `PLAYED_PATTERN` (the recorded player's uneven gaps, plus a `DampEvent`
@@ -141,7 +148,11 @@ unit-tested:
 - `thamburaPresenter.ts` (`ThamburaPresenter`): the thambura's state, its own
   `Transport` (so it starts and stops apart from the tala), the plucked
   (tambura, guitar) and reed (sruti) voices on the `drone` bus, and the
-  floating bar's open/view state, saved to localStorage. Pitch and timbre
+  floating bar's open/view state and the Custom plan, saved to localStorage.
+  Everything plucked goes through the settings' plan (`planFor`): its voices
+  key and render the samples, and `pluckOptions` turns a pluck into
+  level, pan and detune. `setCustom` / `loadCustom` edit the Custom plan and
+  switch to it; loading a mode sounds the same and renders nothing. Pitch and timbre
   changes re-render the plucks in about 20 ms slices through `deps.defer`
   (60 ms settle after a change, none between slices), and Start waits for them,
   about 0.35 s from cold. Fine tune is only `detune`. In both tambura modes the
@@ -153,9 +164,12 @@ unit-tested:
 - `ThamburaBar.tsx` is the bar that slides up from the bottom when the header's
   `#thambura-toggle` is clicked. Its header holds the Sound menu (the mode,
   from `THAMBURA_MODES`, so it applies in every view) and a switch between
-  three views over the same presenter: `ThamburaMini`, `ThamburaStudio` and
+  four views over the same presenter: `ThamburaMini`, `ThamburaStudio`,
   `ThamburaRaagini` (the 2000s Raagini box, with `Knob.tsx`, which keeps its
-  own TMB/GTR/SRUTI slide switch as part of the replica). Shared bits are in
+  own TMB/GTR/SRUTI slide switch as part of the replica) and `ThamburaLab`,
+  a workbench for the Custom plan, string by string, that copies it out and
+  in as JSON (`pnpm render-mix --custom` renders it). Its sliders commit on
+  release, since most changes re-render. Shared bits are in
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
 - `keepAwake.ts`: `KeepAwake` holds a Screen Wake Lock while either island
@@ -278,7 +292,9 @@ The tala's transport buttons are icons, so select them by label:
 "Start" also finds Restart. The
 thambura opens with `#thambura-toggle`, its views are
 `button[role="radio"]:has-text("Raagini")` and so on, its mode is
-`select[aria-label="Sound"]`, and it plays with
+`select[aria-label="Sound"]`, the Lab's controls are ranges labelled by field
+(`input[aria-label="Attack"]`, tabs under `[aria-label="String"]`) with the
+plan in `textarea[aria-label="Settings JSON"]`, and it plays with
 `button[aria-label="Start thambura"]`. The theme toggle cycles system, light,
 dark, so dark takes two clicks (or launch the page with `colorScheme: "dark"`).
 

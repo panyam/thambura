@@ -18,16 +18,18 @@ export type Temperament = "just" | "equal";
  * recording of a real one (a bloom that swells and dies back after each
  * pluck, an uneven rhythm, strings damped before they're plucked again), and
  * "tambura", the first synth, whose strings ring on from round to round
- * (shown as "Tambura (classic)"). Then a shorter guitar-like pluck, and the
+ * (shown as "Tambura (classic)"). Then a shorter guitar-like pluck, "custom",
+ * the plucked sound the Lab view edits (engine/thamburaPlan.ts), and the
  * sruti box's steady reed tones.
  */
-export type ThamburaMode = "jawari" | "tambura" | "guitar" | "sruti";
+export type ThamburaMode = "jawari" | "tambura" | "guitar" | "custom" | "sruti";
 
 /** The modes in menu order, for the bar's Sound menu and for validating saved settings. */
 export const THAMBURA_MODES: { id: ThamburaMode; label: string }[] = [
   { id: "jawari", label: "Tambura" },
   { id: "tambura", label: "Tambura (classic)" },
   { id: "guitar", label: "Guitar" },
+  { id: "custom", label: "Custom" },
   { id: "sruti", label: "Sruti" },
 ];
 

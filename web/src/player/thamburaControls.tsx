@@ -5,7 +5,7 @@ import type { ThamburaPresenter, ThamburaState } from "./thamburaPresenter";
 /** What every thambura view may call. */
 export type ThamburaActions = Pick<
   ThamburaPresenter,
-  "toggle" | "set" | "nudgeCents" | "cycleFirstString" | "setView" | "setOpen" | "toggleOpen"
+  "toggle" | "set" | "nudgeCents" | "cycleFirstString" | "setView" | "setOpen" | "toggleOpen" | "setCustom" | "loadCustom"
 >;
 
 export interface ThamburaViewProps {

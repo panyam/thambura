@@ -93,8 +93,8 @@ const BLOCK = 64;
 // The bloom's energy correction is computed every COMP_STEP blocks (about 20 ms at 48 kHz).
 const COMP_STEP = 16;
 const PEAK = 0.8;
-// The jawari voice's attack RMS, set so its mix is as loud as the classic's.
-const ATTACK_LEVEL = 0.18;
+/** The jawari voice's attack RMS, set so its mix is as loud as the classic's. */
+export const ATTACK_LEVEL = 0.18;
 
 // No bloom, for the voices that don't use it.
 const NO_FORMANT = {
