@@ -1,12 +1,14 @@
-# Sadhana
+# Thambura
 
-A practice companion for Carnatic music students. Today it keeps tala: pick a
-thaala, jaathi, gathi and kalai, set a tempo, and it claps the cycle while
-showing each hand gesture (or a random swara, for singing practice). A shruthi
-box and a mridangam accompaniment are next.
+A practice companion for Carnatic music students, at https://thambura.com. It
+keeps tala: pick a thaala, jaathi, gathi and kalai, set a tempo, and it claps
+the cycle while showing each hand gesture (or a random swara, for singing
+practice). It also plays a thambura drone (tambura, guitar or sruti) to sing
+against. A mridangam accompaniment is next.
 
-Sadhana began in 2015 as *Laya Gnana*, a Google App Engine (go1) app with a
-jQuery front end. The tag `pre-sadhana-port` marks that version.
+Thambura began in 2015 as *Laya Gnana*, a Google App Engine (go1) app with a
+jQuery front end, and was briefly called Sadhana during the port. The tag
+`pre-sadhana-port` marks the original version.
 
 ## Running
 

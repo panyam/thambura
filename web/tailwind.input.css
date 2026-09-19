@@ -8,7 +8,7 @@ html.dark {
 }
 
 /* goapplib's header renders a mobile menu button for its actions drawer.
-   Sadhana has no drawer (it only holds login links), so hide the button. */
+   Thambura has no drawer (it only holds login links), so hide the button. */
 #header-actions-menu-btn {
   display: none;
 }

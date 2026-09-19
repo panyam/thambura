@@ -1,8 +1,8 @@
 {
-  "name": "sadhana-web",
+  "name": "thambura-web",
   "private": true,
   "type": "module",
-  "description": "Sadhana frontend: goapplib page shells + a SolidJS player island over a pure TS engine",
+  "description": "Thambura frontend: goapplib page shells + a SolidJS player island over a pure TS engine",
   "scripts": {
     "buildcss": "tailwindcss -i ./tailwind.input.css -o ./static/css/tailwind.css",
     "buildcssprod": "tailwindcss -i ./tailwind.input.css -o ./static/css/tailwind.css --minify",

@@ -1,4 +1,4 @@
-// Package web serves Sadhana's pages: goapplib page shells rendered through
+// Package web serves Thambura's pages: goapplib page shells rendered through
 // templar, each hosting a Solid island. The pages own no data; everything the
 // player needs (sounds, images, tala fixtures) is fetched from /static by the
 // browser.
@@ -13,7 +13,7 @@ import (
 	goal "github.com/panyam/goapplib"
 	tmplr "github.com/panyam/templar"
 
-	"github.com/panyam/sadhana/internal/brand"
+	"github.com/panyam/thambura/internal/brand"
 )
 
 // App is the goapplib app context. Empty for now; the pages need no server

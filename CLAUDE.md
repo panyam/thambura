@@ -1,6 +1,6 @@
-# Sadhana
+# Thambura
 
-A music-practice app (tala keeper today; shruthi box and mridangam next). Go
+A music-practice app (tala keeper and thambura drone today; mridangam next). Go
 serves goapplib page shells; a Solid island does everything in the browser.
 There is no server-side data.
 
@@ -20,9 +20,12 @@ so a deploy still uploads them.
 
 ## Naming
 
-The display name **Sadhana** lives in `internal/brand.Name`. The folder and
-GitHub repo (`layaguide`) are from before the rename. It's served from the
-`thambura` App Engine project at thambura.com.
+The product is **Thambura** everywhere: the display name
+(`internal/brand.Name`), the GitHub repo (`panyam/thambura`), the Go module
+(`github.com/panyam/thambura`), the App Engine project and thambura.com. The
+drone feature inside the app is also called the thambura. The local folder is
+still `layaguide`, and the `pre-sadhana-port` tag keeps the port's working
+name (it was briefly called Sadhana).
 
 ## Server (Go)
 
@@ -184,7 +187,7 @@ Follow the `start_pr` description format. For before/after evidence:
 
 - **Screenshots** go on the orphan `pr-assets` branch under `<pr-branch>/`, not
   in the PR branch. Link them as
-  `https://github.com/panyam/layaguide/blob/pr-assets/<path>?raw=true`.
+  `https://github.com/panyam/thambura/blob/pr-assets/<path>?raw=true`.
 - **The old app** runs from a worktree of the `pre-sadhana-port` tag, served
   with `python3 -m http.server`, at `/templates/home.html`.
 - **Audio timing** is measured by wrapping `AudioBufferSourceNode.prototype.start`

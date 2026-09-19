@@ -44,7 +44,7 @@ func TestHomePageRenders(t *testing.T) {
 		t.Fatalf("GET / = %d, body:\n%s", code, body)
 	}
 	for _, want := range []string{
-		"<title>Sadhana</title>",
+		"<title>Thambura</title>",
 		`id="player"`,
 		`id="theme-toggle-button"`,
 		`src="/static/app.js"`,

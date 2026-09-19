@@ -43,6 +43,7 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       `Images/icons.xcf`.
 - [ ] Decide whether to keep or drop the unused `Angas`/`Talas`/`TalaGroups`/
       `Defaults` sections of `TalasFixtures.json`.
-- [ ] Rename the GitHub repo (`layaguide`) to match.
+- [x] Rename everything to Thambura (repo, module, display name).
+- [ ] Rename the local `layaguide` folder, with no sessions open in it.
 - [ ] Decide whether www.thambura.com should redirect to the bare domain
       (both serve the app as mapped).

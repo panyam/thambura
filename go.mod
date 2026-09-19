@@ -1,4 +1,4 @@
-module github.com/panyam/sadhana
+module github.com/panyam/thambura
 
 go 1.26.3
 
