@@ -53,12 +53,13 @@ type HomePage struct {
 	SitePage
 }
 
-// The home page's search and preview text. The title and description name
-// what people search for (tanpura more than thambura, tala and metronome
-// more than tala keeper) and stay near the lengths results show in full.
+// The home page's search and preview text, near the lengths results show in
+// full. It says thambura, as South India does, and the description adds
+// tanpura, the North Indian name many people search with. The title says
+// shruthi drone rather than just drone, which reads as the flying kind.
 const (
-	homeTitle       = brand.Name + ": online tanpura drone and Carnatic tala keeper"
-	homeDescription = "A free online tanpura (thambura) drone in any kattai, and a Carnatic tala keeper for " +
+	homeTitle       = brand.Name + ": online shruthi drone and Carnatic tala keeper"
+	homeDescription = "A free online thambura (tanpura) drone in any shruthi, and a Carnatic tala keeper for " +
 		"sapta and chaapu talas with finger-count hand images. Runs in the browser."
 )
 
@@ -72,7 +73,7 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 	p.Header.AppName = brand.Name
 	p.Social = Social{
 		Image:       brand.URL + "/static/og.png",
-		ImageAlt:    "Thambura: a hand keeping tala beside the words online tanpura drone and Carnatic tala keeper",
+		ImageAlt:    "Thambura: a hand keeping tala beside the words online shruthi drone and Carnatic tala keeper",
 		ImageWidth:  1200,
 		ImageHeight: 630,
 	}
