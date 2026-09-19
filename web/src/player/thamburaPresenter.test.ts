@@ -300,6 +300,17 @@ describe("ThamburaPresenter", () => {
     expect(audio.tones.every((t) => t.stopped)).toBe(true);
   });
 
+  it("brings the first string's swara forward in the sruti drone", async () => {
+    set({ mode: "sruti" });
+    await p.toggle();
+    const [first, sa, upper] = audio.tones.map((t) => t.spec);
+    expect(first.gain).toBeGreaterThanOrEqual(sa.gain * 1.5);
+    expect(upper.gain).toBeLessThan(sa.gain);
+    // Placed apart, so the ear hears two notes rather than one blend.
+    expect(first.pan).toBeLessThan(0);
+    expect(sa.pan).toBeGreaterThan(0);
+  });
+
   it("switches between tambura and sruti while playing", async () => {
     await start();
     set({ mode: "sruti" });

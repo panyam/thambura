@@ -32,6 +32,8 @@ export interface ToneSpec {
   frequency: number;
   detune: number;
   gain: number;
+  /** Stereo position, -1 (left) to 1 (right). Fixed for the tone's life. */
+  pan?: number;
   /** Harmonic amplitudes, index 0 being DC (see reedSpectrum). */
   spectrum: Float32Array;
 }
@@ -261,7 +263,13 @@ export class AudioEngine implements AudioOut {
     const depth = ctx.createGain();
     depth.gain.value = spec.gain * 0.06;
     bellows.connect(depth).connect(amp.gain);
-    osc.connect(amp).connect(this.buses[bus]);
+    let out: AudioNode = osc.connect(amp);
+    if (spec.pan) {
+      const p = ctx.createStereoPanner();
+      p.pan.value = spec.pan;
+      out = out.connect(p);
+    }
+    out.connect(this.buses[bus]);
     osc.start();
     bellows.start();
 
