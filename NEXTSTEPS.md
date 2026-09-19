@@ -8,8 +8,11 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       all serve over HTTPS (checked 2026-09-19).
 - [x] Redeploy from `master`. thambura.com serves the same bundle as master
       at c82bb87 (checked 2026-09-19).
-- [ ] Listen to it on a real machine. Headless Chromium has no audio device, so
-      only scheduled times were verified.
+- [x] Redeploy after the thambura work (#18-#34): thambura.com serves the
+      same bundle as master at 3514e1b (checked 2026-09-19).
+- [x] Listen to the thambura on a real machine (it's been tuned by ear since).
+- [ ] Listen to the tala on a real machine, and check it stays in step with
+      the images. Headless Chromium has no audio device.
 - [ ] Try iOS Safari with the silent switch on. `navigator.audioSession.type` is
       now "playback", which should stop the switch muting it (Safari 16.4+).
 
@@ -17,17 +20,27 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 
 - [x] **Shruthi box.** The thambura: synthesized tambura and sruti modes,
       with Mini, Studio and Raagini views in a floating bar.
-- [ ] **Thambura sound quality** (issue #8). Compare with a real tambura
-      recording the user will supply, fit the synth to it, check by ear. Also
-      the jawari control, a 5th string, a second tambura, and rendering in a
-      worker.
+- [x] **Thambura fitted to a real recording** (issue #8, PR #18): the jawari
+      voice, now the default; the method and tools in `docs/sound-analysis.md`.
+- [x] **Tuning and sharing tools:** the Lab view (#21, #33: per-string
+      controls, mute/solo, copy from a string, a scope), `?s=` share links
+      (#28), presets and the "Share a preset" issue form (#30), one start/stop
+      in the site and bar headers plus the T key (#34).
+- [ ] **Thambura sound, what's left of #8:** the second Sa's pluck is quieter
+      than the recording's (+1.2 dB against +2.8), the synthesized attack is
+      sharper than a finger's, and only one key (C) was measured. Also a 5th
+      string, a second tambura, and rendering in a worker.
+- [ ] Turn good "Share a preset" submissions (issues labelled `preset`) into
+      built-in presets.
 - [ ] Thambura extras outside sound quality: raga presets that set the first
-      string, a mic tuner, and lock-screen controls (MediaSession).
+      string, a mic tuner, links for the tala's settings, and lock-screen
+      controls (MediaSession).
 - [x] **Musical timeline refactor.** A shared `TempoMap`; the tala emits
       steps and ticks at exact fractional positions.
-- [ ] **Mridangam / tabla.** Per-stroke sequencer on the `percussion` bus, with
-      choke groups, several takes per stroke, eduppu/korvai alignment to the
-      tala, and tuning to the shruthi tonic.
+- [ ] **Mridangam / tabla.** The next big piece; `docs/mridangam.md` is the
+      plan. Per-stroke sequencer on the `percussion` bus, with choke groups,
+      several takes per stroke, eduppu/korvai alignment to the tala, and
+      tuning to the shruthi tonic.
 - [ ] Output-latency calibration setting (Bluetooth headphones add
       150-250 ms, and Safari doesn't report `outputLatency`).
 - [x] Screen Wake Lock while the tala or thambura plays, so the screen doesn't
