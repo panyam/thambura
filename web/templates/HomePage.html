@@ -60,18 +60,18 @@
         <svg class="hidden h-5 w-5 group-data-[playing=true]:block" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="1.5"/></svg>
     </button>
     <button id="thambura-toggle" type="button" aria-expanded="false" aria-controls="thambura"
-            class="group pointer-events-auto flex h-14 items-center gap-2 rounded-full bg-amber-600 pl-4 pr-5 text-white shadow-lg hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 aria-expanded:pr-4 dark:focus-visible:ring-offset-gray-900"
+            class="pointer-events-auto flex h-14 w-14 items-center justify-center gap-2 rounded-full bg-amber-600 text-white shadow-lg hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 sm:w-auto sm:pl-4 sm:pr-5 dark:focus-visible:ring-offset-gray-900"
             aria-label="Shruthi box" title="Show the shruthi box">
-        <svg class="h-6 w-6 shrink-0 group-aria-expanded:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
-            <path d="M11 2.5h2M11 13V3.5M13 13V3.5"/>
-            <path d="M8.8 5h2.2M13 5h2.2M8.8 8h2.2M13 8h2.2"/>
-            <path d="M11 13.2a5 5 0 1 0 2 0"/>
-            <path d="M12 3.5V20"/>
+        <!-- A shruthi box: display and three knobs. It stands alone on a phone,
+             where the label is hidden, so it has to read at 26px. -->
+        <svg class="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+            <rect x="3" y="4.5" width="18" height="15" rx="2"/>
+            <rect x="5.5" y="7" width="13" height="4" rx="1"/>
+            <circle cx="7.5" cy="15.5" r="1.6"/>
+            <circle cx="12" cy="15.5" r="1.6"/>
+            <circle cx="16.5" cy="15.5" r="1.6"/>
         </svg>
-        <svg class="hidden h-6 w-6 shrink-0 group-aria-expanded:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M6 9l6 6 6-6"/>
-        </svg>
-        <span class="text-sm font-semibold group-aria-expanded:hidden">Shruthi box</span>
+        <span class="hidden text-sm font-semibold sm:inline">Shruthi box</span>
     </button>
 </div>
 {{ end }}
