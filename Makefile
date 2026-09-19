@@ -13,7 +13,7 @@ uiprod:
 	cd web && pnpm install && pnpm buildcssprod && pnpm build
 
 server:
-	go build -o bin/sadhana .
+	go build -o bin/thambura .
 
 build: ui server
 

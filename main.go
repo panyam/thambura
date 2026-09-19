@@ -1,4 +1,4 @@
-// Command sadhana serves the Sadhana web app.
+// Command thambura serves the Thambura web app.
 package main
 
 import (
@@ -8,12 +8,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/panyam/sadhana/internal/brand"
-	"github.com/panyam/sadhana/internal/web"
+	"github.com/panyam/thambura/internal/brand"
+	"github.com/panyam/thambura/internal/web"
 )
 
 func main() {
-	webDir := flag.String("web", envOr("SADHANA_WEB_DIR", "web"), "folder holding templates/ and static/")
+	webDir := flag.String("web", envOr("THAMBURA_WEB_DIR", "web"), "folder holding templates/ and static/")
 	flag.Parse()
 
 	// App Engine sets PORT; locally default to 8080 on all interfaces so the

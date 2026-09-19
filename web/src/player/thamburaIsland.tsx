@@ -5,7 +5,7 @@ import { ThamburaBar } from "./ThamburaBar";
 import { ThamburaPresenter, type ThamburaState, type ThamburaStore } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
-const STORAGE_KEY = "sadhana.thambura";
+const STORAGE_KEY = "thambura.drone";
 
 /**
  * Mounts the thambura bar on `el` and wires the header's thambura button
