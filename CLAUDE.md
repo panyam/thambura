@@ -181,10 +181,16 @@ One-time setup, run by an owner of the project from a machine with `gcloud`
    DNS resolves, which can take a few hours, and HTTPS on the custom domain
    fails until then.
 
+To check which build is live, compare the served bundle with a fresh one:
+`(cd web && pnpm build)`, then
+`curl -s --compressed https://thambura.com/static/app.js | cmp - web/static/app.js`.
+Identical means the site runs this commit.
+
 DNS for thambura.com is on Namecheap (BasicDNS, `dns1/dns2.registrar-servers.com`).
 The records were set on 2026-09-18 through the Namecheap API
 (`NAMECHEAP_API_USER` / `NAMECHEAP_API_KEY`, which only work from IPs
-whitelisted under Profile > Tools > API Access). `namecheap.domains.dns.setHosts`
+whitelisted under Profile > Tools > API Access; the dev container's public IP,
+98.248.54.110, is on the list). `namecheap.domains.dns.setHosts`
 replaces every record at once, so any change must read with `getHosts` first
 and write back the merged set, passing `EmailType` through. Otherwise the
 `google-site-verification` TXT record and email forwarding are lost. Namecheap
@@ -213,7 +219,10 @@ Follow the `start_pr` description format. For before/after evidence:
 
 - **Screenshots** go on the orphan `pr-assets` branch under `<pr-branch>/`, not
   in the PR branch. Link them as
-  `https://github.com/panyam/thambura/blob/pr-assets/<path>?raw=true`.
+  `https://github.com/panyam/thambura/blob/pr-assets/<path>?raw=true`. When
+  pushing a commit there by hash from zsh, brace the variable
+  (`git push origin "${c}:refs/heads/pr-assets"`), since zsh reads `$c:r` as
+  a filename modifier.
 - **The old app** runs from a worktree of the `pre-sadhana-port` tag, served
   with `python3 -m http.server`, at `/templates/home.html`.
 - **Audio timing** is measured by wrapping `AudioBufferSourceNode.prototype.start`
@@ -226,7 +235,9 @@ Playwright's Chromium is at `~/.cache/ms-playwright/chromium-1234/`, and
 `playwright-core` can be required from another project's node_modules (e.g.
 `../Agni/main/web`). Launch with `--autoplay-policy=no-user-gesture-required`.
 The tala's transport buttons are icons, so select them by label:
-`button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). The
+`button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). With
+`getByRole`, pass `exact: true`: name matching is a substring match, so
+"Start" also finds Restart. The
 thambura opens with `#thambura-toggle`, its views are
 `button[role="radio"]:has-text("Raagini")` and so on, and it plays with
 `button[aria-label="Start thambura"]`. The theme toggle cycles system, light,
