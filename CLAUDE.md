@@ -61,9 +61,13 @@ unit-tested:
   `normalizeThambura`, which clamps anything (saved JSON, a patch) to valid
   settings.
 - `tambura.ts` renders a pluck as a sum of decaying harmonics with a resonance
-  sweeping down through them (a stand-in for the jawari). A render takes
-  30-60 ms, so it must never run inside a transport tick.
-  `reedSpectrum` gives the sruti drone's PeriodicWave.
+  sweeping down through them (a stand-in for the jawari). `pluckVoice` has two
+  characters. In tambura mode a string rings 12-36 s (to -60 dB) and keeps its
+  high harmonics, so it is still sounding when its next pluck comes. In guitar
+  mode it rings 2.5-8 s and dulls quickly. A 9 s tambura render takes about
+  100 ms at 48 kHz, so `PluckRender` renders a few harmonics per `step(budget)`
+  and gives the same samples however the work is sliced. Never render inside a
+  transport tick. `reedSpectrum` gives the sruti drone's PeriodicWave.
 - `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa, then rests a slot. It
   works out each pluck's time only when asked, so a speed change is heard at
   the next pluck.
@@ -74,8 +78,11 @@ unit-tested:
   shared by every island; buses `tala`, `drone`, `percussion` (each with its
   own volume) feed a master gain, then a limiter, then the speakers. It holds a
   sample cache, which `addSamples` fills with rendered PCM as well as fetched
-  files. `play` takes detune/gain/pan; `startTone` runs a continuous
-  PeriodicWave tone. `cancel(bus)` stops only samples that haven't started.
+  files. `play` takes detune/gain/pan and a choke group (a later note in the
+  group fades the earlier one over 80 ms, as a re-plucked string does);
+  `startTone` runs a continuous PeriodicWave tone. `cancel(bus)` stops only
+  samples that haven't started, and takes back the choke fades they scheduled.
+  `release(bus, s)` fades out what's sounding.
   `heardNow` is the audio time minus output latency.
 - `transport.ts`: every 25 ms, driven by a Web Worker timer so background tabs
   aren't throttled, it pulls events up to 100 ms ahead from each sequencer. All
@@ -94,9 +101,12 @@ unit-tested:
   from a tsappkit `BasePage`, which also wires the theme toggle.
 - `thamburaPresenter.ts` (`ThamburaPresenter`): the thambura's state, its own
   `Transport` (so it starts and stops apart from the tala), the plucked
-  (tambura) and reed (sruti) voices on the `drone` bus, and the floating bar's
-  open/view state, saved to localStorage. Pitch and timbre changes re-render
-  the plucks through `deps.defer`; fine tune is only `detune`.
+  (tambura, guitar) and reed (sruti) voices on the `drone` bus, and the
+  floating bar's open/view state, saved to localStorage. Pitch and timbre
+  changes re-render the plucks in about 20 ms slices through `deps.defer`
+  (60 ms settle after a change, none between slices), and Start waits for them,
+  about 0.35 s from cold. Fine tune is only `detune`. In tambura mode the
+  second Sa string plays 1.5 cents sharp, so the pair beats slowly.
 - `ThamburaBar.tsx` is the bar that slides up from the bottom when the header's
   `#thambura-toggle` is clicked, with a switch between three views over the
   same presenter: `ThamburaMini`, `ThamburaStudio` and `ThamburaRaagini` (the
@@ -111,9 +121,9 @@ reactivity across tsappkit-solid.
 
 See NEXTSTEPS.md for the order.
 
-- **Shruthi box:** done as the thambura (see above). Its tambura mode is a
-  sequencer on its own clock and speed, not the tala's tempo; its sruti mode is
-  the continuous voice. The mridangam and tabla dayan should tune to its tonic
+- **Shruthi box:** done as the thambura (see above). Its tambura and guitar
+  modes are a sequencer on its own clock and speed, not the tala's tempo; its
+  sruti mode is the continuous voice. The mridangam and tabla dayan should tune to its tonic
   (`tunedTonicHz`).
 - **Mridangam / tabla:** do the musical-timeline refactor first. Each sequencer
   currently advances its own `nextTime += duration`, so two of them apply a

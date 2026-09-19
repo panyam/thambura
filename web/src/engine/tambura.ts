@@ -7,26 +7,54 @@ import type { ThamburaSettings } from "./shruthi";
  * A pluck is a sum of harmonics. Each one decays at its own rate (the high
  * ones faster), and a resonance sweeps down through the harmonics after the
  * attack. That sweep stands in for the jawari, the curved bridge that makes a
- * real tambura's tone bloom and buzz rather than fade like a guitar's.
+ * real tambura's tone bloom and buzz. The tambura voice rings for many
+ * seconds and keeps its high harmonics, so each string is still sounding when
+ * the next round comes; the guitar voice is shorter and dulls quickly.
  */
 
 /** How one string sounds, derived from the settings by `pluckVoice`. */
 export interface PluckVoice {
-  /** 0-1: how slowly the harmonics fall off. */
-  brightness: number;
-  /** 0-1: attack speed and the extra high harmonics at the start. */
-  firmness: number;
-  /** Seconds for the fundamental to fall 60 dB; also the render length, up to MAX_PLUCK_SECONDS. */
+  /** Harmonic k starts at 1/k^rolloff (times the pluck-position shape). */
+  rolloff: number;
+  /** Where along the string it is plucked, as a fraction of its length. */
+  pluckAt: number;
+  /** Seconds for the fundamental to fall 60 dB. */
   ringSeconds: number;
-  /** 0-1: strength of the jawari sweep. */
-  jawari: number;
+  /** How much faster each harmonic above the fundamental decays. */
+  damping: number;
+  /** Attack time, in seconds. */
+  attack: number;
+  /** The jawari resonance sweeps from this harmonic number down to `sweepTo`. */
+  sweepFrom: number;
+  sweepTo: number;
+  /** Time constant of the sweep, in seconds. */
+  sweepSeconds: number;
+  /** Width of the resonance, in harmonics. */
+  sweepWidth: number;
+  /** Extra gain at the resonance's centre. */
+  bloom: number;
+  /** How far the resonance wanders back and forth, in harmonics (the shimmer). */
+  shimmer: number;
+  /** Extra high harmonics at the very start, from a firm pluck. */
+  bite: number;
+  /** 0-1: how far below full the upper harmonics start before swelling in. */
+  swell: number;
+  /** Render length, in seconds. */
+  seconds: number;
+  /** Fade at the end of the render, in seconds. */
+  tailFade: number;
+  maxPartials: number;
+  maxPartialHz: number;
 }
 
-/** Longest pluck rendered. Longer rings are cut with a short fade. */
+/** Longest guitar pluck rendered. Longer rings are cut with a short fade. */
 export const MAX_PLUCK_SECONDS = 6;
+/**
+ * Longest tambura pluck rendered: a little over the slowest round (8 s), since
+ * the same string's next pluck takes over from it.
+ */
+export const MAX_TAMBURA_SECONDS = 9;
 
-const MAX_PARTIALS = 48;
-const MAX_PARTIAL_HZ = 10000;
 // Envelopes are computed every BLOCK samples and interpolated in between.
 const BLOCK = 64;
 const PEAK = 0.8;
@@ -34,14 +62,57 @@ const PEAK = 0.8;
 /**
  * The pluck character for the settings. The gents tambura is the bigger,
  * darker, longer-ringing instrument; ladies' is brighter and a little shorter.
+ * Sruti mode has no plucks and gets the tambura voice.
  */
-export function pluckVoice(s: Pick<ThamburaSettings, "voice" | "tone" | "pluck" | "sustain">): PluckVoice {
+export function pluckVoice(s: Pick<ThamburaSettings, "mode" | "voice" | "tone" | "pluck" | "sustain">): PluckVoice {
   const ladies = s.voice === "ladies";
+  const b = Math.min(1, s.tone / 100 + (ladies ? 0.1 : 0));
+  const f = s.pluck / 100;
+  const sustain = s.sustain / 100;
+  const pluckAt = (at: number) => at + 0.001 * Math.SQRT2; // irrational, so no harmonic vanishes
+
+  if (s.mode === "guitar") {
+    const ringSeconds = (2.5 + 5.5 * sustain) * (ladies ? 0.85 : 1);
+    return {
+      rolloff: 1.7 - 0.9 * b,
+      pluckAt: pluckAt(0.13 - 0.05 * f),
+      ringSeconds,
+      damping: 0.06 + 0.12 * (1 - b),
+      attack: 0.012 - 0.009 * f,
+      sweepFrom: 12 + 10 * b,
+      sweepTo: 3,
+      sweepSeconds: 0.25 * ringSeconds,
+      sweepWidth: 2.5,
+      bloom: 2 * (ladies ? 0.7 : 0.85),
+      shimmer: 0,
+      bite: 1.5 * f,
+      swell: 0,
+      seconds: Math.min(ringSeconds, MAX_PLUCK_SECONDS),
+      tailFade: 0.05,
+      maxPartials: 48,
+      maxPartialHz: 10000,
+    };
+  }
+
+  const ringSeconds = (12 + 24 * sustain) * (ladies ? 0.85 : 1);
   return {
-    brightness: Math.min(1, s.tone / 100 + (ladies ? 0.1 : 0)),
-    firmness: s.pluck / 100,
-    ringSeconds: (2.5 + (5.5 * s.sustain) / 100) * (ladies ? 0.85 : 1),
-    jawari: ladies ? 0.7 : 0.85,
+    rolloff: 1.25 - 0.5 * b,
+    pluckAt: pluckAt(0.11 - 0.04 * f),
+    ringSeconds,
+    damping: 0.012 + 0.03 * (1 - b),
+    attack: 0.01 - 0.006 * f,
+    sweepFrom: 28 + 10 * b,
+    sweepTo: 5,
+    sweepSeconds: 0.3 * ringSeconds,
+    sweepWidth: 4,
+    bloom: ladies ? 2 : 2.4,
+    shimmer: 1.5,
+    bite: 0.6 * f,
+    swell: 0.6,
+    seconds: Math.min(ringSeconds, MAX_TAMBURA_SECONDS),
+    tailFade: 0.3,
+    maxPartials: 64,
+    maxPartialHz: 8000,
   };
 }
 
@@ -50,43 +121,91 @@ export function pluckVoice(s: Pick<ThamburaSettings, "voice" | "tone" | "pluck" 
  * phases, so the same arguments always give the same samples.
  */
 export function renderPluck(freq: number, sampleRate: number, voice: PluckVoice, seed = 1): Float32Array {
-  const seconds = Math.min(voice.ringSeconds, MAX_PLUCK_SECONDS);
-  const length = Math.max(BLOCK, Math.ceil(seconds * sampleRate));
-  const acc = new Float64Array(length);
-  const rng = mulberry32(seed);
+  const r = new PluckRender(freq, sampleRate, voice, seed);
+  r.step();
+  return r.result();
+}
 
-  const limitHz = Math.min(MAX_PARTIAL_HZ, 0.45 * sampleRate);
-  const partials = Math.max(1, Math.min(MAX_PARTIALS, Math.floor(limitHz / freq)));
+/**
+ * A pluck rendered a few harmonics at a time, so a long render can be spread
+ * over several calls without holding up the main thread. The result is the
+ * same as `renderPluck`'s however the work is sliced.
+ */
+export class PluckRender {
+  readonly length: number;
+  readonly partials: number;
+  private readonly acc: Float64Array;
+  private readonly rng: () => number;
+  private next = 1;
 
-  const b = voice.brightness;
-  const f = voice.firmness;
-  const rolloff = 1.7 - 0.9 * b;
-  // Plucked a little way along the string; an irrational position so no harmonic vanishes.
-  const pluckAt = 0.13 - 0.05 * f + 0.001 * Math.SQRT2;
-  const tau1 = voice.ringSeconds / Math.log(1000);
-  const damping = 0.06 + 0.12 * (1 - b);
-  const attack = 0.012 - 0.009 * f;
-  const sweepFrom = 12 + 10 * b;
-  const sweepTo = 3;
-  const sweepTime = 0.25 * voice.ringSeconds;
-  const sweepWidth = 2.5;
-  const bite = 1.5 * f;
+  constructor(
+    private readonly freq: number,
+    private readonly sampleRate: number,
+    private readonly voice: PluckVoice,
+    seed = 1,
+  ) {
+    this.length = Math.max(BLOCK, Math.ceil(voice.seconds * sampleRate));
+    const limitHz = Math.min(voice.maxPartialHz, 0.45 * sampleRate);
+    this.partials = Math.max(1, Math.min(voice.maxPartials, Math.floor(limitHz / freq)));
+    this.acc = new Float64Array(this.length);
+    this.rng = mulberry32(seed);
+  }
 
-  for (let k = 1; k <= partials; k++) {
-    const base = Math.abs(Math.sin(Math.PI * k * pluckAt)) / k ** rolloff;
-    const tau = tau1 / (1 + damping * (k - 1));
+  /** Total work, in harmonic-samples; `step`'s budget is in the same unit. */
+  get work(): number {
+    return this.partials * this.length;
+  }
+
+  get done(): boolean {
+    return this.next > this.partials;
+  }
+
+  /**
+   * Renders whole harmonics until about `budget` harmonic-samples are done
+   * (always at least one). Returns true once every harmonic is rendered.
+   */
+  step(budget = Infinity): boolean {
+    let spent = 0;
+    while (!this.done && (spent === 0 || spent + this.length <= budget)) {
+      this.renderPartial(this.next++);
+      spent += this.length;
+    }
+    return this.done;
+  }
+
+  /** The finished pluck. Only valid once `step` has returned true. */
+  result(): Float32Array {
+    const { acc, length } = this;
+    const fade = Math.min(length, Math.round(this.voice.tailFade * this.sampleRate));
+    for (let i = 0; i < fade; i++) acc[length - 1 - i] *= i / fade;
+    let peak = 0;
+    for (let i = 0; i < length; i++) peak = Math.max(peak, Math.abs(acc[i]));
+    const out = new Float32Array(length);
+    const scale = peak > 0 ? PEAK / peak : 0;
+    for (let i = 0; i < length; i++) out[i] = acc[i] * scale;
+    return out;
+  }
+
+  private renderPartial(k: number): void {
+    const v = this.voice;
+    const { acc, length, sampleRate } = this;
+    const base = Math.abs(Math.sin(Math.PI * k * v.pluckAt)) / k ** v.rolloff;
+    const tau = v.ringSeconds / Math.log(1000) / (1 + v.damping * (k - 1));
+    const upper = k > 3;
     const envelope = (t: number) => {
-      const centre = sweepTo + (sweepFrom - sweepTo) * Math.exp(-t / sweepTime);
-      const bloom = 1 + voice.jawari * 2 * Math.exp(-0.5 * ((k - centre) / sweepWidth) ** 2);
-      const edge = k > 4 ? 1 + bite * Math.exp(-t / 0.04) : 1;
-      const rise = t < attack ? 0.5 - 0.5 * Math.cos((Math.PI * t) / attack) : 1;
-      return base * Math.exp(-t / tau) * bloom * edge * rise;
+      const wander = v.shimmer * Math.sin((2 * Math.PI * t) / 2.3);
+      const centre = v.sweepTo + (v.sweepFrom - v.sweepTo) * Math.exp(-t / v.sweepSeconds) + wander;
+      const bloom = 1 + v.bloom * Math.exp(-0.5 * ((k - centre) / v.sweepWidth) ** 2);
+      const edge = k > 4 ? 1 + v.bite * Math.exp(-t / 0.04) : 1;
+      const swell = upper ? 1 - v.swell * Math.exp(-t / 0.25) : 1;
+      const rise = t < v.attack ? 0.5 - 0.5 * Math.cos((Math.PI * t) / v.attack) : 1;
+      return base * Math.exp(-t / tau) * bloom * edge * swell * rise;
     };
 
-    const w = (2 * Math.PI * k * freq) / sampleRate;
+    const w = (2 * Math.PI * k * this.freq) / sampleRate;
     const c = Math.cos(w);
     const s = Math.sin(w);
-    const phase = 2 * Math.PI * rng();
+    const phase = 2 * Math.PI * this.rng();
     let x = Math.cos(phase);
     let y = Math.sin(phase);
     let amp = envelope(0);
@@ -109,17 +228,6 @@ export function renderPluck(freq: number, sampleRate: number, voice: PluckVoice,
       y /= r;
     }
   }
-
-  // Fade the last 50 ms so a cut ring doesn't click.
-  const fade = Math.min(length, Math.round(0.05 * sampleRate));
-  for (let i = 0; i < fade; i++) acc[length - 1 - i] *= i / fade;
-
-  let peak = 0;
-  for (let i = 0; i < length; i++) peak = Math.max(peak, Math.abs(acc[i]));
-  const out = new Float32Array(length);
-  const scale = peak > 0 ? PEAK / peak : 0;
-  for (let i = 0; i < length; i++) out[i] = acc[i] * scale;
-  return out;
 }
 
 const REED_HARMONICS = 24;

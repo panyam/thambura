@@ -20,6 +20,7 @@ describe("ThamburaPresenter", () => {
   let frames: FakeFrames;
   let store: FakeStore;
   let deferred: (() => void)[];
+  let delays: number[];
   let p: ThamburaPresenter;
   let views: ThamburaState[];
 
@@ -30,7 +31,10 @@ describe("ThamburaPresenter", () => {
       ticker,
       frames,
       store,
-      defer: (cb) => deferred.push(cb),
+      defer: (cb, ms) => {
+        deferred.push(cb);
+        delays.push(ms);
+      },
       rng: () => 0,
     });
     views = [];
@@ -57,12 +61,18 @@ describe("ThamburaPresenter", () => {
     for (let t = audio.now; t <= to + 1e-9; t += step) advance(t);
   };
   const set = (patch: Partial<ThamburaSettings>) => p.set(patch);
+  // Starts playing and lets the first renders finish, as the page would a moment later.
+  const start = async () => {
+    await p.toggle();
+    flushDeferred();
+  };
 
   beforeEach(() => {
     audio = new FakeAudio();
     ticker = new FakeTicker();
     frames = new FakeFrames();
     deferred = [];
+    delays = [];
     make();
   });
 
@@ -88,7 +98,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("plucks first, Sa, Sa, low Sa on the drone bus", async () => {
-    await p.toggle();
+    await start();
     expect(audio.unlocked).toBe(1);
     expect(p.state.playing).toBe(true);
     expect(audio.samples.size).toBe(3); // Pa, Sa (shared by two strings), low Sa
@@ -105,7 +115,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("fine-tunes by detune, clamped to ±50 cents, without re-rendering", async () => {
-    await p.toggle();
+    await start();
     const rendered = [...audio.samples.keys()];
     for (let i = 0; i < 60; i++) p.nudgeCents(1);
     expect(p.state.settings.cents).toBe(50);
@@ -114,13 +124,15 @@ describe("ThamburaPresenter", () => {
     const n = audio.played.length;
     run(2);
     expect(audio.played.length).toBeGreaterThan(n);
-    expect(audio.played.slice(n).every((e) => e.opts?.detune === 50)).toBe(true);
+    // The second Sa string sits 1.5 cents sharp of the others in tambura mode.
+    const want = (e: (typeof audio.played)[number]) => (e.opts?.choke === "thambura/string2" ? 51.5 : 50);
+    expect(audio.played.slice(n).every((e) => e.opts?.detune === want(e))).toBe(true);
     for (let i = 0; i < 200; i++) p.nudgeCents(-1);
     expect(p.state.settings.cents).toBe(-50);
   });
 
   it("re-renders off the tick when the key changes, and drops the old samples", async () => {
-    await p.toggle();
+    await start();
     const before = new Set(audio.samples.keys());
     set({ key: KEY_G3 });
     expect(new Set(audio.samples.keys())).toEqual(before); // not yet: deferred
@@ -134,8 +146,19 @@ describe("ThamburaPresenter", () => {
     expect(audio.played.slice(n).every((e) => after.includes(e.url))).toBe(true);
   });
 
+  it("waits a moment after a change before rendering, but not at start or between slices", async () => {
+    await start();
+    expect(delays.length).toBeGreaterThan(1);
+    expect(delays.every((ms) => ms === 0)).toBe(true);
+    delays = [];
+    set({ key: KEY_G3 });
+    flushDeferred();
+    expect(delays[0]).toBeGreaterThanOrEqual(50);
+    expect(delays.slice(1).every((ms) => ms === 0)).toBe(true);
+  });
+
   it("coalesces several changes into one render", async () => {
-    await p.toggle();
+    await start();
     set({ key: 5 });
     set({ key: 6 });
     set({ tone: 80 });
@@ -143,7 +166,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("renders one pluck per deferred call, keeping the old samples until all are ready", async () => {
-    await p.toggle();
+    await start();
     const before = new Set(audio.samples.keys());
     set({ key: KEY_G3 });
     deferred.shift()!();
@@ -156,7 +179,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("changes speed from the next pluck", async () => {
-    await p.toggle();
+    await start();
     run(0.1);
     set({ cycleSeconds: 2.5 });
     run(1);
@@ -165,20 +188,94 @@ describe("ThamburaPresenter", () => {
 
   it("stops scheduling and cancels unheard plucks on stop, keeping the bar open", async () => {
     p.setOpen(true);
-    await p.toggle();
+    await start();
     run(1);
     const n = audio.played.length;
     p.toggle();
     expect(p.state.playing).toBe(false);
     expect(p.state.open).toBe(true);
     expect(audio.cancelled).toEqual(["drone"]);
+    expect(audio.released).toEqual([{ bus: "drone", seconds: 1.5 }]);
     expect(ticker.onTick).toBeNull();
     expect(audio.played).toHaveLength(n);
   });
 
+  it("waits for its samples before the first pluck", async () => {
+    await p.toggle();
+    expect(p.state.playing).toBe(true);
+    expect(ticker.onTick).toBeNull();
+    expect(audio.played).toHaveLength(0);
+    flushDeferred();
+    expect(audio.samples.size).toBe(3);
+    expect(ticker.onTick).not.toBeNull();
+    expect(audio.played.length).toBeGreaterThan(0);
+  });
+
+  it("never starts plucking if stopped before the samples are ready", async () => {
+    await p.toggle();
+    p.toggle();
+    flushDeferred();
+    expect(ticker.onTick).toBeNull();
+    expect(audio.played).toHaveLength(0);
+  });
+
+  it("starts at once when the samples are already rendered", async () => {
+    await start();
+    p.toggle();
+    await p.toggle();
+    expect(deferred).toHaveLength(0);
+    expect(ticker.onTick).not.toBeNull();
+  });
+
+  it("cuts off each string's previous pluck when it is plucked again", async () => {
+    await start();
+    run(9.5);
+    const groups = audio.played.map((e) => e.opts?.choke);
+    expect(new Set(groups.slice(0, 4)).size).toBe(4);
+    expect(groups.slice(4, 8)).toEqual(groups.slice(0, 4));
+  });
+
+  it("swaps between tambura and guitar without stopping, re-rendering the plucks", async () => {
+    await start();
+    const tambura = new Map(audio.samples);
+    set({ mode: "guitar" });
+    expect(ticker.onTick).not.toBeNull();
+    expect(deferred).toHaveLength(1);
+    flushDeferred();
+    const guitar = [...audio.samples.entries()];
+    expect(guitar.some(([k]) => tambura.has(k))).toBe(false);
+    // The guitar pluck is the shorter render.
+    expect(Math.max(...guitar.map(([, x]) => x.length))).toBeLessThan(Math.min(...[...tambura.values()].map((x) => x.length)));
+    expect(p.state.playing).toBe(true);
+  });
+
+  it("doesn't re-render when switching to sruti and back", async () => {
+    await start();
+    const keys = [...audio.samples.keys()];
+    set({ mode: "sruti" });
+    set({ mode: "tambura" });
+    expect(deferred).toHaveLength(0);
+    expect([...audio.samples.keys()]).toEqual(keys);
+  });
+
+  it("sets the second Sa string a shade sharp in tambura mode only", async () => {
+    set({ cents: 4 });
+    await start();
+    run(1.9);
+    const detunes = audio.played.slice(0, 3).map((e) => e.opts?.detune);
+    expect(detunes[0]).toBe(4);
+    expect(detunes[1]).toBe(4);
+    expect(detunes[2]).toBeCloseTo(5.5, 9);
+    set({ mode: "guitar" });
+    flushDeferred();
+    const n = audio.played.length;
+    run(6);
+    expect(audio.played.slice(n).every((e) => e.opts?.detune === 4)).toBe(true);
+  });
+
   it("lights each string as its pluck is heard, then lets it go dark", async () => {
     audio.latency = 0.1;
-    await p.toggle();
+    await start();
     advance(0.02);
     expect(p.state.lit).toEqual([false, false, false, false]);
     const firstAt = audio.played[0].when;
@@ -204,7 +301,7 @@ describe("ThamburaPresenter", () => {
   });
 
   it("switches between tambura and sruti while playing", async () => {
-    await p.toggle();
+    await start();
     set({ mode: "sruti" });
     expect(ticker.onTick).toBeNull();
     expect(audio.cancelled).toEqual(["drone"]);
@@ -239,7 +336,7 @@ describe("ThamburaPresenter", () => {
 
   it("keeps playing when the bar is hidden", async () => {
     p.setOpen(true);
-    await p.toggle();
+    await start();
     p.toggleOpen();
     expect(p.state.open).toBe(false);
     expect(p.state.playing).toBe(true);

@@ -20,6 +20,11 @@ export interface PlayOptions {
   gain?: number;
   /** Stereo position, -1 (left) to 1 (right). */
   pan?: number;
+  /**
+   * A choke group. When a later note in the same group starts, this one fades
+   * out quickly, as a re-plucked string stops its old vibration.
+   */
+  choke?: string;
 }
 
 /** A continuous tone built from a harmonic spectrum. */
@@ -67,6 +72,8 @@ export interface AudioOut {
    * sounding rings out, since cutting it off mid-waveform clicks.
    */
   cancel(bus: Bus): void;
+  /** Fades out every note sounding on the bus over about `seconds`. */
+  release(bus: Bus, seconds: number): void;
   /** Starts a continuous tone on the bus, fading in. */
   startTone(bus: Bus, spec: ToneSpec): ToneHandle;
   /** A bus's volume, 0-100. */
@@ -77,17 +84,32 @@ export interface AudioOut {
 const FADE_IN = 0.15;
 const FADE_OUT = 0.12;
 const GLIDE = 0.03;
+// How fast a choked note fades, in seconds: quick, but not a click.
+const CHOKE_FADE = 0.08;
+
+/** A scheduled sample, until it ends. */
+interface Note {
+  src: AudioBufferSourceNode;
+  at: number;
+  /** Its own gain node, when it has a gain or a choke group. */
+  amp?: GainNode;
+  level: number;
+  released?: boolean;
+  /** Takes back the fade this note put on its choke group's previous note. */
+  unchoke?: () => void;
+}
 
 export class AudioEngine implements AudioOut {
   readonly ctx: AudioContext;
   private readonly master: GainNode;
   private readonly buses: Record<Bus, GainNode>;
-  // Scheduled sources and their start times, until they end.
-  private readonly active: Record<Bus, Map<AudioBufferSourceNode, number>> = {
-    tala: new Map(),
-    drone: new Map(),
-    percussion: new Map(),
+  // Scheduled notes, until they end, and the latest note in each choke group.
+  private readonly active: Record<Bus, Set<Note>> = {
+    tala: new Set(),
+    drone: new Set(),
+    percussion: new Set(),
   };
+  private readonly chokeGroups = new Map<string, Note>();
   private readonly buffers = new Map<string, AudioBuffer>();
   private readonly loading = new Map<string, Promise<AudioBuffer | null>>();
 
@@ -154,11 +176,14 @@ export class AudioEngine implements AudioOut {
     const src = this.ctx.createBufferSource();
     src.buffer = buffer;
     if (opts.detune) src.detune.value = opts.detune;
+    const at = Math.max(when, this.ctx.currentTime);
+    const level = opts.gain ?? 1;
+    const note: Note = { src, at, level };
     let out: AudioNode = src;
-    if (opts.gain !== undefined && opts.gain !== 1) {
-      const g = this.ctx.createGain();
-      g.gain.value = opts.gain;
-      out = out.connect(g);
+    if (level !== 1 || opts.choke) {
+      note.amp = this.ctx.createGain();
+      note.amp.gain.value = level;
+      out = out.connect(note.amp);
     }
     if (opts.pan) {
       const p = this.ctx.createStereoPanner();
@@ -166,21 +191,56 @@ export class AudioEngine implements AudioOut {
       out = out.connect(p);
     }
     out.connect(this.buses[bus]);
-    const at = Math.max(when, this.ctx.currentTime);
+    if (opts.choke) note.unchoke = this.choke(opts.choke, note);
     const scheduled = this.active[bus];
-    scheduled.set(src, at);
-    src.onended = () => scheduled.delete(src);
+    scheduled.add(note);
+    src.onended = () => {
+      scheduled.delete(note);
+      if (opts.choke && this.chokeGroups.get(opts.choke) === note) this.chokeGroups.delete(opts.choke);
+    };
     src.start(at);
+  }
+
+  /** Makes `note` the group's latest, fading the previous one out as it starts. */
+  private choke(group: string, note: Note): () => void {
+    const prev = this.chokeGroups.get(group);
+    this.chokeGroups.set(group, note);
+    const restore = () => {
+      if (this.chokeGroups.get(group) !== note) return;
+      if (prev) this.chokeGroups.set(group, prev);
+      else this.chokeGroups.delete(group);
+    };
+    if (!prev?.amp || prev.released) return restore;
+    const gain = prev.amp.gain;
+    gain.setValueAtTime(prev.level, note.at);
+    gain.linearRampToValueAtTime(0, note.at + CHOKE_FADE);
+    return () => {
+      gain.cancelScheduledValues(note.at);
+      restore();
+    };
   }
 
   cancel(bus: Bus): void {
     const now = this.ctx.currentTime;
     const scheduled = this.active[bus];
-    for (const [src, at] of scheduled) {
-      if (at <= now) continue;
-      src.onended = null;
-      src.stop();
-      scheduled.delete(src);
+    // Newest first, so each cancelled note hands its group back to the one before it.
+    for (const note of [...scheduled].reverse()) {
+      if (note.at <= now) continue;
+      note.unchoke?.();
+      note.src.onended = null;
+      note.src.stop();
+      scheduled.delete(note);
+    }
+  }
+
+  release(bus: Bus, seconds: number): void {
+    const now = this.ctx.currentTime;
+    for (const note of this.active[bus]) {
+      if (!note.amp || note.released) continue;
+      note.released = true;
+      note.amp.gain.cancelScheduledValues(now);
+      note.amp.gain.setTargetAtTime(0, now, seconds / 4);
+      note.src.stop(now + seconds * 1.5);
     }
   }
 

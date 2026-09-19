@@ -6,8 +6,6 @@ import { ThamburaPresenter, type ThamburaState, type ThamburaStore } from "./tha
 import { workerTicker } from "./transport";
 
 const STORAGE_KEY = "sadhana.thambura";
-// Renders wait this long, so a knob turned through several keys renders once.
-const RENDER_DELAY_MS = 60;
 
 /**
  * Mounts the thambura bar on `el` and wires the header's thambura button
@@ -27,7 +25,7 @@ export function createThamburaIsland(
       request: (cb) => requestAnimationFrame(cb),
       cancel: (id) => cancelAnimationFrame(id),
     },
-    defer: (cb) => setTimeout(cb, RENDER_DELAY_MS),
+    defer: (cb, ms) => setTimeout(cb, ms),
     store: localStore(STORAGE_KEY),
   });
   const [state, setState] = signalView(presenter.state);

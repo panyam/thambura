@@ -13,7 +13,11 @@
 export type Swara = "Sa" | "Ri1" | "Ri2" | "Ri3" | "Ga3" | "Ma1" | "Ma2" | "Pa" | "Da1" | "Da2" | "Da3" | "Ni3";
 export type Voice = "gents" | "ladies";
 export type Temperament = "just" | "equal";
-export type ThamburaMode = "tambura" | "sruti";
+/**
+ * How the thambura sounds: a plucked tambura that rings on from round to
+ * round, a shorter guitar-like pluck, or the sruti box's steady reed tones.
+ */
+export type ThamburaMode = "tambura" | "guitar" | "sruti";
 
 export interface SwaraInfo {
   id: Swara;
@@ -137,7 +141,7 @@ export function normalizeThambura(raw: unknown, base: ThamburaSettings = DEFAULT
     ),
     temperament: oneOf(r.temperament, ["just", "equal"], base.temperament),
     a4: num(r.a4, base.a4, MIN_A4, MAX_A4),
-    mode: oneOf(r.mode, ["tambura", "sruti"], base.mode),
+    mode: oneOf(r.mode, ["tambura", "guitar", "sruti"], base.mode),
     cycleSeconds: num(r.cycleSeconds, base.cycleSeconds, MIN_CYCLE, MAX_CYCLE),
     volume: num(r.volume, base.volume, 0, 100, true),
     tone: num(r.tone, base.tone, 0, 100, true),
