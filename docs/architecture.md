@@ -65,13 +65,25 @@ names a beat uses (`down`, `open`, `one`, `two` …) to those files, one map
 per sound group. `AudioEngine.load` fetches and decodes each file once and
 keeps the `AudioBuffer` under its URL.
 
-**Rendered samples.** The thambura's tambura and guitar modes have no
-recordings behind them (we don't have a recording of a real tambura yet,
-which is what issue #8 is waiting on). `tambura.ts` builds each string's pluck in code as a
-sum of harmonics. Each harmonic starts at a level set by the pluck position
-and a rolloff, then decays at its own rate, with the high ones dying faster.
-A resonance sweeps down through the harmonics after the attack and wanders
-back and forth a little, which stands in for the jawari's bloom. The result is
+**Rendered samples.** The thambura's plucked modes have no recordings behind
+them. `tambura.ts` builds each string's pluck in code as a sum of harmonics.
+Each harmonic starts at a level set by the pluck position and a rolloff, then
+decays at its own rate, with the high ones dying faster. Two models stand in
+for the jawari's bloom:
+
+- The **Tambura** mode (`jawari`) was fitted to a 60 s recording of a C
+  tambura (issue #8). A pluck starts dark. Harmonics around 1.3 kHz (a band
+  about 1.2 octaves wide) then swell by up to about 40 dB over the first
+  second, peak around 1.4 s, fall back within the next second and leave a
+  little brightness behind. So the note gets louder after the pluck, as the
+  recording's does. The low Sa, a thicker string, blooms about half as much.
+  Measured the same way, the fitted voice's loudness and spectral centroid
+  over time follow the recording's to within a few dB.
+- **Tambura (classic)** (`tambura`) sweeps a resonance slowly down through
+  the harmonics and lets it wander back and forth a little. Its tone barely
+  changes over a pluck. Guitar mode uses the same model, shorter and duller.
+
+The result is
 a mono `Float32Array`, 9 s long for a tambura string, and `addSamples` stores
 it in the same cache as the WAVs under a key such as
 `thambura/130.813/<voice params>`. From there a pluck plays exactly the way a
@@ -203,12 +215,17 @@ chaapu beat don't end together. On one map, a stroke and a clap at the same
 position always get the same time. `player/transport.test.ts` checks this
 with Adi and Misra Chaapu through three tempo changes.
 
-**`ThamburaSequencer`** has nothing to do with the tala's tempo. A thambura
-cycle is five equal slots: first string, Sa, Sa, low Sa, then a rest. Its
-length (2-8 s) is its own setting. It doesn't precompute a grid. It works out
-the next pluck from the last one only when that pluck is pulled, so a speed
-change is heard at the very next pluck. Each pluck gets up to 2% of a slot of
-lateness and up to 15% less force, so no two rounds are identical.
+**`ThamburaSequencer`** has nothing to do with the tala's tempo. It plucks
+first string, Sa, Sa, low Sa in a pattern. The classic tambura and the guitar
+use five equal slots, the last one a rest. The jawari tambura uses the
+recorded player's gaps (30%, 24%, 17% and 29% of the round) and also emits a
+damp event for each string, 9-16% of the round before its next pluck, which
+the presenter turns into a 0.2 s fade (`AudioOut.damp`), like a finger
+stopping the string. The round's length (2-8 s) is its own setting. The
+sequencer doesn't precompute a grid. It works out the next event from the
+last pluck only when that event is pulled, so a speed change is heard at the
+very next pluck. Each pluck gets up to 0.4% of the round of lateness and up
+to 15% less force, so no two rounds are identical.
 
 ### Stopping
 
@@ -264,9 +281,10 @@ constant, so a new key or fine tune bends into place instead of jumping or
 waiting for a boundary. Changing the tone swaps the `PeriodicWave` in place.
 Stopping ramps the gain to zero and stops the oscillators a moment later.
 
-Long timed notes need one more piece that clicks don't. A tambura string rings for 12-36 s,
+Long timed notes need one more piece that clicks don't. A classic tambura string rings for 12-36 s,
 far longer than a round, so the same string is still sounding when it is
-plucked again. The re-pluck fades the old note out over 80 ms as it starts,
+plucked again. (The jawari tambura damps its strings first, as the recorded
+player did, and a damped note is left out of the choke.) The re-pluck fades the old note out over 80 ms as it starts,
 the way a finger on a string stops its old vibration, instead of letting two
 copies stack up. Each choked note needs its own gain node to fade, which is why
 `play` adds one whenever a note has a choke group. The mridangam will need the
@@ -323,8 +341,8 @@ limits we know about are these.
   eduppu and korvai alignment. It can work that out from the same counts,
   but nothing exposes it yet.
 - **Tambura renders stop at 9 s**, and a re-plucked string chokes its old
-  ring. Whether a real tambura rings through its own next pluck is one of the
-  things the recording in issue #8 should settle.
+  ring. In the recording from issue #8 the player stopped each string
+  0.5-1 s before plucking it again, so the jawari tambura never needs more.
 - **Rendering is on the main thread**, sliced to stay inside the 75 ms margin.
   A worker would take it off entirely (issue #8).
 - **Output latency is only what the browser reports**, so on Safari or

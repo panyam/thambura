@@ -76,6 +76,12 @@ export interface AudioOut {
   cancel(bus: Bus): void;
   /** Fades out every note sounding on the bus over about `seconds`. */
   release(bus: Bus, seconds: number): void;
+  /**
+   * Fades out the latest note in a choke group, from `when` over `seconds`, as
+   * a finger stops a string. A later note in the group is unaffected, and so
+   * is a group with nothing playing.
+   */
+  damp(group: string, when: number, seconds: number): void;
   /** Starts a continuous tone on the bus, fading in. */
   startTone(bus: Bus, spec: ToneSpec): ToneHandle;
   /** A bus's volume, 0-100. */
@@ -244,6 +250,17 @@ export class AudioEngine implements AudioOut {
       note.amp.gain.setTargetAtTime(0, now, seconds / 4);
       note.src.stop(now + seconds * 1.5);
     }
+  }
+
+  damp(group: string, when: number, seconds: number): void {
+    const note = this.chokeGroups.get(group);
+    if (!note?.amp || note.released) return;
+    // Released, so the group's next note doesn't set up a choke fade on it too.
+    note.released = true;
+    const at = Math.max(when, note.at, this.ctx.currentTime);
+    note.amp.gain.setValueAtTime(note.level, at);
+    note.amp.gain.linearRampToValueAtTime(0, at + seconds);
+    note.src.stop(at + seconds + 0.05);
   }
 
   startTone(bus: Bus, spec: ToneSpec): ToneHandle {

@@ -9,30 +9,67 @@ export interface PluckEvent {
   gain: number;
 }
 
-/** The thambura's speed. Mutable: a change applies from the next pluck not yet handed out. */
-export interface ThamburaTiming {
-  cycleSeconds: number;
+/** A string stopped by a finger before it's plucked again. */
+export interface DampEvent {
+  time: number;
+  string: number;
+  damp: true;
 }
 
-// A cycle has five equal slots: four plucks, then a rest before the first string again.
-const SLOTS = 5;
+export type ThamburaEvent = PluckEvent | DampEvent;
+
+/** How a player spaces the plucks in a round. */
+export interface PluckPattern {
+  /** The gap after each string's pluck, as shares of the round. They sum to 1. */
+  gaps: readonly number[];
+  /**
+   * How long before its next pluck each string is damped, as shares of the
+   * round, or null to let strings ring until they're plucked again. Each must
+   * be shorter than the gap before that string's pluck.
+   */
+  damp: readonly number[] | null;
+}
+
+/** Five equal slots: four plucks, then a rest before the first string again. */
+export const EVEN_PATTERN: PluckPattern = { gaps: [1 / 5, 1 / 5, 1 / 5, 2 / 5], damp: null };
+
+/**
+ * The player in the recording from issue #8, whose round was 5.83 s: 1.74 s from the
+ * first string to Sa, 1.39 s to the second Sa, 1.02 s to the low Sa and 1.68 s
+ * back to the first string. Each string was stopped 0.55-0.95 s before its
+ * next pluck (measured for the first string and the low Sa; the Sa strings,
+ * which the low Sa's harmonics hide, are set between).
+ */
+export const PLAYED_PATTERN: PluckPattern = { gaps: [0.3, 0.24, 0.17, 0.29], damp: [0.09, 0.12, 0.12, 0.16] };
+
+/** The thambura's speed and pattern. Mutable: a change applies from the next event not yet handed out. */
+export interface ThamburaTiming {
+  cycleSeconds: number;
+  /** Defaults to EVEN_PATTERN. */
+  pattern?: PluckPattern;
+}
+
 const STRINGS = 4;
-// Up to 2% of a slot late, and up to 15% softer, drawn per pluck.
-const JITTER = 0.02;
+// Up to 0.4% of the round late, and up to 15% softer, drawn per pluck.
+const JITTER = 0.004;
 const SOFTER = 0.15;
 
 /**
- * Plucks the four strings in turn on the audio clock. It runs on its own
- * speed, not the tala's tempo. The next pluck's time is worked out from the
- * last one only when it is asked for, so a speed change is heard at once.
+ * Plucks the four strings in turn on the audio clock and, when the pattern
+ * damps, stops each string shortly before it's plucked again. It runs on its
+ * own speed, not the tala's tempo. The next event's time is worked out from
+ * the last pluck only when it is asked for, so a speed change is heard at once.
  */
-export class ThamburaSequencer implements Sequencer<PluckEvent> {
+export class ThamburaSequencer implements Sequencer<ThamburaEvent> {
   private running = false;
   // Where the first pluck goes after start; null once it has been handed out.
   private startAt: number | null = null;
   // The last pluck's grid time (before its jitter) and the string plucked next.
   private lastTime = 0;
   private next = 0;
+  // Whether the next string's damp is handed out, and which strings have sounded since start.
+  private damped = false;
+  private sounding = [false, false, false, false];
 
   constructor(
     private readonly timing: ThamburaTiming,
@@ -43,21 +80,33 @@ export class ThamburaSequencer implements Sequencer<PluckEvent> {
     this.running = true;
     this.startAt = at;
     this.next = 0;
+    this.damped = false;
+    this.sounding = [false, false, false, false];
   }
 
   stop(_now: number): void {
     this.running = false;
   }
 
-  pull(_now: number, until: number): PluckEvent[] {
-    const out: PluckEvent[] = [];
+  pull(_now: number, until: number): ThamburaEvent[] {
+    const out: ThamburaEvent[] = [];
     while (this.running) {
-      const slot = this.timing.cycleSeconds / SLOTS;
-      const t = this.startAt ?? this.lastTime + (this.next === 0 ? 2 : 1) * slot;
+      const cycle = this.timing.cycleSeconds;
+      const { gaps, damp } = this.timing.pattern ?? EVEN_PATTERN;
+      const t = this.startAt ?? this.lastTime + gaps[(this.next + STRINGS - 1) % STRINGS] * cycle;
+      if (damp && !this.damped) {
+        const at = t - damp[this.next] * cycle;
+        if (at >= until) break;
+        if (this.sounding[this.next]) out.push({ time: at, string: this.next, damp: true });
+        this.damped = true;
+        continue;
+      }
       if (t >= until) break;
-      out.push({ time: t + JITTER * slot * this.rng(), string: this.next, gain: 1 - SOFTER * this.rng() });
+      out.push({ time: t + JITTER * cycle * this.rng(), string: this.next, gain: 1 - SOFTER * this.rng() });
+      this.sounding[this.next] = true;
       this.startAt = null;
       this.lastTime = t;
+      this.damped = false;
       this.next = (this.next + 1) % STRINGS;
     }
     return out;
