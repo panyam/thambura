@@ -6,8 +6,8 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 
 - [x] First deploy. thambura.appspot.com, thambura.com and www.thambura.com
       all serve over HTTPS (checked 2026-09-19).
-- [ ] Redeploy from `master` (`make deploy`). The live build predates the icon
-      transport controls and the thambura.
+- [x] Redeploy from `master`. thambura.com serves the same bundle as master
+      at c82bb87 (checked 2026-09-19).
 - [ ] Listen to it on a real machine. Headless Chromium has no audio device, so
       only scheduled times were verified.
 - [ ] Try iOS Safari with the silent switch on. `navigator.audioSession.type` is
