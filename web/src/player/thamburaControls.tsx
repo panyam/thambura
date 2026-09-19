@@ -118,3 +118,6 @@ export const SMALL_BUTTON =
 
 export const SELECT =
   "rounded-md border-gray-300 bg-white py-1.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
+
+export const SMALL_SELECT =
+  "rounded-md border-gray-300 bg-white py-1 pl-2.5 text-xs font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";

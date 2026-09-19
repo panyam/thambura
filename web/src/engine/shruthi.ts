@@ -19,6 +19,13 @@ export type Temperament = "just" | "equal";
  */
 export type ThamburaMode = "tambura" | "guitar" | "sruti";
 
+/** The modes in menu order, for the bar's Sound menu and for validating saved settings. */
+export const THAMBURA_MODES: { id: ThamburaMode; label: string }[] = [
+  { id: "tambura", label: "Tambura" },
+  { id: "guitar", label: "Guitar" },
+  { id: "sruti", label: "Sruti" },
+];
+
 export interface SwaraInfo {
   id: Swara;
   /** Both names where two swaras share a position, e.g. "Ri2 / Ga1". */
@@ -141,7 +148,11 @@ export function normalizeThambura(raw: unknown, base: ThamburaSettings = DEFAULT
     ),
     temperament: oneOf(r.temperament, ["just", "equal"], base.temperament),
     a4: num(r.a4, base.a4, MIN_A4, MAX_A4),
-    mode: oneOf(r.mode, ["tambura", "guitar", "sruti"], base.mode),
+    mode: oneOf(
+      r.mode,
+      THAMBURA_MODES.map((m) => m.id),
+      base.mode,
+    ),
     cycleSeconds: num(r.cycleSeconds, base.cycleSeconds, MIN_CYCLE, MAX_CYCLE),
     volume: num(r.volume, base.volume, 0, 100, true),
     tone: num(r.tone, base.tone, 0, 100, true),

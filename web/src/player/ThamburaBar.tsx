@@ -1,13 +1,15 @@
-import { createEffect, Match, onCleanup, onMount, Switch } from "solid-js";
+import { createEffect, For, Match, onCleanup, onMount, Switch } from "solid-js";
+import { THAMBURA_MODES, type ThamburaMode } from "../engine/shruthi";
 import { THAMBURA_VIEWS } from "./thamburaPresenter";
-import { Segmented, type ThamburaViewProps } from "./thamburaControls";
+import { Segmented, SMALL_SELECT, type ThamburaViewProps } from "./thamburaControls";
 import { ThamburaMini } from "./ThamburaMini";
 import { ThamburaRaagini } from "./ThamburaRaagini";
 import { ThamburaStudio } from "./ThamburaStudio";
 
 /**
  * The floating thambura bar. It slides up from the bottom of the window when
- * open and holds a switch between the views, all of which drive the same
+ * open. Its header holds the sound (mode) menu, which applies whichever view
+ * is showing, and a switch between the views, all of which drive the same
  * presenter. `onHeight` reports the space it covers (0 when hidden) so the
  * page can leave room for it.
  */
@@ -40,6 +42,13 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
       >
         <div class="flex items-center gap-3 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
           <span class="hidden text-sm font-semibold sm:inline">Thambura</span>
+          <select
+            aria-label="Sound"
+            class={SMALL_SELECT}
+            onChange={(e) => a.set({ mode: e.currentTarget.value as ThamburaMode })}
+          >
+            <For each={THAMBURA_MODES}>{(m) => <option value={m.id} selected={m.id === st().settings.mode}>{m.label}</option>}</For>
+          </select>
           <Segmented label="Thambura view" size="sm" value={st().view} options={THAMBURA_VIEWS.map((v) => ({ value: v.id, label: v.label }))} onChange={(v) => a.setView(v)} />
           <button
             type="button"

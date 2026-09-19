@@ -8,6 +8,7 @@ import {
   nextRaaginiString,
   normalizeThambura,
   srutiFrequencies,
+  THAMBURA_MODES,
   stringFrequencies,
   swaraRatio,
   tonicHz,
@@ -96,6 +97,14 @@ describe("normalizeThambura", () => {
     expect(normalizeThambura({ mode: "guitar" }).mode).toBe("guitar");
     expect(normalizeThambura({ mode: "sruti" }).mode).toBe("sruti");
     expect(normalizeThambura({ mode: "banjo" }).mode).toBe("tambura");
+  });
+
+  it("lists every mode it accepts, once, with a label", () => {
+    expect(THAMBURA_MODES.map((m) => m.id)).toEqual(["tambura", "guitar", "sruti"]);
+    for (const m of THAMBURA_MODES) {
+      expect(normalizeThambura({ mode: m.id }).mode).toBe(m.id);
+      expect(m.label).not.toBe("");
+    }
   });
 
   it("returns the defaults for junk", () => {
