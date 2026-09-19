@@ -33,8 +33,16 @@ Right hand set, read from web/static, so it follows them when they change.
   h1 { margin: 34px 0 0; font-size: 48px; font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; }
   h1 em { font-style: normal; color: #b45309; white-space: nowrap; }
   p { margin: 26px 0 0; font-size: 27px; font-weight: 500; color: #57534e; }
-  .url { margin-top: 46px; font-size: 26px; font-weight: 700; color: #b45309; letter-spacing: 0.02em; }
-  .url span { font-weight: 500; color: #78716c; letter-spacing: 0; }
+  .cta { margin-top: 40px; display: flex; align-items: center; gap: 22px; }
+  .button {
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 16px 30px; border-radius: 999px;
+    background: #d97706; color: #fff;
+    font-size: 28px; font-weight: 700;
+    box-shadow: 0 10px 24px -10px rgba(180, 83, 9, 0.7);
+  }
+  .button b { font-size: 30px; line-height: 1; }
+  .url { font-size: 24px; font-weight: 700; color: #b45309; letter-spacing: 0.02em; }
   .card {
     width: 420px;
     height: 420px;
@@ -53,7 +61,7 @@ Right hand set, read from web/static, so it follows them when they change.
     <div class="brand"><img src="../web/static/favicon.svg" alt=""><span>Thambura</span></div>
     <h1>Online <em>shruthi drone</em><br>and Carnatic <em>tala keeper</em></h1>
     <p>Any shruthi, any tala, any keertana</p>
-    <div class="url">thambura.com <span>· free, in your browser</span></div>
+    <div class="cta"><span class="button">Start practising free <b>→</b></span><span class="url">thambura.com</span></div>
   </div>
   <div class="card"><img src="../web/static/Resources/Images/RightHand/two.svg" alt=""></div>
 </body>

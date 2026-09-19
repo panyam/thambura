@@ -42,6 +42,9 @@ type SitePage struct {
 
 // Social describes a page's link preview on chat apps and social sites.
 type Social struct {
+	// Description replaces MetaDescription in the preview, which shows about
+	// 125 characters where search results show about 160. Empty uses it as is.
+	Description string
 	Image       string
 	ImageAlt    string
 	ImageWidth  int
@@ -61,6 +64,8 @@ const (
 	homeTitle       = brand.Name + ": online shruthi drone and Carnatic tala keeper"
 	homeDescription = "A free online thambura (tanpura) drone in any shruthi, and a Carnatic tala keeper for " +
 		"sapta and chaapu talas with finger-count hand images. Runs in the browser."
+	homeSocialDescription = "A free online thambura (tanpura) drone in any shruthi, and a Carnatic tala keeper. " +
+		"Runs in your browser."
 )
 
 // Load implements the goapplib View.
@@ -72,6 +77,7 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 	p.DisableSplashScreen = true
 	p.Header.AppName = brand.Name
 	p.Social = Social{
+		Description: homeSocialDescription,
 		Image:       brand.URL + "/static/og.png",
 		ImageAlt:    "Thambura: a hand keeping tala beside the words online shruthi drone and Carnatic tala keeper",
 		ImageWidth:  1200,
