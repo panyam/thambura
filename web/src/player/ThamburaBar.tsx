@@ -1,7 +1,7 @@
 import { createEffect, createSignal, For, Match, onCleanup, onMount, Show, Switch } from "solid-js";
 import { THAMBURA_MODES, type ThamburaMode } from "../engine/shruthi";
 import { THAMBURA_VIEWS } from "./thamburaPresenter";
-import { copyText, Segmented, SMALL_SELECT, type ThamburaViewProps } from "./thamburaControls";
+import { copyText, PlayButton, Segmented, SMALL_SELECT, type ThamburaViewProps } from "./thamburaControls";
 import { ThamburaLab } from "./ThamburaLab";
 import { ThamburaMini } from "./ThamburaMini";
 import { ThamburaRaagini } from "./ThamburaRaagini";
@@ -55,6 +55,7 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
         }`}
       >
         <div class="flex items-start gap-3 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
+          <PlayButton playing={st().playing} onClick={() => void a.toggle()} class="h-8 w-8" />
           {/* Wraps on the narrowest phones so the hide button stays in reach. */}
           <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
             <span class="hidden text-sm font-semibold sm:inline">Thambura</span>

@@ -1,6 +1,7 @@
 import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
 import type { AudioEngine } from "./audio";
+import { isThamburaShortcut } from "./shortcuts";
 import { ThamburaBar } from "./ThamburaBar";
 import { ThamburaPresenter, type ThamburaLink, type ThamburaState, type ThamburaStore } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
@@ -15,17 +16,20 @@ const LINK_PARAM = "s";
 const LINK_SETTLE_MS = 400;
 
 /**
- * Mounts the thambura bar on `el` and wires the header's thambura button
- * (`toggle`) to open and close it. It plays through the page's shared
- * AudioEngine, on the drone bus. `onPlaying` hears whenever it starts or stops.
+ * Mounts the thambura bar on `el` and wires the site header's thambura
+ * buttons: `play` starts and stops it from anywhere on the page, as does the
+ * T key, and `toggle` opens and closes the bar. It plays through the page's
+ * shared AudioEngine, on the drone bus. `onPlaying` hears whenever it starts
+ * or stops.
  */
 export function createThamburaIsland(
   el: HTMLElement,
   eventBus: EventBus,
   audio: AudioEngine,
-  toggle: HTMLElement | null,
+  header: { toggle: HTMLElement | null; play: HTMLElement | null },
   onPlaying?: (playing: boolean) => void,
 ): SolidIsland {
+  const { toggle, play } = header;
   const presenter = new ThamburaPresenter({
     audio,
     ticker: workerTicker(),
@@ -42,11 +46,17 @@ export function createThamburaIsland(
   presenter.attach({
     setState(s) {
       setState(s);
-      if (toggle) reflect(toggle, s);
+      reflect(header, s);
       onPlaying?.(s.playing);
     },
   });
   toggle?.addEventListener("click", () => presenter.toggleOpen());
+  play?.addEventListener("click", () => void presenter.toggle());
+  document.addEventListener("keydown", (e) => {
+    if (!isThamburaShortcut(e as KeyboardEvent & { target: HTMLElement | null })) return;
+    e.preventDefault();
+    void presenter.toggle();
+  });
 
   // Leave room at the bottom of the page for the open bar.
   const onHeight = (px: number) => document.documentElement.style.setProperty("--thambura-bar-height", `${px}px`);
@@ -61,10 +71,15 @@ export function createThamburaIsland(
   );
 }
 
-/** Shows on the header button whether the bar is open and the thambura playing. */
-function reflect(toggle: HTMLElement, s: ThamburaState): void {
-  toggle.setAttribute("aria-expanded", String(s.open));
-  toggle.querySelector("[data-playing]")?.classList.toggle("hidden", !s.playing);
+/** Shows on the header's buttons whether the thambura is playing and the bar open. */
+function reflect(header: { toggle: HTMLElement | null; play: HTMLElement | null }, s: ThamburaState): void {
+  header.toggle?.setAttribute("aria-expanded", String(s.open));
+  const play = header.play;
+  if (!play) return;
+  play.dataset.playing = String(s.playing);
+  play.setAttribute("aria-pressed", String(s.playing));
+  play.setAttribute("aria-label", s.playing ? "Stop thambura" : "Start thambura");
+  play.title = s.playing ? "Stop the thambura (T)" : "Start the thambura (T)";
 }
 
 /**

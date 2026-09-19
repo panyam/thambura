@@ -3,20 +3,18 @@ import { KEYS, SWARAS, type Swara } from "../engine/shruthi";
 import {
   centsLabel,
   keyOptionLabel,
-  PlayButton,
   RepeatButton,
   SELECT,
   SMALL_BUTTON,
   type ThamburaViewProps,
 } from "./thamburaControls";
 
-/** One row: play, key, fine tune, first string and volume. */
+/** One row: key, fine tune, first string and volume. Start/stop is in the bar's header. */
 export function ThamburaMini(props: ThamburaViewProps) {
   const s = () => props.state().settings;
   const a = props.actions;
   return (
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <PlayButton playing={props.state().playing} onClick={() => void a.toggle()} />
       <select aria-label="Sa (key)" class={SELECT} onChange={(e) => a.set({ key: Number(e.currentTarget.value) })}>
         <For each={KEYS}>{(_, i) => <option value={i()} selected={i() === s().key}>{keyOptionLabel(i())}</option>}</For>
       </select>
