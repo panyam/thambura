@@ -1,69 +1,59 @@
 # Handoff: Thambura
 
-Written 2026-09-19. This folds together two sessions' handoffs: the one that
-ported the app, deployed it and renamed it Thambura (PRs #1, #7), and the one
-that built the thambura drone (PRs #2, #4, #5, #6). The durable notes are in
-CLAUDE.md and NEXTSTEPS.md; this file is only what's in flight. Delete it once
-the items below close.
+Written 2026-09-19, after the thambura sound and tooling work (PRs #18, #21,
+#28, #30, #33, #34). The durable notes are in CLAUDE.md, NEXTSTEPS.md and
+`docs/`; this file is only what's in flight. Delete it once the items below
+close.
 
 ## Where things stand
 
-- master has everything and is live. thambura.com, www.thambura.com and
-  thambura.appspot.com serve over HTTPS, and the live `app.js` is
-  byte-identical to a build of master at c82bb87 (the check is under
-  "Deploying" in CLAUDE.md). A deploy after any further merge needs the user,
-  since `gcloud` is only on their Mac.
-- The repo is `panyam/thambura` and the Go module `github.com/panyam/thambura`.
-  The local checkouts are under `thambura/` (`main` is the shared one).
-- Issue #8 holds the sound-quality plan: compare with a real tambura
-  recording, fit `pluckVoice`, by-ear checks, jawari control, 5th string,
-  worker rendering. That's the next piece of work. Start there.
-- Nobody has listened to any of it yet, the tala clicks included. Every check
-  so far is numbers (pitch within a cent, decay tables, audio scheduling
-  times in headless Chromium).
+- master (3514e1b) is live: thambura.com serves a bundle byte-identical to a
+  build of it (the check is under "Deploying" in CLAUDE.md). A deploy after
+  any further merge needs the user, since `gcloud` is only on their Mac.
+- The thambura's default voice is the jawari tambura, fitted to a 60 s
+  recording of a C tambura (`docs/sound-analysis.md` has the method, the
+  results and the tools). The user has listened and called it "much better".
+- Listeners can now tune it and share what they find: the Lab view, `?s=`
+  links, presets, and a "Share a preset" issue form (label `preset`). No
+  submissions yet.
+- The big piece left is the **mridangam**; `docs/mridangam.md` is the plan
+  and ends with a build order. Nothing of it is built yet.
 
 ## Waiting on the user
 
-1. **A tambura recording.** Asked for: the kattai and first string, 30-60 s
-   of normal playing in a quiet room with no effects, and ideally each of the
-   four strings plucked alone and left to ring out. It goes in `recordings/`
-   at the repo root, which must stay out of git (add it to `.gitignore` when
-   it arrives). The user's description: a real tambura's note "resonates past
-   the start of the next note", for much longer than ours sounded. They may
-   have been listening to an old build at the time, so compare the recording
-   against master, which is now what's live.
-2. **A listen and a phone check** on the live site: does the tala sound right
-   and stay in step with the images, does the screen stay awake through a
-   long drone, and does the iPhone silent switch still mute it.
-3. **Two small decisions** nobody has made yet: whether www.thambura.com
-   should redirect to the bare domain, and whether to keep the dev
-   container's IP (98.248.54.110) on the Namecheap API whitelist.
+1. **Phone checks** on the live site, which headless Chromium can't do:
+   iPhone Safari with the silent switch on (should still play), the address
+   bar updating as settings change (Safari throws if `replaceState` runs too
+   often; it's debounced to 400 ms), Copy link and Share (clipboard), and
+   whether the screen stays awake through a long drone.
+2. **A listen to the tala** clicks, and whether they stay in step with the
+   images.
+3. **Two open questions from the sound analysis**, best settled by ear in
+   the Lab: whether the second Sa should pluck louder (it lifts the mix
+   +1.2 dB against the recording's +2.8; raising its level to 1.0 got +2.2),
+   and whether a softer attack (20-30 ms, against 7 ms now) sounds closer to
+   a finger. A preset link or the Lab's Settings JSON is the easiest way to
+   hand a result back.
+4. **Two small decisions** still unmade: whether www.thambura.com should
+   redirect to the bare domain, and whether to keep the dev container's IP
+   (98.248.54.110) on the Namecheap API whitelist.
 
-## How to analyse the recording
+## Open issues
 
-The container has no numpy, scipy, ffmpeg or sox. Options:
-
-- Ask for WAV, and parse it in TypeScript under vitest, the way
-  `web/src/engine/thambura.test.ts` already measures our renders (its
-  `detectHz` autocorrelation and `rms` helpers). A throwaway probe test that
-  prints numbers, then deleted, worked well for the dB-over-time table in
-  PR #4.
-- Or install tools first (`pip install numpy scipy soundfile`, or apt
-  `ffmpeg` for m4a) if the environment allows it.
-
-Measure, per string where possible: loudness at 1, 2, 4, 6 and 8 s relative
-to just after the attack (the PR #4 table uses exactly that, so the two line
-up), per-harmonic decay, where the jawari's spectral peak sits over time, the
-string balance and the plucking gaps. Then fit the tambura branch of
-`pluckVoice` in `web/src/engine/tambura.ts` (ring 12-36 s today, render cap
-`MAX_TAMBURA_SECONDS` = 9, a choke on re-pluck in `thamburaPresenter.ts`). If
-the real strings ring through their own next pluck, revisit the cap and the
-choke. Put before/after plots or tables in the PR.
+- #8, thambura sound: what's left is in NEXTSTEPS.md (the two questions
+  above, a recording in another key, a 5th string, a second tambura,
+  rendering in a worker).
+- #22, hand images for Guru, Plutham and Kakapadam: another session's.
 
 ## Environment
 
-- The shared checkout (`/workspace/repos/projects/thambura/main`) is on master
-  and clean, with no extra worktrees. Keep it that way and work in your own
-  worktree (CLAUDE.md, "Working alongside other sessions").
-- Nothing is serving on :8000 any more. Serve a worktree build on its own
-  port when you need one.
+- This session worked from `thambura/shruthi`; other sessions use
+  `thambura/main`. Both are checkouts of master; keep them on master and
+  work in worktrees (CLAUDE.md, "Working alongside other sessions").
+- `thambura/serve-master` is a detached worktree of master serving on
+  :8011. Stop it (`ss -ltnp | grep :8011`, then kill the pid and its `go run`
+  parent) and remove it when done, or `git checkout --detach origin/master`
+  and rebuild to serve a newer master.
+- The C recording is `thambura/01-Tanpura-Sample.mp3`, outside every
+  checkout. To rerun the analysis, copy it into a worktree's gitignored
+  `recordings/` as `tambura-C.mp3`.

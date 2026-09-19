@@ -27,6 +27,7 @@ diffpp uses.
 | tailwindcss + @tailwindcss/forms | ^3.4 / ^0.5 | Styling, `darkMode: 'class'` |
 | esbuild + esbuild-plugin-solid | ^0.28 / ^0.6 | Bundling |
 | vitest | ^5.0 | Engine and presenter tests (bumped by Dependabot, PR #3) |
+| numpy, scipy, soundfile, matplotlib (Python) | `tools/sound-analysis/requirements.txt` | Measuring recordings against offline renders (docs/sound-analysis.md); a venv in the tool's folder, never shipped |
 
 ## Project Conventions
 

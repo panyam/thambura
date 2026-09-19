@@ -338,8 +338,9 @@ offsets within them.
 
 ## Known limits
 
-None of this has been checked by ear yet. Headless Chromium has no audio
-device, so every check so far is a number: pitch within a cent, decay
+Only the thambura has been checked by ear, and tuned that way
+([sound-analysis.md](sound-analysis.md)). Headless Chromium has no audio
+device, so every other check is a number: pitch within a cent, decay
 tables, and the `when` of each `AudioBufferSourceNode.start` call. The
 limits we know about are these.
 

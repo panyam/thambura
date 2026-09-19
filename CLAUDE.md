@@ -256,9 +256,11 @@ See NEXTSTEPS.md for the order.
 - **Shruthi box:** done as the thambura (see above). Its plucked modes are a
   sequencer on its own clock and speed, not the tala's tempo; its sruti mode
   is the continuous voice. The mridangam and tabla dayan should tune to its
-  tonic (`tunedTonicHz`). Sound-quality work is tracked in issue #8: the
-  jawari voice is the fit to a real recording, and by-ear checks decide
-  whether it becomes the default.
+  tonic (`tunedTonicHz`). Sound quality is issue #8: the jawari voice, fitted
+  to a real recording, is the default, and the Lab, links and presets are
+  how it gets tuned by ear from here, by us and by listeners.
+- **Mridangam:** `docs/mridangam.md` is the plan (strokes and tuning,
+  patterns per tala, packaging, views, build order, open questions).
 - **Mridangam / tabla:** the musical timeline is in (`ratio.ts`,
   `tempoMap.ts`). Add a `Sequencer<StrokeEvent>` on the tala's `TempoMap` and
   `Transport` that emits per stroke at exact positions, reads the tala's
@@ -328,8 +330,13 @@ edits. So:
   `cd <dir>/web && pnpm install`.
 - Stage explicit paths, and check `git status` for files you didn't touch.
 - Serve a worktree on its own port: `(cd web && pnpm buildcss && pnpm build)`,
-  then `PORT=8001 go run .` from the worktree root. Whatever runs on :8000 is
-  serving the shared checkout's branch, which may be stale.
+  then `PORT=8011 go run .` from the worktree root. Check the port is free
+  first (`ss -ltnp | grep :8011`): other sessions keep servers on 8001 and
+  8002, and a clash leaves the old server answering. Whatever runs on :8000
+  is serving the shared checkout's branch, which may be stale.
+- A `go run` server outlives a removed worktree and then answers every page
+  with "Template render error" (its templates are gone). Stop your servers
+  before removing a worktree.
 - Put `pr-assets` screenshots through a worktree of `origin/pr-assets` too.
 - If another session's work is affected, tell it with SendMessage.
 
@@ -352,7 +359,7 @@ Follow the `start_pr` description format. For before/after evidence:
 
 Playwright's Chromium is at `~/.cache/ms-playwright/chromium-1234/`, and
 `playwright-core` can be required from another project's node_modules (e.g.
-`../Agni/main/web`). Launch with `--autoplay-policy=no-user-gesture-required`.
+`../Agni/main/web` or `/workspace/repos/projects/sdlold/web/frontend`). Launch with `--autoplay-policy=no-user-gesture-required`.
 The tala's transport buttons are icons, so select them by label:
 `button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). With
 `getByRole`, pass `exact: true`: name matching is a substring match, so
@@ -382,5 +389,7 @@ A few probes that worked, all set up in an init script:
 - Headless Chromium can't test a real wake lock or audio session, so define
   stand-in `navigator.wakeLock` and `navigator.audioSession` objects and log
   the calls.
-- `pkill -f <pattern>` can match the shell running it and kill it; kill a
-  server by port (`fuser -k 8001/tcp`) instead.
+- `pkill -f <pattern>` can match the shell running it and kill it, and
+  `fuser` isn't installed. Find a server by its port instead:
+  `ss -ltnp | grep :8011` gives the pid; kill it and its `go run` parent
+  (`ps -o ppid= -p <pid>`).
