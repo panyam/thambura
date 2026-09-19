@@ -47,7 +47,7 @@ export interface OptionGroup<T extends string | number> {
 
 export const TALA_OPTIONS: OptionGroup<TalaId>[] = [
   {
-    label: "Sapta Thaalas",
+    label: "Sapta Talas",
     options: [
       { value: "sapta_eka", label: "Eka" },
       { value: "sapta_rupaka", label: "Rupakam" },
@@ -59,7 +59,7 @@ export const TALA_OPTIONS: OptionGroup<TalaId>[] = [
     ],
   },
   {
-    label: "Chaapu Thaalas",
+    label: "Chaapu Talas",
     options: [
       { value: "chaapu_thisram", label: "Thisra Chaapu" },
       { value: "chaapu_khandam", label: "Khanda Chaapu" },
