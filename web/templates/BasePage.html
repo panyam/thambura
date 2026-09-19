@@ -65,7 +65,7 @@ defaults for them), and render "BasePage".
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{{ brand }}">
 <meta property="og:title" content="{{ or .MetaTitle .Title }}">
-{{ with .MetaDescription }}<meta property="og:description" content="{{ . }}">{{ end }}
+{{ with or .Social.Description .MetaDescription }}<meta property="og:description" content="{{ . }}">{{ end }}
 {{ with .CanonicalUrl }}<meta property="og:url" content="{{ . }}">{{ end }}
 {{ with .Social.Image }}
 <meta property="og:image" content="{{ . }}">

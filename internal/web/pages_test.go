@@ -88,6 +88,12 @@ func TestHomePageMetadata(t *testing.T) {
 	if n := len(homeDescription); n > 170 {
 		t.Errorf("description is %d characters; results cut it off past about 160", n)
 	}
+	if !strings.Contains(body, `<meta property="og:description" content="`+homeSocialDescription+`">`) {
+		t.Error("the preview doesn't use the short description")
+	}
+	if n := len(homeSocialDescription); n > 125 {
+		t.Errorf("preview description is %d characters; previews cut it off past about 125", n)
+	}
 
 	m := regexp.MustCompile(`(?s)<script type="application/ld\+json">(.*?)</script>`).FindStringSubmatch(body)
 	if m == nil {
