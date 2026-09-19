@@ -208,7 +208,7 @@ unit-tested:
   from `THAMBURA_MODES`, so it applies in every view) and a switch between
   four views over the same presenter: `ThamburaMini`, `ThamburaStudio`,
   `ThamburaRaagini` (the 2000s Raagini box, with `Knob.tsx`, which keeps its
-  own TMB/GTR/SRUTI slide switch as part of the replica) and `ThamburaLab`,
+  own TMB/GTR/SHRUTHI slide switch as part of the replica) and `ThamburaLab`,
   a workbench for the Custom plan, string by string, that copies it out and
   in as JSON (`pnpm render-mix --custom` renders it). Its sliders commit on
   release, since most changes re-render. Shared bits are in
