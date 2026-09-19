@@ -273,6 +273,51 @@ describe("ThamburaPresenter", () => {
     expect(audio.played.slice(n).every((e) => e.opts?.detune === 4)).toBe(true);
   });
 
+  it("sets the second Sa string a shade sharp in the jawari mode too", async () => {
+    set({ mode: "jawari", cents: 4 });
+    await start();
+    run(3);
+    expect(audio.played.slice(0, 3).map((e) => e.opts?.detune)).toEqual([4, 4, 5.5]);
+  });
+
+  it("damps each string before its next pluck in the jawari mode", async () => {
+    set({ mode: "jawari" });
+    await start();
+    run(10);
+    const groups = [0, 1, 2, 3].map((i) => `thambura/string${i}`);
+    expect(audio.damped.slice(0, 4).map((d) => d.group)).toEqual(groups);
+    // A damp is handed out up to a second before its string's next pluck.
+    for (const d of audio.damped.filter((d) => d.when < 9)) {
+      const plays = audio.played.filter((e) => e.opts?.choke === d.group).map((e) => e.when);
+      // Between the string's last pluck and its next one.
+      expect(plays.some((t) => t < d.when)).toBe(true);
+      expect(plays.find((t) => t > d.when)).toBeDefined();
+    }
+  });
+
+  it("lets strings ring into their next pluck in the classic mode", async () => {
+    await start();
+    run(10);
+    expect(audio.played.length).toBeGreaterThan(8);
+    expect(audio.damped).toEqual([]);
+  });
+
+  it("switches to the played rhythm with the jawari mode", async () => {
+    await start();
+    run(5);
+    set({ mode: "jawari" });
+    flushDeferred();
+    const n = audio.played.length;
+    run(20);
+    const gaps = audio.played
+      .slice(n)
+      .map((e) => e.when)
+      .map((t, i, a) => (i > 0 ? t - a[i - 1] : 0))
+      .slice(1, 5)
+      .map((g) => Number((g / 4.5).toFixed(3)));
+    expect([...gaps].sort()).toEqual([0.205, 0.205, 0.29, 0.3]);
+  });
+
   it("lights each string as its pluck is heard, then lets it go dark", async () => {
     audio.latency = 0.1;
     await start();

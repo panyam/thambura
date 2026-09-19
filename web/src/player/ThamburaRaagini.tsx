@@ -1,5 +1,14 @@
 import { For, type JSX } from "solid-js";
-import { KEYS, MAX_CENTS, MAX_CYCLE, MIN_CYCLE, RAAGINI_CYCLE, type Swara, type ThamburaMode } from "../engine/shruthi";
+import {
+  isTamburaMode,
+  KEYS,
+  MAX_CENTS,
+  MAX_CYCLE,
+  MIN_CYCLE,
+  RAAGINI_CYCLE,
+  type Swara,
+  type ThamburaMode,
+} from "../engine/shruthi";
 import { Knob } from "./Knob";
 import { centsLabel, keyOptionLabel, type ThamburaViewProps } from "./thamburaControls";
 
@@ -130,7 +139,7 @@ function Lcd(props: ThamburaViewProps) {
       </div>
       <div class="flex justify-between gap-3 text-[11px] uppercase tracking-wider">
         <span>{s().firstString}</span>
-        <span>{s().mode === "sruti" ? "sruti" : `${s().mode === "guitar" ? "gtr" : "tmb"} ${s().cycleSeconds.toFixed(1)}s`}</span>
+        <span>{s().mode === "sruti" ? "sruti" : `${LCD_MODES[s().mode]} ${s().cycleSeconds.toFixed(1)}s`}</span>
       </div>
     </div>
   );
@@ -180,18 +189,28 @@ function Power(props: { on: boolean; onClick: () => void }) {
   );
 }
 
+// The plucked modes on the LCD, which tells the two tambura voices apart.
+const LCD_MODES: Record<ThamburaMode, string> = { jawari: "tmb", tambura: "tmb c", guitar: "gtr", sruti: "sruti" };
+
+// The switch's positions. Moving to TMB selects the classic voice, the default.
 const MODES: { mode: ThamburaMode; label: string }[] = [
   { mode: "tambura", label: "TMB" },
   { mode: "guitar", label: "GTR" },
   { mode: "sruti", label: "SRUTI" },
 ];
 
+/** The switch position showing `mode`: both tambura voices sit at TMB. */
+function position(mode: ThamburaMode): number {
+  return isTamburaMode(mode) ? 0 : Math.max(0, MODES.findIndex((m) => m.mode === mode));
+}
+
 /**
  * A three-position slide switch: tambura, guitar, sruti. Click a position's
- * label, or the slider to step along it.
+ * label, or the slider to step along it. Either tambura voice lights TMB, and
+ * clicking TMB there keeps the voice.
  */
 function ModeSwitch(props: { mode: ThamburaMode; onChange: (mode: ThamburaMode) => void }) {
-  const index = () => Math.max(0, MODES.findIndex((m) => m.mode === props.mode));
+  const index = () => position(props.mode);
   return (
     <div role="radiogroup" aria-label="Sound" class="flex flex-col items-center gap-1">
       <button
@@ -210,14 +229,14 @@ function ModeSwitch(props: { mode: ThamburaMode; onChange: (mode: ThamburaMode) 
         />
       </button>
       <div class="flex w-24 justify-between">
-        {MODES.map((m) => (
+        {MODES.map((m, i) => (
           <button
             type="button"
             role="radio"
-            aria-checked={props.mode === m.mode}
-            onClick={() => props.onChange(m.mode)}
+            aria-checked={index() === i}
+            onClick={() => index() !== i && props.onChange(m.mode)}
             class={`rounded px-0.5 text-[9px] font-semibold tracking-wider focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
-              props.mode === m.mode ? "text-stone-100" : "text-stone-500"
+              index() === i ? "text-stone-100" : "text-stone-500"
             }`}
           >
             {m.label}
