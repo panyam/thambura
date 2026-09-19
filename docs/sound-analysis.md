@@ -15,6 +15,7 @@ Everything here runs from the repo:
 | `tools/sound-analysis/compare.py` | Measures the recording and the renders together and draws the charts on this page. |
 | `tools/sound-analysis/fit.py` | Fits the jawari voice's bloom to a recording. |
 | `tools/sound-analysis/soundlab.py` | The measurements themselves, shared by the three scripts. |
+| The Lab view (in the app) | Every number of the plucked sound, string by string, to tune by ear. Exports JSON that `render-mix --custom` plays. |
 
 ## Setup
 
@@ -71,7 +72,7 @@ pnpm render-mix --modes jawari --key G3 --cycle 4.5 --tone 70
 
 The files land in `recordings/renders/` as `<mode>.wav` and `<mode>.json`.
 `render-mix` runs `mixThambura` (`web/src/tools/thamburaMix.ts`). That uses
-the presenter's own per-pluck options (`pluckOptions`), the sequencer, the
+the mode's plan (`planFor`), the presenter's own per-pluck options (`pluckOptions`), the sequencer, the
 80 ms choke and the 0.2 s damp, so the mix plays like the browser does,
 without the limiter. The render also makes a good listening copy. Pass
 `--cycle` (seconds a round) to match a recording's speed; 5.8 s is the C
@@ -103,6 +104,27 @@ below. Re-run it after changing a voice. It takes a few seconds.
 This takes about 40 s. It prints the fitted parameters and the model beside
 the recording, band by band. "Fitting" below explains how its numbers turn
 into `pluckVoice`.
+
+**7. Tune by ear in the Lab, then measure.** Open the thambura bar, pick the
+Lab view, choose a starting sound under "Start from" and press Load. That
+copies the mode's plan into the Custom mode, which sounds the same until you
+change something. Each string has its own tab (level, force, attack, ring,
+bloom and so on), and the rhythm sliders set the gaps. The Sound switches to
+Custom as soon as you touch anything. When it sounds right, press "Copy
+settings" and save the JSON, say as `recordings/lab.json`, then:
+
+```sh
+cd ../../web
+pnpm render-mix --custom ../recordings/lab.json     # writes recordings/renders/custom.wav
+cd ../tools/sound-analysis
+.venv/bin/python compare.py                          # adds "Custom (Lab)" to the tables and charts
+```
+
+For example, raising only the second Sa's level from 0.7 to 1.0 (+3 dB)
+takes its pluck lift from +1.2 dB to +2.2 dB, against the recording's
++2.8 dB. Delete `recordings/renders/custom.*` to take it out of the charts
+again. Pasting JSON into the Lab's "Settings JSON" box loads it back, so a
+sound can travel both ways.
 
 ## How the measurements work
 
@@ -324,6 +346,5 @@ fading bloom, and the low Sa's stood out by +6 dB. Two settings fixed it:
   harmonic when they differ like that. Trying it didn't change the measured
   pluck lift, so the voice leaves it out.
 
-A view with per-string controls (pluck force, level, attack, bloom depth,
-ring) would let these be tuned by ear against the recording, with
-`render-mix` and `compare.py` checking each change.
+The Lab view is the place to try these by ear, with `render-mix --custom`
+and `compare.py` checking each change against the recording.
