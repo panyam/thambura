@@ -1,0 +1,39 @@
+name: Share a preset
+description: Offer a thambura sound you like, so it can become a built-in preset.
+title: "Preset: "
+labels: ["preset"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing a sound. In the app, open the thambura bar's Lab view, find your
+        preset under Presets and press Share, which fills in the link below. The link plays
+        your exact sound, so it's all we need to hear it.
+  - type: input
+    id: link
+    attributes:
+      label: Link
+      description: The preset's link (it starts with https://thambura.com/?s=).
+      placeholder: https://thambura.com/?s=...
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Name
+      description: What you called it.
+  - type: textarea
+    id: why
+    attributes:
+      label: What makes it good?
+      description: What you changed and why, and what it's good for (a raga, a voice range, practice at a speed).
+  - type: dropdown
+    id: listening
+    attributes:
+      label: What were you listening on?
+      options:
+        - Headphones
+        - Laptop speakers
+        - Phone speaker
+        - Speakers or studio monitors
+        - Something else

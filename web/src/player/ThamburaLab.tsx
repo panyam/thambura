@@ -10,7 +10,8 @@ import {
   type FieldSpec,
   type ThamburaPlan,
 } from "../engine/thamburaPlan";
-import { Segmented, SELECT, SMALL_BUTTON, type ThamburaViewProps } from "./thamburaControls";
+import { copyText, Segmented, SELECT, sharePresetUrl, SMALL_BUTTON, type ThamburaViewProps } from "./thamburaControls";
+import type { ThamburaPreset } from "./thamburaPresenter";
 import { ThamburaMini } from "./ThamburaMini";
 
 // The plucked modes the Custom plan can start from.
@@ -112,6 +113,8 @@ export function ThamburaLab(props: ThamburaViewProps) {
         Loading uses the current tone {s().tone}, pluck {s().pluck}, sustain {s().sustain} and {s().voice} voice.
       </p>
 
+      <Presets {...props} />
+
       <div class="flex flex-wrap items-center gap-2">
         <Segmented
           label="String"
@@ -208,6 +211,90 @@ export function ThamburaLab(props: ThamburaViewProps) {
         </button>
       </details>
     </div>
+  );
+}
+
+/**
+ * Saved setups: save this one by name, and play, copy, offer to the project,
+ * rename or delete each. A preset is a share link, so copying it gives the
+ * link that plays it.
+ */
+function Presets(props: ThamburaViewProps) {
+  const a = props.actions;
+  const [name, setName] = createSignal("");
+  const [status, setStatus] = createSignal("");
+  const save = () => {
+    const p = a.savePreset(name());
+    setName("");
+    setStatus(`Saved "${p.name}".`);
+  };
+  const copy = async (p: ThamburaPreset) => {
+    const ok = props.shareUrl && (await copyText(props.shareUrl(p.link)));
+    setStatus(ok ? `Copied the link to "${p.name}".` : "Couldn't reach the clipboard.");
+  };
+  const rename = (p: ThamburaPreset) => {
+    const next = window.prompt("Rename this preset", p.name);
+    if (next !== null) a.renamePreset(p.id, next);
+  };
+  const remove = (p: ThamburaPreset) => {
+    if (window.confirm(`Delete "${p.name}"?`)) a.deletePreset(p.id);
+  };
+  const small = `${SMALL_BUTTON} h-8 w-auto px-2.5 text-xs font-medium`;
+  return (
+    <fieldset class="grid gap-2 border-t border-gray-200 pt-3 dark:border-gray-700">
+      <legend class="mb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Presets</legend>
+      <form
+        class="flex flex-wrap items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+      >
+        <input
+          aria-label="Preset name"
+          placeholder="Name this sound"
+          class="min-w-0 flex-1 rounded-md border-gray-300 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800"
+          value={name()}
+          onInput={(e) => setName(e.currentTarget.value)}
+        />
+        <button type="submit" class={`${SMALL_BUTTON} w-auto px-3 text-sm`}>
+          Save
+        </button>
+      </form>
+      <p class="text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
+        {status() || "Saved in this browser. Copy a preset's link to send it, or share it with the project on GitHub."}
+      </p>
+      <ul class="grid gap-1.5">
+        <For each={props.state().presets}>
+          {(p) => (
+            <li class="flex flex-wrap items-center gap-1.5 text-sm">
+              <button
+                type="button"
+                class="min-w-0 flex-1 truncate rounded-md px-2 py-1 text-left font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
+                aria-label={`Play preset ${p.name}`}
+                onClick={() => a.applyPreset(p.id)}
+              >
+                {p.name}
+              </button>
+              <Show when={props.shareUrl}>
+                <button type="button" class={small} onClick={() => void copy(p)}>
+                  Copy link
+                </button>
+                <a class={`${small} no-underline`} href={sharePresetUrl(p.name, props.shareUrl!(p.link))} target="_blank" rel="noopener">
+                  Share
+                </a>
+              </Show>
+              <button type="button" class={small} onClick={() => rename(p)}>
+                Rename
+              </button>
+              <button type="button" class={small} aria-label={`Delete preset ${p.name}`} onClick={() => remove(p)}>
+                Delete
+              </button>
+            </li>
+          )}
+        </For>
+      </ul>
+    </fieldset>
   );
 }
 

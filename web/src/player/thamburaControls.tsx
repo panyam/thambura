@@ -15,11 +15,37 @@ export type ThamburaActions = Pick<
   | "setCustom"
   | "loadCustom"
   | "dismissNotice"
+  | "savePreset"
+  | "applyPreset"
+  | "renamePreset"
+  | "deletePreset"
+  | "shareLink"
 >;
 
 export interface ThamburaViewProps {
   state: () => ThamburaState;
   actions: ThamburaActions;
+  /** The page's address carrying `link` (a share link), when the page supports links. */
+  shareUrl?: (link: string) => string;
+}
+
+/** Copies text to the clipboard; false if the browser won't allow it. */
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A new GitHub issue from the "Share a preset" form, filled in with the
+ * preset's name and link, for offering a sound to the project.
+ */
+export function sharePresetUrl(name: string, url: string): string {
+  const q = new URLSearchParams({ template: "share-a-preset.yml", title: `Preset: ${name}`, name, link: url });
+  return `https://github.com/panyam/thambura/issues/new?${q}`;
 }
 
 /** "+12¢", "−3¢", "0¢". */
