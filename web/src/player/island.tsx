@@ -1,6 +1,6 @@
 import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
-import { AudioEngine } from "./audio";
+import type { AudioEngine } from "./audio";
 import { PlayerPresenter } from "./presenter";
 import { PlayerView } from "./PlayerView";
 import { workerTicker } from "./transport";
@@ -8,13 +8,13 @@ import { workerTicker } from "./transport";
 const DEFAULT_FIXTURES_URL = "/static/Resources/TalasFixtures.json";
 
 /**
- * Wires the real browser pieces (Web Audio, a worker ticker, animation frames,
- * fetch) into a presenter and mounts its view on `el`. The page shell names
- * the fixtures file in `data-fixtures-url`.
+ * Wires the real browser pieces (the page's AudioEngine, a worker ticker,
+ * animation frames, fetch) into a presenter and mounts its view on `el`. The
+ * page shell names the fixtures file in `data-fixtures-url`.
  */
-export function createPlayerIsland(el: HTMLElement, eventBus: EventBus): SolidIsland {
+export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, audio: AudioEngine): SolidIsland {
   const presenter = new PlayerPresenter({
-    audio: new AudioEngine(),
+    audio,
     ticker: workerTicker(),
     frames: {
       request: (cb) => requestAnimationFrame(cb),

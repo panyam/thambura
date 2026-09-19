@@ -92,7 +92,7 @@ export class PlayerPresenter {
       position: { beat: 0, repeat: 0 },
       beatCount: 0,
     };
-    deps.audio.setVolume(DEFAULT_VOLUME);
+    deps.audio.setBusVolume("tala", DEFAULT_VOLUME);
     this.rebuild();
   }
 
@@ -179,7 +179,7 @@ export class PlayerPresenter {
 
   setVolume(percent: number): void {
     const volume = Math.min(100, Math.max(0, Math.round(Number.isFinite(percent) ? percent : DEFAULT_VOLUME)));
-    this.deps.audio.setVolume(volume);
+    this.deps.audio.setBusVolume("tala", volume);
     this.update({ volume });
   }
 

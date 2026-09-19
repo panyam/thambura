@@ -55,12 +55,27 @@ unit-tested:
 - `assets.ts` parses sound/image groups from `TalasFixtures.json`. Groups named
   in `RandomGroups` pick an entry per step from the step's `variant` draw
   (the SaRiGaMa "randomness mode").
+- `shruthi.ts` is the thambura's pitch maths and settings: 15 keys from A2 to
+  B3 with kattai names (C3 = 1 is a men's Sa, G3 = 5 a women's; gents/ladies
+  is timbre, not octave), the 12 swarasthanas with just ratios, and
+  `normalizeThambura`, which clamps anything (saved JSON, a patch) to valid
+  settings.
+- `tambura.ts` renders a pluck as a sum of decaying harmonics with a resonance
+  sweeping down through them (a stand-in for the jawari). A render takes
+  30-60 ms, so it must never run inside a transport tick.
+  `reedSpectrum` gives the sruti drone's PeriodicWave.
+- `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa, then rests a slot. It
+  works out each pluck's time only when asked, so a speed change is heard at
+  the next pluck.
 
 **player/** is the browser side:
 
-- `audio.ts` (`AudioEngine`): one AudioContext; buses `tala`, `drone`,
-  `percussion` feed a master gain, then a limiter, then the speakers. It holds a
-  sample cache. `cancel(bus)` stops only samples that haven't started.
+- `audio.ts` (`AudioEngine`): one AudioContext, created in `main.ts` and
+  shared by every island; buses `tala`, `drone`, `percussion` (each with its
+  own volume) feed a master gain, then a limiter, then the speakers. It holds a
+  sample cache, which `addSamples` fills with rendered PCM as well as fetched
+  files. `play` takes detune/gain/pan; `startTone` runs a continuous
+  PeriodicWave tone. `cancel(bus)` stops only samples that haven't started.
   `heardNow` is the audio time minus output latency.
 - `transport.ts`: every 25 ms, driven by a Web Worker timer so background tabs
   aren't throttled, it pulls events up to 100 ms ahead from each sequencer. All
@@ -77,6 +92,17 @@ unit-tested:
 - `PlayerView.tsx`: renders `PlayerState` and calls the presenter's intents.
   `island.tsx` wires the real browser dependencies in, and `main.ts` mounts it
   from a tsappkit `BasePage`, which also wires the theme toggle.
+- `thamburaPresenter.ts` (`ThamburaPresenter`): the thambura's state, its own
+  `Transport` (so it starts and stops apart from the tala), the plucked
+  (tambura) and reed (sruti) voices on the `drone` bus, and the floating bar's
+  open/view state, saved to localStorage. Pitch and timbre changes re-render
+  the plucks through `deps.defer`; fine tune is only `detune`.
+- `ThamburaBar.tsx` is the bar that slides up from the bottom when the header's
+  `#thambura-toggle` is clicked, with a switch between three views over the
+  same presenter: `ThamburaMini`, `ThamburaStudio` and `ThamburaRaagini` (the
+  2000s Raagini box, with `Knob.tsx`). Shared bits are in
+  `thamburaControls.tsx`. Every view must show every state even if it can only
+  set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
 
 `build.mjs` aliases solid-js to a single copy. Two copies silently break
 reactivity across tsappkit-solid.
@@ -85,9 +111,10 @@ reactivity across tsappkit-solid.
 
 See NEXTSTEPS.md for the order.
 
-- **Shruthi box:** a continuous voice on the `drone` bus; it is not a sequencer.
-  Keep the pitch maths (tonic Hz, string ratios) in the engine; the mridangam
-  and tabla dayan tune to the same tonic.
+- **Shruthi box:** done as the thambura (see above). Its tambura mode is a
+  sequencer on its own clock and speed, not the tala's tempo; its sruti mode is
+  the continuous voice. The mridangam and tabla dayan should tune to its tonic
+  (`tunedTonicHz`).
 - **Mridangam / tabla:** do the musical-timeline refactor first. Each sequencer
   currently advances its own `nextTime += duration`, so two of them apply a
   tempo change at different event boundaries and drift apart. Sequencers should
@@ -160,4 +187,7 @@ Playwright's Chromium is at `~/.cache/ms-playwright/chromium-1234/`, and
 `playwright-core` can be required from another project's node_modules (e.g.
 `../Agni/main/web`). Launch with `--autoplay-policy=no-user-gesture-required`.
 `text=Start` also matches the Restart button, so select the play button with
-`button.min-w-24`.
+`button.min-w-24`. The thambura opens with `#thambura-toggle`, its views are
+`button[role="radio"]:has-text("Raagini")` and so on, and it plays with
+`button[aria-label="Start thambura"]`. The theme toggle cycles system, light,
+dark, so dark takes two clicks (or launch the page with `colorScheme: "dark"`).
