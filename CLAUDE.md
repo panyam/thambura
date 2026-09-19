@@ -231,8 +231,9 @@ unit-tested:
 - `thamburaIsland.tsx` wires the page's floating controls, the stack at the
   bottom right in `HomePage.html` (`#thambura-controls`): `#thambura-play`
   (start/stop from anywhere on the page, bar open or not; `reflect` flips its
-  icon via `data-playing` and its label), `#thambura-toggle` (the labelled
-  "Shruthi box" pill that opens the bar, a chevron once open), and
+  icon via `data-playing` and its label), `#thambura-toggle` (opens the bar: a
+  tilted tambura icon, the whole button on a phone, in a pill with the
+  "Shruthi box" label from `sm` up), and
   the T key (`shortcuts.ts`: not while typing in a field, not with
   Ctrl/Cmd/Alt, not on key repeat). It wires the link to the address bar: `replaceState`, no
   history entries, 400 ms after the last change, since Safari throws after
