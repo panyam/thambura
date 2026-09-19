@@ -39,8 +39,8 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 
 ## Cleanup
 
-- [ ] Delete the unreferenced `web/static/Resources/PlayerImages/` and
-      `Images/icons.xcf`.
+- [x] Delete the unreferenced `PlayerImages/` and move `icons.xcf` to
+      `design/`, out of the deployed static folder.
 - [ ] Decide whether to keep or drop the unused `Angas`/`Talas`/`TalaGroups`/
       `Defaults` sections of `TalasFixtures.json`.
 - [x] Rename everything to Thambura (repo, module, display name).
