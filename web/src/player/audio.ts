@@ -111,6 +111,7 @@ export class AudioEngine implements AudioOut {
   readonly ctx: AudioContext;
   private readonly master: GainNode;
   private readonly buses: Record<Bus, GainNode>;
+  private readonly analysers = new Map<Bus, AnalyserNode>();
   // Scheduled notes, until they end, and the latest note in each choke group.
   private readonly active: Record<Bus, Set<Note>> = {
     tala: new Set(),
@@ -311,6 +312,22 @@ export class AudioEngine implements AudioOut {
         bellows.stop(now + FADE_OUT * 8);
       },
     };
+  }
+
+  /**
+   * An AnalyserNode listening to the bus after its volume, for drawing what
+   * it plays. Made on first use and shared; it passes nothing on.
+   */
+  analyser(bus: Bus): AnalyserNode {
+    let a = this.analysers.get(bus);
+    if (!a) {
+      a = this.ctx.createAnalyser();
+      a.fftSize = 8192;
+      a.smoothingTimeConstant = 0.6;
+      this.buses[bus].connect(a);
+      this.analysers.set(bus, a);
+    }
+    return a;
   }
 
   setBusVolume(bus: Bus, percent: number): void {

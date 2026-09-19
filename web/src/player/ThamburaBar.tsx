@@ -50,7 +50,7 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
         ref={panel}
         role="region"
         aria-label="Thambura"
-        class={`pointer-events-auto w-full max-w-3xl rounded-t-2xl border border-b-0 border-gray-200 bg-white/95 backdrop-blur transition-[transform,box-shadow] duration-300 ease-out dark:border-gray-700 dark:bg-gray-900/95 ${
+        class={`pointer-events-auto w-full ${st().view === "lab" ? "max-w-6xl" : "max-w-3xl"} rounded-t-2xl border border-b-0 border-gray-200 bg-white/95 backdrop-blur transition-[transform,box-shadow] duration-300 ease-out dark:border-gray-700 dark:bg-gray-900/95 ${
           st().open ? "translate-y-0 shadow-[0_-8px_30px_rgba(0,0,0,0.15)]" : "translate-y-[110%] shadow-none"
         }`}
       >
@@ -135,7 +135,7 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
               <ThamburaRaagini state={props.state} actions={a} />
             </Match>
             <Match when={st().view === "lab"}>
-              <ThamburaLab state={props.state} actions={a} shareUrl={props.shareUrl} />
+              <ThamburaLab state={props.state} actions={a} shareUrl={props.shareUrl} analyser={props.analyser} />
             </Match>
           </Switch>
         </div>

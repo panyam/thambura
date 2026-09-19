@@ -215,7 +215,15 @@ unit-tested:
   own TMB/GTR/SRUTI slide switch as part of the replica) and `ThamburaLab`,
   a workbench for the Custom plan, string by string, that copies it out and
   in as JSON (`pnpm render-mix --custom` renders it). Its sliders commit on
-  release, since most changes re-render. Shared bits are in
+  release, since most changes re-render, and their descriptions sit in
+  tooltips unless "Show descriptions" is on. Its groups flow into 1-4 CSS
+  columns (`break-inside-avoid`), and the bar widens to `max-w-6xl` in the
+  Lab only. Each string tab has an on/off dot and there's Solo (the
+  presenter's `muted`, cleared on leaving the Lab and kept out of links), and
+  "Copy…" gives the selected string another's sound (`copyString`) or copies
+  it to all. `ThamburaScope` draws what the drone bus plays from
+  `AudioEngine.analyser("drone")`: the level over 8 s in dB, 40 ms of wave,
+  and the spectrum with the bloom band shaded. Shared bits are in
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
 - `thamburaIsland.tsx` wires the link to the address bar: `replaceState`, no
@@ -350,7 +358,8 @@ entry opens a `prompt`, so answer it with a `dialog` handler),
 `button[aria-label="Copy link"]` copies the
 page's `?s=` link (give the context the clipboard permissions to read it back;
 a fresh context opening that URL is the second listener), the Lab's controls are ranges labelled by field
-(`input[aria-label="Attack"]`, tabs under `[aria-label="String"]`) with the
+(`input[aria-label="Attack"]`, tabs under `[aria-label="String"]`, mute dots
+`button[aria-label="Mute string 3 · Sa"]`, `select[aria-label="Copy"]`) with the
 plan in `textarea[aria-label="Settings JSON"]`, and it plays with
 `button[aria-label="Start thambura"]`. The theme toggle cycles system, light,
 dark, so dark takes two clicks (or launch the page with `colorScheme: "dark"`).

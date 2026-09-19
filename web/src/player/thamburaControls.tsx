@@ -20,6 +20,8 @@ export type ThamburaActions = Pick<
   | "renamePreset"
   | "deletePreset"
   | "shareLink"
+  | "setMuted"
+  | "solo"
 >;
 
 export interface ThamburaViewProps {
@@ -27,6 +29,8 @@ export interface ThamburaViewProps {
   actions: ThamburaActions;
   /** The page's address carrying `link` (a share link), when the page supports links. */
   shareUrl?: (link: string) => string;
+  /** An analyser on what the thambura plays, for the Lab's scope, when audio allows it. */
+  analyser?: () => AnalyserNode | null;
 }
 
 /** Copies text to the clipboard; false if the browser won't allow it. */

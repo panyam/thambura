@@ -2,6 +2,8 @@ import { createSignal, For, Show } from "solid-js";
 import { MAX_CYCLE, MIN_CYCLE, stringLabels, THAMBURA_MODES, type ThamburaMode } from "../engine/shruthi";
 import { ATTACK_LEVEL } from "../engine/tambura";
 import {
+  copyString,
+  copyToAll,
   FIELD_SPECS,
   normalizePlan,
   readField,
@@ -10,27 +12,35 @@ import {
   type FieldSpec,
   type ThamburaPlan,
 } from "../engine/thamburaPlan";
-import { copyText, Segmented, SELECT, sharePresetUrl, SMALL_BUTTON, type ThamburaViewProps } from "./thamburaControls";
+import { copyText, SELECT, sharePresetUrl, SMALL_BUTTON, type ThamburaViewProps } from "./thamburaControls";
 import type { ThamburaPreset } from "./thamburaPresenter";
 import { ThamburaMini } from "./ThamburaMini";
+import { ThamburaScope } from "./ThamburaScope";
 
 // The plucked modes the Custom plan can start from.
 const SOURCES: ThamburaMode[] = ["jawari", "tambura", "guitar"];
+// The per-string groups, in reading order; they flow into as many columns as fit.
 const GROUPS: { id: FieldSpec["group"]; title: string; note?: string }[] = [
   { id: "pluck", title: "Pluck" },
   { id: "ring", title: "Ring" },
   { id: "tone", title: "Tone" },
   { id: "bloom", title: "Jawari bloom", note: "The Tambura voice's model. Bloom 0 turns it off." },
+  { id: "bloomTime", title: "Bloom timing" },
   { id: "place", title: "Place" },
 ];
 const GAP_LABELS = ["After the first string", "After Sa 1", "After Sa 2", "After the low Sa"];
+// Whether the Lab shows each control's description; a per-browser preference.
+const HELP_KEY = "thambura.lab.descriptions";
+const LEGEND = "mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400";
+const GROUP = "mb-5 grid break-inside-avoid content-start gap-2.5";
 
 /**
  * A workbench for the plucked sound: every number in the Custom mode's plan,
  * string by string, to tune by ear. Loading a mode copies its plan, so the
  * Lab starts from a sound you know. Any change switches the Sound to Custom
- * so it is heard at once. The plan copies out as JSON, for render-mix
- * --custom (docs/sound-analysis.md) or to paste back in later.
+ * so it is heard at once. Strings can be muted or soloed to hear one alone,
+ * and a scope shows what's playing. The plan copies out as JSON, for
+ * render-mix --custom (docs/sound-analysis.md) or to paste back in later.
  */
 export function ThamburaLab(props: ThamburaViewProps) {
   const st = () => props.state();
@@ -41,6 +51,7 @@ export function ThamburaLab(props: ThamburaViewProps) {
   const [source, setSource] = createSignal<ThamburaMode>("jawari");
   const [pasted, setPasted] = createSignal("");
   const [note, setNote] = createSignal("");
+  const [help, setHelp] = createSignal(readHelp());
   const labels = () => {
     const l = stringLabels(s());
     return [`1 · ${l[0]}`, "2 · Sa", "3 · Sa", "4 · low Sa"];
@@ -56,20 +67,19 @@ export function ThamburaLab(props: ThamburaViewProps) {
     strings[tab()] = writeField(strings[tab()], spec.field, value);
     commit({ ...p, strings });
   };
-  const copyToAll = () => {
-    const p = plan();
-    const from = p.strings[tab()];
-    // Level, place and detune stay each string's own; the sound is copied.
-    const strings = p.strings.map((t) => ({ ...from, level: t.level, pan: t.pan, detune: t.detune })) as ThamburaPlan["strings"];
-    commit({ ...p, strings });
-  };
-  const copyJson = async () => {
-    try {
-      await navigator.clipboard.writeText(json());
-      setNote("Copied the settings.");
-    } catch {
-      setNote("Couldn't reach the clipboard; copy them from the box below.");
+  const copy = (choice: string) => {
+    if (choice === "all") {
+      commit(copyToAll(plan(), tab()));
+      setNote(`Copied ${labels()[tab()]}'s sound to every string.`);
+    } else if (choice) {
+      const from = Number(choice);
+      commit(copyString(plan(), from, tab()));
+      setNote(`${labels()[tab()]} now has ${labels()[from]}'s sound.`);
     }
+  };
+  const soloed = () => st().muted.every((m, i) => m === (i !== tab()));
+  const copyJson = async () => {
+    setNote((await copyText(json())) ? "Copied the settings." : "Couldn't reach the clipboard; copy them from the box below.");
   };
   const loadJson = () => {
     try {
@@ -79,20 +89,34 @@ export function ThamburaLab(props: ThamburaViewProps) {
       setNote("That isn't settings JSON.");
     }
   };
+  const toggleHelp = (on: boolean) => {
+    setHelp(on);
+    try {
+      localStorage.setItem(HELP_KEY, on ? "1" : "0");
+    } catch {
+      // Just not remembered.
+    }
+  };
+  const field = (spec: FieldSpec) => (
+    <FieldSlider spec={spec} plan={plan()} string={tab()} help={help()} onCommit={(v) => setField(spec, v)} />
+  );
 
   return (
     <div class="grid gap-4">
-      <ThamburaMini state={props.state} actions={a} />
-      <LabSlider
-        label="Speed"
-        help="Seconds for one round of four plucks."
-        unit="s round"
-        min={MIN_CYCLE}
-        max={MAX_CYCLE}
-        step={0.1}
-        value={s().cycleSeconds}
-        onCommit={(cycleSeconds) => a.set({ cycleSeconds })}
-      />
+      <div class="grid items-end gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <ThamburaMini state={props.state} actions={a} />
+        <LabSlider
+          label="Speed"
+          help="Seconds for one round of four plucks."
+          showHelp={false}
+          unit="s round"
+          min={MIN_CYCLE}
+          max={MAX_CYCLE}
+          step={0.1}
+          value={s().cycleSeconds}
+          onCommit={(cycleSeconds) => a.set({ cycleSeconds })}
+        />
+      </div>
 
       <div class="flex flex-wrap items-center gap-2 border-t border-gray-200 pt-3 text-sm dark:border-gray-700">
         <span class="font-medium">Start from</span>
@@ -113,37 +137,96 @@ export function ThamburaLab(props: ThamburaViewProps) {
         Loading uses the current tone {s().tone}, pluck {s().pluck}, sustain {s().sustain} and {s().voice} voice.
       </p>
 
-      <Presets {...props} />
+      <Show when={props.analyser}>
+        <ThamburaScope analyser={props.analyser!} playing={() => st().playing} />
+      </Show>
 
       <div class="flex flex-wrap items-center gap-2">
-        <Segmented
-          label="String"
-          size="sm"
-          value={String(tab())}
-          options={labels().map((label, i) => ({ value: String(i), label }))}
-          onChange={(v) => setTab(Number(v))}
-        />
-        <button type="button" class={`${SMALL_BUTTON} h-8 w-auto px-2.5 text-xs font-medium`} onClick={copyToAll}>
-          Copy to all strings
+        <div role="radiogroup" aria-label="String" class="inline-flex flex-wrap rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
+          <For each={labels()}>
+            {(label, i) => (
+              <div
+                class={`flex items-center rounded-md ${
+                  tab() === i() ? "bg-white shadow-sm dark:bg-gray-600" : ""
+                }`}
+              >
+                <button
+                  type="button"
+                  aria-pressed={!st().muted[i()]}
+                  aria-label={`${st().muted[i()] ? "Unmute" : "Mute"} string ${label}`}
+                  title={st().muted[i()] ? "Muted: click to hear it" : "Playing: click to mute"}
+                  onClick={() => a.setMuted(i(), !st().muted[i()])}
+                  class="flex h-7 items-center rounded-md pl-2 pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                >
+                  <span
+                    class={`h-2.5 w-2.5 rounded-full transition-shadow ${
+                      st().muted[i()] ? "border border-gray-400 dark:border-gray-500" : "bg-amber-500"
+                    } ${st().lit[i()] && !st().muted[i()] ? "ring-2 ring-amber-300" : ""}`}
+                  />
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={tab() === i()}
+                  onClick={() => setTab(i())}
+                  class={`h-7 rounded-md pl-1 pr-2.5 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+                    tab() === i() ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"
+                  } ${st().muted[i()] ? "line-through decoration-gray-400" : ""}`}
+                >
+                  {label}
+                </button>
+              </div>
+            )}
+          </For>
+        </div>
+        <button
+          type="button"
+          aria-pressed={soloed()}
+          class={`${SMALL_BUTTON} h-8 w-auto px-2.5 text-xs font-medium ${soloed() ? "border-amber-500 text-amber-700 dark:text-amber-300" : ""}`}
+          onClick={() => a.solo(tab())}
+        >
+          {soloed() ? "Unsolo" : "Solo"}
         </button>
+        <select
+          aria-label="Copy"
+          title="Copies the sound and damping; each string keeps its own level, pan and detune."
+          class={`${SELECT} py-1 text-xs`}
+          onChange={(e) => {
+            copy(e.currentTarget.value);
+            e.currentTarget.value = "";
+          }}
+        >
+          <option value="" selected>
+            Copy…
+          </option>
+          <For each={labels()}>{(l, i) => <Show when={i() !== tab()}><option value={String(i())}>Copy from {l}</option></Show>}</For>
+          <option value="all">Copy this to all strings</option>
+        </select>
+        <label class="ml-auto flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+          <input
+            type="checkbox"
+            class="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+            checked={help()}
+            onChange={(e) => toggleHelp(e.currentTarget.checked)}
+          />
+          Show descriptions
+        </label>
       </div>
 
-      <div class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+      <div class="columns-1 gap-8 sm:columns-2 lg:columns-3 xl:columns-4">
         <For each={GROUPS}>
           {(g) => (
-            <fieldset class="grid content-start gap-3">
-              <legend class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{g.title}</legend>
-              <Show when={g.note}>
-                <p class="-mt-2 text-xs text-gray-500 dark:text-gray-400">{g.note}</p>
+            <fieldset class={GROUP}>
+              <legend class={LEGEND}>{g.title}</legend>
+              <Show when={g.note && help()}>
+                <p class="-mt-1 text-xs text-gray-500 dark:text-gray-400">{g.note}</p>
               </Show>
-              <For each={FIELD_SPECS.filter((f) => f.group === g.id)}>
-                {(spec) => <FieldSlider spec={spec} plan={plan()} string={tab()} onCommit={(v) => setField(spec, v)} />}
-              </For>
+              <For each={FIELD_SPECS.filter((f) => f.group === g.id)}>{field}</For>
               <Show when={g.id === "bloom"}>
-                <label class="flex items-center gap-2 text-sm">
+                <label class="flex items-start gap-2 text-sm" title="Else by the peak, which quietens a big bloom's attack.">
                   <input
                     type="checkbox"
-                    class="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    class="mt-0.5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                     checked={plan().strings[tab()].voice.attackLevel > 0}
                     onChange={(e) => {
                       const p = plan();
@@ -154,49 +237,49 @@ export function ThamburaLab(props: ThamburaViewProps) {
                     }}
                   />
                   <span>
-                    Scale by the attack <span class="text-xs text-gray-500 dark:text-gray-400">(else by the peak, which quietens a big bloom's attack)</span>
+                    Scale by the attack
+                    <Show when={help()}>
+                      <span class="block text-xs text-gray-500 dark:text-gray-400">Else by the peak, which quietens a big bloom's attack.</span>
+                    </Show>
                   </span>
                 </label>
               </Show>
             </fieldset>
           )}
         </For>
-        <details class="sm:col-span-2">
-          <summary class="cursor-pointer text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Classic resonance sweep
-          </summary>
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">The Tambura (classic) and Guitar model. Sweep gain 0 turns it off.</p>
-          <div class="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-            <For each={FIELD_SPECS.filter((f) => f.group === "sweep")}>
-              {(spec) => <FieldSlider spec={spec} plan={plan()} string={tab()} onCommit={(v) => setField(spec, v)} />}
-            </For>
+        <fieldset class={GROUP}>
+          <legend class={LEGEND}>Rhythm, all strings</legend>
+          <For each={GAP_LABELS}>
+            {(label, i) => (
+              <LabSlider
+                label={label}
+                help="The gap after this pluck, as a share of the round. The others adjust to keep the round."
+                showHelp={help()}
+                unit="%"
+                min={5}
+                max={85}
+                step={0.5}
+                value={plan().gaps[i()] * 100}
+                onCommit={(v) => commit({ ...plan(), gaps: setGap(plan().gaps, i(), v / 100) })}
+              />
+            )}
+          </For>
+        </fieldset>
+        <details class={GROUP}>
+          <summary class={`${LEGEND} cursor-pointer`}>Classic resonance sweep</summary>
+          <Show when={help()}>
+            <p class="text-xs text-gray-500 dark:text-gray-400">The Tambura (classic) and Guitar model. Sweep gain 0 turns it off.</p>
+          </Show>
+          <div class="mt-2 grid gap-2.5">
+            <For each={FIELD_SPECS.filter((f) => f.group === "sweep")}>{field}</For>
           </div>
         </details>
       </div>
 
-      <fieldset class="grid gap-3 border-t border-gray-200 pt-3 sm:grid-cols-2 dark:border-gray-700">
-        <legend class="mb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          Rhythm, as shares of the round
-        </legend>
-        <For each={GAP_LABELS}>
-          {(label, i) => (
-            <LabSlider
-              label={label}
-              unit="%"
-              min={5}
-              max={85}
-              step={0.5}
-              value={plan().gaps[i()] * 100}
-              onCommit={(v) => commit({ ...plan(), gaps: setGap(plan().gaps, i(), v / 100) })}
-            />
-          )}
-        </For>
-      </fieldset>
+      <Presets {...props} />
 
       <details class="border-t border-gray-200 pt-3 dark:border-gray-700">
-        <summary class="cursor-pointer text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          Settings JSON
-        </summary>
+        <summary class={`${LEGEND} cursor-pointer`}>Settings JSON</summary>
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
           For <code>pnpm render-mix --modes custom --custom file.json</code>, or paste settings here to load them.
         </p>
@@ -212,6 +295,14 @@ export function ThamburaLab(props: ThamburaViewProps) {
       </details>
     </div>
   );
+}
+
+function readHelp(): boolean {
+  try {
+    return localStorage.getItem(HELP_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -299,7 +390,7 @@ function Presets(props: ThamburaViewProps) {
 }
 
 /** One field of the selected string, in display units. */
-function FieldSlider(props: { spec: FieldSpec; plan: ThamburaPlan; string: number; onCommit: (v: number) => void }) {
+function FieldSlider(props: { spec: FieldSpec; plan: ThamburaPlan; string: number; help: boolean; onCommit: (v: number) => void }) {
   const value = () => {
     const raw = readField(props.plan.strings[props.string], props.spec.field);
     return props.spec.display ? props.spec.display(raw) : raw;
@@ -308,6 +399,7 @@ function FieldSlider(props: { spec: FieldSpec; plan: ThamburaPlan; string: numbe
     <LabSlider
       label={props.spec.label}
       help={props.spec.help}
+      showHelp={props.help}
       unit={props.spec.unit}
       min={props.spec.min}
       max={props.spec.max}
@@ -319,12 +411,15 @@ function FieldSlider(props: { spec: FieldSpec; plan: ThamburaPlan; string: numbe
 }
 
 /**
- * A slider whose readout follows the drag but which commits on release,
- * since most Lab changes re-render the plucks.
+ * A compact slider: its label and value on one line, its description in the
+ * label's tooltip, or under it when descriptions are shown. The readout
+ * follows the drag but the value commits on release, since most Lab changes
+ * re-render the plucks.
  */
 function LabSlider(props: {
   label: string;
   help?: string;
+  showHelp: boolean;
   unit: string;
   min: number;
   max: number;
@@ -337,7 +432,7 @@ function LabSlider(props: {
   const decimals = () => Math.max(0, -Math.floor(Math.log10(props.step) + 1e-9));
   return (
     <label class="block" title={props.help}>
-      <span class="mb-1 flex items-baseline justify-between gap-2 text-sm">
+      <span class="flex items-baseline justify-between gap-2 text-sm leading-tight">
         <span class="font-medium">{props.label}</span>
         <span class="tabular-nums text-gray-500 dark:text-gray-400">
           {shown().toFixed(decimals())}
@@ -356,10 +451,10 @@ function LabSlider(props: {
           props.onCommit(e.currentTarget.valueAsNumber);
           setDraft(null);
         }}
-        class="w-full accent-amber-600"
+        class="h-5 w-full accent-amber-600"
       />
-      <Show when={props.help}>
-        <span class="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">{props.help}</span>
+      <Show when={props.showHelp && props.help}>
+        <span class="block text-xs leading-snug text-gray-500 dark:text-gray-400">{props.help}</span>
       </Show>
     </label>
   );

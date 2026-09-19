@@ -55,7 +55,7 @@ export function createThamburaIsland(
     "thambura",
     el,
     () => (
-      <ThamburaBar state={state} actions={presenter} onHeight={onHeight} shareUrl={linkUrl} />
+      <ThamburaBar state={state} actions={presenter} onHeight={onHeight} shareUrl={linkUrl} analyser={() => audio.analyser("drone")} />
     ),
     eventBus,
   );

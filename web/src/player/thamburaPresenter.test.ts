@@ -522,6 +522,49 @@ describe("ThamburaPresenter", () => {
     });
   });
 
+  describe("muting strings in the Lab", () => {
+    it("skips a muted string's plucks and fades what it was ringing", async () => {
+      p.setView("lab");
+      await start();
+      run(6);
+      p.setMuted(2, true);
+      expect(audio.damped.at(-1)).toMatchObject({ group: "thambura/string2" });
+      const n = audio.played.length;
+      run(20);
+      const strings = audio.played.slice(n).map((e) => e.opts?.choke);
+      expect(strings).not.toContain("thambura/string2");
+      expect(strings).toContain("thambura/string1");
+      p.setMuted(2, false);
+      const m = audio.played.length;
+      run(30);
+      expect(audio.played.slice(m).map((e) => e.opts?.choke)).toContain("thambura/string2");
+    });
+
+    it("solos one string, and brings the others back when soloed again", () => {
+      p.setView("lab");
+      p.solo(3);
+      expect(p.state.muted).toEqual([true, true, true, false]);
+      p.solo(3);
+      expect(p.state.muted).toEqual([false, false, false, false]);
+      p.setMuted(0, true);
+      p.solo(1);
+      expect(p.state.muted).toEqual([true, false, true, true]);
+    });
+
+    it("clears on leaving the Lab, and stays out of links and saved settings", () => {
+      const link = new FakeLink();
+      make(undefined, link);
+      p.setView("lab");
+      const before = link.writes.at(-1);
+      p.setMuted(1, true);
+      expect(p.state.muted[1]).toBe(true);
+      expect(link.writes.at(-1)).toBe(before);
+      expect(JSON.stringify(store.saved)).not.toContain("muted");
+      p.setView("mini");
+      expect(p.state.muted).toEqual([false, false, false, false]);
+    });
+  });
+
   describe("presets", () => {
     it("saves the current sound by name and plays it back, keeping the volume and view", () => {
       p.loadCustom("guitar");
