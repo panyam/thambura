@@ -133,6 +133,16 @@ unit-tested:
   plays the plan the Lab view edits. `FIELD_SPECS` lists the Lab's controls
   and their ranges, which cover every built-in mode's values, and
   `normalizePlan` clamps a saved or pasted plan to them.
+- `shareLink.ts`: the thambura's whole setup (settings but volume, view,
+  whether the bar is open, and for Custom mode the plan) packed into the
+  `?s=` query parameter as base64url bytes. A Custom plan is stored as edits
+  to the closest built-in plan (or field by field, whichever is shorter),
+  with a checksum of that plan so a link made before a built-in sound
+  changed can say so. Slider values take a byte or two; anything off a
+  slider's step, and voice values the Lab hides, travel as exact floats.
+  Links run 18-32 characters for everyday setups and stay under 200 for a
+  plan edited everywhere. The orders at the top of the file are the format:
+  append, never reorder, and bump `FORMAT` for anything else.
 - `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa in a `PluckPattern`:
   `EVEN_PATTERN` (four slots and a rest) or, for the jawari mode,
   `PLAYED_PATTERN` (the recorded player's uneven gaps, plus a `DampEvent`
@@ -181,7 +191,10 @@ unit-tested:
   Everything plucked goes through the settings' plan (`planFor`): its voices
   key and render the samples, and `pluckOptions` turns a pluck into
   level, pan and detune. `setCustom` / `loadCustom` edit the Custom plan and
-  switch to it; loading a mode sounds the same and renders nothing. Pitch and timbre
+  switch to it; loading a mode sounds the same and renders nothing. A link
+  in `deps.link` wins over the saved setup (keeping the listener's volume)
+  but isn't saved over it until the listener changes something; every change
+  writes the current link back. Pitch and timbre
   changes re-render the plucks in about 20 ms slices through `deps.defer`
   (60 ms settle after a change, none between slices), and Start waits for them,
   about 0.35 s from cold. Fine tune is only `detune`. In both tambura modes the
@@ -201,6 +214,10 @@ unit-tested:
   release, since most changes re-render. Shared bits are in
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
+- `thamburaIsland.tsx` wires the link to the address bar: `replaceState`, no
+  history entries, 400 ms after the last change, since Safari throws after
+  100 calls in 30 s and a slider drag changes the setup on every step. The
+  bar's header has a Copy link button.
 - `keepAwake.ts`: `KeepAwake` holds a Screen Wake Lock while either island
   reports playing (through `onPlaying`), and takes it again when the page is
   shown, since browsers drop it on hidden pages. `usePlaybackSession` sets
@@ -321,7 +338,9 @@ The tala's transport buttons are icons, so select them by label:
 "Start" also finds Restart. The
 thambura opens with `#thambura-toggle`, its views are
 `button[role="radio"]:has-text("Raagini")` and so on, its mode is
-`select[aria-label="Sound"]`, the Lab's controls are ranges labelled by field
+`select[aria-label="Sound"]`, `button[aria-label="Copy link"]` copies the
+page's `?s=` link (give the context the clipboard permissions to read it back;
+a fresh context opening that URL is the second listener), the Lab's controls are ranges labelled by field
 (`input[aria-label="Attack"]`, tabs under `[aria-label="String"]`) with the
 plan in `textarea[aria-label="Settings JSON"]`, and it plays with
 `button[aria-label="Start thambura"]`. The theme toggle cycles system, light,

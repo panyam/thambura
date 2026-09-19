@@ -8,6 +8,7 @@ import {
   type ThamburaSettings,
 } from "../engine/shruthi";
 import { PluckRender, reedSpectrum } from "../engine/tambura";
+import { decodeLink, encodeLink } from "../engine/shareLink";
 import { normalizePlan, patternOf, planFor, type ThamburaPlan } from "../engine/thamburaPlan";
 import { ThamburaSequencer, type DampEvent, type PluckEvent, type ThamburaTiming } from "../engine/thamburaSequencer";
 import type { AudioOut, PlayOptions, ToneHandle } from "./audio";
@@ -32,6 +33,8 @@ export interface ThamburaState {
   view: ThamburaViewId;
   /** The plan the Custom mode plays, edited in the Lab view. */
   custom: ThamburaPlan;
+  /** A note for the listener about the link they opened, until dismissed. */
+  notice: string | null;
   /** Strings whose pluck was heard a moment ago, for the glow and the LEDs. */
   lit: [boolean, boolean, boolean, boolean];
 }
@@ -46,6 +49,16 @@ export interface ThamburaStore {
   save(value: unknown): void;
 }
 
+/**
+ * The shareable link in the address bar (engine/shareLink.ts). `read` gives
+ * the link the page was opened with, if any; `write` is called with the
+ * current setup after every change.
+ */
+export interface ThamburaLink {
+  read(): string | null;
+  write(link: string): void;
+}
+
 export interface ThamburaDeps {
   audio: AudioOut;
   ticker: Ticker;
@@ -56,6 +69,7 @@ export interface ThamburaDeps {
    */
   defer(cb: () => void, ms: number): void;
   store?: ThamburaStore;
+  link?: ThamburaLink;
   rng?: () => number;
 }
 
@@ -110,20 +124,34 @@ export class ThamburaPresenter {
 
   constructor(private readonly deps: ThamburaDeps) {
     const saved = (loadSafely(deps.store) ?? {}) as Record<string, unknown>;
-    const settings = normalizeThambura(saved.settings, DEFAULT_THAMBURA);
-    this.state = {
-      settings,
-      playing: false,
-      open: saved.open === true,
-      view: VIEW_IDS.includes(saved.view as ThamburaViewId) ? (saved.view as ThamburaViewId) : "studio",
-      custom: normalizePlan(saved.custom, planFor({ ...settings, mode: "jawari" })),
-      lit: DARK,
-    };
+    let settings = normalizeThambura(saved.settings, DEFAULT_THAMBURA);
+    let custom = normalizePlan(saved.custom, planFor({ ...settings, mode: "jawari" }));
+    let view: ThamburaViewId = VIEW_IDS.includes(saved.view as ThamburaViewId) ? (saved.view as ThamburaViewId) : "studio";
+    let open = saved.open === true;
+    let notice: string | null = null;
+    // A shared link wins over what this browser saved.
+    const link = deps.link?.read();
+    if (link) {
+      const shared = decodeLink(link, { settings });
+      if (shared) {
+        ({ settings, view, open } = shared);
+        custom = shared.custom ?? custom;
+        notice = shared.drifted
+          ? "Opened a shared setup. Its Custom sound was made from an older version of a built-in sound, so it may sound a little different."
+          : "Opened a shared setup.";
+      } else {
+        notice = "The link in the address bar isn't one this version can read, so your own setup is playing.";
+      }
+    }
+    this.state = { settings, playing: false, open, view, custom, notice, lit: DARK };
     this.timing = { cycleSeconds: settings.cycleSeconds, pattern: patternOf(this.plan()) };
     const seq = new ThamburaSequencer(this.timing, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker);
     this.transport.add(seq, (e) => ("damp" in e ? this.damp(e) : this.pluck(e)));
     deps.audio.setBusVolume("drone", this.state.settings.volume);
+    // The address bar shows the current setup from the start. A shared one
+    // isn't saved over this browser's own until the listener changes something.
+    deps.link?.write(this.shareLink());
   }
 
   attach(view: ThamburaView): void {
@@ -225,6 +253,16 @@ export class ThamburaPresenter {
 
   toggleOpen(): void {
     this.setOpen(!this.state.open);
+  }
+
+  dismissNotice(): void {
+    this.update({ notice: null });
+  }
+
+  /** The current setup as a link's `s` parameter (engine/shareLink.ts). */
+  shareLink(): string {
+    const { settings, custom, view, open } = this.state;
+    return encodeLink({ settings, custom, view, open });
   }
 
   // ---- internals ---------------------------------------------------------
@@ -370,6 +408,7 @@ export class ThamburaPresenter {
     } catch {
       // Storage can be full or blocked; the settings just won't be remembered.
     }
+    this.deps.link?.write(this.shareLink());
   }
 
   private update(patch: Partial<ThamburaState>): void {
