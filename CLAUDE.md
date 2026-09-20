@@ -233,7 +233,10 @@ unit-tested:
   four views over the same presenter: `ThamburaMini`, `ThamburaStudio`,
   `ThamburaRaagini` (the 2000s Raagini box, with `Knob.tsx`, which keeps its
   own TMB/GTR/SHRUTHI slide switch as part of the replica) and `ThamburaLab`,
-  a workbench for the Custom plan, string by string, that copies it out and
+  a workbench for the Custom plan, string by string, whose Duration slider
+  is the round's length (right is longer, in the Lab and in Studio; the
+  Raagini keeps its Tempo knob, clockwise for faster, as the hardware has),
+  that copies it out and
   in as JSON (`pnpm render-mix --custom` renders it), and holds the Save and
   Save as… buttons. "All strings" writes an edit to all four at once. Its sliders commit on
   release, since most changes re-render, and their descriptions sit in
