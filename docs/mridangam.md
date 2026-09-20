@@ -142,7 +142,7 @@ Three options, and we'd like your call on them (see Open questions).
 
 1. **The CompMusic/IIT Madras Mridangam Stroke Dataset**
    ([Zenodo](https://zenodo.org/records/4068196)). 10 stroke classes at 6
-   tonics, B to E, about 7,000 WAV files from one player, 130 MB. The takes
+   tonics, B to E, 6,977 WAV files from one player, 130 MB. The takes
    are plentiful, so choosing a few good ones per stroke is easy. The licence
    is unclear, though. Zenodo and mirdata say CC BY 3.0, while the same
    sounds on Freesound are CC BY-NC 3.0. We shouldn't ship it without
@@ -154,7 +154,13 @@ Three options, and we'd like your call on them (see Open questions).
    or so in a room, and it gives us a kit we own and can ship.
 3. **Synthesize.** The open right-head strokes (chapu, arai chapu, nam,
    dheem) are a handful of decaying harmonics at known ratios, much like a
-   tambura pluck, and they'd tune to any key exactly. The closed strokes and
+   tambura pluck, and they'd tune to any key exactly. The review gives
+   numbers to start from: dheem against chapu at 0.534 ± 0.005, nam at
+   1.5 ± 0.012, dheem against the ghost fundamental at 1.07 ± 0.05, and an
+   intensity decay constant for dheem of 2.02 per second (about 1.1 s to
+   -10 dB). It also reports beating in dheem from two close frequencies,
+   which is the trick `thamburaPresenter` already plays with its 1.5-cent
+   sharp second Sa, and a cheap way to keep a synthesized dheem alive. The closed strokes and
    the thoppi are noisier and quite a bit harder. Nobody has published a mridangam synth
    that we could find, so this is an experiment.
 
@@ -162,6 +168,64 @@ Our suggestion is to build the engine against the dataset locally (kept out
 of git, like `recordings/`), while getting permission or booking a recording,
 and to try synthesizing the open strokes on the side to compare. Only
 licensed sounds get deployed.
+
+### What's in the dataset, measured
+
+We downloaded it and measured every class, because the labels turn out not to
+mean what the literature means. Writing F for the pack's nominal note (130.8 Hz
+for the C pack) and T40 for the time to fall 40 dB:
+
+| Label | Head | Strongest partial | T40 | What it looks like |
+|---|---|---|---|---|
+| bheem | right | 1.07F | 0.77 s | the review's *dheem*, the first mode sitting 7% sharp |
+| cha | right | 2F, the Sa | 0.33 s | the tuning stroke, chapu |
+| dhin | right | 2F, with a strong 3F | 0.38 s | a second Sa-pitched open stroke |
+| num | right | 5F | 0.20 s | metallic and high |
+| thi, ta, tha | right | none dominant | 0.14 s | the closed strokes |
+| thom | left | about 0.67F | 0.31 s | the bass |
+| dheem | left | about 0.67F, some 2F | 0.40 s | bass-led, right head ringing along |
+| tham | left | about 0.67F, some right head | 0.32 s | the composite |
+
+Three things follow.
+
+**The names don't line up.** The dataset's `dheem` is a bass stroke, while
+its `bheem` is what the review calls dheem, and we still don't know what the
+name `bheem` is meant to be. That is the best argument yet for measuring every
+sample and trusting no label, which is what the section above already says.
+
+**The tuning stroke really does sound harmonic 2.** In `cha` and `dhin` the
+partial at the pack's nominal note is stronger than the one an octave below
+it. So a pack matches a thambura key by pitch class, and the octave takes
+care of itself.
+
+**`num` disagrees with the review**, which measures nam against chapu at 1.5,
+the third harmonic against the second. Here the fifth dominates.
+
+Each pack is also a little off its nominal note, by a few cents up to about
+20, with D the flat outlier. Two passes over the data with different methods
+agreed on the direction but differed by up to 10 cents on the value, so the
+kit build needs one agreed way of measuring, and the manifest should carry a
+measured detune per pack.
+
+Then the caveats, which matter for what we can build from it:
+
+- **The rings are cut.** About a fifth of the `cha` and `thom` takes are
+  still above -40 dB where the file ends, and the longest `cha` is 0.77 s
+  (median 0.23 s). So this dataset cannot give us a chapu that rings for
+  seconds, which is what a real one does.
+- **The E pack clips.** 16% of its files touch full scale. No other pack
+  does.
+- **The classes are lopsided:** 2,164 `thi` takes against 49 `bheem`, and
+  `bheem` has none at D and one at C#.
+- **No gumki and no arai chapu** at all.
+- **The packs aren't one drum retuned.** Level, brightness and decay move
+  between them unsystematically, so a kit built from them wants normalizing
+  per pack, and they can't tell us how far a sample survives being shifted.
+
+Sizes, now measured rather than guessed. Four clean takes per stroke per
+tonic is 232 files and 97 s of audio: about 1.2 MB at 96 kbps mono, and
+3.1 MB decoded per pack (18.6 MB for all six), which is what the packaging
+table below now uses.
 
 ### What the audio engine needs
 
@@ -213,8 +277,10 @@ role     theka
 
 The first line of strokes is what plays. The optional second line is the
 solkattu, shown in the view and never played. Each token takes one slot, and
-a slot is 1/(g × s) of a count, where g is the nadai's group (3, 4, 5, 7 or 9)
-and s the speed. A `,` is a rest for one slot, as karvai is written in
+a slot is 1/(g × 2^(s-1)) of a count, where g is the nadai's group (3, 4, 5, 7
+or 9) and s the speed. Speeds double rather than step: first speed is one
+unit per beat, second is two, third is four
+([eviolinguru](https://www.eviolinguru.com/kaala-tempo.html)). A `,` is a rest for one slot, as karvai is written in
 Carnatic notation. `R.nam+L.thom`, or a composite's short name `tham`, plays
 several primitives at once. `|` marks an akshara boundary and has to fall on
 one, which is what makes a typo in a long pattern easy to catch. The parser
@@ -271,6 +337,20 @@ Later, the parts that make practice more useful than a loop:
 
 ## 3. Packaging
 
+### Where the data lives
+
+Sound data and the tools that make it live in a companion repo,
+[panyam/thambura-data](https://github.com/panyam/thambura-data): the measuring
+and kit-building scripts, the built kits, a note on where each source came
+from, and a stroke pad page for listening. Raw sources are fetched by a script that checks a
+hash, never committed, since the stroke dataset's zip alone is 125 MB.
+
+The kit the app ships is a build product copied into this repo under
+`web/static/Resources/Mridangam/<kit>/`, not a submodule. At about 1.2 MB
+that's cheap, and it keeps `gcloud app deploy`, the offline service worker and
+a plain clone all working without extra steps. Nothing there should be
+hand-edited.
+
 ### Sound kits
 
 A kit is a folder under `web/static/Resources/Mridangam/<kit>/`: a
@@ -282,13 +362,14 @@ kit gets tham for free once it has nam and thom.
 
 The files are mono, trimmed to where the ring falls to silence, normalized,
 and compressed. AAC in `.m4a` or MP3 decodes in every browser we target;
-Ogg doesn't in older Safari. The sizes stay fairly small if we're careful:
+Ogg doesn't in older Safari. The sizes stay fairly small if we're careful (these are measured on the
+dataset's takes, and our own recordings would ring longer):
 
-| | Estimate |
+| | Size |
 |---|---|
-| audio | 10 strokes × 4 takes × 2 drums × about 1.5 s = 120 s |
-| download | about 1.5 MB at 96 kbps mono, loaded only when the mridangam is first turned on |
-| memory | decoded PCM is about 190 KB/s mono at 48 kHz, so about 11 MB for the drum nearest the tonic |
+| audio | 10 strokes × 4 takes × 6 tonics is 232 files and 97 s, measured on the dataset |
+| download | about 1.2 MB at 96 kbps mono, loaded only when the mridangam is first turned on |
+| memory | decoded PCM is about 190 KB/s mono at 48 kHz, so 3.1 MB for the pack nearest the tonic, 18.6 MB for all six |
 
 That's three orders of magnitude under Mridangam Studio's 1.1 GB. The
 container has no ffmpeg, so trimming and measuring can be a node script
@@ -339,8 +420,10 @@ Each step is a PR that works on its own.
 
 1. **Strokes and tuning.** The kit manifest and loader, `bend`, per-head
    choke, left/right levels, the stroke pad, and the pitch-measuring script.
-   Built against the dataset locally. Done when every stroke sounds right on
-   the pad at a few keys, by ear, next to the thambura.
+   Built against the dataset locally. The measuring scripts, a candidate kit
+   and a plain-HTML stroke pad already exist in the data repo, so what's left
+   here is the in-app version. Done when every stroke sounds right on the pad
+   at a few keys, by ear, next to the thambura.
 2. **One theka.** `TalaGrid`, `StrokeSequencer`, and a hand-written Adi
    theka, with an on/off switch. A test that the strokes and claps agree
    through tempo changes, and an in-browser capture of the scheduled times.
@@ -362,7 +445,8 @@ Each step is a PR that works on its own.
    for each nadai, so the app matches how a teacher counts?
 3. **Who checks the patterns?** The thekas, the stock phrases and the
    phrase-to-stroke mappings need a mridangam player to write or at least
-   vet them.
+   vet them. The same person could name the dataset's ten labels by ear,
+   since `bheem` against `dheem` will confuse anyone reading a manifest.
 4. **Where the controls live.** We've assumed the tala player's panel, since
    the mridangam shares the tala's Start and Stop. Would you rather it had its
    own floating bar, like the thambura?
