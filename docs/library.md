@@ -1,11 +1,12 @@
 # Thambura as a library
 
 The aim is for the pieces here to be importable in other projects the way
-`notations` is, and the first real consumer is likely to be the notation app
-itself: a student reading a kriti should be able to start the tala and the
-drone beside the notation without leaving the page. This note is the plan for
-getting there. Nothing here is scheduled; it records what would have to be
-true.
+`notations` is, and the first target is the **notation web app** (the
+`notation` repo, whose frontend package is `notationfe`): a student reading a
+kriti should be able to start the tala and the drone beside the notation
+without leaving the page. `notations`, the library, is the packaging
+precedent, not the consumer. This note is the plan for getting there;
+tracked in #52, not scheduled.
 
 ## What `notations` does, since we'd mirror it
 
@@ -21,20 +22,38 @@ true.
 
 That shape maps onto this repo almost exactly.
 
+## What the first consumer is built with
+
+The notation web app is Go plus **webpack**, with Tailwind, `@panyam/tsappkit`,
+`dockview-core` and `notations` itself. It has **no Solid**. That shapes the
+plan more than anything else here:
+
+- The engine and the runtime are plain TypeScript and drop straight in.
+- The Solid components can't be a peer-dependency import there. They would
+  ship as a **self-mounting bundle with Solid inside it**, the way `notations`
+  ships a UMD build: the host passes an element and gets a working drone or
+  tala, with no framework of its own involved. `createThamburaIsland` and
+  `createPlayerIsland` are already exactly that shape.
+- The app arranges its panels with `dockview`, and `notations` already ships a
+  `./web/dockview` integration. A drone or tala panel could follow the same
+  pattern, which is also the answer to "where does it sit" in a host app.
+
 ## The entry points this repo would offer
 
 | Export | What it holds | Depends on |
 | --- | --- | --- |
 | `.` | The engine: talas and their tables, exact `Ratio` time, `TempoMap`, `Sequencer`, the tala and pluck sequencers, shruthi and pitch maths, the tambura synthesis, share-link encoding | nothing |
 | `./runtime` | `AudioEngine` and its buses, `Transport`, `workerTicker`, `PlayerPresenter`, `ThamburaPresenter` | a browser, no framework |
-| `./solid` | `PlayerView`, `ThamburaBar` and the four thambura views, `Knob`, `ThamburaScope` | `solid-js` as a peer dependency |
+| `./mount` | `createPlayerIsland`, `createThamburaIsland`: give it an element, get a working tala or drone. Solid bundled in, so the host needs no framework | a browser |
+| `./solid` | `PlayerView`, `ThamburaBar` and the four thambura views, `Knob`, `ThamburaScope`, for hosts that do use Solid | `solid-js` as a peer dependency |
 | `./assets/*` | `TalasFixtures.json`, the hand images, the click sounds | served by the host |
 | `./styles/*` | the built CSS for the components | nothing |
 
 The split follows the dependency rule the code already keeps: `engine/` never
 imports `player/`, and the presenters never import Solid. A consumer that only
 wants to schedule Carnatic rhythm takes `.` and writes its own UI. One that
-wants a working drone takes `.` and `./runtime`. One on Solid takes all three.
+wants a working drone in a div takes `./mount`. One already on Solid takes
+`./solid` and keeps control of the layout.
 
 ## What has to change first
 
@@ -53,8 +72,9 @@ Most of it is small, and each item is a real blocker for embedding:
    Shipping built CSS is the lower-effort path and keeps the app's build as it
    is.
 3. **One copy of Solid.** `build.mjs` already aliases `solid-js` to a single
-   copy because two copies silently break reactivity. As a library this
-   becomes a peer dependency plus a note, since the host controls resolution.
+   copy because two copies silently break reactivity. `./mount` sidesteps this
+   by bundling its own; `./solid` makes it a peer dependency and leaves
+   resolution to the host.
 4. **Package and build layout.** A pnpm workspace with the entry points above,
    esbuild producing ESM (and CJS if a consumer needs it), `.d.ts` emitted from
    the existing strict config, and an IIFE bundle for script-tag use. The
@@ -69,8 +89,8 @@ Most of it is small, and each item is a real blocker for embedding:
 
 Worth sketching, because it decides whether the seams above are the right ones.
 
-- **A practice bar under the notation.** The host mounts `ThamburaMini` and the
-  tala's transport, passing its own `AudioContext` so the notation's own audio
+- **A practice bar under the notation.** The host calls `./mount` on a div (or
+  a dockview panel) and passes its own `AudioContext`, so the notation's audio
   and ours share a clock and a mixer. Nothing in the presenters assumes it owns
   the context.
 - **The notation sets the tala.** A kriti's notation already knows its tala and
@@ -95,9 +115,10 @@ Solid components can stay here.
   this want `@panyam/...`?
 - One package with subpath exports (like `notations`) or several small ones?
   Subpaths are simpler to release and match the precedent.
-- Does the notation app use Solid? If not, `./solid` is the wrong shape for it
-  and the useful exports are `.` and `./runtime`, with the host drawing its own
-  controls.
+- How big is the self-mounting bundle with Solid inside, and is that
+  acceptable to a host that already ships webpack chunks? Solid is small, but
+  the answer decides whether `./mount` or a set of framework-free primitives is
+  the right first delivery.
 - How much of the Lab belongs in a library at all? It is a workbench for this
   app's synthesis, not obviously a component someone else wants.
 
