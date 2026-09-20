@@ -9,7 +9,8 @@ close.
 
 - master (3514e1b) is live: thambura.com serves a bundle byte-identical to a
   build of it (the check is under "Deploying" in CLAUDE.md). A deploy after
-  any further merge needs the user, since `gcloud` is only on their Mac.
+  any further merge can run from the dev container: it has `gcloud`, signed
+  in as the project's owner.
 - The thambura's default voice is the jawari tambura, fitted to a 60 s
   recording of a C tambura (`docs/sound-analysis.md` has the method, the
   results and the tools). The user has listened and called it "much better".
