@@ -565,6 +565,50 @@ describe("ThamburaPresenter", () => {
     });
   });
 
+  describe("editing what's playing", () => {
+    const ring = (p: { strings: { voice: { ringSeconds: number } }[] }) => p.strings.map((x) => x.voice.ringSeconds);
+
+    it("edits the sound being played, not a Custom plan saved earlier", () => {
+      p.loadCustom("guitar");
+      const guitar = ring(p.state.custom);
+      set({ mode: "jawari" });
+      // The Lab shows what's playing, so an edit starts from the jawari plan.
+      const plan = p.state.plan;
+      const strings = [...plan.strings] as typeof plan.strings;
+      strings[0] = { ...strings[0], voice: { ...strings[0].voice, ringSeconds: 20 } };
+      p.setCustom({ ...plan, strings });
+      expect(p.state.settings.mode).toBe("custom");
+      expect(ring(p.state.plan)[0]).toBe(20);
+      expect(ring(p.state.plan).slice(1)).toEqual(ring(planFor({ ...DEFAULT_THAMBURA, mode: "jawari" })).slice(1));
+      expect(ring(p.state.plan)).not.toEqual(guitar);
+    });
+
+    it("restarts the round from the first string that is on, so a change is heard at once", async () => {
+      p.setView("lab");
+      await start();
+      run(10);
+      p.setMuted(0, true);
+      const plan = p.state.plan;
+      const strings = plan.strings.map((t) => ({ ...t, voice: { ...t.voice, ringSeconds: 8 } })) as typeof plan.strings;
+      const n = audio.played.length;
+      p.setCustom({ ...plan, strings });
+      flushDeferred();
+      run(14);
+      const after = audio.played.slice(n).map((e) => e.opts?.choke);
+      // Nothing from the muted first string, and the round picks up at Sa.
+      expect(after[0]).toBe("thambura/string1");
+      expect(after).not.toContain("thambura/string0");
+      expect(after.slice(0, 3)).toEqual(["thambura/string1", "thambura/string2", "thambura/string3"]);
+    });
+
+    it("leaves a stopped thambura alone", () => {
+      const plan = p.state.plan;
+      p.setCustom({ ...plan, gaps: [0.4, 0.2, 0.2, 0.2] });
+      expect(p.state.playing).toBe(false);
+      expect(audio.played).toEqual([]);
+    });
+  });
+
   describe("presets", () => {
     it("saves the current sound by name and plays it back, keeping the volume and view", () => {
       p.loadCustom("guitar");
@@ -582,6 +626,36 @@ describe("ThamburaPresenter", () => {
       expect(p.state.settings).toMatchObject({ key: 9, cents: 3, mode: "custom", volume: 15 });
       expect(p.state.custom).toEqual(guitar);
       expect(p.state.view).toBe("raagini");
+    });
+
+    it("follows which preset is playing, and whether it has been changed", () => {
+      const a = p.savePreset("mine");
+      expect(p.state).toMatchObject({ presetId: a.id, edited: false });
+      const plan = p.state.plan;
+      p.setCustom({ ...plan, gaps: [0.4, 0.2, 0.2, 0.2] });
+      expect(p.state).toMatchObject({ presetId: a.id, edited: true });
+      p.applyPreset(a.id);
+      expect(p.state).toMatchObject({ presetId: a.id, edited: false });
+      p.playMode("guitar");
+      expect(p.state).toMatchObject({ presetId: null, edited: false, settings: { mode: "guitar" } });
+    });
+
+    it("saves over the preset it came from, or as a new one", () => {
+      const a = p.savePreset("mine");
+      const plan = p.state.plan;
+      p.setCustom({ ...plan, gaps: [0.4, 0.2, 0.2, 0.2] });
+      const saved = p.updatePreset()!;
+      expect(saved.id).toBe(a.id);
+      expect(p.state.edited).toBe(false);
+      expect(p.state.presets).toHaveLength(1);
+      p.applyPreset(a.id);
+      expect(p.state.plan.gaps[0]).toBeCloseTo(0.4, 6);
+
+      // From a built-in there is nothing to write over, so Save As is the only way.
+      p.playMode("jawari");
+      expect(p.updatePreset()).toBeNull();
+      const b = p.savePreset("another");
+      expect(p.state.presets.map((x) => x.id)).toEqual([b.id, a.id]);
     });
 
     it("names a nameless preset by number, newest first", () => {

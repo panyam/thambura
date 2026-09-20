@@ -134,6 +134,66 @@ Presets menu). A preset's Share button opens a "Share a preset" issue on
 GitHub with its link filled in, which is how good sounds from listeners can
 become built-in presets.
 
+## What the synth models, control by control
+
+The words first, since they come from three different worlds.
+
+**Jawari** is not an audio term. It is the instrument maker's word (also
+*javari* or *jivari*, from *jiva*, "life") for the wide curved bridge of a
+tanpura, sitar or veena, and for the craft of shaping it. A cotton thread
+slid between string and bridge tunes it. Because the bridge is curved and
+flat-topped, the vibrating string grazes it over and over, and each graze
+feeds energy into higher partials. That is the shimmer, and it is why a
+tanpura doesn't sound like a guitar. C. V. Raman studied it in the 1920s.
+
+**Bloom** is our name, not a standard one, for the swell of those upper
+partials after a pluck. The standard vocabulary: the **partials** are the
+frequencies a string sounds at; the **spectral envelope** is how loud each
+is; a **formant** is a bump in that envelope, a band that is emphasized. Our
+bloom is a formant whose gain changes over time. The **spectral centroid**,
+the energy-weighted mean frequency, is the usual one-number stand-in for
+brightness, and it is what the charts above plot.
+
+**Decay** is how a sound falls after its attack, said either as **T60**
+(seconds to fall 60 dB) or as a time constant (the sound falls as
+`e^(-t/tau)`). Real strings lose energy faster at high frequencies, so every
+partial has its own decay.
+
+With that, each Lab control:
+
+| Control | What it stands for |
+|---|---|
+| Ring | The fundamental's T60. Longer string, heavier gauge, lower losses. |
+| High decay | How much faster partial *k* decays than the fundamental (`1 + decay(k-1)`): mode-dependent damping from air, internal friction and losses into the bridge. |
+| Rolloff | How steeply the partials fall off at the moment of the pluck. Higher is darker. |
+| Pluck point | Where along the string it is plucked. It silences partials with a node there, which is comb filtering: at 10%, every 10th partial. |
+| Harmonics | How many partials are rendered at all (never above 8-10 kHz). |
+| Attack | How long the note takes to rise, 4-80 ms. Short is a plectrum, long is a finger. |
+| Force | Extra high partials for the first 40 ms, as from a firmer pluck. |
+| Scale by the attack | Whether the render is normalized to its attack or to its loudest moment, which decides whether a big bloom leaves the attack quiet. |
+| Bloom, centre, width | The jawari's formant: how far it lifts, where it sits (Hz) and how wide it is (octaves). A bigger instrument blooms lower. |
+| Bloom rise, hold, fall, rest | Its shape in time: it swells, holds, falls back, and leaves a little brightness behind. Most of what tells two instruments apart. |
+| Bloom energy | Whether the lift adds loudness or only moves energy up the spectrum. A real jawari mostly moves it. |
+| Detune | Cents off the key, which is what makes two strings beat against each other. |
+| Level, Pan | Where the string sits in the mix. |
+| Speed, the four gaps, Stop before next | The round: how fast, how the plucks are spaced, and how long before its next pluck the player's finger stops a string. A tanpura is often left to ring instead, which is this at 0. |
+
+**The strings overlap.** A pluck never waits for the one before it. Each
+string rings for many seconds (12-36 s for the tambura voices) while the
+others are plucked every second or so, so three or four strings sound
+together at any moment. A string is cut only by its own next pluck (an 80 ms
+choke) or by that damp shortly before it. This is why a change to one string
+can be hard to hear under the other three, and why the Lab has Solo.
+
+**What it does not model**, which no amount of fitting will reach (#52):
+inharmonicity (a stiff string's partials run sharp of exact multiples, which
+is much of what separates steel from brass from gut), two-stage decay (a real
+string trades energy between two planes of vibration, so notes often fall
+fast then linger), the jawari's actual buzz (ours is a smooth band, not a
+nonlinear rattle that follows how hard you pluck), contact and rattle noise,
+sympathetic ringing between strings, the body's resonance, and any room or
+microphone colour.
+
 ## How the measurements work
 
 **One mono mix, four strings.** A recording is a mix of all four strings, so

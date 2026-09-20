@@ -16,6 +16,8 @@ export type ThamburaActions = Pick<
   | "loadCustom"
   | "dismissNotice"
   | "savePreset"
+  | "updatePreset"
+  | "playMode"
   | "applyPreset"
   | "renamePreset"
   | "deletePreset"

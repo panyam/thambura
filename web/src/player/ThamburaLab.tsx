@@ -45,10 +45,10 @@ const GROUP = "mb-5 grid break-inside-avoid content-start gap-2.5";
 export function ThamburaLab(props: ThamburaViewProps) {
   const st = () => props.state();
   const s = () => st().settings;
-  const plan = () => st().custom;
+  const plan = () => st().plan;
   const a = props.actions;
   const [tab, setTab] = createSignal(0);
-  const [source, setSource] = createSignal<ThamburaMode>("jawari");
+  const [all, setAll] = createSignal(false);
   const [pasted, setPasted] = createSignal("");
   const [note, setNote] = createSignal("");
   const [help, setHelp] = createSignal(readHelp());
@@ -63,8 +63,9 @@ export function ThamburaLab(props: ThamburaViewProps) {
   const setField = (spec: FieldSpec, shown: number) => {
     const p = plan();
     const value = spec.fromDisplay ? spec.fromDisplay(shown) : shown;
-    const strings = [...p.strings] as ThamburaPlan["strings"];
-    strings[tab()] = writeField(strings[tab()], spec.field, value);
+    const strings = p.strings.map((t, i) =>
+      all() || i === tab() ? writeField(t, spec.field, value) : t,
+    ) as ThamburaPlan["strings"];
     commit({ ...p, strings });
   };
   const copy = (choice: string) => {
@@ -118,24 +119,19 @@ export function ThamburaLab(props: ThamburaViewProps) {
         />
       </div>
 
-      <div class="flex flex-wrap items-center gap-2 border-t border-gray-200 pt-3 text-sm dark:border-gray-700">
-        <span class="font-medium">Start from</span>
-        <select aria-label="Start from" class={SELECT} onChange={(e) => setSource(e.currentTarget.value as ThamburaMode)}>
-          <For each={SOURCES}>{(m) => <option value={m} selected={m === source()}>{modeLabel(m)}</option>}</For>
-        </select>
-        <button type="button" class={`${SMALL_BUTTON} w-auto px-3 text-sm`} onClick={() => a.loadCustom(source())}>
-          Load
-        </button>
+      <div class="flex flex-wrap items-center gap-2 border-t border-gray-200 pt-3 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+        <p aria-live="polite">
+          <Show
+            when={s().mode === "custom"}
+            fallback={`Playing ${modeLabel(s().mode)}. Changing anything here keeps its sound and carries on as Custom.`}
+          >
+            {note() || "Playing Custom: what you hear is what's below."}
+          </Show>
+        </p>
         <button type="button" class={`${SMALL_BUTTON} ml-auto w-auto px-3 text-sm`} onClick={() => void copyJson()}>
           Copy settings
         </button>
       </div>
-      <p class="-mt-2 text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
-        <Show when={s().mode !== "custom"} fallback={note() || "Playing Custom: what you hear is what's below."}>
-          Playing {modeLabel(s().mode)}. Changing anything here switches the Sound to Custom.
-        </Show>{" "}
-        Loading uses the current tone {s().tone}, pluck {s().pluck}, sustain {s().sustain} and {s().voice} voice.
-      </p>
 
       <Show when={props.analyser}>
         <ThamburaScope analyser={props.analyser!} playing={() => st().playing} />
@@ -187,6 +183,15 @@ export function ThamburaLab(props: ThamburaViewProps) {
         >
           {soloed() ? "Unsolo" : "Solo"}
         </button>
+        <label class="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400" title="Move a control on every string at once.">
+          <input
+            type="checkbox"
+            class="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+            checked={all()}
+            onChange={(e) => setAll(e.currentTarget.checked)}
+          />
+          All strings
+        </label>
         <select
           aria-label="Copy"
           title="Copies the sound and damping; each string keeps its own level, pan and detune."
@@ -314,10 +319,16 @@ function Presets(props: ThamburaViewProps) {
   const a = props.actions;
   const [name, setName] = createSignal("");
   const [status, setStatus] = createSignal("");
-  const save = () => {
+  const st = () => props.state();
+  const current = () => st().presets.find((p) => p.id === st().presetId);
+  const saveAs = () => {
     const p = a.savePreset(name());
     setName("");
     setStatus(`Saved "${p.name}".`);
+  };
+  const save = () => {
+    const p = a.updatePreset();
+    if (p) setStatus(`Saved over "${p.name}".`);
   };
   const copy = async (p: ThamburaPreset) => {
     const ok = props.shareUrl && (await copyText(props.shareUrl(p.link)));
@@ -338,7 +349,7 @@ function Presets(props: ThamburaViewProps) {
         class="flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          save();
+          saveAs();
         }}
       >
         <input
@@ -348,12 +359,27 @@ function Presets(props: ThamburaViewProps) {
           value={name()}
           onInput={(e) => setName(e.currentTarget.value)}
         />
-        <button type="submit" class={`${SMALL_BUTTON} w-auto px-3 text-sm`}>
+        {/* Saving over a preset is its own button, so an edit can't quietly replace one. */}
+        <button
+          type="button"
+          class={`${SMALL_BUTTON} w-auto px-3 text-sm disabled:opacity-40`}
+          disabled={!current() || !st().edited}
+          title={current() ? `Save over "${current()!.name}"` : "Pick a preset first, or save this as a new one"}
+          onClick={save}
+        >
           Save
+        </button>
+        <button type="submit" class={`${SMALL_BUTTON} w-auto px-3 text-sm`}>
+          Save as…
         </button>
       </form>
       <p class="text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
-        {status() || "Saved in this browser. Copy a preset's link to send it, or share it with the project on GitHub."}
+        {status() ||
+          (current()
+            ? st().edited
+              ? `Playing "${current()!.name}", changed. Save writes over it; Save as… keeps both.`
+              : `Playing "${current()!.name}".`
+            : "Saved in this browser. Copy a preset's link to send it, or share it with the project on GitHub.")}
       </p>
       <ul class="grid gap-1.5">
         <For each={props.state().presets}>

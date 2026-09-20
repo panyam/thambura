@@ -195,7 +195,14 @@ unit-tested:
   Everything plucked goes through the settings' plan (`planFor`): its voices
   key and render the samples, and `pluckOptions` turns a pluck into
   level, pan and detune. `setCustom` / `loadCustom` edit the Custom plan and
-  switch to it; loading a mode sounds the same and renders nothing. A link
+  switch to it. `state.plan` is the plan being played whatever the mode, so
+  the Lab always edits what is heard and an edit from a built-in carries its
+  sound into Custom. A sound change while playing restarts the round from the
+  first string that isn't muted (`audition`, `ThamburaSequencer.startWith`),
+  so it is heard at once instead of a round later; ringing strings carry on
+  until their own next pluck chokes them. `presetId` and `edited` follow which
+  preset is playing and whether it has changed, so `savePreset` (as a new one)
+  and `updatePreset` (over that one) are separate. A link
   in `deps.link` wins over the saved setup (keeping the listener's volume)
   but isn't saved over it until the listener changes something; every change
   writes the current link back. Presets (`ThamburaPreset`) are a name and a
@@ -215,12 +222,14 @@ unit-tested:
   floating `#thambura-toggle` is clicked. Its header holds the one start/stop button
   every view shares (the views have none of their own, except the Raagini's
   power switch, part of the replica), the Sound menu (the mode,
-  from `THAMBURA_MODES`, so it applies in every view) and a switch between
+  from `THAMBURA_MODES`, and the saved presets in one list, playing as soon
+  as one is picked, with "Custom (unsaved)" while an edit isn't saved) and a switch between
   four views over the same presenter: `ThamburaMini`, `ThamburaStudio`,
   `ThamburaRaagini` (the 2000s Raagini box, with `Knob.tsx`, which keeps its
   own TMB/GTR/SHRUTHI slide switch as part of the replica) and `ThamburaLab`,
   a workbench for the Custom plan, string by string, that copies it out and
-  in as JSON (`pnpm render-mix --custom` renders it). Its sliders commit on
+  in as JSON (`pnpm render-mix --custom` renders it), and holds the Save and
+  Save as… buttons. "All strings" writes an edit to all four at once. Its sliders commit on
   release, since most changes re-render, and their descriptions sit in
   tooltips unless "Show descriptions" is on. Its groups flow into 1-4 CSS
   columns (`break-inside-avoid`), and the bar widens to `max-w-6xl` in the
@@ -242,8 +251,9 @@ unit-tested:
   Ctrl/Cmd/Alt, not on key repeat). It wires the link to the address bar: `replaceState`, no
   history entries, 400 ms after the last change, since Safari throws after
   100 calls in 30 s and a slider drag changes the setup on every step. The
-  bar's header has a Copy link button and a Presets menu (play one, or "Save
-  current as…"); the Lab lists them to rename, delete, copy, or Share, which
+  bar's header has a Copy link button, and its Sound menu plays a preset as
+  soon as it is picked; the Lab saves them (Save writes over the one playing,
+  Save as… keeps both) and lists them to rename, delete, copy, or Share, which
   opens the `.github/ISSUE_TEMPLATE/share-a-preset.yml` form filled in, so
   listeners can offer sounds to become built-in presets.
 - `sw.ts` is the service worker (its own esbuild bundle, classic script, no
@@ -387,14 +397,18 @@ The tala's transport buttons are icons, so select them by label:
 "Start" also finds Restart. The
 thambura opens with the floating `#thambura-toggle`, its views are
 `button[role="radio"]:has-text("Raagini")` and so on, its mode is
-`select[aria-label="Sound"]`, `select[aria-label="Presets"]` holds the presets (its "Save current as…"
-entry opens a `prompt`, so answer it with a `dialog` handler),
+`select[aria-label="Sound"]`,
 `button[aria-label="Copy link"]` copies the
 page's `?s=` link (give the context the clipboard permissions to read it back;
 a fresh context opening that URL is the second listener), the Lab's controls are ranges labelled by field
 (`input[aria-label="Attack"]`, tabs under `[aria-label="String"]`, mute dots
 `button[aria-label="Mute string 3 · Sa"]`, `select[aria-label="Copy"]`) with the
-plan in `textarea[aria-label="Settings JSON"]`. It plays with the floating
+plan in `textarea[aria-label="Settings JSON"]`, and presets are saved with
+`input[aria-label="Preset name"]` plus Save or Save as…. Built-in sounds are
+`mode:<id>` in `select[aria-label="Sound"]` and presets are their ids under
+`optgroup[label="Saved"]`. Each string pans to its own place, so wrapping
+`StereoPannerNode`'s `pan` setter tells you which string a pluck was.
+It plays with the floating
 `#thambura-play`, or `page.keyboard.press("t")`. Once the bar is open, the
 floating pair fades out and goes `inert` (the bar carries the same two
 controls), so drive the bar's own buttons then: scope to

@@ -33,6 +33,11 @@ export interface ThamburaState {
   view: ThamburaViewId;
   /** The plan the Custom mode plays, edited in the Lab view. */
   custom: ThamburaPlan;
+  /** The plan being played, whatever the mode. The Lab shows and edits this. */
+  plan: ThamburaPlan;
+  /** The preset the sound came from, if any, and whether it has been changed since. */
+  presetId: string | null;
+  edited: boolean;
   /** A note for the listener about the link they opened, until dismissed. */
   notice: string | null;
   /** Setups saved by name, newest first. */
@@ -136,6 +141,9 @@ export class ThamburaPresenter {
   private view: ThamburaView | null = null;
   private readonly timing: ThamburaTiming;
   private readonly transport: Transport;
+  private readonly seq: ThamburaSequencer;
+  // Set while a sound change waits for its render before the round restarts.
+  private restartWhenReady = false;
   private tones: ToneHandle[] = [];
   // Sample keys the four strings play, every key added to the audio cache,
   // and whether the strings' samples are out of date.
@@ -179,11 +187,24 @@ export class ThamburaPresenter {
         notice = "The link in the address bar isn't one this version can read, so your own setup is playing.";
       }
     }
-    this.state = { settings, playing: false, open, view, custom, notice, presets, muted: NONE_MUTED, lit: DARK };
+    this.state = {
+      settings,
+      playing: false,
+      open,
+      view,
+      custom,
+      plan: planFor(settings, custom),
+      presetId: null,
+      edited: false,
+      notice,
+      presets,
+      muted: NONE_MUTED,
+      lit: DARK,
+    };
     this.timing = { cycleSeconds: settings.cycleSeconds, pattern: patternOf(this.plan()) };
-    const seq = new ThamburaSequencer(this.timing, deps.rng);
+    this.seq = new ThamburaSequencer(this.timing, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker);
-    this.transport.add(seq, (e) => ("damp" in e ? this.damp(e) : this.pluck(e)));
+    this.transport.add(this.seq, (e) => ("damp" in e ? this.damp(e) : this.pluck(e)));
     deps.audio.setBusVolume("drone", this.state.settings.volume);
     // The address bar shows the current setup from the start. A shared one
     // isn't saved over this browser's own until the listener changes something.
@@ -231,14 +252,15 @@ export class ThamburaPresenter {
   }
 
   /**
-   * Replaces the Custom mode's plan (clamped to the Lab's ranges) and
-   * switches to Custom, so the change is heard. Voice changes re-render the
-   * strings they touch shortly after; level, pan, detune and timing apply at
-   * the next pluck.
+   * Replaces the plan being played (clamped to the Lab's ranges) and switches
+   * to Custom, so an edit is always an edit of what's being heard, whichever
+   * mode it started from. While playing, the round restarts from the first
+   * string still on, so the change is heard at once rather than a round later.
    */
   setCustom(plan: ThamburaPlan): void {
-    const custom = normalizePlan(plan, this.state.custom);
+    const custom = normalizePlan(plan, this.state.plan);
     this.apply({ ...this.state.settings, mode: "custom" }, custom);
+    this.audition();
   }
 
   /** Starts the Custom plan from another plucked mode's, which sounds the same until edited. */
@@ -309,12 +331,26 @@ export class ThamburaPresenter {
     this.update({ notice: null });
   }
 
-  /** Saves the current sound by name, newest first. A blank name gets a numbered one. */
+  /** Saves the current sound as a new preset, newest first. A blank name gets a numbered one. */
   savePreset(name: string): ThamburaPreset {
     const preset = { id: presetId(), name: name.trim() || `Preset ${this.state.presets.length + 1}`, link: this.shareLink() };
-    this.update({ presets: [preset, ...this.state.presets].slice(0, MAX_PRESETS) });
+    this.update({ presets: [preset, ...this.state.presets].slice(0, MAX_PRESETS), presetId: preset.id, edited: false });
     this.savePresets();
     return preset;
+  }
+
+  /**
+   * Writes the current sound over the preset it came from. Nothing happens
+   * without one, so a built-in sound or an unsaved one needs `savePreset`.
+   */
+  updatePreset(): ThamburaPreset | null {
+    const id = this.state.presetId;
+    const preset = this.state.presets.find((p) => p.id === id);
+    if (!preset) return null;
+    const updated = { ...preset, link: this.shareLink(), auto: undefined };
+    this.update({ presets: this.state.presets.map((p) => (p.id === id ? updated : p)), edited: false });
+    this.savePresets();
+    return updated;
   }
 
   /**
@@ -328,6 +364,8 @@ export class ThamburaPresenter {
     if (!shared) return;
     this.update({ notice: null });
     this.apply(shared.settings, shared.custom ?? this.state.custom);
+    this.update({ presetId: id, edited: false });
+    this.audition();
   }
 
   renamePreset(id: string, name: string): void {
@@ -337,14 +375,23 @@ export class ThamburaPresenter {
   }
 
   deletePreset(id: string): void {
-    this.update({ presets: this.state.presets.filter((p) => p.id !== id) });
+    this.update({
+      presets: this.state.presets.filter((p) => p.id !== id),
+      ...(this.state.presetId === id && { presetId: null }),
+    });
     this.savePresets();
+  }
+
+  /** Plays a built-in sound, as the Presets menu's first group offers. */
+  playMode(mode: ThamburaSettings["mode"]): void {
+    this.update({ presetId: null, edited: false });
+    this.set({ mode });
+    this.audition();
   }
 
   /** The current setup as a link's `s` parameter (engine/shareLink.ts). */
   shareLink(): string {
-    const { settings, custom, view, open } = this.state;
-    return encodeLink({ settings, custom, view, open });
+    return this.linkFor(this.state);
   }
 
   // ---- internals ---------------------------------------------------------
@@ -414,7 +461,11 @@ export class ThamburaPresenter {
         this.queueRender();
       } else if (this.startWhenReady) {
         this.startWhenReady = false;
+        this.restartWhenReady = false;
         this.startPlucking();
+      } else if (this.restartWhenReady) {
+        this.restartWhenReady = false;
+        this.restartRound();
       }
     }, delayMs);
   }
@@ -450,6 +501,32 @@ export class ThamburaPresenter {
     this.stringKeys = keys;
     this.stale = false;
     return false;
+  }
+
+  /**
+   * Hears a sound change now: once the strings have their samples, the round
+   * restarts from the first string that isn't muted, so an edit doesn't wait
+   * for that string's turn (up to a whole round) while its old note rings on.
+   */
+  private audition(): void {
+    if (!this.state.playing || !isPlucked(this.state.settings.mode)) return;
+    if (this.stale) {
+      this.restartWhenReady = true;
+      this.queueRender(RENDER_SETTLE_MS);
+    } else {
+      this.restartRound();
+    }
+  }
+
+  private restartRound(): void {
+    const from = this.state.muted.findIndex((m) => !m);
+    if (from < 0) return;
+    this.seq.startWith(from);
+    // Drop what was booked but not yet heard; ringing strings are choked as they're replucked.
+    this.deps.audio.cancel("drone");
+    this.cues = [];
+    this.transport.start();
+    this.runFrames();
   }
 
   private setMutes(muted: ThamburaState["muted"]): void {
@@ -510,8 +587,19 @@ export class ThamburaPresenter {
   }
 
   private update(patch: Partial<ThamburaState>): void {
-    this.state = { ...this.state, ...patch };
+    const next = { ...this.state, ...patch };
+    if (patch.settings || patch.custom) {
+      next.plan = planFor(next.settings, next.custom);
+      // A preset's sound is its own until something changes it.
+      const from = next.presets.find((p) => p.id === next.presetId);
+      next.edited = from ? soundOf(this.linkFor(next)) !== soundOf(from.link) : false;
+    }
+    this.state = next;
     this.view?.setState(this.state);
+  }
+
+  private linkFor(s: ThamburaState): string {
+    return encodeLink({ settings: s.settings, custom: s.custom, view: s.view, open: s.open });
   }
 }
 

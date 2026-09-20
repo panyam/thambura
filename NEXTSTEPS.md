@@ -40,7 +40,10 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [ ] **Hand images for Guru, Plutham and Kakapadam** (#22): the kriyas to
       draw, and talas in the menu that use them.
 - [ ] Turn good "Share a preset" submissions (issues labelled `preset`) into
-      built-in presets.
+      built-in presets, starting with a Hindustani-leaning tanpura (#51).
+- [ ] Pluck models behind one interface (#52): what the additive synth can't
+      express (inharmonicity, two-stage decay, a real buzz, body resonance,
+      sympathetic ringing), and a physical string-bridge model as a spike.
 - [ ] Thambura extras outside sound quality: raga presets that set the first
       string, a mic tuner, links for the tala's settings, and lock-screen
       controls (MediaSession).

@@ -1,4 +1,4 @@
-import { For, type JSX } from "solid-js";
+import { For, Show, type JSX } from "solid-js";
 import { KEYS, MAX_A4, MAX_CYCLE, MIN_A4, MIN_CYCLE, stringLabels, SWARAS, type ThamburaSettings } from "../engine/shruthi";
 import {
   centsLabel,
@@ -103,10 +103,16 @@ export function ThamburaStudio(props: ThamburaViewProps) {
       <details class="group rounded-lg border border-gray-200 dark:border-gray-700">
         <summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">Sound</summary>
         <div class="grid gap-4 px-3 pb-3 sm:grid-cols-3">
-          {/* These re-render the plucks, so they apply on release rather than while dragging. */}
-          <Slider label="Tone" readout={`${s().tone}`} min={0} max={100} value={s().tone} onChange={(tone) => set({ tone })} />
-          <Slider label="Pluck" readout={`${s().pluck}`} min={0} max={100} value={s().pluck} onChange={(pluck) => set({ pluck })} />
-          <Slider label="Sustain" readout={`${s().sustain}`} min={0} max={100} value={s().sustain} onChange={(sustain) => set({ sustain })} />
+          {/* These re-render the plucks, so they apply on release rather than while dragging.
+              A Custom sound carries its own numbers, so they do nothing there; the Lab edits it. */}
+          <Show when={s().mode === "custom"}>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Custom sounds keep their own settings. Tone, Pluck and Sustain apply to the built-in sounds; the Lab edits this one.
+            </p>
+          </Show>
+          <Slider label="Tone" readout={`${s().tone}`} min={0} max={100} value={s().tone} disabled={s().mode === "custom"} onChange={(tone) => set({ tone })} />
+          <Slider label="Pluck" readout={`${s().pluck}`} min={0} max={100} value={s().pluck} disabled={s().mode === "custom"} onChange={(pluck) => set({ pluck })} />
+          <Slider label="Sustain" readout={`${s().sustain}`} min={0} max={100} value={s().sustain} disabled={s().mode === "custom"} onChange={(sustain) => set({ sustain })} />
           <div class="flex flex-wrap items-center gap-3 sm:col-span-3">
             <Segmented
               label="Tuning"
@@ -240,11 +246,12 @@ function Slider(props: {
   max: number;
   step?: number;
   value: number;
+  disabled?: boolean;
   onInput?: (v: number) => void;
   onChange?: (v: number) => void;
 }) {
   return (
-    <label class="block">
+    <label class={`block ${props.disabled ? "opacity-40" : ""}`}>
       <span class="mb-1 flex items-center justify-between text-sm">
         <span class="font-medium">{props.label}</span>
         <span class="tabular-nums text-gray-500 dark:text-gray-400">{props.readout}</span>
@@ -255,6 +262,7 @@ function Slider(props: {
         max={props.max}
         step={props.step ?? 1}
         value={props.value}
+        disabled={props.disabled}
         onInput={(e) => props.onInput?.(e.currentTarget.valueAsNumber)}
         onChange={(e) => props.onChange?.(e.currentTarget.valueAsNumber)}
         class="w-full accent-amber-600"
