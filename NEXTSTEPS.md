@@ -31,8 +31,14 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       in the site and bar headers plus the T key (#34).
 - [ ] **Thambura sound, what's left of #8:** the second Sa's pluck is quieter
       than the recording's (+1.2 dB against +2.8), the synthesized attack is
-      sharper than a finger's, and only one key (C) was measured. Also a 5th
-      string and a second tambura.
+      sharper than a finger's, our strings ring about twice as long as the
+      recording's, and only one key (C) was measured. Also a 5th string and a
+      second tambura.
+- [x] **One extractor and one score** (#44): `features.py` measures a
+      recording or a render into a committed feature file, `score.py` puts the
+      jawari voice at 1.75 against the C recording, the classic at 3.19 and
+      the guitar at 9.36, and `tables.py` writes the doc's tables from the
+      feature files. Fitting parameters to the score is #45.
 - [ ] **Faster thambura renders** (tracking issue #36). The render is the wait
       on a cold Start and after every pitch or tone change, about 300 ms for
       four strings on a fast desktop. In order: a benchmark (#37), four

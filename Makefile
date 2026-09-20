@@ -28,6 +28,11 @@ test:
 	go test ./...
 	cd web && pnpm typecheck && pnpm test
 
+# The sound-analysis tools (docs/sound-analysis.md). Kept out of `test`, and so
+# out of `deploy`, since they need a Python env the app itself never uses.
+soundtest:
+	cd tools/sound-analysis && .venv/bin/python -m pytest -q && .venv/bin/python tables.py --check
+
 # Re-vendor goapplib's templates after bumping the ref in web/templates/templar.yaml.
 templates:
 	cd web/templates && templar get
@@ -79,4 +84,4 @@ domainstatus:
 clean:
 	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css
 
-.PHONY: all ui uiprod server build run watch test templates resymlink checklinks deploy prodlogs verifydomain domains domainstatus clean
+.PHONY: all ui uiprod server build run watch test soundtest templates resymlink checklinks deploy prodlogs verifydomain domains domainstatus clean
