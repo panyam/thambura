@@ -92,6 +92,18 @@ export const MAX_TAMBURA_SECONDS = 9;
 const BLOCK = 64;
 // The bloom's energy correction is computed every COMP_STEP blocks (about 20 ms at 48 kHz).
 const COMP_STEP = 16;
+// Harmonics rendered in one pass over the buffer; see PluckRender.renderLanes.
+const LANES = 4;
+
+/** What one harmonic's envelope and rotation are built from. */
+interface Harmonic {
+  k: number;
+  base: number;
+  tau: number;
+  upper: boolean;
+  weight: number;
+  phase: number;
+}
 const PEAK = 0.8;
 /** The jawari voice's attack RMS, set so its mix is as loud as the classic's. */
 export const ATTACK_LEVEL = 0.18;
@@ -231,6 +243,15 @@ export class PluckRender {
   // (see formantEnergy); null without a bloom.
   private readonly shape: Float64Array | null;
   private readonly comp: Float64Array | null;
+  // Per block boundary, the parts of the envelope that don't depend on which
+  // harmonic it is: the resonance's centre, the firm pluck's edge, the upper
+  // harmonics' swell and the attack. Every harmonic asked for them again;
+  // they are worked out once per render instead. A null means the voice
+  // doesn't use that term, so it is 1 the whole way through.
+  private readonly centre: Float64Array | null;
+  private readonly edge: Float64Array | null;
+  private readonly swell: Float64Array | null;
+  private readonly rise: Float64Array | null;
   private next = 1;
 
   constructor(
@@ -246,6 +267,21 @@ export class PluckRender {
     this.rng = mulberry32(seed);
     this.shape = voice.formantDb === 0 ? null : this.formantShape();
     this.comp = voice.formantDb === 0 ? null : this.energyCorrection();
+    const v = voice;
+    this.centre = v.bloom === 0 ? null : this.perBlock((t) => {
+      const wander = v.shimmer * Math.sin((2 * Math.PI * t) / 2.3);
+      return v.sweepTo + (v.sweepFrom - v.sweepTo) * Math.exp(-t / v.sweepSeconds) + wander;
+    });
+    this.edge = v.bite === 0 ? null : this.perBlock((t) => 1 + v.bite * Math.exp(-t / 0.04));
+    this.swell = v.swell === 0 ? null : this.perBlock((t) => 1 - v.swell * Math.exp(-t / 0.25));
+    this.rise = v.attack <= 0 ? null : this.perBlock((t) => (t < v.attack ? 0.5 - 0.5 * Math.cos((Math.PI * t) / v.attack) : 1));
+  }
+
+  /** `f` at every block boundary, indexed as `shape` and `comp` are. */
+  private perBlock(f: (t: number) => number): Float64Array {
+    const out = new Float64Array(Math.ceil(this.length / BLOCK) + 1);
+    for (let b = 0; b < out.length; b++) out[b] = f(this.blockTime(b));
+    return out;
   }
 
   /** Total work, in harmonic-samples; `step`'s budget is in the same unit. */
@@ -263,9 +299,15 @@ export class PluckRender {
    */
   step(budget = Infinity): boolean {
     let spent = 0;
-    while (!this.done && (spent === 0 || spent + this.length <= budget)) {
-      this.renderPartial(this.next++);
-      spent += this.length;
+    while (!this.done) {
+      const left = this.partials - this.next + 1;
+      const lanes = left >= LANES ? LANES : 1;
+      const cost = lanes * this.length;
+      if (spent > 0 && spent + cost > budget) break;
+      if (lanes === LANES) this.renderLanes(this.next);
+      else this.renderPartial(this.next);
+      this.next += lanes;
+      spent += cost;
     }
     return this.done;
   }
@@ -360,36 +402,49 @@ export class PluckRender {
     return comp;
   }
 
-  private renderPartial(k: number): void {
-    const v = this.voice;
-    const { acc, length, sampleRate, comp, shape } = this;
-    const base = this.base(k);
-    const tau = this.tau(k);
-    const upper = k > 3;
-    const weight = shape ? this.formantWeight(k) / 20 : 0;
-    // `b` is the block boundary t falls on, for the energy correction.
-    const envelope = (t: number, b: number) => {
-      const wander = v.shimmer * Math.sin((2 * Math.PI * t) / 2.3);
-      const centre = v.sweepTo + (v.sweepFrom - v.sweepTo) * Math.exp(-t / v.sweepSeconds) + wander;
-      const bloom = 1 + v.bloom * Math.exp(-0.5 * ((k - centre) / v.sweepWidth) ** 2);
-      const edge = k > 4 ? 1 + v.bite * Math.exp(-t / 0.04) : 1;
-      const swell = upper ? 1 - v.swell * Math.exp(-t / 0.25) : 1;
-      const rise = t < v.attack ? 0.5 - 0.5 * Math.cos((Math.PI * t) / v.attack) : 1;
-      const formant = shape && comp ? 10 ** (weight * shape[b]) * comp[b] : 1;
-      return base * Math.exp(-t / tau) * bloom * edge * swell * rise * formant;
+  /** Harmonic k's constants, which its envelope and rotation are built from. */
+  private harmonic(k: number): Harmonic {
+    return {
+      k,
+      base: this.base(k),
+      tau: this.tau(k),
+      upper: k > 3,
+      weight: this.shape ? this.formantWeight(k) / 20 : 0,
+      phase: 2 * Math.PI * this.rng(),
     };
+  }
 
+  /**
+   * Harmonic h's amplitude at time t, with b the block boundary t falls on.
+   *
+   * A term a voice doesn't use is 1, which is what it worked out to before
+   * (a zero coefficient times anything finite), so the product is unchanged
+   * down to its last bit.
+   */
+  private envelope(h: Harmonic, t: number, b: number): number {
+    const v = this.voice;
+    const { comp, shape } = this;
+    const bloom = this.centre ? 1 + v.bloom * Math.exp(-0.5 * ((h.k - this.centre[b]) / v.sweepWidth) ** 2) : 1;
+    const edge = this.edge && h.k > 4 ? this.edge[b] : 1;
+    const swell = this.swell && h.upper ? this.swell[b] : 1;
+    const rise = this.rise ? this.rise[b] : 1;
+    const formant = shape && comp ? 10 ** (h.weight * shape[b]) * comp[b] : 1;
+    return h.base * Math.exp(-t / h.tau) * bloom * edge * swell * rise * formant;
+  }
+
+  private renderPartial(k: number): void {
+    const { acc, length, sampleRate } = this;
+    const h = this.harmonic(k);
     const w = (2 * Math.PI * k * this.freq) / sampleRate;
     const c = Math.cos(w);
     const s = Math.sin(w);
-    const phase = 2 * Math.PI * this.rng();
-    let x = Math.cos(phase);
-    let y = Math.sin(phase);
-    let amp = envelope(0, 0);
+    let x = Math.cos(h.phase);
+    let y = Math.sin(h.phase);
+    let amp = this.envelope(h, 0, 0);
 
     for (let start = 0; start < length; start += BLOCK) {
       const end = Math.min(length, start + BLOCK);
-      const next = envelope(end / sampleRate, start / BLOCK + 1);
+      const next = this.envelope(h, end / sampleRate, start / BLOCK + 1);
       const dAmp = (next - amp) / (end - start);
       for (let i = start; i < end; i++) {
         acc[i] += amp * y;
@@ -403,6 +458,104 @@ export class PluckRender {
       const r = Math.hypot(x, y);
       x /= r;
       y /= r;
+    }
+  }
+
+  /**
+   * The same render for harmonics k to k + LANES - 1 at once.
+   *
+   * Each sample of a rotation waits on the one before it, so a single harmonic
+   * leaves the CPU mostly idle. Four independent rotations in one pass give it
+   * four chains to overlap, which is about 3x faster in plain JavaScript (#38).
+   *
+   * The harmonics are added to `acc` one at a time and in ascending order, as
+   * separate passes did, so the sum is grouped identically and the samples come
+   * out bit-identical. Write these as one expression and the low bits move.
+   */
+  private renderLanes(k: number): void {
+    const { acc, length, sampleRate } = this;
+    const h0 = this.harmonic(k);
+    const h1 = this.harmonic(k + 1);
+    const h2 = this.harmonic(k + 2);
+    const h3 = this.harmonic(k + 3);
+    // Each angle is worked out exactly as the single-harmonic path does it,
+    // down to the order of the multiplications, or the samples would differ.
+    const w = (j: number) => (2 * Math.PI * (k + j) * this.freq) / sampleRate;
+    const c0 = Math.cos(w(0));
+    const s0 = Math.sin(w(0));
+    const c1 = Math.cos(w(1));
+    const s1 = Math.sin(w(1));
+    const c2 = Math.cos(w(2));
+    const s2 = Math.sin(w(2));
+    const c3 = Math.cos(w(3));
+    const s3 = Math.sin(w(3));
+    let x0 = Math.cos(h0.phase);
+    let y0 = Math.sin(h0.phase);
+    let x1 = Math.cos(h1.phase);
+    let y1 = Math.sin(h1.phase);
+    let x2 = Math.cos(h2.phase);
+    let y2 = Math.sin(h2.phase);
+    let x3 = Math.cos(h3.phase);
+    let y3 = Math.sin(h3.phase);
+    let a0 = this.envelope(h0, 0, 0);
+    let a1 = this.envelope(h1, 0, 0);
+    let a2 = this.envelope(h2, 0, 0);
+    let a3 = this.envelope(h3, 0, 0);
+
+    for (let start = 0; start < length; start += BLOCK) {
+      const end = Math.min(length, start + BLOCK);
+      const t = end / sampleRate;
+      const b = start / BLOCK + 1;
+      const n0 = this.envelope(h0, t, b);
+      const n1 = this.envelope(h1, t, b);
+      const n2 = this.envelope(h2, t, b);
+      const n3 = this.envelope(h3, t, b);
+      const span = end - start;
+      const d0 = (n0 - a0) / span;
+      const d1 = (n1 - a1) / span;
+      const d2 = (n2 - a2) / span;
+      const d3 = (n3 - a3) / span;
+      for (let i = start; i < end; i++) {
+        let v = acc[i];
+        v += a0 * y0;
+        v += a1 * y1;
+        v += a2 * y2;
+        v += a3 * y3;
+        acc[i] = v;
+        const nx0 = x0 * c0 - y0 * s0;
+        y0 = x0 * s0 + y0 * c0;
+        x0 = nx0;
+        const nx1 = x1 * c1 - y1 * s1;
+        y1 = x1 * s1 + y1 * c1;
+        x1 = nx1;
+        const nx2 = x2 * c2 - y2 * s2;
+        y2 = x2 * s2 + y2 * c2;
+        x2 = nx2;
+        const nx3 = x3 * c3 - y3 * s3;
+        y3 = x3 * s3 + y3 * c3;
+        x3 = nx3;
+        a0 += d0;
+        a1 += d1;
+        a2 += d2;
+        a3 += d3;
+      }
+      a0 = n0;
+      a1 = n1;
+      a2 = n2;
+      a3 = n3;
+      // Keep each rotation on the unit circle against rounding drift.
+      const r0 = Math.hypot(x0, y0);
+      x0 /= r0;
+      y0 /= r0;
+      const r1 = Math.hypot(x1, y1);
+      x1 /= r1;
+      y1 /= r1;
+      const r2 = Math.hypot(x2, y2);
+      x2 /= r2;
+      y2 /= r2;
+      const r3 = Math.hypot(x3, y3);
+      x3 /= r3;
+      y3 /= r3;
     }
   }
 }

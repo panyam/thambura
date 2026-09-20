@@ -126,11 +126,16 @@ unit-tested:
   classic voice (mode `tambura`, "Tambura (classic)") sweeps a resonance down
   through the harmonics, rings 12-36 s (to -60 dB) and keeps its high
   harmonics. In guitar mode it rings 2.5-8 s and dulls quickly. The classic
-  and guitar renders are pinned by fingerprints in `thambura.test.ts`. A 9 s tambura string takes about
-  80 ms to render at 48 kHz (`pnpm bench`, over `web/scripts/bench-render.mjs`,
-  times all four strings of each plucked voice), so `PluckRender` renders a few
-  harmonics per `step(budget)` and gives the same samples however the work is
-  sliced. Never render inside a
+  and guitar renders are pinned by fingerprints in `thambura.test.ts`, the
+  jawari one by four more. A 9 s string takes about 40 ms to render at 48 kHz
+  (`pnpm bench`, over `web/scripts/bench-render.mjs`, times all four strings of
+  each plucked voice), so `PluckRender` renders a few harmonics per
+  `step(budget)` and gives the same samples however the work is sliced. It
+  renders four harmonics in one pass over the buffer, since each sample of one
+  harmonic waits on the one before it, and works out the parts of the envelope
+  that don't depend on the harmonic once per render rather than once per
+  harmonic; both keep the samples bit-identical, which is what the fingerprints
+  are for. Never render inside a
   transport tick. `reedSpectrum` gives the sruti drone's PeriodicWave.
 - `thamburaPlan.ts`: a `ThamburaPlan` is everything that decides how the
   plucked thambura plays: per string a `PluckVoice`, level, pan, detune and

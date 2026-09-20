@@ -266,15 +266,34 @@ describe("tambura and guitar plucks", () => {
     expect(r.partials).toBeGreaterThan(20);
   });
 
+  const fingerprint = (x: Float32Array) => {
+    let h = 0;
+    for (let i = 0; i < x.length; i++) h = (h * 31 + Math.round(x[i] * 1e6)) % 1_000_000_007;
+    return [x.length, h];
+  };
+
   it("renders the classic tambura and the guitar exactly as before the jawari voice", () => {
     // Fingerprints of the renders at 691cd8b, before the jawari voice was added.
-    const fingerprint = (x: Float32Array) => {
-      let h = 0;
-      for (let i = 0; i < x.length; i++) h = (h * 31 + Math.round(x[i] * 1e6)) % 1_000_000_007;
-      return [x.length, h];
-    };
     expect(fingerprint(renderPluck(130.81, 16000, tambura, 3))).toEqual([144000, -736842932]);
     expect(fingerprint(renderPluck(130.81, 16000, guitar, 3))).toEqual([92800, -8523484]);
+  });
+
+  it("renders the jawari voice exactly as it did before the renderer was made faster", () => {
+    // Fingerprints of the four strings at d81cb09, before #38. The default
+    // voice had none, so a speed-up could have moved it without a test
+    // failing; these are what the recording was fitted against.
+    const s = { ...DEFAULT_THAMBURA, mode: "jawari" as const };
+    const strings = [0, 1, 2, 3].map((i) => fingerprint(renderPluck(130.81, 16000, pluckVoice(s, i), i + 1)));
+    expect(strings).toEqual([
+      [144000, -82164138],
+      [144000, -608566479],
+      [144000, -150805121],
+      [144000, 890266931],
+    ]);
+    // The same voice away from the defaults: a ladies' timbre, brighter, a
+    // softer pluck and a longer ring, so the bloom and attack differ too.
+    const ladies = pluckVoice({ ...s, voice: "ladies", tone: 80, pluck: 20, sustain: 90 });
+    expect(fingerprint(renderPluck(98.1, 16000, ladies, 7))).toEqual([144000, 672615482]);
   });
 });
 
