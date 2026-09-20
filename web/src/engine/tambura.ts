@@ -102,7 +102,11 @@ interface Harmonic {
   tau: number;
   upper: boolean;
   weight: number;
-  phase: number;
+  /** One sample's rotation (cos and sin of its angle), and where it starts. */
+  c: number;
+  s: number;
+  x: number;
+  y: number;
 }
 const PEAK = 0.8;
 /** The jawari voice's attack RMS, set so its mix is as loud as the classic's. */
@@ -402,15 +406,25 @@ export class PluckRender {
     return comp;
   }
 
-  /** Harmonic k's constants, which its envelope and rotation are built from. */
+  /**
+   * Harmonic k's constants, which its envelope and rotation are built from.
+   * The angle is worked out here and nowhere else: `(2 * PI * k * freq) / rate`
+   * and `((2 * PI * freq) / rate) * k` differ in their last bits, so a second
+   * spelling of it elsewhere would quietly move every sample.
+   */
   private harmonic(k: number): Harmonic {
+    const w = (2 * Math.PI * k * this.freq) / this.sampleRate;
+    const phase = 2 * Math.PI * this.rng();
     return {
       k,
       base: this.base(k),
       tau: this.tau(k),
       upper: k > 3,
       weight: this.shape ? this.formantWeight(k) / 20 : 0,
-      phase: 2 * Math.PI * this.rng(),
+      c: Math.cos(w),
+      s: Math.sin(w),
+      x: Math.cos(phase),
+      y: Math.sin(phase),
     };
   }
 
@@ -435,11 +449,9 @@ export class PluckRender {
   private renderPartial(k: number): void {
     const { acc, length, sampleRate } = this;
     const h = this.harmonic(k);
-    const w = (2 * Math.PI * k * this.freq) / sampleRate;
-    const c = Math.cos(w);
-    const s = Math.sin(w);
-    let x = Math.cos(h.phase);
-    let y = Math.sin(h.phase);
+    const { c, s } = h;
+    let x = h.x;
+    let y = h.y;
     let amp = this.envelope(h, 0, 0);
 
     for (let start = 0; start < length; start += BLOCK) {
@@ -478,25 +490,18 @@ export class PluckRender {
     const h1 = this.harmonic(k + 1);
     const h2 = this.harmonic(k + 2);
     const h3 = this.harmonic(k + 3);
-    // Each angle is worked out exactly as the single-harmonic path does it,
-    // down to the order of the multiplications, or the samples would differ.
-    const w = (j: number) => (2 * Math.PI * (k + j) * this.freq) / sampleRate;
-    const c0 = Math.cos(w(0));
-    const s0 = Math.sin(w(0));
-    const c1 = Math.cos(w(1));
-    const s1 = Math.sin(w(1));
-    const c2 = Math.cos(w(2));
-    const s2 = Math.sin(w(2));
-    const c3 = Math.cos(w(3));
-    const s3 = Math.sin(w(3));
-    let x0 = Math.cos(h0.phase);
-    let y0 = Math.sin(h0.phase);
-    let x1 = Math.cos(h1.phase);
-    let y1 = Math.sin(h1.phase);
-    let x2 = Math.cos(h2.phase);
-    let y2 = Math.sin(h2.phase);
-    let x3 = Math.cos(h3.phase);
-    let y3 = Math.sin(h3.phase);
+    const { c: c0, s: s0 } = h0;
+    const { c: c1, s: s1 } = h1;
+    const { c: c2, s: s2 } = h2;
+    const { c: c3, s: s3 } = h3;
+    let x0 = h0.x;
+    let y0 = h0.y;
+    let x1 = h1.x;
+    let y1 = h1.y;
+    let x2 = h2.x;
+    let y2 = h2.y;
+    let x3 = h3.x;
+    let y3 = h3.y;
     let a0 = this.envelope(h0, 0, 0);
     let a1 = this.envelope(h1, 0, 0);
     let a2 = this.envelope(h2, 0, 0);
