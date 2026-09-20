@@ -39,8 +39,12 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       an AudioWorklet (#42).
 - [ ] **Hand images for Guru, Plutham and Kakapadam** (#22): the kriyas to
       draw, and talas in the menu that use them.
+- [x] Presets that ship with the app (`web/src/engine/presets.ts`): Shimmer
+      and Warm, two Hindustani-leaning candidates (#51). Adding one means
+      building it in the Lab and pasting its link in.
 - [ ] Turn good "Share a preset" submissions (issues labelled `preset`) into
-      built-in presets, starting with a Hindustani-leaning tanpura (#51).
+      built-in presets, and rename Shimmer and Warm once players say which
+      is closer (#51).
 - [ ] Pluck models behind one interface (#52): what the additive synth can't
       express (inharmonicity, two-stage decay, a real buzz, body resonance,
       sympathetic ringing), and a physical string-bridge model as a spike.

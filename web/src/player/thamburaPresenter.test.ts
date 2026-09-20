@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_THAMBURA, KEY_G3, srutiFrequencies, type ThamburaSettings } from "../engine/shruthi";
+import { BUILT_IN_PRESETS } from "../engine/presets";
 import { decodeLink, encodeLink } from "../engine/shareLink";
 import { planFor } from "../engine/thamburaPlan";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
@@ -656,6 +657,22 @@ describe("ThamburaPresenter", () => {
       expect(p.updatePreset()).toBeNull();
       const b = p.savePreset("another");
       expect(p.state.presets.map((x) => x.id)).toEqual([b.id, a.id]);
+    });
+
+    it("plays a preset that ships with the app, which cannot be written over", () => {
+      const [shimmer] = BUILT_IN_PRESETS;
+      p.applyPreset(shimmer.id);
+      expect(p.state).toMatchObject({ presetId: shimmer.id, edited: false, settings: { mode: "custom" } });
+      // C#3, a 6.5 s round, a long ring and nothing damped: see engine/presets.ts.
+      expect(p.state.settings.cycleSeconds).toBe(6.5);
+      expect(p.state.plan.strings.map((s) => s.damp)).toEqual([0, 0, 0, 0]);
+      expect(p.state.plan.strings[0].voice.ringSeconds).toBeCloseTo(50, 6);
+
+      const plan = p.state.plan;
+      p.setCustom({ ...plan, gaps: [0.4, 0.2, 0.2, 0.2] });
+      expect(p.state.edited).toBe(true);
+      expect(p.updatePreset()).toBeNull();
+      expect(p.state.presets).toEqual([]);
     });
 
     it("names a nameless preset by number, newest first", () => {

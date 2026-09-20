@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mulberry32 } from "./tambura";
+import { BUILT_IN_PRESETS } from "./presets";
 import { decodeLink, encodeLink, type SharedSetup } from "./shareLink";
 import { DEFAULT_THAMBURA, KEYS, SWARAS, type ThamburaSettings } from "./shruthi";
 import { FIELD_SPECS, planFor, readField, setGap, writeField, type ThamburaPlan } from "./thamburaPlan";
@@ -154,5 +155,19 @@ describe("share links", () => {
     expect(d.settings.key).toBe(KEYS.length - 1);
     expect(d.settings.cents).toBe(50);
     expect(d.settings.cycleSeconds).toBe(8);
+  });
+});
+
+describe("presets that ship with the app", () => {
+  it("each carry a readable link and a name", () => {
+    expect(BUILT_IN_PRESETS.map((p) => p.name)).toEqual(["Shimmer", "Warm"]);
+    for (const preset of BUILT_IN_PRESETS) {
+      expect(preset.id.startsWith("builtin:")).toBe(true);
+      const d = decodeLink(preset.link, current);
+      expect(d, preset.name).not.toBeNull();
+      expect(d!.settings.mode).toBe("custom");
+      expect(d!.custom).not.toBeNull();
+      expect(d!.drifted, `${preset.name} was made from an older built-in sound`).toBe(false);
+    }
   });
 });
