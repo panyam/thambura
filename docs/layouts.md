@@ -15,7 +15,7 @@ is scheduled; tracked in #54.
 
 ## What the code already allows
 
-Worth stating first, because it decides which options are cheap.
+Worth stating first, because it decides what each option below would cost.
 
 - **Three layers, and the dependencies only point one way.** `engine/` is pure
   TypeScript with no DOM, audio or timers, and never imports from `player/`.
@@ -61,7 +61,8 @@ first real seam: presentation state belongs to whatever owns the layout.
 A Layout menu the way the Animation menu works: **Tala focus** (today),
 **Side by side**, **Shruthi focus** (the drone large, the tala a strip).
 Saved with the rest of the player's choices. This is B plus a preference, and
-it answers the question honestly: different people want different heroes.
+different people want different heroes, and a menu says so without
+choosing for them.
 
 ### D. Purpose modes
 
@@ -70,13 +71,13 @@ One step further: a mode sets layout *and* defaults. **Practice** is today.
 behind a tap, and keeps the screen awake. **Teaching** shows tala and drone
 together with the hand images large. **Tuning** opens the Lab alone.
 
-This is the version worth wanting, and the one that needs the most thought,
-because a mode is a bundle of decisions someone has to design.
+This is the one I'd want, and the one that needs the most thought: a mode is a
+bundle of decisions someone has to sit down and make.
 
 ### E. Separate pages
 
 `/tala` and `/shruthi` as their own page shells, each mounting one island.
-Cheap in Go (another `goapplib` page plus a template), useful for sharing a
+Little work in Go (another `goapplib` page plus a template), useful for sharing a
 link to one tool, and it makes the installed app able to carry **shortcuts**
 in the manifest, so a long press on the icon offers "Shruthi box" directly.
 The cost is that two pages means two audio contexts and two sets of state, so
@@ -126,8 +127,9 @@ notation app itself for practice. That has its own note:
 
 Cheapest first, and each is useful alone:
 
-1. The playground route, because every later option is easier to try there.
+1. The playground route, because it makes every later option easier to try.
 2. Move `open` out of the thambura presenter into a layout owner (option B's
-   groundwork), which is small and makes the presenter honest.
+   groundwork), which is small and leaves the presenter owning only what the
+   instrument does.
 3. A Layout menu with Tala focus and Side by side (option C), then see which
    people use before designing modes (option D).

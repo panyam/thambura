@@ -1,6 +1,6 @@
 # Thambura as a library
 
-The aim is for the pieces here to be importable in other projects the way
+The pieces here should be importable in other projects the way
 `notations` is, and the first target is the **notation web app** (the
 `notation` repo, whose frontend package is `notationfe`): a student reading a
 kriti should be able to start the tala and the drone beside the notation
@@ -69,8 +69,7 @@ Most of it is small, and each item is a real blocker for embedding:
    the host's Tailwind scans our files. Two ways out, and `notations` points at
    the first: ship built CSS (a Tailwind build scoped to these components), or
    move the components onto CSS custom properties and ship a small stylesheet.
-   Shipping built CSS is the lower-effort path and keeps the app's build as it
-   is.
+   Shipping built CSS costs less and leaves the app's build alone.
 3. **One copy of Solid.** `build.mjs` already aliases `solid-js` to a single
    copy because two copies silently break reactivity. `./mount` sidesteps this
    by bundling its own; `./solid` makes it a peer dependency and leaves
@@ -105,8 +104,8 @@ Worth sketching, because it decides whether the seams above are the right ones.
 - **The drone tunes to the piece.** `tunedTonicHz` already exists for the
   mridangam's benefit; a notation's key would set the shruthi the same way.
 
-If that last point works, the library is worth extracting. If the notation app
-only ever wants a drone, then publishing `.` and `./runtime` is enough and the
+If that last point works, the library is worth extracting. Publishing `.` and
+`./runtime` is enough if a drone is all the notation app ever wants, and the
 Solid components can stay here.
 
 ## Open questions
@@ -117,8 +116,8 @@ Solid components can stay here.
   Subpaths are simpler to release and match the precedent.
 - How big is the self-mounting bundle with Solid inside, and is that
   acceptable to a host that already ships webpack chunks? Solid is small, but
-  the answer decides whether `./mount` or a set of framework-free primitives is
-  the right first delivery.
+  the answer decides whether `./mount` or a set of framework-free primitives
+  ships first.
 - How much of the Lab belongs in a library at all? It is a workbench for this
   app's synthesis, not obviously a component someone else wants.
 
