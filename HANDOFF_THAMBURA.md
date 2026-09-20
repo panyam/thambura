@@ -1,17 +1,19 @@
 # Handoff: Thambura
 
 Written 2026-09-19, after the thambura sound and tooling work (PRs #18, #21,
-#28, #30, #33, #34). The durable notes are in CLAUDE.md, NEXTSTEPS.md and
-`docs/`; this file is only what's in flight. Delete it once the items below
-close.
+#28, #30, #33, #34), and added to on 2026-09-20 after the render-speed work
+(#61, #62). The durable notes are in CLAUDE.md, NEXTSTEPS.md and `docs/`;
+this file is only what's in flight. Delete it once the items below close.
 
 ## Where things stand
 
-- thambura.com runs master at 9c348c0, deployed from the dev container,
-  which has `gcloud` signed in as the project's owner (`make deploy`, a few
-  minutes; the check that the live bundle matches a build is under
-  "Deploying" in CLAUDE.md). master has moved on to 14b1c48, which the user
-  is deploying.
+- thambura.com runs 14b1c48 (its `/sw.js` carries the build revision, which is
+  the quickest way to ask). It is deployed from the dev container, which has
+  `gcloud` signed in as the project's owner (`make deploy`, a few minutes; the
+  check that the live bundle matches a build is under "Deploying" in
+  CLAUDE.md). **master is now 9af6095, three commits past what's live**, and
+  those three are the render speed-up, so a deploy is the next thing worth
+  doing.
 - The thambura's default voice is the jawari tambura, fitted to a 60 s
   recording of a C tambura (`docs/sound-analysis.md` has the method, the
   results and the tools). The user has listened and called it "much better".
@@ -23,6 +25,15 @@ close.
   Hindustani but were built by moving the Lab's controls, not fitted to a
   recording of a tanpura, so #51 asks players which is closer. Their names
   can become Hindustani ones once it does.
+- **Renders are about twice as fast** (#37, #38, merged as #61 and #62). A
+  cold Start went from 375 to 225 ms and four strings on the bench from 434 to
+  226, with every sample bit-identical -- the classic and guitar fingerprints
+  passed untouched, and the jawari voice, which had none, now has five of its
+  own. `pnpm bench` is the yardstick and nothing runs it automatically.
+  What it taught, in case it saves someone a day: the four-harmonics change
+  everyone expected 3x from gave 1.46x, and the envelope, not the oscillator,
+  is now most of the cost. The comment on #36 has the numbers and what they
+  mean for #39-#42.
 - The big piece left is the **mridangam**; `docs/mridangam.md` is the plan
   and ends with a build order. Nothing of it is built yet.
 
@@ -62,8 +73,12 @@ close.
 - #52, pluck models behind one interface: what the additive synth can't
   express, and a physical string-bridge model as a spike. The model is per
   string, so they can be mixed.
-- #36 and its children (#37-#42), render speed, and #22, hand images: other
-  sessions'.
+- #36, render speed: #37 and #38 are closed. #39 (workers) and #40 (an
+  IndexedDB cache) are the next two and are unaffected by what changed; #41
+  (WebAssembly) now looks a poor trade, and #42 (an AudioWorklet) is still
+  open.
+- #22, hand images: another session's, and blocked on deciding what the three
+  kriyas should look like.
 
 ## Environment
 
