@@ -95,9 +95,10 @@ it in the same cache as the WAVs under a key such as
 `thambura/130.813/<voice params>`. From there a pluck plays exactly the way a
 clap does.
 
-Rendering is quite slow. A 9 s tambura string takes about 100 ms at
+Rendering is quite slow. A 9 s tambura string takes about 80 ms at
 48 kHz, which is enough to make the tala late (see the timing numbers
-below). So `PluckRender` works a few harmonics at a time and `ThamburaPresenter` feeds
+below). `pnpm bench` times it outside the browser, one line per plucked
+voice, and every speed change is measured against it (issue #36). So `PluckRender` works a few harmonics at a time and `ThamburaPresenter` feeds
 it about 20 ms of work per `setTimeout`. Any setting that changes the sound
 (key, first string, temperament, A4, mode, voice, tone, pluck, sustain) changes the
 four keys and starts a new render 60 ms later. The strings keep playing their

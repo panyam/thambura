@@ -10,7 +10,8 @@
     "watch": "node build.mjs --watch",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.sw.json",
     "test": "vitest run",
-    "render-mix": "node scripts/render-mix.mjs"
+    "render-mix": "node scripts/render-mix.mjs",
+    "bench": "node scripts/bench-render.mjs"
   },
   "dependencies": {
     "@panyam/tsappkit": "^0.0.5",
