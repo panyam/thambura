@@ -107,7 +107,8 @@ export interface ThamburaDeps {
 }
 
 // Work per deferred render call, in harmonic-samples (see PluckRender.step):
-// about 20 ms, inside the transport's 75 ms margin.
+// about 8 ms on a fast desktop since #38, and so still inside the transport's
+// 75 ms margin on a phone, which is 2-4x slower.
 const RENDER_BUDGET = 6_000_000;
 // After a settings change, rendering waits this long so a knob turned through
 // several keys renders once. Later slices, and the first render on Start, don't wait.

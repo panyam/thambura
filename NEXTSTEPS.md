@@ -11,6 +11,8 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [x] Redeploy after the thambura work (#18-#34): thambura.com serves the
       same bundle as master at 3514e1b (checked 2026-09-19).
 - [x] Listen to the thambura on a real machine (it's been tuned by ear since).
+- [ ] Deploy. thambura.com serves 14b1c48; master has the render work on top
+      of it (#61, #62 and 9af6095).
 - [ ] Listen to the tala on a real machine, and check it stays in step with
       the images. Headless Chromium has no audio device.
 - [ ] Record iTablaPro's tanpura, or any real tanpura, and run it through
@@ -40,12 +42,18 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       the guitar at 9.36, and `tables.py` writes the doc's tables from the
       feature files. Fitting parameters to the score is #45.
 - [ ] **Faster thambura renders** (tracking issue #36). The render is the wait
-      on a cold Start and after every pitch or tone change, about 300 ms for
-      four strings on a fast desktop. In order: a benchmark (#37), four
-      harmonics per loop (#38, about 3x), Web Workers with the strings in
-      parallel (#39, up to about 4x), and an IndexedDB cache between visits
-      (#40). Then decide on WebAssembly with SIMD (#41) and live synthesis in
-      an AudioWorklet (#42).
+      on a cold Start and after every pitch or tone change. Done: the
+      benchmark (#37, `pnpm bench`) and the renderer taking four harmonics per
+      pass and working the harmonic-independent half of the envelope out once
+      per render (#38, PRs #61 and #62). That halved it -- a cold Start went
+      375 to 225 ms in the browser, and four strings 434 to 226 ms on the
+      bench -- with every sample bit-identical. Two surprises worth carrying:
+      #38's four-harmonics change gave 1.46x on its own, not the 3x estimated
+      from a loop that left out the envelope, and the envelope is now most of
+      what's left. Next: Web Workers with the strings in parallel (#39) and an
+      IndexedDB cache between visits (#40). WebAssembly (#41) now looks like a
+      poor trade and an AudioWorklet (#42) is still open; the comment on #36
+      has the measurements behind both.
 - [ ] **Hand images for Guru, Plutham and Kakapadam** (#22): the kriyas to
       draw, and talas in the menu that use them.
 - [x] Presets that ship with the app (`web/src/engine/presets.ts`): Shimmer
