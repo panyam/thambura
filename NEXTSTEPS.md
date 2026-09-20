@@ -13,6 +13,9 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [x] Listen to the thambura on a real machine (it's been tuned by ear since).
 - [ ] Listen to the tala on a real machine, and check it stays in step with
       the images. Headless Chromium has no audio device.
+- [ ] Record iTablaPro's tanpura, or any real tanpura, and run it through
+      `tools/sound-analysis` (#47). It would put numbers behind "sounds
+      closer to Hindustani" and give #45 something to fit to.
 - [ ] Try iOS Safari with the silent switch on. `navigator.audioSession.type` is
       now "playback", which should stop the switch muting it (Safari 16.4+).
 
