@@ -11,7 +11,7 @@ A singer warming up may want the drone large and the tala silent. A teacher
 wants both at once. Someone tuning a sound in the Lab wants that view and
 nothing else. This note collects the layouts that would serve them, what each
 costs, and what the code would have to grow to support several. Nothing here
-is scheduled.
+is scheduled; tracked in #54.
 
 ## What the code already allows
 

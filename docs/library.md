@@ -6,7 +6,7 @@ The aim is for the pieces here to be importable in other projects the way
 kriti should be able to start the tala and the drone beside the notation
 without leaving the page. `notations`, the library, is the packaging
 precedent, not the consumer. This note is the plan for getting there;
-tracked in #52, not scheduled.
+tracked in #53, not scheduled.
 
 ## What `notations` does, since we'd mirror it
 
