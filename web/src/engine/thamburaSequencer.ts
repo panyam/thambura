@@ -72,16 +72,28 @@ export class ThamburaSequencer implements Sequencer<ThamburaEvent> {
   // Whether the next string's damp is handed out, and which strings have sounded since start.
   private damped = false;
   private sounding = [false, false, false, false];
+  // Which string the next start begins with (see startWith).
+  private first = 0;
 
   constructor(
     private readonly timing: ThamburaTiming,
     private readonly rng: () => number = Math.random,
   ) {}
 
+  /**
+   * The string the next `start` begins with; the round carries on in order
+   * from there. The Lab uses it to restart from the first string still
+   * playing, so an edit is heard at once rather than a round later.
+   */
+  startWith(string: number): void {
+    this.first = string;
+  }
+
   start(at: number): void {
     this.running = true;
     this.startAt = at;
-    this.next = 0;
+    this.next = this.first;
+    this.first = 0;
     this.damped = false;
     this.sounding = [false, false, false, false];
   }
