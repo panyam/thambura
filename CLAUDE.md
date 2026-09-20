@@ -318,8 +318,14 @@ The runtime is `go126` in `app.yaml`, which has to be at least the `go` line
 in go.mod. App Engine serves `/static` itself (`static_dir: web/static`) and
 forces HTTPS.
 
-One-time setup, run by an owner of the project from a machine with `gcloud`
-(the dev container has none):
+The dev container has `gcloud`, signed in as the project's owner, so
+`make deploy` runs from here. It takes a few minutes: the tests, a minified
+build, then the upload. gcloud copies the whole tree to a temp directory
+first (17k files with `web/node_modules` in it, which is slow and noisy in
+the log), but `.gcloudignore` keeps `node_modules`, `web/src` and the tests
+out of what is uploaded and deployed.
+
+One-time setup, run by an owner of the project from a machine with `gcloud`:
 
 1. `gcloud app create --project thambura --region <region>` if the project
    has no App Engine app yet. The region can't be changed later.
