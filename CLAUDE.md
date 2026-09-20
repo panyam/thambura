@@ -61,7 +61,9 @@ Sadhana).
 ## Frontend (web/src)
 
 `docs/architecture.md` explains how the sounds are made and timed, timed vs
-continuous voices, and what changed from the 2016 app.
+continuous voices, and what changed from the 2016 app. `docs/layouts.md` and
+`docs/library.md` are plans, not descriptions: where the thambura could sit,
+and what it would take to import these pieces from another project.
 `docs/sound-analysis.md` explains how the jawari voice was fitted to a
 recording, and how to rerun it: `pnpm render-mix` (web/scripts, over
 `src/tools/thamburaMix.ts`) renders the thambura offline to WAV, and the
