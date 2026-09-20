@@ -46,6 +46,13 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       controls (MediaSession).
 - [x] **Musical timeline refactor.** A shared `TempoMap`; the tala emits
       steps and ticks at exact fractional positions.
+- [ ] **Where the thambura sits** (#54, `docs/layouts.md`): the overlay suits a
+      practice session, not a singer or a teacher. Docked and side-by-side
+      layouts, purpose modes, separate pages. Planning only.
+- [ ] **This repo as a library** (#53, `docs/library.md`): entry points shaped like
+      `notations` (engine, runtime, Solid components, assets, styles), so the
+      pieces can be imported elsewhere, including into the notation app for
+      practice. Planning only.
 - [ ] **Mridangam / tabla.** The next big piece; `docs/mridangam.md` is the
       plan. Per-stroke sequencer on the `percussion` bus, with choke groups,
       several takes per stroke, eduppu/korvai alignment to the tala, and
