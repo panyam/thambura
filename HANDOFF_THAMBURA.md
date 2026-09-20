@@ -70,10 +70,10 @@ close.
 - This session worked from `thambura/shruthi`; other sessions use
   `thambura/main`. Both are checkouts of master; keep them on master and
   work in worktrees (CLAUDE.md, "Working alongside other sessions").
-- `thambura/serve-master` is a detached worktree of master serving on
-  :8011. Stop it (`ss -ltnp | grep :8011`, then kill the pid and its `go run`
-  parent) and remove it when done, or `git checkout --detach origin/master`
-  and rebuild to serve a newer master.
+- No servers or extra worktrees are left from this session. To try a
+  branch, serve a worktree on a free port, checking first that it is free:
+  other sessions hold 8001, 8002 and 8010 (CLAUDE.md, "Working alongside
+  other sessions").
 - The C recording is `thambura/01-Tanpura-Sample.mp3`, outside every
   checkout. To rerun the analysis, copy it into a worktree's gitignored
   `recordings/` as `tambura-C.mp3`.
