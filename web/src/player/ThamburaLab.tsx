@@ -12,6 +12,7 @@ import {
   type FieldSpec,
   type ThamburaPlan,
 } from "../engine/thamburaPlan";
+import { BUILT_IN_PRESETS } from "../engine/presets";
 import { copyText, SELECT, sharePresetUrl, SMALL_BUTTON, type ThamburaViewProps } from "./thamburaControls";
 import type { ThamburaPreset } from "./thamburaPresenter";
 import { ThamburaMini } from "./ThamburaMini";
@@ -320,6 +321,8 @@ function Presets(props: ThamburaViewProps) {
   const [name, setName] = createSignal("");
   const [status, setStatus] = createSignal("");
   const st = () => props.state();
+  // Built-in presets show by name too, but only a saved one can be written over.
+  const playing = () => [...st().presets, ...BUILT_IN_PRESETS].find((p) => p.id === st().presetId);
   const current = () => st().presets.find((p) => p.id === st().presetId);
   const saveAs = () => {
     const p = a.savePreset(name());
@@ -375,10 +378,12 @@ function Presets(props: ThamburaViewProps) {
       </form>
       <p class="text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
         {status() ||
-          (current()
+          (playing()
             ? st().edited
-              ? `Playing "${current()!.name}", changed. Save writes over it; Save as… keeps both.`
-              : `Playing "${current()!.name}".`
+              ? current()
+                ? `Playing "${playing()!.name}", changed. Save writes over it; Save as… keeps both.`
+                : `Playing "${playing()!.name}", changed. It ships with the app, so Save as… keeps your version.`
+              : `Playing "${playing()!.name}".`
             : "Saved in this browser. Copy a preset's link to send it, or share it with the project on GitHub.")}
       </p>
       <ul class="grid gap-1.5">

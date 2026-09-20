@@ -8,6 +8,7 @@ import {
   type ThamburaSettings,
 } from "../engine/shruthi";
 import { PluckRender, reedSpectrum } from "../engine/tambura";
+import { BUILT_IN_PRESETS } from "../engine/presets";
 import { decodeLink, encodeLink } from "../engine/shareLink";
 import { normalizePlan, patternOf, planFor, type ThamburaPlan } from "../engine/thamburaPlan";
 import { ThamburaSequencer, type DampEvent, type PluckEvent, type ThamburaTiming } from "../engine/thamburaSequencer";
@@ -359,7 +360,7 @@ export class ThamburaPresenter {
    * about an opened link goes, since it no longer describes what's playing.
    */
   applyPreset(id: string): void {
-    const preset = this.state.presets.find((p) => p.id === id);
+    const preset = this.preset(id);
     const shared = preset && decodeLink(preset.link, { settings: this.state.settings });
     if (!shared) return;
     this.update({ notice: null });
@@ -578,6 +579,11 @@ export class ThamburaPresenter {
     this.deps.link?.write(this.shareLink());
   }
 
+  /** A saved preset or one that ships with the app. */
+  private preset(id: string | null): ThamburaPreset | undefined {
+    return this.state.presets.find((p) => p.id === id) ?? BUILT_IN_PRESETS.find((p) => p.id === id);
+  }
+
   private savePresets(): void {
     try {
       this.deps.presets?.save(this.state.presets);
@@ -591,7 +597,7 @@ export class ThamburaPresenter {
     if (patch.settings || patch.custom) {
       next.plan = planFor(next.settings, next.custom);
       // A preset's sound is its own until something changes it.
-      const from = next.presets.find((p) => p.id === next.presetId);
+      const from = next.presets.find((p) => p.id === next.presetId) ?? BUILT_IN_PRESETS.find((p) => p.id === next.presetId);
       next.edited = from ? soundOf(this.linkFor(next)) !== soundOf(from.link) : false;
     }
     this.state = next;

@@ -1,4 +1,5 @@
 import { createEffect, createSignal, For, Match, onCleanup, onMount, Show, Switch } from "solid-js";
+import { BUILT_IN_PRESETS } from "../engine/presets";
 import { THAMBURA_MODES, type ThamburaMode } from "../engine/shruthi";
 import { THAMBURA_VIEWS } from "./thamburaPresenter";
 import { copyText, PlayButton, Segmented, SMALL_SELECT, type ThamburaViewProps } from "./thamburaControls";
@@ -80,6 +81,16 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
                   {(m) => (
                     <option value={MODE + m.id} selected={!st().presetId && m.id === st().settings.mode}>
                       {m.label}
+                    </option>
+                  )}
+                </For>
+              </optgroup>
+              <optgroup label="Presets">
+                <For each={BUILT_IN_PRESETS}>
+                  {(p) => (
+                    <option value={p.id} selected={p.id === st().presetId}>
+                      {p.name}
+                      {p.id === st().presetId && st().edited ? " (edited)" : ""}
                     </option>
                   )}
                 </For>

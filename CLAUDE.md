@@ -137,6 +137,11 @@ unit-tested:
   plays the plan the Lab view edits. `FIELD_SPECS` lists the Lab's controls
   and their ranges, which cover every built-in mode's values, and
   `normalizePlan` clamps a saved or pasted plan to them.
+- `presets.ts`: the sounds that ship with the app (`BUILT_IN_PRESETS`),
+  each a share link like a listener's own preset, so adding one means
+  building it in the Lab and pasting its link in. Shimmer and Warm lean
+  Hindustani (#51). They can't be renamed, deleted or written over, so Save
+  is refused on them and Save as… keeps your version.
 - `shareLink.ts`: the thambura's whole setup (settings but volume, view,
   whether the bar is open, and for Custom mode the plan) packed into the
   `?s=` query parameter as base64url bytes. A Custom plan is stored as edits
@@ -222,8 +227,9 @@ unit-tested:
   floating `#thambura-toggle` is clicked. Its header holds the one start/stop button
   every view shares (the views have none of their own, except the Raagini's
   power switch, part of the replica), the Sound menu (the mode,
-  from `THAMBURA_MODES`, and the saved presets in one list, playing as soon
-  as one is picked, with "Custom (unsaved)" while an edit isn't saved) and a switch between
+  from `THAMBURA_MODES`, the presets that ship (`BUILT_IN_PRESETS`) and the
+  saved ones in one list, playing as soon as one is picked, with "Custom
+  (unsaved)" while an edit isn't saved) and a switch between
   four views over the same presenter: `ThamburaMini`, `ThamburaStudio`,
   `ThamburaRaagini` (the 2000s Raagini box, with `Knob.tsx`, which keeps its
   own TMB/GTR/SHRUTHI slide switch as part of the replica) and `ThamburaLab`,
