@@ -28,6 +28,17 @@ test:
 	go test ./...
 	cd web && pnpm typecheck && pnpm test
 
+# Copy a mridangam kit in from the thambura-data checkout, for local listening.
+# The kit is gitignored; DATA overrides where the data repo sits.
+DATA ?= ../mridangam-data
+KIT ?= compmusic
+
+devkit:
+	@test -f $(DATA)/kit/kit.json || { echo "no kit at $(DATA)/kit: run 'make kit' in thambura-data"; exit 1; }
+	mkdir -p web/static/Resources/Mridangam/$(KIT)
+	cp $(DATA)/kit/kit.json $(DATA)/kit/*.wav web/static/Resources/Mridangam/$(KIT)/
+	@echo "kit in web/static/Resources/Mridangam/$(KIT): $$(ls web/static/Resources/Mridangam/$(KIT) | wc -l) files"
+
 # Re-vendor goapplib's templates after bumping the ref in web/templates/templar.yaml.
 templates:
 	cd web/templates && templar get

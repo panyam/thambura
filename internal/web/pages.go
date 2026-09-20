@@ -54,6 +54,24 @@ type Social struct {
 // HomePage is the practice page: a shell for the player island.
 type HomePage struct {
 	SitePage
+	// KitURL is the mridangam kit the page should load, or empty for none.
+	// Kits are build products copied in (make devkit) and aren't committed, so
+	// most checkouts have none and the page must not ask for one.
+	KitURL string
+}
+
+// kitURL is the kit found under static at startup, or empty. Package state
+// because the pages carry no server data of their own.
+var kitURL string
+
+// findKit returns the URL of the first kit manifest under
+// static/Resources/Mridangam, or empty when there is none.
+func findKit(static string) string {
+	matches, err := filepath.Glob(filepath.Join(static, "Resources", "Mridangam", "*", "kit.json"))
+	if err != nil || len(matches) == 0 {
+		return ""
+	}
+	return "/static/Resources/Mridangam/" + filepath.Base(filepath.Dir(matches[0])) + "/kit.json"
 }
 
 // The home page's search and preview text, near the lengths results show in
@@ -84,6 +102,7 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 		ImageHeight: 630,
 	}
 	p.StructuredData = webApplicationLD()
+	p.KitURL = kitURL
 	return nil, false
 }
 
@@ -137,6 +156,7 @@ func NewApp(templatesDir string) (*goal.App[*App], error) {
 // itself (and sends the same header); everything else comes here.
 func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	static := filepath.Join(webDir, "static")
+	kitURL = findKit(static)
 	goal.Register[*HomePage](app, mux, "/{$}")
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
 	mux.Handle("/legacy/", noindex(http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy"))))))

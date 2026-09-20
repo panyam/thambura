@@ -299,3 +299,38 @@ func TestMissingAssets(t *testing.T) {
 		t.Errorf("built dir: missing = %v, want none", got)
 	}
 }
+
+// A kit is a build product that isn't committed (see docs/mridangam.md), so
+// the page must only name one when the folder actually holds it. Otherwise
+// every visitor's browser asks for a kit.json that isn't there.
+func TestFindKit(t *testing.T) {
+	static := t.TempDir()
+	if got := findKit(static); got != "" {
+		t.Fatalf("findKit with no kits = %q, want empty", got)
+	}
+	dir := filepath.Join(static, "Resources", "Mridangam", "compmusic")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A folder without a manifest still counts as no kit.
+	if got := findKit(static); got != "" {
+		t.Fatalf("findKit with an empty kit folder = %q, want empty", got)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "kit.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	want := "/static/Resources/Mridangam/compmusic/kit.json"
+	if got := findKit(static); got != want {
+		t.Fatalf("findKit = %q, want %q", got, want)
+	}
+}
+
+// The home page carries the kit URL only when Register found one.
+func TestHomePageKitAttribute(t *testing.T) {
+	srv := newServer(t)
+	_, body := get(t, srv.URL+"/")
+	has := strings.Contains(body, "data-kit-url=")
+	if want := kitURL != ""; has != want {
+		t.Fatalf("data-kit-url present = %v, but the kit found at startup was %q", has, kitURL)
+	}
+}

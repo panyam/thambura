@@ -418,12 +418,12 @@ tala player, not in a second floating bar like the thambura's.
 
 Each step is a PR that works on its own.
 
-1. **Strokes and tuning.** The kit manifest and loader, `bend`, per-head
-   choke, left/right levels, the stroke pad, and the pitch-measuring script.
-   Built against the dataset locally. The measuring scripts, a candidate kit
-   and a plain-HTML stroke pad already exist in the data repo, so what's left
-   here is the in-app version. Done when every stroke sounds right on the pad
-   at a few keys, by ear, next to the thambura.
+1. **Strokes and tuning.** Done, but for the listening. The kit manifest and
+   loader, `bend`, per-head choke, left/right levels and the stroke pad are
+   in the app; the measuring scripts and the kit itself are in the data repo.
+   A kit is copied in with `make devkit` and isn't committed, so Go only
+   writes `data-kit-url` when one is there, and a plain checkout shows no pad.
+   What's left is the ear: every stroke at a few keys, next to the thambura.
 2. **One theka.** `TalaGrid`, `StrokeSequencer`, and a hand-written Adi
    theka, with an on/off switch. A test that the strokes and claps agree
    through tempo changes, and an in-browser capture of the scheduled times.

@@ -10,6 +10,10 @@
 
 .DS_Store
 
+# Mridangam kits copied in from the thambura-data repo (make devkit). Nothing
+# here is committed until we have a kit we can ship: see docs/mridangam.md.
+/web/static/Resources/Mridangam/
+
 # Tambura recordings and offline renders for tools/sound-analysis (docs/sound-analysis.md)
 /recordings/
 /tools/sound-analysis/.venv/

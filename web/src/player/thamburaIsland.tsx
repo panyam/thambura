@@ -1,5 +1,6 @@
 import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
+import type { ThamburaSettings } from "../engine/shruthi";
 import type { AudioEngine } from "./audio";
 import { isThamburaShortcut } from "./shortcuts";
 import { ThamburaBar } from "./ThamburaBar";
@@ -28,6 +29,8 @@ export function createThamburaIsland(
   audio: AudioEngine,
   controls: { root: HTMLElement | null; toggle: HTMLElement | null; play: HTMLElement | null },
   onPlaying?: (playing: boolean) => void,
+  /** Hears every settings change, so the mridangam can tune to the same Sa. */
+  onSettings?: (settings: ThamburaSettings) => void,
 ): SolidIsland {
   const { toggle, play } = controls;
   const presenter = new ThamburaPresenter({
@@ -48,6 +51,7 @@ export function createThamburaIsland(
       setState(s);
       reflect(controls, s);
       onPlaying?.(s.playing);
+      onSettings?.(s.settings);
     },
   });
   toggle?.addEventListener("click", () => presenter.toggleOpen());

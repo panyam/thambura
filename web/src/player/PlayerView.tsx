@@ -11,6 +11,8 @@ import {
   usesNadai,
   type TalaId,
 } from "../engine/selection";
+import { MridangamPad, type MridangamActions } from "./MridangamPad";
+import type { MridangamState } from "./mridangamPresenter";
 import type { PlayerPresenter, PlayerState } from "./presenter";
 
 export type PlayerActions = Pick<
@@ -31,7 +33,13 @@ export type PlayerActions = Pick<
  * The tala player: beat image, transport, tempo and volume, and the tala
  * settings. Renders PlayerState and sends every change to the presenter.
  */
-export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accessor<BeatPose>; actions: PlayerActions }) {
+export function PlayerView(props: {
+  state: Accessor<PlayerState>;
+  pose?: Accessor<BeatPose>;
+  actions: PlayerActions;
+  /** The mridangam, when the page has a kit for it. */
+  mridangam?: { state: Accessor<MridangamState>; actions: MridangamActions };
+}) {
   const s = props.state;
   const a = props.actions;
   const tala = () => s().settings.tala;
@@ -237,6 +245,10 @@ export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accesso
           />
         </Field>
       </section>
+
+      <Show when={props.mridangam} keyed>
+        {(m) => <MridangamPad state={m.state} actions={m.actions} />}
+      </Show>
     </div>
   );
 }
