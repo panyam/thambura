@@ -18,6 +18,12 @@ make prodlogs    # tail App Engine logs
 Built assets (`app.js`, `tailwind.css`) are gitignored. `.gcloudignore` exists
 so a deploy still uploads them.
 
+`web/` has three pnpm scripts no make target and no CI runs, so they only run
+when you type them: `pnpm bench` (times the pluck renderer, see `tambura.ts`
+below), `pnpm render-mix` (renders the thambura to WAV, see
+`docs/sound-analysis.md`) and `pnpm watch`. There are no GitHub Actions in
+this repo at all; `make test` is the whole gate, and `make deploy` runs it.
+
 ## Naming
 
 The product is **Thambura** everywhere: the display name
@@ -126,9 +132,27 @@ unit-tested:
   classic voice (mode `tambura`, "Tambura (classic)") sweeps a resonance down
   through the harmonics, rings 12-36 s (to -60 dB) and keeps its high
   harmonics. In guitar mode it rings 2.5-8 s and dulls quickly. The classic
-  and guitar renders are pinned by fingerprints in `thambura.test.ts`. A 9 s tambura render takes about
-  100 ms at 48 kHz, so `PluckRender` renders a few harmonics per `step(budget)`
-  and gives the same samples however the work is sliced. Never render inside a
+  and guitar renders are pinned by fingerprints in `thambura.test.ts`, the
+  jawari one by four more. A 9 s string takes about 40 ms to render at 48 kHz
+  (`pnpm bench`, over `web/scripts/bench-render.mjs`, times all four strings of
+  each plucked voice), so `PluckRender` renders a few harmonics per
+  `step(budget)` and gives the same samples however the work is sliced. It
+  renders four harmonics in one pass over the buffer, since each sample of one
+  harmonic waits on the one before it, and works out the parts of the envelope
+  that don't depend on the harmonic once per render rather than once per
+  harmonic; both keep the samples bit-identical, which is what the fingerprints
+  are for. Treat that as the rule for this file: the jawari voice was fitted to
+  a recording, so a speed-up that moves the samples is a sound change wearing a
+  performance change's clothes, and the fingerprints are there to catch it. A
+  harmonic's angle is worked out in `harmonic()` and nowhere else, because
+  `(2 * PI * k * freq) / rate` and `((2 * PI * freq) / rate) * k` differ in
+  their last bits; four harmonics are added to the buffer one at a time,
+  never as one expression, for the same reason. After #38 the rotation is
+  about 0.76 ns per harmonic-sample of the 1.4 that remain and the envelope's
+  `exp` and `pow` are most of the rest, so WebAssembly (#41) has less to win
+  than #36 estimated, and the next plain-JavaScript lever -- evaluating the
+  envelope every 128 or 256 samples rather than every 64 -- would change the
+  sound. Never render inside a
   transport tick. `reedSpectrum` gives the sruti drone's PeriodicWave.
 - `thamburaPlan.ts`: a `ThamburaPlan` is everything that decides how the
   plucked thambura plays: per string a `PluckVoice`, level, pan, detune and
@@ -386,6 +410,11 @@ edits. So:
   with "Template render error" (its templates are gone). Stop your servers
   before removing a worktree.
 - Put `pr-assets` screenshots through a worktree of `origin/pr-assets` too.
+- Other sessions' work moves any timing you measure here: the same render
+  benchmark reads 282 ms on a quiet container and 434 ms at load average 3.5.
+  So measure the before and the after back to back, minutes apart at most, and
+  quote the ratio or the nanoseconds per unit of work rather than wall-clock
+  milliseconds. `uptime` tells you what you were competing with.
 - If another session's work is affected, tell it with SendMessage.
 
 ## PRs
@@ -443,6 +472,13 @@ A few probes that worked, all set up in an init script:
 - Headless Chromium can't test a real wake lock or audio session, so define
   stand-in `navigator.wakeLock` and `navigator.audioSession` objects and log
   the calls.
+- `playwright-core` has to be loaded with `createRequire(...)("playwright-core")`.
+  Importing its `index.js` from an ESM script gives an object whose `chromium`
+  is undefined, and the failure reads as "Cannot read properties of undefined".
+- Cold Start is measured by wrapping `AudioBufferSourceNode.prototype.start` in
+  an init script, clicking `#thambura-play` and waiting for the first booked
+  pluck: 375 ms on master before #62, 225 ms after. Serve the branch and the
+  base on two ports and alternate between them, for the reason above.
 - `pkill -f <pattern>` can match the shell running it and kill it, and
   `fuser` isn't installed. Find a server by its port instead:
   `ss -ltnp | grep :8011` gives the pid; kill it and its `go run` parent
