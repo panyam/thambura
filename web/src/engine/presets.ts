@@ -7,7 +7,7 @@ import type { ThamburaPreset } from "../player/thamburaPresenter";
  * link, and add it below.
  *
  * These two lean Hindustani (issue #51): a bigger instrument at C#3 with a
- * slower round, a longer ring, nothing damped, and a jawari that holds
+ * 3 s round, a longer ring, nothing damped, and a jawari that holds
  * instead of falling back. "Shimmer" keeps the bloom bright and sustained;
  * "Warm" sets it lower and wider. Neither was fitted to a recording of a
  * tanpura; they move the Lab's controls from the fitted Carnatic voice, and
@@ -17,12 +17,12 @@ export const BUILT_IN_PRESETS: ThamburaPreset[] = [
   {
     id: "builtin:shimmer",
     name: "Shimmer",
-    link: "ARwDBEAHETACijIyPADY5g8BDwcCDxEED2MFDwMGDwAHDxQJB1wJCDQKD2QLDxYMDzUNDzQODxgPDzcYBOEBAA",
+    link: "ARwDBEAHETABLDIyPADY5g8BDwcCDxEED2MFDwMGDwAHDxQJB1wJCDQKD2QLDxYMDzUNDzQODxgPDzcYBOEBAA",
   },
   {
     id: "builtin:warm",
     name: "Warm",
-    link: "ARwDBEAHETACijIyPADY5g0BDwUCDxUED2MFDwMGDwAHDxcKD1ALDxkMD04NDywODxQPDzIYBOEBAA",
+    link: "ARwDBEAHETABLDIyPADY5g0BDwUCDxUED2MFDwMGDwAHDxcKD1ALDxkMD04NDywODxQPDzIYBOEBAA",
   },
 ];
 

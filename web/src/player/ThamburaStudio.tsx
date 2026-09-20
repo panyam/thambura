@@ -88,14 +88,14 @@ export function ThamburaStudio(props: ThamburaViewProps) {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <Slider
-          label="Speed"
+          label="Duration"
           readout={`${s().cycleSeconds.toFixed(1)} s round`}
           min={MIN_CYCLE}
           max={MAX_CYCLE}
           step={0.1}
-          // Right is faster, which is a shorter round.
-          value={MIN_CYCLE + MAX_CYCLE - s().cycleSeconds}
-          onInput={(v) => set({ cycleSeconds: MIN_CYCLE + MAX_CYCLE - v })}
+          // Right is a longer round, as the name says.
+          value={s().cycleSeconds}
+          onInput={(cycleSeconds) => set({ cycleSeconds })}
         />
         <Slider label="Volume" readout={`${s().volume}%`} min={0} max={100} value={s().volume} onInput={(volume) => set({ volume })} />
       </div>

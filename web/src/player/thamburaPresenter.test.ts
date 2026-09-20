@@ -663,8 +663,8 @@ describe("ThamburaPresenter", () => {
       const [shimmer] = BUILT_IN_PRESETS;
       p.applyPreset(shimmer.id);
       expect(p.state).toMatchObject({ presetId: shimmer.id, edited: false, settings: { mode: "custom" } });
-      // C#3, a 6.5 s round, a long ring and nothing damped: see engine/presets.ts.
-      expect(p.state.settings.cycleSeconds).toBe(6.5);
+      // C#3, a 3 s round, a long ring and nothing damped: see engine/presets.ts.
+      expect(p.state.settings.cycleSeconds).toBe(3);
       expect(p.state.plan.strings.map((s) => s.damp)).toEqual([0, 0, 0, 0]);
       expect(p.state.plan.strings[0].voice.ringSeconds).toBeCloseTo(50, 6);
 

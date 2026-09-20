@@ -108,8 +108,8 @@ export function ThamburaLab(props: ThamburaViewProps) {
       <div class="grid items-end gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <ThamburaMini state={props.state} actions={a} />
         <LabSlider
-          label="Speed"
-          help="Seconds for one round of four plucks."
+          label="Duration"
+          help="Seconds for one round of four plucks. Longer means each pluck rings for longer before its turn comes round again."
           showHelp={false}
           unit="s round"
           min={MIN_CYCLE}

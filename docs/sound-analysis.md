@@ -176,7 +176,7 @@ With that, each Lab control:
 | Bloom energy | Whether the lift adds loudness or only moves energy up the spectrum. A real jawari mostly moves it. |
 | Detune | Cents off the key, which is what makes two strings beat against each other. |
 | Level, Pan | Where the string sits in the mix. |
-| Speed, the four gaps, Stop before next | The round: how fast, how the plucks are spaced, and how long before its next pluck the player's finger stops a string. A tanpura is often left to ring instead, which is this at 0. |
+| Duration, the four gaps, Stop before next | The round: how fast, how the plucks are spaced, and how long before its next pluck the player's finger stops a string. A tanpura is often left to ring instead, which is this at 0. |
 
 **The strings overlap.** A pluck never waits for the one before it. Each
 string rings for many seconds (12-36 s for the tambura voices) while the
