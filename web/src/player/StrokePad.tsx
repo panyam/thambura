@@ -1,7 +1,10 @@
 import { For, Show, createEffect, onCleanup, type Accessor } from "solid-js";
 import type { KitPresenter, KitState } from "./kitPresenter";
 
-export type KitActions = Pick<KitPresenter, "play" | "setVolume" | "setZoneLevel" | "strokeForKey">;
+export type KitActions = Pick<
+  KitPresenter,
+  "play" | "setVolume" | "setZoneLevel" | "setEnabled" | "strokeForKey"
+>;
 
 /**
  * The stroke pad: every stroke in the kit, grouped by zone, played by click or
@@ -39,6 +42,22 @@ export function StrokePad(props: { state: Accessor<KitState>; actions: KitAction
         <details class="group rounded-lg border border-gray-200 dark:border-gray-700">
           <summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">{title(s())}</summary>
           <div class="grid gap-4 px-3 pb-3">
+            <label class="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                aria-label="Play with the tala"
+                checked={s().enabled}
+                onChange={(e) => a.setEnabled(e.currentTarget.checked)}
+                class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-600 dark:bg-gray-800"
+              />
+              Play with the tala
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                <Show when={s().pattern} fallback="no pattern for this tala yet">
+                  {s().pattern}
+                </Show>
+              </span>
+            </label>
+
             <p class="text-xs text-gray-500 dark:text-gray-400">
               <Show when={s().pitched} fallback={<>{s().kitName}, played as recorded</>}>
                 {s().kitName}, tuned to the thambura: {s().packLabel}

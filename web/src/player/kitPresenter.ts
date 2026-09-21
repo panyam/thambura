@@ -42,6 +42,10 @@ export interface KitState {
   volume: number;
   /** Each zone's level, 0 to 1, so the hands can be balanced against each other. */
   levels: Record<string, number>;
+  /** Whether it plays along with the tala. The pad plays either way. */
+  enabled: boolean;
+  /** The pattern the tala is having it play, or null for none. */
+  pattern: string | null;
   /** The stroke heard a moment ago, for the pad's glow. */
   lit: string | null;
 }
@@ -105,6 +109,8 @@ export class KitPresenter {
       stretched: false,
       volume: DEFAULT_KIT_VOLUME,
       levels: {},
+      enabled: true,
+      pattern: null,
       lit: null,
     };
     deps.audio.setBusVolume("percussion", DEFAULT_KIT_VOLUME);
@@ -173,22 +179,43 @@ export class KitPresenter {
     this.update({ levels: { ...this.state.levels, [zone]: clamp(level, 0, 1, 1) } });
   }
 
-  /** Plays one stroke now. Returns false when the kit has no take for it. */
+  /** Plays one stroke now, as a tap on the pad does. */
   async play(id: string): Promise<boolean> {
     if (!this.kit) return false;
+    await this.deps.audio.unlock();
+    return this.playAt(id, this.deps.audio.now + 0.01);
+  }
+
+  /**
+   * Books a stroke on the audio clock, which is how a sequencer plays this
+   * instrument. `gain` carries the pattern's accent, 1 being a normal stroke.
+   * Returns false when the kit has no take for the stroke, or when the
+   * instrument is switched off.
+   */
+  playAt(id: string, when: number, gain = 1): boolean {
+    if (!this.kit || !this.state.enabled) return false;
     const sound = strokeSound(this.kit, id, this.tonic, (takes) => this.take(id, takes), this.baseUrl);
     if (!sound) return false;
-    await this.deps.audio.unlock();
-    const at = this.deps.audio.now + 0.01;
-    this.deps.audio.play(sound.url, "percussion", at, {
+    this.deps.audio.play(sound.url, "percussion", when, {
       detune: sound.detune,
-      gain: (this.state.levels[sound.zone] ?? 1) * (1 - SOFTER * this.rng()),
+      gain: gain * (this.state.levels[sound.zone] ?? 1) * (1 - SOFTER * this.rng()),
       choke: `kit/${this.state.kitName}/${sound.zone}`,
       chokeFade: ZONE_CHOKE_FADE,
     });
-    this.cues.push({ time: at, id });
+    this.cues.push({ time: when, id });
     this.runFrames();
     return true;
+  }
+
+  /** Turns the instrument off without unloading it, as a mixer's mute does. */
+  setEnabled(enabled: boolean): void {
+    if (!enabled) this.deps.audio.cancel("percussion");
+    this.update({ enabled });
+  }
+
+  /** What the tala is having it play, for the panel to name. Null for nothing. */
+  setPattern(name: string | null): void {
+    if (name !== this.state.pattern) this.update({ pattern: name });
   }
 
   /** The stroke a key plays, or null. */

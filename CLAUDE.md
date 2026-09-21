@@ -338,10 +338,16 @@ See NEXTSTEPS.md for the order.
   which is gitignored. Go looks for `*/kit.json` under there at startup and
   only then writes `data-kit-url` on the page, so a checkout without a kit
   asks for nothing and shows no pad.
-- **Mridangam / tabla, what's left:** add a `Sequencer<StrokeEvent>` on the
-  tala's `TempoMap` and `Transport` that emits per stroke at exact positions,
-  reads the tala's position for eduppu and korvai alignment (nothing exposes
-  the cycle and beat for a count yet), and plays on the `percussion` bus.
+- **The instrument plays with the tala.** `engine/talaGrid.ts` turns the
+  beats and kalai into a cycle length and says which cycle, beat and repeat a
+  count falls in. `engine/strokeSequencer.ts` is a `Sequencer<StrokeEvent>` on
+  the tala's own `TempoMap`, queued a cycle at a time, so strokes and claps
+  are the same musical points and can't drift. `engine/patterns.ts` holds the
+  patterns, written per beat of the cycle: `pattern()` takes one token per
+  slot with `|` between aksharas and `,` for a rest, and `patternFor` matches
+  on beats per cycle and nadai, so one Adi pattern serves Adi and a chatusra
+  Thriputa and stretches with kalai. What's left for the mridangam is the
+  text format for patterns, then arrangements (`docs/mridangam.md`).
 - Drum strokes choke per head: a closed stroke cuts the ring of the last open
   one on the same head, never the other head. `play` takes `chokeFade` for
   that (8 ms, against the strings' 80 ms) and `bend`, which slides a note's
