@@ -17,4 +17,5 @@
 # Tambura recordings and offline renders for tools/sound-analysis (docs/sound-analysis.md)
 /recordings/
 /tools/sound-analysis/.venv/
+/.venv/
 __pycache__/
