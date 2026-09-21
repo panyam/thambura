@@ -85,12 +85,23 @@ function compile(file, strokes) {
   if (beats !== cycleCounts) {
     throw new Error(`${file}: the line fills ${beats} beats, but its cycle is ${cycleCounts}`);
   }
+  if (!meta.source) {
+    throw new Error(`${file}: no source in the front matter (who wrote this pattern, and has a player checked it?)`);
+  }
   const shapeBeats = meta.shape.trim().split(/\s+/).length;
   if (shapeBeats !== cycleCounts) {
     throw new Error(`${file}: shape names ${shapeBeats} beats, but its cycle is ${cycleCounts}`);
   }
 
-  return { id: meta.id, name: meta.name, shape: meta.shape, nadai: meta.nadai, beats: shapeBeats, strokes: events };
+  return {
+    id: meta.id,
+    name: meta.name,
+    source: meta.source,
+    shape: meta.shape,
+    nadai: meta.nadai,
+    beats: shapeBeats,
+    strokes: events,
+  };
 }
 
 function render(patterns) {
@@ -99,6 +110,7 @@ function render(patterns) {
       (p) => `  {
     id: ${JSON.stringify(p.id)},
     name: ${JSON.stringify(p.name)},
+    source: ${JSON.stringify(p.source)},
     shape: ${JSON.stringify(p.shape)},
     nadai: ${JSON.stringify(p.nadai)},
     beats: ${p.beats},

@@ -125,6 +125,7 @@ describe("pattern slots", () => {
     const five: Pattern = {
       id: "k",
       name: "Khandam",
+      source: "a test fixture",
       shape: "down",
       nadai: "khandam",
       beats: 1,

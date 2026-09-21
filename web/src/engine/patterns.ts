@@ -33,6 +33,13 @@ export interface PatternStroke {
 export interface Pattern {
   id: string;
   name: string;
+  /**
+   * Where the pattern came from, and whether anyone who plays has checked it:
+   * "transcribed by <name>", "generated from the tala's angas", or an honest
+   * "drafted, unverified". A student can't tell a guess from a tradition by
+   * ear, so every pattern says which it is.
+   */
+  source: string;
   /** The cycle it fits, as `TalaGrid.shape` writes one. */
   shape: string;
   /** How many beats that is, ignoring kalai. */

@@ -7,6 +7,7 @@ export const PATTERNS: Pattern[] = [
   {
     id: "adi-chatusram-1",
     name: "Adi sarvalaghu, chatusram",
+    source: "drafted by Claude from the stroke names, unverified by a mridangist",
     shape: "down one two three down open down open",
     nadai: "chatusram",
     beats: 8,

@@ -3,6 +3,7 @@ id: adi-chatusram-1
 name: Adi sarvalaghu, chatusram
 shape: down one two three down open down open
 nadai: chatusram
+source: drafted by Claude from the stroke names, unverified by a mridangist
 # One akshara per mrid line: the laghu's four, then the two dhruthams.
 # Bar lines would read better but are a tokenizer error (notations#19), and
 # the DSL has no working comment syntax outside this front matter

@@ -287,7 +287,15 @@ mrid: nam , thi ,
 `mrid:` is a role, and its atoms are the strokes, with `,` for a rest as
 karvai is written in Carnatic notation. A role's atoms carry on across source
 lines, so one akshara per line reads well. The front matter is ours: which
-cycle shape the pattern fits, and which aksharas are leaned on.
+cycle shape the pattern fits, which aksharas are leaned on, and where the
+pattern came from.
+
+**Every pattern declares its source**, and the build fails without one. A
+student can't tell a guess from a tradition by ear, so a pattern says whether
+it was transcribed from a player, generated from the tala's angas, or drafted
+and not yet checked. The Adi sarvalaghu in the repo today is the last of
+those: drafted from the stroke names, unverified. Open question 3 is about
+fixing that.
 
 The DSL gives us exact rational positions, cycles with kalai and gati, speed
 doubling with `[ ]` groups, and several roles on one cycle, none of which we
