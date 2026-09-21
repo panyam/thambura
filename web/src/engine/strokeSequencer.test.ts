@@ -131,6 +131,7 @@ describe("pattern slots", () => {
       nadai: "khandam",
       beats: 1,
       aksharas: 1,
+      role: "main",
       strokes: ["R.ta", "R.tha", "R.thi", "R.ta", "R.tha"].map((stroke, i) => ({
         at: ratio(i, 5),
         stroke,

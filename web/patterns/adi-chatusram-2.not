@@ -1,0 +1,25 @@
+---
+id: adi-chatusram-2
+name: Adi sarvalaghu, second
+counts: 8
+shape: down one two three down open down open
+nadai: chatusram
+role: variation
+source: >-
+  karya, Solkattu/Score/MridangamSarva.hs, kizh3, learned from Sudhindra
+  (github.com/elaforge/karya, GPL-3.0, used with permission). Its right hand
+  is n d _ n through the cycle, with thom under some of them; converted here
+  as tham for thom-with-nam and dheem for thom-with-din. Unverified.
+accents:
+  0: 1.12
+---
+\cycle("|4|2|2|")
+\beatDuration(4)
+mrid: tham dheem , tham
+      nam dheem , tham
+      tham dhin , nam
+      nam dhin , nam
+      tham dheem , tham
+      nam dheem , tham
+      tham dhin , nam
+      nam dhin , nam

@@ -60,6 +60,11 @@ export interface Pattern {
   aksharas: number;
   /** The nadai it is written for, or "any" when the tala has none. */
   nadai: Gati | "any";
+  /**
+   * What it is in an arrangement: the one that plays most cycles, or an
+   * alternate to swap in now and then.
+   */
+  role: "main" | "variation";
   strokes: PatternStroke[];
 }
 
@@ -76,6 +81,9 @@ export function patternFor(grid: TalaGrid, nadai: Gati, from: Pattern[] = PATTER
   return (
     from.find(
       (p) =>
+        // Only the pattern that plays most cycles; the alternates are the
+        // arrangement's business (see arrangement.ts).
+        p.role === "main" &&
         p.shape === grid.shape &&
         cmp(p.counts, grid.patternCounts) === 0 &&
         (p.nadai === nadai || p.nadai === "any"),

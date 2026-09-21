@@ -1,4 +1,5 @@
 import { For, Show, type Accessor } from "solid-js";
+import { VARIETY_OPTIONS, type Variety } from "../engine/arrangement";
 import type { KitState } from "./kitPresenter";
 import type { Lane } from "./presenter";
 
@@ -14,6 +15,10 @@ export function StrokeLane(props: {
   lane: Accessor<Lane | null>;
   strokeIndex: Accessor<number | null>;
   kit: Accessor<KitState>;
+  variety: Accessor<Variety>;
+  setVariety: (variety: Variety) => void;
+  /** Whether this tala has anything to swap in. */
+  hasVariations: Accessor<boolean>;
 }) {
   const cells = () => {
     const lane = props.lane();
@@ -33,10 +38,25 @@ export function StrokeLane(props: {
     <Show when={props.lane()} keyed>
       {(lane) => (
         <section class="w-full max-w-md" aria-label="Mridangam pattern">
-          <div class="mb-1 flex items-baseline justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>{lane.name}</span>
-            <Show when={lane.source.startsWith("generated")}>
-              <span class="italic">a skeleton, not a pattern anyone plays</span>
+          <div class="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+            <span>
+              {lane.name}
+              <Show when={lane.source.startsWith("generated")}>
+                <span class="italic"> · a skeleton, not a pattern anyone plays</span>
+              </Show>
+            </span>
+            <Show when={props.hasVariations()}>
+              <label class="flex items-center gap-1">
+                Variety
+                <select
+                  aria-label="How often to vary the pattern"
+                  value={props.variety()}
+                  onChange={(e) => props.setVariety(e.currentTarget.value as Variety)}
+                  class="rounded-md border-gray-300 bg-white py-0.5 text-xs text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                >
+                  <For each={VARIETY_OPTIONS}>{(o) => <option value={o.value}>{o.label}</option>}</For>
+                </select>
+              </label>
             </Show>
           </div>
           <ol class="flex gap-1 overflow-x-auto pb-1" role="list">

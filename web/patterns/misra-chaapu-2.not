@@ -1,0 +1,24 @@
+---
+id: misra-chaapu-2
+name: Misra Chaapu, second
+counts: 7/2
+shape: down
+nadai: any
+role: variation
+source: >-
+  karya, Solkattu/Score/MridangamSarva.hs, c_18_05_25 first line, learned from
+  Ganesh, 2018-05-25 (github.com/elaforge/karya, GPL-3.0, used with
+  permission). Two slots to the akshara: o k on on od _ on k od k on on od _,
+  converted as thom, thi, tham, dheem. Unverified.
+accents:
+  0: 1.12
+---
+\cycle("|7|")
+\beatDuration(2)
+mrid: thom thi
+      tham tham
+      dheem ,
+      tham thi
+      dheem thi
+      tham tham
+      dheem ,

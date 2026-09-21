@@ -104,6 +104,7 @@ function compile(file, strokes) {
     name: meta.name,
     source: meta.source,
     counts: [Number(countsN), Number(countsD ?? 1)],
+    role: meta.role === "variation" ? "variation" : "main",
     // The DSL's cycle is the musical one: seven aksharas for a misra chaapu,
     // where the app's tables call it a single beat.
     aksharas: cycleCounts,
@@ -125,6 +126,7 @@ function render(patterns) {
     counts: ratio(${p.counts[0]}, ${p.counts[1]}),
     aksharas: ${p.aksharas},
     nadai: ${JSON.stringify(p.nadai)},
+    role: ${JSON.stringify(p.role)},
     beats: ${p.beats},
     strokes: [
 ${p.strokes.map((s) => `      { at: ratio(${s.n}, ${s.d}), stroke: ${JSON.stringify(s.stroke)}, gain: ${s.gain} },`).join("\n")}

@@ -23,6 +23,7 @@ export type PlayerActions = Pick<
   | "prev"
   | "restart"
   | "setTempo"
+  | "setVariety"
   | "setVolume"
   | "setSettings"
   | "setSoundGroup"
@@ -96,6 +97,9 @@ export function PlayerView(props: {
           lane={() => s().lane}
           strokeIndex={() => s().strokeIndex}
           kit={props.kit!.state}
+          variety={() => s().variety}
+          setVariety={(variety) => a.setVariety(variety)}
+          hasVariations={() => s().hasVariations}
         />
       </Show>
 

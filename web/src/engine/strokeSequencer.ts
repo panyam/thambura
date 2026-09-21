@@ -25,6 +25,12 @@ export interface StrokeSource {
 }
 
 /**
+ * Asked once per cycle, with the cycle's number, so an arrangement can decide
+ * what that cycle plays. The number is why this takes an argument at all.
+ */
+export type SourceFor = (cycle: number) => StrokeSource;
+
+/**
  * Plays a pattern against the tala, cycle by cycle, on the tala's own
  * `TempoMap`. Positions come from the pattern in aksharas and are scaled by
  * the grid, so the strokes and the claps are the same musical points and can't
@@ -43,7 +49,7 @@ export class StrokeSequencer implements Sequencer<StrokeEvent> {
   private queue: StrokeEvent[] = [];
 
   constructor(
-    private readonly source: () => StrokeSource,
+    private readonly source: SourceFor,
     private readonly tempo: TempoMap,
   ) {}
 
@@ -78,7 +84,7 @@ export class StrokeSequencer implements Sequencer<StrokeEvent> {
 
   /** Lays the next cycle's strokes out in counts. False when there's nothing to play. */
   private queueCycle(): boolean {
-    const { grid, pattern } = this.source();
+    const { grid, pattern } = this.source(this.cycle);
     const cycleCounts = grid.cycleCounts;
     if (cycleCounts.n <= 0) return false;
     const start = this.nextCycleAt;

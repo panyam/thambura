@@ -13,6 +13,7 @@ import { TalaSequencer, type TalaEvent } from "../engine/sequencer";
 import { StrokeSequencer, type StrokeEvent } from "../engine/strokeSequencer";
 import { TalaGrid } from "../engine/talaGrid";
 import { generatedPattern } from "../engine/generated";
+import { arrangementFor, patternForCycle, type Arrangement, type Variety } from "../engine/arrangement";
 import { patternFor, type Pattern } from "../engine/patterns";
 import { DEFAULT_MOTION, isBeatMotion, motionAt, REST, type BeatMotion, type BeatPose } from "../engine/motion";
 import { TempoMap } from "../engine/tempoMap";
@@ -38,6 +39,10 @@ export interface PlayerState {
    */
   lane: Lane | null;
   strokeIndex: number | null;
+  /** How often the instrument swaps in a variation. */
+  variety: Variety;
+  /** Whether this tala has any alternates to swap in. */
+  hasVariations: boolean;
   /** The image for the step being heard, or null for none. */
   image: string | null;
   /** The step being heard, and how many beats the cycle has. */
@@ -106,6 +111,7 @@ export const DEFAULT_VOLUME = 50;
 interface StrokeCue {
   time: number;
   index: number;
+  cycle: number;
 }
 
 interface Cue {
@@ -133,6 +139,10 @@ export class PlayerPresenter {
   // Where the cycle's beats fall, and what the instrument plays over them.
   private grid = new TalaGrid([]);
   private pattern: Pattern | null = null;
+  private arrangement: Arrangement | null = null;
+  // The lane for each cycle the sequencer has laid out but the ear hasn't
+  // reached yet, since a variation changes what the lane should show.
+  private lanes = new Map<number, Lane>();
   // Images waiting for their sound to reach the speakers, in time order.
   private cues: Cue[] = [];
   private strokeCues: StrokeCue[] = [];
@@ -148,7 +158,7 @@ export class PlayerPresenter {
     this.seq = new TalaSequencer(this.cursor, this.tempo, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker, { tempo: this.tempo });
     this.transport.add(this.seq, (e) => this.schedule(e));
-    this.strokes = new StrokeSequencer(() => ({ grid: this.grid, pattern: this.pattern }), this.tempo);
+    this.strokes = new StrokeSequencer((cycle) => this.cycleSource(cycle), this.tempo);
     this.transport.add(this.strokes, (e: StrokeEvent) => this.scheduleStroke(e));
     this.state = {
       status: "loading",
@@ -164,6 +174,8 @@ export class PlayerPresenter {
       motion: isBeatMotion(this.saved.motion) ? this.saved.motion : DEFAULT_MOTION,
       lane: null,
       strokeIndex: null,
+      variety: isVariety(this.saved.variety) ? this.saved.variety : "some",
+      hasVariations: false,
       image: null,
       position: { beat: 0, repeat: 0 },
       beatCount: 0,
@@ -261,6 +273,13 @@ export class PlayerPresenter {
     this.save();
   }
 
+  /** How often a variation is swapped in, from the next cycle on. */
+  setVariety(variety: Variety): void {
+    if (variety === this.state.variety) return;
+    this.update({ variety });
+    this.save();
+  }
+
   setVolume(percent: number): void {
     const volume = clampVolume(percent);
     this.deps.audio.setBusVolume("tala", volume);
@@ -314,12 +333,16 @@ export class PlayerPresenter {
 
   /** Keeps the student's choices for the next visit. Loading never calls this. */
   private save(): void {
-    const { motion, settings, tempo, volume, soundGroup, imageGroup } = this.state;
+    const { motion, settings, tempo, volume, soundGroup, imageGroup, variety } = this.state;
     try {
-      this.deps.store?.save({ motion, settings, tempo, volume, soundGroup, imageGroup });
+      this.deps.store?.save({ motion, settings, tempo, volume, soundGroup, imageGroup, variety });
     } catch {
       // Storage can be full or blocked; the choices still hold for this visit.
     }
+  }
+
+  private get rng(): () => number {
+    return this.deps.rng ?? Math.random;
   }
 
   private rebuild(): void {
@@ -332,6 +355,9 @@ export class PlayerPresenter {
     this.pattern =
       patternFor(this.grid, this.state.settings.nadai) ??
       generatedPattern(beats, this.grid.shape, this.grid.patternCounts);
+    this.arrangement = arrangementFor(this.grid, this.state.settings.nadai, this.pattern);
+    this.lanes.clear();
+    this.update({ hasVariations: (this.arrangement?.variations.length ?? 0) > 0 });
     this.deps.strokes?.setPattern(this.pattern?.name ?? null);
     this.update({ beatCount: beats.length, position: this.cursor.position, lane: laneFor(this.pattern), strokeIndex: null });
   }
@@ -345,10 +371,22 @@ export class PlayerPresenter {
     this.runFrames();
   }
 
+  /**
+   * What the coming cycle plays. The arrangement decides, and the lane for
+   * that cycle is kept until a stroke from it reaches the speakers.
+   */
+  private cycleSource(cycle: number): { grid: TalaGrid; pattern: Pattern | null } {
+    if (!this.arrangement) return { grid: this.grid, pattern: this.pattern };
+    const pattern = patternForCycle(this.arrangement, cycle, this.state.variety, this.rng);
+    const lane = laneFor(pattern);
+    if (lane) this.lanes.set(cycle, lane);
+    return { grid: this.grid, pattern };
+  }
+
   /** Books a stroke on the instrument, and queues it for the lane. */
   private scheduleStroke(e: StrokeEvent): void {
     if (this.deps.strokes?.playAt(e.stroke, e.time, e.gain)) {
-      this.strokeCues.push({ time: e.time, index: e.index });
+      this.strokeCues.push({ time: e.time, index: e.index, cycle: e.cycle });
     }
   }
 
@@ -379,7 +417,13 @@ export class PlayerPresenter {
       if (due) this.update({ image: due.image, position: due.position });
       let stroke: StrokeCue | undefined;
       while (this.strokeCues.length > 0 && this.strokeCues[0].time <= heard) stroke = this.strokeCues.shift();
-      if (stroke && stroke.index !== this.state.strokeIndex) this.update({ strokeIndex: stroke.index });
+      if (stroke) {
+        // The lane follows the ear: a cycle's pattern shows when it sounds.
+        const lane = this.lanes.get(stroke.cycle);
+        if (lane && lane !== this.state.lane) this.update({ lane });
+        for (const cycle of this.lanes.keys()) if (cycle < stroke.cycle) this.lanes.delete(cycle);
+        if (stroke.index !== this.state.strokeIndex) this.update({ strokeIndex: stroke.index });
+      }
       if (this.state.playing) {
         if (due) this.heard = due;
         this.setPose(this.poseAt(heard));
@@ -451,4 +495,9 @@ function laneFor(pattern: Pattern | null): Lane | null {
       return { stroke: s.stroke, akshara, within: at - akshara };
     }),
   };
+}
+
+/** Whether a saved value is one of the variety settings. */
+function isVariety(value: unknown): value is Variety {
+  return value === "off" || value === "some" || value === "lots";
 }
