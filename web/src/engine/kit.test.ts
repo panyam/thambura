@@ -6,8 +6,8 @@ const KIT_JSON = {
   name: "Test kit",
   instrument: "mridangam",
   zones: [
-    { id: "valanthalai", label: "Valanthalai (right)" },
-    { id: "thoppi", label: "Thoppi (left)" },
+    { id: "right", label: "Right head" },
+    { id: "left", label: "Left head" },
   ],
   packs: [
     { id: "c", label: "C", hz: 261.63, cents: 5 },
@@ -15,10 +15,10 @@ const KIT_JSON = {
     { id: "e", label: "E", hz: 329.63, cents: -4 },
   ],
   strokes: [
-    { id: "R.chapu", label: "Chapu", zone: "valanthalai", open: true, note: "the tuning stroke", takes: { c: ["cha-c-1.wav", "cha-c-2.wav"], d: ["cha-d-1.wav"], e: ["cha-e-1.wav"] } },
-    { id: "R.ta", label: "Ta", zone: "valanthalai", open: false, note: "closed", takes: { c: ["ta-c-1.wav"], d: ["ta-d-1.wav"], e: ["ta-e-1.wav"] } },
+    { id: "R.chapu", label: "Chapu", zone: "right", open: true, note: "the tuning stroke", takes: { c: ["cha-c-1.wav", "cha-c-2.wav"], d: ["cha-d-1.wav"], e: ["cha-e-1.wav"] } },
+    { id: "R.ta", label: "Ta", zone: "right", open: false, note: "closed", takes: { c: ["ta-c-1.wav"], d: ["ta-d-1.wav"], e: ["ta-e-1.wav"] } },
     // Only recorded at one pack, as bheem is in the real dataset.
-    { id: "L.thom", label: "Thom", zone: "thoppi", open: true, note: "open bass", takes: { e: ["thom-e-1.wav"] } },
+    { id: "L.thom", label: "Thom", zone: "left", open: true, note: "open bass", takes: { e: ["thom-e-1.wav"] } },
   ],
 };
 
@@ -32,8 +32,8 @@ describe("parseKit", () => {
     expect(kit.name).toBe("Test kit");
     expect(kit.packs.map((p) => p.id)).toEqual(["c", "d", "e"]);
     expect(kit.instrument).toBe("mridangam");
-    expect(kit.zones.map((z) => z.id)).toEqual(["valanthalai", "thoppi"]);
-    expect(kit.strokes[0]).toMatchObject({ id: "R.chapu", zone: "valanthalai", open: true });
+    expect(kit.zones.map((z) => z.id)).toEqual(["right", "left"]);
+    expect(kit.strokes[0]).toMatchObject({ id: "R.chapu", zone: "right", open: true });
     expect(kit.strokes[1].open).toBe(false);
   });
 
@@ -98,7 +98,7 @@ describe("tuning a kit to the shruthi", () => {
   it("lets the caller choose the take, and resolves it against the kit's folder", () => {
     const sound = strokeSound(kit, "R.chapu", C3, (takes) => takes[1], "/static/Resources/Mridangam/test/")!;
     expect(sound.url).toBe("/static/Resources/Mridangam/test/cha-c-2.wav");
-    expect(sound).toMatchObject({ zone: "valanthalai", open: true });
+    expect(sound).toMatchObject({ zone: "right", open: true });
   });
 
   it("has nothing to play for a stroke the kit doesn't have", () => {

@@ -8,17 +8,17 @@ const KIT = {
   name: "Test kit",
   instrument: "mridangam",
   zones: [
-    { id: "valanthalai", label: "Valanthalai (right)" },
-    { id: "thoppi", label: "Thoppi (left)" },
+    { id: "right", label: "Right head" },
+    { id: "left", label: "Left head" },
   ],
   packs: [
     { id: "c", label: "C", hz: 261.63, cents: 5 },
     { id: "g", label: "G", hz: 392.0, cents: 0 },
   ],
   strokes: [
-    { id: "R.chapu", label: "Chapu", zone: "valanthalai", open: true, note: "the tuning stroke", takes: { c: ["cha-c-1.wav", "cha-c-2.wav"], g: ["cha-g-1.wav"] } },
-    { id: "R.ta", label: "Ta", zone: "valanthalai", open: false, note: "closed", takes: { c: ["ta-c-1.wav"], g: ["ta-g-1.wav"] } },
-    { id: "L.thom", label: "Thom", zone: "thoppi", open: true, note: "open bass", takes: { c: ["thom-c-1.wav"] } },
+    { id: "R.chapu", label: "Chapu", zone: "right", open: true, note: "the tuning stroke", takes: { c: ["cha-c-1.wav", "cha-c-2.wav"], g: ["cha-g-1.wav"] } },
+    { id: "R.ta", label: "Ta", zone: "right", open: false, note: "closed", takes: { c: ["ta-c-1.wav"], g: ["ta-g-1.wav"] } },
+    { id: "L.thom", label: "Thom", zone: "left", open: true, note: "open bass", takes: { c: ["thom-c-1.wav"] } },
   ],
 };
 
@@ -98,9 +98,9 @@ describe("KitPresenter", () => {
       bus: "percussion",
       when: 4.01,
     });
-    expect(audio.played[0].opts).toMatchObject({ choke: "kit/Test kit/valanthalai", chokeFade: ZONE_CHOKE_FADE });
+    expect(audio.played[0].opts).toMatchObject({ choke: "kit/Test kit/right", chokeFade: ZONE_CHOKE_FADE });
     await p.play("L.thom");
-    expect(audio.played[1].opts).toMatchObject({ choke: "kit/Test kit/thoppi" });
+    expect(audio.played[1].opts).toMatchObject({ choke: "kit/Test kit/left" });
   });
 
   it("works through the takes rather than repeating one", async () => {
@@ -142,14 +142,14 @@ describe("KitPresenter", () => {
     expect(p.state.volume).toBe(70);
 
     // Every zone starts at full, and a zone turned down only affects its own strokes.
-    expect(p.state.levels).toEqual({ valanthalai: 1, thoppi: 1 });
-    p.setZoneLevel("valanthalai", 0);
+    expect(p.state.levels).toEqual({ right: 1, left: 1 });
+    p.setZoneLevel("right", 0);
     await p.play("R.chapu");
     await p.play("L.thom");
     expect(audio.played[0].opts?.gain).toBe(0);
     expect(audio.played[1].opts?.gain).toBe(1);
-    p.setZoneLevel("valanthalai", 5);
-    expect(p.state.levels.valanthalai).toBe(1);
+    p.setZoneLevel("right", 5);
+    expect(p.state.levels.right).toBe(1);
     p.setZoneLevel("nosuchzone", 0.5);
     expect(p.state.levels.nosuchzone).toBeUndefined();
   });
