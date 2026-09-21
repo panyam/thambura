@@ -1,0 +1,18 @@
+---
+id: khanda-chaapu-1
+name: Khanda Chaapu sarvalaghu
+counts: 5/2
+shape: down
+nadai: any
+source: >-
+  karya, Solkattu/Score/MridangamSarva.hs, s_bhajan_kanda variation 2, the
+  "N,ND," line (youtube.com/watch?v=ctpe5H1Snd0), github.com/elaforge/karya,
+  GPL-3.0, used with permission. Converted by us: karya's "," is kin, a light
+  ki on meetu, which this kit has no take for, so it plays thi. Unverified.
+accents:
+  0: 1.12
+---
+\cycle("|5|")
+\beatDuration(1)
+mrid: tham thi tham
+      dheem thi

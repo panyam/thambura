@@ -25,6 +25,18 @@ export interface Zone {
   label: string;
 }
 
+/**
+ * A stroke played by bending another one, for a technique rather than a
+ * different hit: a gumki is a thom whose pitch the player slides with the
+ * other hand, so it is the thom's recording with the bend applied.
+ */
+export interface Derived {
+  /** The stroke whose takes it plays. */
+  from: string;
+  /** How far the pitch slides, in cents, and over how long. */
+  bend: { cents: number; seconds: number };
+}
+
 export interface Stroke {
   id: string;
   label: string;
@@ -36,6 +48,8 @@ export interface Stroke {
   note: string;
   /** Takes per pack id. A pack with no takes for this stroke is missing it. */
   takes: Record<string, string[]>;
+  /** Set when the stroke has no recordings of its own (see Derived). */
+  derived?: Derived;
 }
 
 /** One tuning. `hz` is its nominal Sa; `cents` is where it really sits. */
@@ -63,6 +77,8 @@ export interface StrokeSound {
   detune: number;
   zone: string;
   open: boolean;
+  /** Set for a derived stroke: bend the pitch while it sounds. */
+  bend?: { cents: number; seconds: number };
 }
 
 /** Past this much shifting, a take starts sounding like a different drum. */
@@ -115,15 +131,19 @@ export function strokeSound(
 ): StrokeSound | null {
   const stroke = kit.strokes.find((s) => s.id === strokeId);
   if (!stroke) return null;
-  const pack = nearestPack(kit, tonicHz, strokeId);
+  // A derived stroke plays the takes of the stroke it bends.
+  const takesFrom = stroke.derived ? kit.strokes.find((s) => s.id === stroke.derived!.from) : stroke;
+  if (!takesFrom) return null;
+  const pack = nearestPack(kit, tonicHz, takesFrom.id);
   if (!pack) return null;
-  const takes = stroke.takes[pack.id];
+  const takes = takesFrom.takes[pack.id];
   if (!takes || takes.length === 0) return null;
   return {
     url: `${baseUrl}${pick(takes)}`,
     detune: shiftCents(pack, tonicHz),
     zone: stroke.zone,
     open: stroke.open,
+    ...(stroke.derived ? { bend: stroke.derived.bend } : {}),
   };
 }
 
@@ -131,8 +151,10 @@ export function strokeSound(
 export function kitUrls(kit: Kit, tonicHz: number, baseUrl = ""): string[] {
   const urls = new Set<string>();
   for (const stroke of kit.strokes) {
-    const pack = nearestPack(kit, tonicHz, stroke.id);
-    for (const take of (pack && stroke.takes[pack.id]) || []) urls.add(`${baseUrl}${take}`);
+    const from = stroke.derived ? kit.strokes.find((s) => s.id === stroke.derived!.from) : stroke;
+    if (!from) continue;
+    const pack = nearestPack(kit, tonicHz, from.id);
+    for (const take of (pack && from.takes[pack.id]) || []) urls.add(`${baseUrl}${take}`);
   }
   return [...urls];
 }
@@ -171,6 +193,17 @@ export function parseKit(json: unknown): Kit {
     const id = asString(s.id, `strokes[${i}].id`);
     const zone = asString(s.zone, `strokes[${i}].zone`);
     if (!zoneIds.has(zone)) throw new Error(`kit: strokes[${i}].zone names an unknown zone "${zone}"`);
+    let derived: Derived | undefined;
+    if (isRecord(s.derived)) {
+      const bend = isRecord(s.derived.bend) ? s.derived.bend : {};
+      derived = {
+        from: asString(s.derived.from, `strokes[${i}].derived.from`),
+        bend: {
+          cents: asNumber(bend.cents, `strokes[${i}].derived.bend.cents`),
+          seconds: asNumber(bend.seconds, `strokes[${i}].derived.bend.seconds`),
+        },
+      };
+    }
     return {
       id,
       label: typeof s.label === "string" ? s.label : id,
@@ -178,6 +211,7 @@ export function parseKit(json: unknown): Kit {
       open: s.open !== false,
       note: typeof s.note === "string" ? s.note : "",
       takes,
+      ...(derived ? { derived } : {}),
     };
   });
   if (packs.length === 0) throw new Error("kit: no packs");

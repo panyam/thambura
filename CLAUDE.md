@@ -359,11 +359,34 @@ See NEXTSTEPS.md for the order.
   count falls in. `engine/strokeSequencer.ts` is a `Sequencer<StrokeEvent>` on
   the tala's own `TempoMap`, queued a cycle at a time, so strokes and claps
   are the same musical points and can't drift. `engine/patterns.ts` holds the
-  patterns, written per beat of the cycle: `pattern()` takes one token per
-  slot with `|` between aksharas and `,` for a rest, and `patternFor` matches
-  on beats per cycle and nadai, so one Adi pattern serves Adi and a chatusra
-  Thriputa and stretches with kalai. What's left for the mridangam is the
-  text format for patterns, then arrangements (`docs/mridangam.md`).
+  types and `patternFor`, which matches a pattern to a tala on the cycle's
+  shape and the nadai, so one Adi pattern serves Adi and a chatusra Thriputa
+  and stretches with kalai. What's left for the mridangam is more patterns
+  and a generated fallback, then arrangements (`docs/mridangam.md`).
+- **Patterns carry their provenance.** Three come from karya's
+  `MridangamSarva.hs` (Evan Laforge's transcriptions from his teachers, GPL,
+  used with permission, see `web/patterns/CREDITS.md` for the piece, the
+  teacher and the stroke mapping); the Adi one was drafted here and is
+  unverified. A pattern matches a tala on shape plus cycle length, since both
+  chaapus are one clap and share a shape, and its positions are fractions of
+  the cycle so a chaapu's single long beat works. CompMusic's transcriptions
+  are CC BY-NC-ND, so they can't be adapted.
+- **Patterns are notations DSL, compiled at build time.** They live in
+  `web/patterns/*.not` (panyam/notations format: `\cycle`, `\beatDuration`
+  and a `mrid:` role of stroke tokens), with `patterns/strokes.json` mapping
+  each token to a stroke in the kit. `pnpm patterns` compiles them into
+  `src/engine/patterns.data.ts`, which is committed; `pnpm patterns:check`
+  runs in `make test` and fails on drift. The parser stays out of the bundle,
+  where it would cost 78 KB gzipped, and the compiler checks a pattern fills
+  its cycle and that its shape and cycle agree. Five bugs found on the way are
+  filed as notations#17 to #22.
+- **A kit can derive a stroke from another.** The gumki is `L.thom` with a
+  bend (300 cents over 0.25 s, a guess), declared in the manifest rather than
+  recorded, since a gumki is a bent thom and the dataset has no take for it.
+  `strokeSound` resolves the takes of the stroke it bends, and `play` applies
+  the bend. Arai chapu and the left-hand tha are still missing and need
+  recording; note that this kit's `tha` is the right head's closed stroke,
+  not karya's left-hand `p`.
 - Drum strokes choke per head: a closed stroke cuts the ring of the last open
   one on the same head, never the other head. `play` takes `chokeFade` for
   that (8 ms, against the strings' 80 ms) and `bend`, which slides a note's

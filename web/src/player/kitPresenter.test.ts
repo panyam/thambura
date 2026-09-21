@@ -19,6 +19,15 @@ const KIT = {
     { id: "R.chapu", label: "Chapu", zone: "right", open: true, note: "the tuning stroke", takes: { c: ["cha-c-1.wav", "cha-c-2.wav"], g: ["cha-g-1.wav"] } },
     { id: "R.ta", label: "Ta", zone: "right", open: false, note: "closed", takes: { c: ["ta-c-1.wav"], g: ["ta-g-1.wav"] } },
     { id: "L.thom", label: "Thom", zone: "left", open: true, note: "open bass", takes: { c: ["thom-c-1.wav"] } },
+    {
+      id: "L.gumki",
+      label: "Gumki",
+      zone: "left",
+      open: true,
+      note: "thom with the pitch bent up",
+      derived: { from: "L.thom", bend: { cents: 300, seconds: 0.25 } },
+      takes: {},
+    },
   ],
 };
 
@@ -83,6 +92,8 @@ describe("KitPresenter", () => {
       ["Chapu", "a", true],
       ["Ta", "s", true],
       ["Thom", "d", true],
+      // Derived from thom, so it is playable without takes of its own.
+      ["Gumki", "f", true],
     ]);
     expect(p.strokeForKey("A")).toBe("R.chapu");
     expect(p.strokeForKey("q")).toBeNull();
@@ -167,6 +178,17 @@ describe("KitPresenter", () => {
     p.setThambura({ ...DEFAULT_THAMBURA, key: KEY_G3 });
     await p.play("H.clap");
     expect(audio.played[0].opts?.detune).toBe(0);
+  });
+
+  it("bends a derived stroke as it plays it", async () => {
+    await setup();
+    await p.play("L.gumki");
+    expect(audio.played).toHaveLength(1);
+    expect(audio.played[0].url).toBe("/static/Resources/Mridangam/test/thom-c-1.wav");
+    expect(audio.played[0].opts).toMatchObject({ bend: { cents: 300, seconds: 0.25 } });
+    // The stroke it borrows from plays straight.
+    await p.play("L.thom");
+    expect(audio.played[1].opts?.bend).toBeUndefined();
   });
 
   it("lights a pad when its stroke is heard, not when it is scheduled", async () => {

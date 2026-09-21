@@ -337,12 +337,16 @@ describe("PlayerPresenter with an instrument", () => {
     p.setTempo(60);
   });
 
-  it("names the pattern it found for the tala, and says when it has none", () => {
+  it("names the pattern it found, and falls back to one from the tala", () => {
     expect(patterns.at(-1)).toBe("Adi sarvalaghu, chatusram");
     p.setSettings({ tala: "chaapu_misram" });
-    expect(patterns.at(-1)).toBeNull();
+    expect(patterns.at(-1)).toBe("Misra Chaapu sarvalaghu");
+    // Nobody has written one for Ata, or for Adi in khandam, so the tala's
+    // own beats make a skeleton and the panel says where it came from.
+    p.setSettings({ tala: "sapta_ata", jaathi: "chatusram" });
+    expect(patterns.at(-1)).toBe("Generated from the tala");
     p.setSettings({ tala: "custom_adi", nadai: "khandam" });
-    expect(patterns.at(-1)).toBeNull();
+    expect(patterns.at(-1)).toBe("Generated from the tala");
   });
 
   it("books strokes against the claps once playing", async () => {
@@ -356,13 +360,14 @@ describe("PlayerPresenter with an instrument", () => {
     expect(booked[0].gain).toBeGreaterThan(1); // sam is accented
   });
 
-  it("books nothing for a tala with no pattern", async () => {
-    p.setSettings({ tala: "chaapu_misram" });
+  it("plays the generated skeleton where the claps fall", async () => {
+    p.setSettings({ tala: "sapta_ata", jaathi: "chatusram" });
     await p.start();
     advance(0.05);
-    advance(1.0);
-    expect(booked).toEqual([]);
-    expect(audio.played.some((n) => n.bus === "tala")).toBe(true);
+    // Sam gets both heads, and the stroke lands with the clap.
+    expect(booked[0]).toMatchObject({ id: "L.tham" });
+    const firstClap = audio.played.find((n) => n.bus === "tala")!.when;
+    expect(booked[0].when).toBe(firstClap);
   });
 
   it("takes back what hasn't sounded when it stops", async () => {

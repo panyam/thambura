@@ -1,0 +1,19 @@
+---
+id: misra-chaapu-1
+name: Misra Chaapu sarvalaghu
+counts: 7/2
+shape: down
+nadai: any
+source: >-
+  karya, Solkattu/Score/MridangamSarva.hs, kir_misra_2, learned from Ganesh,
+  2017-09-26 (github.com/elaforge/karya, GPL-3.0, used with permission).
+  Converted by us: karya's N is thom with nam, D is thom with din, and this
+  kit plays those as tham and dheem. The mapping is ours and unverified.
+accents:
+  0: 1.12
+---
+\cycle("|7|")
+\beatDuration(1)
+mrid: tham dheem tham
+      [ tham tham ]
+      dheem dheem tham

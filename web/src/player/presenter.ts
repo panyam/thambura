@@ -12,6 +12,7 @@ import { add, type Ratio } from "../engine/ratio";
 import { TalaSequencer, type TalaEvent } from "../engine/sequencer";
 import { StrokeSequencer, type StrokeEvent } from "../engine/strokeSequencer";
 import { TalaGrid } from "../engine/talaGrid";
+import { generatedPattern } from "../engine/generated";
 import { patternFor, type Pattern } from "../engine/patterns";
 import { DEFAULT_MOTION, isBeatMotion, motionAt, REST, type BeatMotion, type BeatPose } from "../engine/motion";
 import { TempoMap } from "../engine/tempoMap";
@@ -301,7 +302,11 @@ export class PlayerPresenter {
     this.cursor.setBeats(beats);
     this.cursor.setRepeat(this.state.settings.kalai);
     this.grid = new TalaGrid(beats, this.state.settings.kalai);
-    this.pattern = patternFor(this.grid, this.state.settings.nadai);
+    // A written pattern where we have one, otherwise a skeleton from the tala
+    // itself, so every tala plays something rather than going silent.
+    this.pattern =
+      patternFor(this.grid, this.state.settings.nadai) ??
+      generatedPattern(beats, this.grid.shape, this.grid.patternCounts);
     this.deps.strokes?.setPattern(this.pattern?.name ?? null);
     this.update({ beatCount: beats.length, position: this.cursor.position });
   }

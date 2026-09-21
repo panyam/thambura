@@ -20,22 +20,25 @@ importers:
     devDependencies:
       '@tailwindcss/forms':
         specifier: ^0.5.11
-        version: 0.5.11(tailwindcss@3.4.19)
+        version: 0.5.11(tailwindcss@3.4.19(yaml@2.9.1))
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
       esbuild-plugin-solid:
         specifier: ^0.6.0
         version: 0.6.0(esbuild@0.28.2)(solid-js@1.9.15)
+      notations:
+        specifier: ^1.0.9
+        version: 1.0.9
       tailwindcss:
         specifier: ^3.4.19
-        version: 3.4.19
+        version: 3.4.19(yaml@2.9.1)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
       vitest:
         specifier: ^5.0.1
-        version: 5.0.1(vite@7.3.6(jiti@1.21.7))
+        version: 5.0.1(vite@7.3.6(jiti@1.21.7)(yaml@2.9.1))
 
 packages:
 
@@ -348,6 +351,9 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
+  '@lume/kiwi@0.4.4':
+    resolution: {integrity: sha512-ie0YTKgiZqD4TXlJ4eUbfi4UEoKs6YlLRYNTfPm5eUXwfudTBmPRs7Qcxz2SWKDpVTwThv3sWG6zwtyAA0nPpw==}
+
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
     engines: {node: ^22.20 || ^24.12 || >=25}
@@ -380,6 +386,9 @@ packages:
     peerDependenciesMeta:
       ace-builds:
         optional: true
+
+  '@panyam/tsutils@1.0.0':
+    resolution: {integrity: sha512-Be5+95He4toostuwjv43Qh2+YAMaPhCXq4ANGqgf15IWtBOquxjPHaRi3Xw2b8x5RV5DU4LDFYVFjNa7TlcPbQ==}
 
   '@rollup/rollup-android-arm-eabi@4.63.3':
     resolution: {integrity: sha512-w3Jnvi1ocaVm/c7yVPpfB98XeSRBMyzp6njL5MVVbGyXjpmUkN+s6Hp4t0PqhGCCaI1ZHMKXt/w0lA1RCaLVcw==}
@@ -702,6 +711,9 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
+  galore@1.0.6:
+    resolution: {integrity: sha512-VEP10DJRK8fznSaYJyH1HM59g/YeBs+oLp3mxSYpJZlcSfKZKpMMDTjTAqWvj6b0FBRAMl872Ss+jrH8m4Cjow==}
+
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
     engines: {node: '>=6.9.0'}
@@ -801,6 +813,14 @@ packages:
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
+
+  notations@1.0.9:
+    resolution: {integrity: sha512-5lLNTlmmwp2/29Vt+dKoI13JP8PyHDbZ3HONOhGuNVnylfzEh40UGpI2ZX6dJbiOp0dLW+q8nPms02O2Ql57FA==}
+    peerDependencies:
+      dockview-core: ^4.0.0
+    peerDependenciesMeta:
+      dockview-core:
+        optional: true
 
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
@@ -972,6 +992,9 @@ packages:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
     engines: {node: '>=12.0.0'}
 
+  tlex@1.0.2:
+    resolution: {integrity: sha512-AOU4AHTYtQOfhMo2OLCgB+GC4LWT2ApQfZMCzT4ZDMr31DIUhAwWqQxornuSUEC7jn7K8BJxrNPERDsRxwljLg==}
+
   to-regex-range@5.0.1:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
@@ -1081,6 +1104,11 @@ packages:
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
+
+  yaml@2.9.1:
+    resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
 
 snapshots:
 
@@ -1373,6 +1401,8 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
+  '@lume/kiwi@0.4.4': {}
+
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
 
@@ -1394,6 +1424,8 @@ snapshots:
       solid-js: 1.9.15
 
   '@panyam/tsappkit@0.0.5': {}
+
+  '@panyam/tsutils@1.0.0': {}
 
   '@rollup/rollup-android-arm-eabi@4.63.3':
     optional: true
@@ -1470,10 +1502,10 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.63.3':
     optional: true
 
-  '@tailwindcss/forms@0.5.11(tailwindcss@3.4.19)':
+  '@tailwindcss/forms@0.5.11(tailwindcss@3.4.19(yaml@2.9.1))':
     dependencies:
       mini-svg-data-uri: 1.4.4
-      tailwindcss: 3.4.19
+      tailwindcss: 3.4.19(yaml@2.9.1)
 
   '@types/chai@5.2.3':
     dependencies:
@@ -1484,14 +1516,14 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
-  '@vitest/mocker@5.0.1(vite@7.3.6(jiti@1.21.7))':
+  '@vitest/mocker@5.0.1(vite@7.3.6(jiti@1.21.7)(yaml@2.9.1))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.1
       estree-walker: 3.0.3
       magic-string: 1.4.1
     optionalDependencies:
-      vite: 7.3.6(jiti@1.21.7)
+      vite: 7.3.6(jiti@1.21.7)(yaml@2.9.1)
 
   '@vitest/spy@5.0.1': {}
 
@@ -1652,6 +1684,11 @@ snapshots:
 
   function-bind@1.1.2: {}
 
+  galore@1.0.6:
+    dependencies:
+      '@panyam/tsutils': 1.0.0
+      tlex: 1.0.2
+
   gensync@1.0.0-beta.2: {}
 
   glob-parent@5.1.2:
@@ -1727,6 +1764,14 @@ snapshots:
 
   normalize-path@3.0.0: {}
 
+  notations@1.0.9:
+    dependencies:
+      '@lume/kiwi': 0.4.4
+      '@panyam/tsutils': 1.0.0
+      galore: 1.0.6
+      tlex: 1.0.2
+      yaml: 2.9.1
+
   object-assign@4.1.1: {}
 
   object-hash@3.0.0: {}
@@ -1759,12 +1804,13 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.5.28
 
-  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.28):
+  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.28)(yaml@2.9.1):
     dependencies:
       lilconfig: 3.1.3
     optionalDependencies:
       jiti: 1.21.7
       postcss: 8.5.28
+      yaml: 2.9.1
 
   postcss-nested@6.2.0(postcss@8.5.28):
     dependencies:
@@ -1871,7 +1917,7 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  tailwindcss@3.4.19:
+  tailwindcss@3.4.19(yaml@2.9.1):
     dependencies:
       '@alloc/quick-lru': 5.3.0
       arg: 5.0.2
@@ -1890,7 +1936,7 @@ snapshots:
       postcss: 8.5.28
       postcss-import: 15.1.0(postcss@8.5.28)
       postcss-js: 4.1.0(postcss@8.5.28)
-      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.28)
+      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.28)(yaml@2.9.1)
       postcss-nested: 6.2.0(postcss@8.5.28)
       postcss-selector-parser: 6.1.4
       resolve: 1.22.12
@@ -1916,6 +1962,10 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
 
+  tlex@1.0.2:
+    dependencies:
+      '@panyam/tsutils': 1.0.0
+
   to-regex-range@5.0.1:
     dependencies:
       is-number: 7.0.0
@@ -1932,7 +1982,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  vite@7.3.6(jiti@1.21.7):
+  vite@7.3.6(jiti@1.21.7)(yaml@2.9.1):
     dependencies:
       esbuild: 0.28.2
       fdir: 6.5.0(picomatch@4.0.7)
@@ -1943,11 +1993,12 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
       jiti: 1.21.7
+      yaml: 2.9.1
 
-  vitest@5.0.1(vite@7.3.6(jiti@1.21.7)):
+  vitest@5.0.1(vite@7.3.6(jiti@1.21.7)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.1(vite@7.3.6(jiti@1.21.7))
+      '@vitest/mocker': 5.0.1(vite@7.3.6(jiti@1.21.7)(yaml@2.9.1))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -1958,7 +2009,7 @@ snapshots:
       tinybench: 6.1.4
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
-      vite: 7.3.6(jiti@1.21.7)
+      vite: 7.3.6(jiti@1.21.7)(yaml@2.9.1)
       why-is-node-running: 2.3.0
     transitivePeerDependencies:
       - msw
@@ -1969,3 +2020,5 @@ snapshots:
       stackback: 0.0.2
 
   yallist@3.1.1: {}
+
+  yaml@2.9.1: {}

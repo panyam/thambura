@@ -1,0 +1,23 @@
+{
+  "_comment": [
+    "What a pattern's syllables mean, as stroke ids in a kit.",
+    "Solkattu and strokes aren't one to one: 'ta' covers eleven different",
+    "strokes depending on the phrase (docs/mridangam.md). So a pattern is",
+    "written in tokens that name a stroke unambiguously, and this table is",
+    "the only place that decides what each plays. An unknown token is a",
+    "build error, not a silence."
+  ],
+  "strokes": {
+    "tham": "L.tham",
+    "thom": "L.thom",
+    "dheem": "L.dheem",
+    "chapu": "R.chapu",
+    "dhin": "R.dhin",
+    "nam": "R.nam",
+    "dheem_r": "R.dheem",
+    "thi": "R.thi",
+    "ta": "R.ta",
+    "tha": "R.tha",
+    "gumki": "L.gumki"
+  }
+}

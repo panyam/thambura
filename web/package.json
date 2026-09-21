@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.sw.json",
     "test": "vitest run",
     "render-mix": "node scripts/render-mix.mjs",
-    "bench": "node scripts/bench-render.mjs"
+    "bench": "node scripts/bench-render.mjs",
+    "patterns": "node scripts/compile-patterns.mjs",
+    "patterns:check": "node scripts/compile-patterns.mjs --check"
   },
   "dependencies": {
     "@panyam/tsappkit": "^0.0.5",
@@ -22,6 +24,7 @@
     "@tailwindcss/forms": "^0.5.11",
     "esbuild": "^0.28.2",
     "esbuild-plugin-solid": "^0.6.0",
+    "notations": "^1.0.9",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vitest": "^5.0.1"

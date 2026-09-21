@@ -201,6 +201,7 @@ export class KitPresenter {
       gain: gain * (this.state.levels[sound.zone] ?? 1) * (1 - SOFTER * this.rng()),
       choke: `kit/${this.state.kitName}/${sound.zone}`,
       chokeFade: ZONE_CHOKE_FADE,
+      ...(sound.bend ? { bend: sound.bend } : {}),
     });
     this.cues.push({ time: when, id });
     this.runFrames();

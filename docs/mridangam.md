@@ -94,11 +94,14 @@ plays, not per syllable by a table.
 
 A gumki is a thom whose pitch the player bends with the other hand on the
 left head. It only works with paste on the head. Nobody we read gives numbers
-for how far or how fast it bends, so it goes in as a parameter to tune by ear:
-`AudioEngine.play` gains a `bend` option that ramps the note's `detune` from
-0 to some cents over some time, and the gumki stroke is a thom sample played
-with a bend. Something like +200 to +400 cents over 150-400 ms is our guess to
-start from, and a real player should correct it.
+for how far or how fast it bends, so it is a number to tune by ear.
+
+It's wired up. `AudioEngine.play` takes a `bend` that ramps the note's
+`detune`, and a kit can declare a stroke as **derived** from another: the
+gumki is `L.thom` with a bend, so it needs no recording of its own, which
+matters because the dataset has none. The kit ships 300 cents over 0.25 s,
+which is a guess inside the +200 to +400 range our reading suggested. A
+player should correct it, and it's one line in the manifest.
 
 ### Tuning to the shruthi
 
@@ -261,34 +264,104 @@ and the `percussion` bus has its own volume. The additions:
 
 ### Writing patterns down
 
-Patterns are plain text, so they're easy to write, review in a PR, and share.
-A sketch of the format:
+Patterns are written in the [notations](https://github.com/panyam/notations)
+DSL, the library behind the notation web app, rather than a format of our own.
+A pattern is a file under `web/patterns/`:
 
 ```
-pattern  adi-chatusram-1
-tala     custom_adi
-nadai    chatusram
-speed    1
-role     pattern
-
-| tha  dhi  thom nam  | tha  dhi  thom nam  | ...
-| ta   ka   dhi  mi   | ta   ka   dhi  mi   | ...
+---
+id: adi-chatusram-1
+name: Adi sarvalaghu, chatusram
+shape: down one two three down open down open
+nadai: chatusram
+accents:
+  0: 1.15
+  4: 1.05
+---
+\cycle("|4|2|2|")
+\beatDuration(4)
+mrid: tham , thi ,
+      nam , thi ,
+      ...
 ```
 
-The first line of strokes is what plays. The optional second line is the
-solkattu, shown in the view and never played. Each token takes one slot, and
-a slot is 1/(g × 2^(s-1)) of a count, where g is the nadai's group (3, 4, 5, 7
-or 9) and s the speed. Speeds double rather than step: first speed is one
-unit per beat, second is two, third is four
-([eviolinguru](https://www.eviolinguru.com/kaala-tempo.html)). A `,` is a rest for one slot, as karvai is written in
-Carnatic notation. `R.nam+L.thom`, or a composite's short name `tham`, plays
-several primitives at once. `|` marks an akshara boundary and has to fall on
-one, which is what makes a typo in a long pattern easy to catch. The parser
-turns all of it into strokes at exact `Ratio` positions, and a vitest suite
-parses every bundled pattern and checks it fills its cycle exactly.
+`\cycle("|4|2|2|")` is Adi's angas, a laghu of four and two dhruthams.
+`\beatDuration(4)` says four slots to the akshara, which is the nadai.
+`mrid:` is a role, and its atoms are the strokes, with `,` for a rest as
+karvai is written in Carnatic notation. A role stays selected until another
+one is named, so the tag goes on the first line only and the rest are plain
+atoms: one akshara per line reads well. The front matter is ours: which
+cycle shape the pattern fits, which aksharas are leaned on, and where the
+pattern came from.
 
-Which slot count "first speed" means is a naming question we'd like settled
-with a player (see Open questions). The format only needs g and s.
+**Every pattern declares its source**, and the build fails without one. A
+student can't tell a guess from a tradition by ear, so a pattern says whether
+it was transcribed from a player, generated from the tala's angas, or drafted
+and not yet checked.
+
+Three patterns (Misra Chaapu, Khanda Chaapu, Short Rupakam) come from
+[karya](https://github.com/elaforge/karya)'s `MridangamSarva.hs`, Evan
+Laforge's transcriptions from his teachers, used with his permission.
+`web/patterns/CREDITS.md` records which piece each came from, who taught it,
+and how karya's stroke characters were mapped onto this kit. The Adi pattern
+is still the odd one out: drafted here, unverified.
+
+**Why the CompMusic transcriptions aren't used.** The Mridangam
+Tani-avarthanam dataset (Sivaraman, around 8,800 transcribed strokes) and the
+Carnatic Rhythm dataset are both CC BY-NC-ND 4.0, and ND forbids exactly the
+adaptation we would need. They are also tani material, a solo, where what
+accompaniment needs is sarvalaghu.
+
+**A pattern is matched to a tala on its shape and its length.** The shape is
+the app's own name for the cycle, `down one two three down open down open`
+for Adi, so Adi and a chatusra-jaathi Thriputa share one pattern. The length
+is needed because both chaapus are a single clap, so they have the same
+shape, and only 7/2 counts against 5/2 tells them apart. Kalai is ignored in
+the match and applied in the playing: the same pattern stretches.
+
+**Positions are fractions of the cycle**, not of a beat, for the same reason.
+A chaapu is one long beat in our tables while its pattern is written per
+akshara, so `3/7` of the cycle means something in both.
+
+### When nobody has written one
+
+Every other tala gets a skeleton worked out from its own beats
+(`engine/generated.ts`). It strikes where the tala's claps strike, which is
+the nadai's accent pattern for a sapta tala and the chaapu's own for a
+chaapu, and picks the stroke from the kriya: both heads on sam, the bass on
+the other claps, a ringing dhin on a wave, a light nam on the finger counts,
+and a closed thi on anything between the accents. So the drum reinforces what
+the student is counting instead of inventing a phrase.
+
+It is called "Generated from the tala" in the panel and says as much in its
+source, because it is a skeleton and not a sarvalaghu anyone plays. A written
+pattern always wins over it.
+
+The DSL gives us exact rational positions, cycles with kalai and gati, speed
+doubling with `[ ]` groups, and several roles on one cycle, none of which we
+would want to write again. It also means a pattern is renderable by the
+notation app, and a phrase written there plays here.
+
+**Syllables aren't stroke ids.** `web/patterns/strokes.json` maps each token
+to a stroke in the kit, and a token that isn't in it is a build error rather
+than a silence. That table is the one place the mapping lives, which matters
+because solkattu and strokes don't correspond one to one (see Primitives).
+
+**The parser runs at build time, not in the browser.** `pnpm patterns`
+compiles `web/patterns/*.not` into `src/engine/patterns.data.ts`, and the
+app ships only the result. Bundling `notations` would add 78 KB gzipped to a
+162 KB app, and compiling early turns a miscounted pattern into a build
+failure. `pnpm patterns:check` runs in `make test` and fails if the generated
+file has drifted from its source. The compiler also checks that a pattern
+fills its cycle and that its declared shape has as many beats as the cycle
+does.
+
+Where the library's own behaviour got in the way, it's filed upstream rather
+than worked around: bar lines inside a role are a tokenizer error
+(notations#19), `___` never lexes as a silent space (notations#17), there is
+no working comment syntax (notations#21), a failed load poisons later ones in
+the same process (notations#22), and the ESM build can't be imported from
+Node (notations#20).
 
 ### How it plays
 
@@ -432,9 +505,11 @@ Each step is a PR that works on its own.
    the same pattern serves Adi and a chatusra Thriputa and stretches with kalai.
    A tala with no pattern stays silent and the panel says so. The pattern itself
    still wants a player's eye (open question 3).
-3. **The pattern format.** Parser, validation over the library, curated
-   patterns for Adi, Rupakam and the Misra and Khanda chapus at two speeds,
-   the generated fallback for the rest, and the stroke lane.
+3. **The pattern format.** Done but for the stroke lane. The notations DSL
+   compiled at build time, patterns for Adi, Short Rupakam and the Misra and
+   Khanda chaapus, and a generated skeleton for every other tala and nadai.
+   What's left: the stroke lane in the view, and second-speed versions of the
+   written patterns.
 4. **Arrangements.** Variations, fills, korvai, eduppu and count-in,
    tempo-based choice.
 5. **The editor**, local saving and share links.

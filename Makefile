@@ -43,7 +43,7 @@ watch:
 
 test:
 	go test ./...
-	cd web && pnpm typecheck && pnpm test
+	cd web && pnpm typecheck && pnpm patterns:check && pnpm test
 
 # The sound-analysis tools (docs/sound-analysis.md). Kept out of `test`, and so
 # out of `deploy`, since they need a Python env the app itself never uses. The
