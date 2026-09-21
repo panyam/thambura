@@ -12,6 +12,7 @@ make test        # go test ./... ; pnpm typecheck ; pnpm test (vitest)
 make ui          # pnpm install, Tailwind -> web/static/css/tailwind.css, esbuild -> web/static/app.js
 make templates   # templar get: re-vendor goapplib templates after a ref bump
 make devkit      # copy an instrument kit in from ../mridangam-data (gitignored)
+make setupvenv   # one Python venv at ../.venv, shared by every worktree
 make deploy      # tests + prod build, then App Engine project thambura (see Deploying)
 make deploydev   # the same, to a no-traffic "dev" version, to try before thambura.com
 make prodlogs    # tail App Engine logs
@@ -343,6 +344,16 @@ See NEXTSTEPS.md for the order.
   which is gitignored. Go looks for `*/kit.json` under there at startup and
   only then writes `data-kit-url` on the page, so a checkout without a kit
   asks for nothing and shows no pad.
+- **A kit keeps a folder per pack**, `compmusic/c/cha-c-1.flac`, because App
+  Engine caps a directory at 1,000 files and says so is final. A flat kit was
+  232 files and a second drum would have walked into it. `KITSRC` picks which
+  copy `make devkit` takes: `kit-flac` (the default, what the app loads) or
+  `kit` (the master WAVs).
+- **FLAC, not a smaller format.** A lossy format carries encoder padding, and
+  trimming it is the decoder's business, so a stroke's attack can land late.
+  Playwright's Chromium also has no proprietary codecs, so an AAC kit decodes
+  nowhere in our browser checks. Sizes per pack: wav 1636 KB, flac 1028, mp3
+  336, opus 332.
 - **The instrument plays with the tala.** `engine/talaGrid.ts` turns the
   beats and kalai into a cycle length and says which cycle, beat and repeat a
   count falls in. `engine/strokeSequencer.ts` is a `Sequencer<StrokeEvent>` on

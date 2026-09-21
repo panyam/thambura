@@ -418,15 +418,14 @@ tala player, not in a second floating bar like the thambura's.
 
 Each step is a PR that works on its own.
 
-1. **Strokes and tuning.** Done, but for the listening. The kit manifest and
+1. **Strokes and tuning.** Done, and heard in Chrome on 2026-09-21. The kit manifest and
    loader, `bend`, per-zone choke, a level per zone and the stroke pad are in
    the app; the measuring scripts and the kit itself are in the data repo.
    None of that code is about the mridangam: a kit declares its zones, its
    tunings and its strokes, so a ghatam or a tabla needs no new code.
    A kit is copied in with `make devkit` and isn't committed, so Go only
    writes `data-kit-url` when one is there, and a plain checkout shows no pad.
-   What's left is the ear: every stroke at a few keys, next to the thambura.
-2. **One pattern.** Done, but for the listening. `TalaGrid` says where the
+2. **One pattern.** Done, and heard in Chrome on 2026-09-21. `TalaGrid` says where the
    cycle's beats fall, `StrokeSequencer` plays a pattern against them on the
    tala's own tempo map, and one Adi pattern in chatusram is written out in
    `patterns.ts`, with a switch in the panel. Patterns are written per beat, so

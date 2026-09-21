@@ -28,14 +28,20 @@ soundfile and matplotlib. soundfile wraps libsndfile, which reads WAV, FLAC,
 OGG and MP3, so no ffmpeg is needed.
 
 ```sh
+make setupvenv                  # from the repo root
+source ../.venv/bin/activate    # then the commands below run as `python`
 cd tools/sound-analysis
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
 ```
 
+One venv at `../.venv` serves every worktree and the `thambura-data`
+checkout, since they all sit beside each other. `make setupvenv` is safe to
+rerun, `make -s venvpath` prints the path for a shell alias, and `VENV=...`
+puts it somewhere else. Without activating, call it by path instead:
+`../../.venv/bin/python analyse.py ...`.
+
 The tested versions were Python 3.12, numpy 2.5, scipy 1.18, soundfile 0.14
-and matplotlib 3.11. `.venv/` is gitignored. The tests come with pytest in the
-same file; `make soundtest` from the repo root runs them. They measure
+and matplotlib 3.11. The tests come with pytest in the same file;
+`make soundtest` from the repo root runs them in the same venv. They measure
 synthetic strings whose ring, stiffness and buzz the test chose, so they need
 neither a recording nor a render.
 
@@ -49,7 +55,7 @@ they're someone else's audio and they're large. The one used here was
 spectral peaks:
 
 ```sh
-.venv/bin/python analyse.py ../../recordings/tambura-C.mp3
+python analyse.py ../../recordings/tambura-C.mp3
 ```
 
 For the C recording the top peaks were 131.05 Hz (Sa), 196.8 Hz, 261.7 Hz and
@@ -60,7 +66,7 @@ confirm that from its odd harmonics, which fall between the Sa series: 295,
 **2. Measure the recording.**
 
 ```sh
-.venv/bin/python analyse.py ../../recordings/tambura-C.mp3 --sa 131.05
+python analyse.py ../../recordings/tambura-C.mp3 --sa 131.05
 ```
 
 For a first string other than Pa, pass `--first` with the swara's ratio to
@@ -89,13 +95,13 @@ pitches and pluck times, so no `--sa` is needed:
 
 ```sh
 cd ../tools/sound-analysis
-.venv/bin/python analyse.py ../../recordings/renders/jawari.wav
+python analyse.py ../../recordings/renders/jawari.wav
 ```
 
 **5. Compare them and draw the charts.**
 
 ```sh
-.venv/bin/python compare.py            # defaults: recordings/tambura-C.mp3 at Sa 131.05, recordings/renders
+python compare.py            # defaults: recordings/tambura-C.mp3 at Sa 131.05, recordings/renders
 ```
 
 This writes the PNGs in `docs/images/sound-analysis/`. Re-run it after
@@ -104,9 +110,9 @@ changing a voice. It takes a few seconds.
 **6. Measure them into feature files.**
 
 ```sh
-.venv/bin/python features.py ../../recordings/tambura-C.mp3 --sa 131.05 -o features/tambura-C.json
+python features.py ../../recordings/tambura-C.mp3 --sa 131.05 -o features/tambura-C.json
 for m in jawari tambura guitar; do
-  .venv/bin/python features.py ../../recordings/renders/$m.wav -o features/$m.json
+  python features.py ../../recordings/renders/$m.wav -o features/$m.json
 done
 ```
 
@@ -119,7 +125,7 @@ says what the change did.
 **7. Score one against another.**
 
 ```sh
-.venv/bin/python score.py features/tambura-C.json features/jawari.json features/tambura.json features/guitar.json
+python score.py features/tambura-C.json features/jawari.json features/tambura.json features/guitar.json
 ```
 
 ```
@@ -147,8 +153,8 @@ same numbers for a program to read, which is how #45 will drive a search.
 **8. Write the tables on this page.**
 
 ```sh
-.venv/bin/python tables.py          # rewrites the generated blocks below
-.venv/bin/python tables.py --check  # exits 1 if the page has drifted
+python tables.py          # rewrites the generated blocks below
+python tables.py --check  # exits 1 if the page has drifted
 ```
 
 `tables.py` reads `features/` and nothing else, so the tables can be redone
@@ -158,7 +164,7 @@ tools measure.
 **9. Refit, if you have a new recording.**
 
 ```sh
-.venv/bin/python fit.py ../../recordings/tambura-C.mp3 --sa 131.05
+python fit.py ../../recordings/tambura-C.mp3 --sa 131.05
 ```
 
 This takes about 40 s. It prints the fitted parameters and the model beside
@@ -177,9 +183,9 @@ settings" and save the JSON, say as `recordings/lab.json`, then:
 cd ../../web
 pnpm render-mix --custom ../recordings/lab.json     # writes recordings/renders/custom.wav
 cd ../tools/sound-analysis
-.venv/bin/python features.py ../../recordings/renders/custom.wav -o features/custom.json
-.venv/bin/python score.py features/tambura-C.json features/custom.json
-.venv/bin/python compare.py                          # adds "Custom (Lab)" to the charts
+python features.py ../../recordings/renders/custom.wav -o features/custom.json
+python score.py features/tambura-C.json features/custom.json
+python compare.py                          # adds "Custom (Lab)" to the charts
 ```
 
 For example, raising only the second Sa's level from 0.7 to 1.0 (+3 dB)
