@@ -104,7 +104,7 @@ function compile(file, strokes) {
     name: meta.name,
     source: meta.source,
     counts: [Number(countsN), Number(countsD ?? 1)],
-    role: meta.role === "variation" ? "variation" : "main",
+    role: meta.role === "variation" || meta.role === "korvai" ? meta.role : "main",
     // The DSL's cycle is the musical one: seven aksharas for a misra chaapu,
     // where the app's tables call it a single beat.
     aksharas: cycleCounts,

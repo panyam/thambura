@@ -22,6 +22,12 @@ export interface Arrangement {
   main: Pattern;
   /** Alternates of the same cycle, or empty when nobody has written any. */
   variations: Pattern[];
+  /**
+   * An ending that lands on sam, played once when the student asks for it.
+   * A korvai fills whole cycles and resolves on the next sam, which is how
+   * an accompanist tells a singer the section is over.
+   */
+  korvai: Pattern | null;
 }
 
 /** How often a variation is swapped in: none, now and then, or often. */
@@ -44,14 +50,13 @@ export function arrangementFor(
   from: Pattern[] = PATTERNS,
 ): Arrangement | null {
   if (!main) return null;
-  const variations = from.filter(
-    (p) =>
-      p.role === "variation" &&
-      p.shape === grid.shape &&
-      cmp(p.counts, grid.patternCounts) === 0 &&
-      (p.nadai === nadai || p.nadai === "any"),
-  );
-  return { main, variations };
+  const fits = (p: Pattern) =>
+    p.shape === grid.shape && cmp(p.counts, grid.patternCounts) === 0 && (p.nadai === nadai || p.nadai === "any");
+  return {
+    main,
+    variations: from.filter((p) => p.role === "variation" && fits(p)),
+    korvai: from.find((p) => p.role === "korvai" && fits(p)) ?? null,
+  };
 }
 
 /**

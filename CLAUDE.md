@@ -384,7 +384,9 @@ See NEXTSTEPS.md for the order.
   pattern's `role` is `main` or `variation`; `arrangementFor` gathers the
   alternates that fit the same cycle, and `patternForCycle` draws one per
   cycle at the Variety setting's chance (off, 0.3, 0.7). The first cycle is
-  always the main one. The player asks per cycle through `StrokeSequencer`'s
+  always the main one. A `korvai` role is an ending: the Korvai button hands
+  the next cycle to it, and it resolves on the sam after, which is how an
+  accompanist closes a section. The player asks per cycle through `StrokeSequencer`'s
   source, and keeps a lane per cycle so the lane changes when that cycle is
   heard, not when it was booked.
 - **The stroke lane** (`player/StrokeLane.tsx`) shows the cycle's aksharas

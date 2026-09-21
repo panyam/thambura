@@ -54,6 +54,45 @@ describe("arrangementFor", () => {
   });
 });
 
+describe("the korvai", () => {
+  it("is found for a tala that has one", () => {
+    expect(setup().korvai?.id).toBe("adi-korvai-1");
+    expect(setup().korvai?.role).toBe("korvai");
+  });
+
+  it("is absent where nobody has written one", () => {
+    expect(setup({ tala: "chaapu_misram" }).korvai).toBeNull();
+    expect(setup({ tala: "custom_rupakam" }).korvai).toBeNull();
+  });
+
+  it("fills exactly one cycle, so it resolves on the next sam", () => {
+    const korvai = setup().korvai!;
+    expect(korvai.aksharas).toBe(8);
+    for (const stroke of korvai.strokes) {
+      const at = stroke.at.n / stroke.at.d;
+      expect(at).toBeGreaterThanOrEqual(0);
+      expect(at).toBeLessThan(1);
+    }
+    // It is one phrase of eight slots, three times, joined by four more, so
+    // the phrase repeats at slots 0, 12 and 24 of the cycle's 32.
+    const slots = (from: number) =>
+      korvai.strokes
+        .map((x) => ({ slot: (x.at.n / x.at.d) * 32, stroke: x.stroke }))
+        .filter((x) => x.slot >= from && x.slot < from + 8)
+        .map((x) => `${x.slot - from}:${x.stroke}`);
+    expect(slots(12)).toEqual(slots(0));
+    expect(slots(24)).toEqual(slots(0));
+    expect(slots(0)).toEqual(["0:R.thi", "1:L.thom", "2:L.thom", "3:R.thi", "4:L.thom", "5:R.thi", "6:R.thi"]);
+  });
+
+  it("is never chosen by the cycle draw: it is asked for", () => {
+    const a = setup();
+    for (let cycle = 0; cycle < 50; cycle++) {
+      expect(patternForCycle(a, cycle, "lots", Math.random).role).not.toBe("korvai");
+    }
+  });
+});
+
 describe("patternForCycle", () => {
   const adi = () => setup();
 
@@ -91,7 +130,7 @@ describe("patternForCycle", () => {
       seed = (seed * 1664525 + 1013904223) % 4294967296;
       return seed / 4294967296;
     };
-    const counts = { main: 0, variation: 0 };
+    const counts: Record<string, number> = { main: 0, variation: 0 };
     for (let cycle = 1; cycle <= 400; cycle++) {
       counts[patternForCycle(a, cycle, "some", rng).role]++;
     }
@@ -108,6 +147,7 @@ describe("patternForCycle", () => {
         { ...PATTERNS[0], id: "v2" } as Pattern,
         { ...PATTERNS[0], id: "v3" } as Pattern,
       ],
+      korvai: null,
     };
     expect(patternForCycle(three, 1, "lots", draws([0, 0])).id).toBe("v1");
     expect(patternForCycle(three, 1, "lots", draws([0, 0.5])).id).toBe("v2");

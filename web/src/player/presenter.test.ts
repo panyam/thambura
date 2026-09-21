@@ -411,6 +411,44 @@ describe("PlayerPresenter with an instrument", () => {
     expect(p.state.strokeIndex).toBe(1);
   });
 
+  it("plays the korvai once, then goes back to the accompaniment", async () => {
+    p.setTempo(240); // four counts a second, so a cycle is two seconds
+    expect(p.state.hasKorvai).toBe(true);
+    await p.start();
+    advance(0.05);
+
+    p.askForKorvai();
+    expect(p.state.korvaiQueued).toBe(true);
+
+    // The korvai takes the next cycle to be laid out, and the lane shows it
+    // once it sounds.
+    const names = new Set<string>();
+    for (let t = 0.1; t < 8; t += 0.05) {
+      advance(t);
+      if (p.state.lane) names.add(p.state.lane.name);
+    }
+    expect([...names]).toContain("Adi korvai");
+    // It played once, and the button is free again.
+    expect(p.state.korvaiQueued).toBe(false);
+    expect(p.state.lane!.name).not.toBe("Adi korvai");
+  });
+
+  it("forgets a korvai that was asked for but never played", async () => {
+    await p.start();
+    advance(0.05);
+    p.askForKorvai();
+    expect(p.state.korvaiQueued).toBe(true);
+    p.stop();
+    expect(p.state.korvaiQueued).toBe(false);
+  });
+
+  it("has no korvai to offer for a tala without one", () => {
+    p.setSettings({ tala: "chaapu_misram" });
+    expect(p.state.hasKorvai).toBe(false);
+    p.askForKorvai();
+    expect(p.state.korvaiQueued).toBe(false);
+  });
+
   it("takes back what hasn't sounded when it stops", async () => {
     await p.start();
     advance(0.05);

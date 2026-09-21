@@ -19,6 +19,10 @@ export function StrokeLane(props: {
   setVariety: (variety: Variety) => void;
   /** Whether this tala has anything to swap in. */
   hasVariations: Accessor<boolean>;
+  /** Whether it has an ending, and whether one is on its way. */
+  hasKorvai: Accessor<boolean>;
+  korvaiQueued: Accessor<boolean>;
+  askForKorvai: () => void;
 }) {
   const cells = () => {
     const lane = props.lane();
@@ -45,6 +49,17 @@ export function StrokeLane(props: {
                 <span class="italic"> · a skeleton, not a pattern anyone plays</span>
               </Show>
             </span>
+            <Show when={props.hasKorvai()}>
+              <button
+                type="button"
+                aria-label="Play the korvai at the next cycle"
+                onClick={() => props.askForKorvai()}
+                disabled={props.korvaiQueued()}
+                class="rounded-md border border-gray-300 px-2 py-0.5 text-xs hover:bg-gray-50 disabled:opacity-60 dark:border-gray-600 dark:hover:bg-gray-700"
+              >
+                {props.korvaiQueued() ? "Korvai next cycle" : "Korvai"}
+              </button>
+            </Show>
             <Show when={props.hasVariations()}>
               <label class="flex items-center gap-1">
                 Variety
