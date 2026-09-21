@@ -66,21 +66,29 @@ deploy: checklinks test uiprod server
 prodlogs:
 	gcloud app logs tail -s default --project $(GCP_PROJECT)
 
-# A second App Engine project to try a deploy in before the real one, so a
-# change can be clicked through on a real App Engine and not just `make run`.
-# layagnana still serves the 2016 app at its root, so a dev deploy goes to its
-# own version and takes no traffic; PROMOTE=1 moves the root to it (the old
-# version is still there to promote back). The URL is printed at the end.
-# The app marks itself noindex on any project but thambura, so the test copy
-# can't turn up in search.
-DEV_PROJECT ?= layagnana
+# Try a deploy before the real one: the same build, sent to a "dev" version of
+# the same project, which takes no traffic and has its own URL (printed at the
+# end). That way the test copy runs against the project the site really runs
+# in. The version id is reused, so dev deploys don't pile up, and the app marks
+# a dev version noindex so it can't turn up in search. DEV_PROJECT sends it to
+# a separate project instead (layagnana has an App Engine app, still serving
+# the 2016 site at its root).
+DEV_PROJECT ?= $(GCP_PROJECT)
 DEV_VERSION ?= dev
 PROMOTE ?=
 
-deploydev: checklinks test uiprod server
+# Traffic only moves with PROMOTE=1, and never in the project serving
+# thambura.com: `make deploy` is the way to put a build there. The check runs
+# before the tests, so a refused deploy is refused at once.
+checkpromote:
+	@test -z "$(PROMOTE)" || test "$(DEV_PROJECT)" != "$(GCP_PROJECT)" || \
+		{ echo "PROMOTE=1 would put this build on thambura.com: run 'make deploy'"; exit 1; }
+
+deploydev: checkpromote checklinks test uiprod server
 	gcloud app deploy app.yaml --project $(DEV_PROJECT) --version=$(DEV_VERSION) \
 		$(if $(PROMOTE),--promote,--no-promote) --verbosity=info
-	@echo "== https://$(DEV_VERSION)-dot-$(DEV_PROJECT).appspot.com"
+	@echo "== $$(gcloud app versions describe $(DEV_VERSION) --service=default \
+		--project $(DEV_PROJECT) --format='value(versionUrl)')"
 
 devlogs:
 	gcloud app logs tail -s default --project $(DEV_PROJECT)
@@ -109,4 +117,4 @@ domainstatus:
 clean:
 	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css
 
-.PHONY: all ui uiprod server build run watch test templates resymlink checklinks deploy prodlogs deploydev devlogs verifydomain domains domainstatus clean
+.PHONY: all ui uiprod server build run watch test templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean

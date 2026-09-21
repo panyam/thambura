@@ -219,12 +219,14 @@ func TestLegacyIsNoindex(t *testing.T) {
 	}
 }
 
-// A deploy to any project but the real one (`make deploydev`) is a test copy,
-// which must not turn up in search beside thambura.com.
+// `make deploydev` deploys a test copy, which must not turn up in search
+// beside thambura.com. It lands on a dev version of the real project by
+// default, or in another project altogether.
 func TestStagingIsNoindex(t *testing.T) {
-	t.Setenv("GOOGLE_CLOUD_PROJECT", "layagnana")
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "thambura")
+	t.Setenv("GAE_VERSION", "dev")
 	if !Staging() {
-		t.Fatal("Staging() = false on another project")
+		t.Fatal("Staging() = false on a dev version")
 	}
 	webDir := filepath.Join("..", "..", "web")
 	app, err := NewApp(filepath.Join(webDir, "templates"))
@@ -243,14 +245,23 @@ func TestStagingIsNoindex(t *testing.T) {
 		t.Errorf("robots.txt = %q, want Disallow", got)
 	}
 
-	// The real project, and a server run outside App Engine, are indexed.
+	// Another project is a test copy however its version is named.
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "layagnana")
+	t.Setenv("GAE_VERSION", "20260921t120000")
+	if !Staging() {
+		t.Error("Staging() = false on another project")
+	}
+
+	// A version App Engine named itself is the real site, and a server run
+	// outside App Engine has neither variable.
 	t.Setenv("GOOGLE_CLOUD_PROJECT", "thambura")
 	if Staging() {
-		t.Error("Staging() = true on the production project")
+		t.Error("Staging() = true on a deployed production version")
 	}
 	t.Setenv("GOOGLE_CLOUD_PROJECT", "")
+	t.Setenv("GAE_VERSION", "")
 	if Staging() {
-		t.Error("Staging() = true with no project set")
+		t.Error("Staging() = true outside App Engine")
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	goal "github.com/panyam/goapplib"
 	tmplr "github.com/panyam/templar"
@@ -188,12 +189,16 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 }
 
 // Staging reports whether this process is a test copy of the site rather than
-// the real one. App Engine sets GOOGLE_CLOUD_PROJECT, and `make deploydev`
-// puts the app in a project other than brand.ProjectID; a server run locally
-// has the variable unset and is not staging.
+// the real one. `make deploydev` deploys a brand.DevVersionPrefix version,
+// which App Engine reports in GAE_VERSION, by default into the real project;
+// DEV_PROJECT sends it to another project instead, which GOOGLE_CLOUD_PROJECT
+// reports. Both variables are unset on a server run locally, which is not
+// staging.
 func Staging() bool {
-	p := os.Getenv("GOOGLE_CLOUD_PROJECT")
-	return p != "" && p != brand.ProjectID
+	if p := os.Getenv("GOOGLE_CLOUD_PROJECT"); p != "" && p != brand.ProjectID {
+		return true
+	}
+	return strings.HasPrefix(os.Getenv("GAE_VERSION"), brand.DevVersionPrefix)
 }
 
 // SiteHandler wraps the mux with what a whole deploy needs. On a staging
