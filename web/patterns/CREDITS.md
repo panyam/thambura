@@ -43,9 +43,17 @@ is a bass stroke with the right head ringing, which is close but not the same
 hand shape.
 
 karya also has strokes this kit simply lacks, notably arai chapu (`u`) and
-the left-hand tha (`p`). Patterns using them were left alone rather than
-approximated, which is why the three above were chosen from a much larger
-collection.
+the left-hand tha (`p`). The kit lacks them because the CompMusic dataset
+does: its ten labels have no arai chapu, no left-hand tha and no gumki.
+Patterns using them were left alone rather than approximated, which is why
+the three above were chosen from a much larger collection. Adding a stroke is
+a data change, three lines in the manifest builder plus takes, so a recording
+session would open up more of karya's material.
+
+**A naming trap:** this kit's `tha` is not karya's `p`. The dataset's `tha`
+measured as a closed stroke on the *right* head, which is what `R.tha` is
+here. karya's `p` is the left-hand tha, a damped slap on the thoppi. Same
+word, different hand.
 
 ## What still needs a player
 

@@ -319,6 +319,20 @@ the match and applied in the playing: the same pattern stretches.
 A chaapu is one long beat in our tables while its pattern is written per
 akshara, so `3/7` of the cycle means something in both.
 
+### When nobody has written one
+
+Every other tala gets a skeleton worked out from its own beats
+(`engine/generated.ts`). It strikes where the tala's claps strike, which is
+the nadai's accent pattern for a sapta tala and the chaapu's own for a
+chaapu, and picks the stroke from the kriya: both heads on sam, the bass on
+the other claps, a ringing dhin on a wave, a light nam on the finger counts,
+and a closed thi on anything between the accents. So the drum reinforces what
+the student is counting instead of inventing a phrase.
+
+It is called "Generated from the tala" in the panel and says as much in its
+source, because it is a skeleton and not a sarvalaghu anyone plays. A written
+pattern always wins over it.
+
 The DSL gives us exact rational positions, cycles with kalai and gati, speed
 doubling with `[ ]` groups, and several roles on one cycle, none of which we
 would want to write again. It also means a pattern is renderable by the
@@ -487,11 +501,11 @@ Each step is a PR that works on its own.
    the same pattern serves Adi and a chatusra Thriputa and stretches with kalai.
    A tala with no pattern stays silent and the panel says so. The pattern itself
    still wants a player's eye (open question 3).
-3. **The pattern format.** The notations DSL, compiled at build time, is in;
-   patterns live in `web/patterns/` with a stroke table beside them. What's
-   left of this step: curated patterns for Rupakam and the Misra and Khanda
-   chapus at two speeds, the generated fallback so every tala plays
-   something, and the stroke lane.
+3. **The pattern format.** Done but for the stroke lane. The notations DSL
+   compiled at build time, patterns for Adi, Short Rupakam and the Misra and
+   Khanda chaapus, and a generated skeleton for every other tala and nadai.
+   What's left: the stroke lane in the view, and second-speed versions of the
+   written patterns.
 4. **Arrangements.** Variations, fills, korvai, eduppu and count-in,
    tempo-based choice.
 5. **The editor**, local saving and share links.
