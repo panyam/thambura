@@ -11,7 +11,9 @@ make run         # ui + go run on :8000 (8080 is taken in the dev container)
 make test        # go test ./... ; pnpm typecheck ; pnpm test (vitest)
 make ui          # pnpm install, Tailwind -> web/static/css/tailwind.css, esbuild -> web/static/app.js
 make templates   # templar get: re-vendor goapplib templates after a ref bump
+make devkit      # copy an instrument kit in from ../mridangam-data (gitignored)
 make deploy      # tests + prod build, then App Engine project thambura (see Deploying)
+make deploydev   # the same, to a no-traffic "dev" version, to try before thambura.com
 make prodlogs    # tail App Engine logs
 ```
 
@@ -328,18 +330,34 @@ See NEXTSTEPS.md for the order.
   tonic (`tunedTonicHz`). Sound quality is issue #8: the jawari voice, fitted
   to a real recording, is the default, and the Lab, links and presets are
   how it gets tuned by ear from here, by us and by listeners.
-- **Mridangam:** `docs/mridangam.md` is the plan (strokes and tuning,
-  patterns per tala, packaging, views, build order, open questions).
-- **Mridangam / tabla:** the musical timeline is in (`ratio.ts`,
-  `tempoMap.ts`). Add a `Sequencer<StrokeEvent>` on the tala's `TempoMap` and
-  `Transport` that emits per stroke at exact positions, reads the tala's
-  position for eduppu and korvai alignment (nothing exposes the cycle and beat
-  for a count yet), and plays on the `percussion` bus.
-- Drum playback needs choke groups (a damped stroke cuts a ringing one on the
-  same head), so give each sounding note its own gain node and fade it out over
-  5-10 ms rather than calling `stop()`, which clicks. Also plan for 2-3 takes per
-  stroke, picked by the step's `variant`, and trimmed mono samples, since decoded
-  PCM is about 350 KB/s stereo.
+- **Struck instruments are kits, and the code knows nothing about any one of
+  them.** `engine/kit.ts` reads a `kit.json`: zones (the groups of strokes
+  that choke each other, a mridangam's two heads or a ghatam's one surface),
+  packs (tunings, or one unpitched pack played as recorded), and strokes with
+  takes per pack. `player/kitPresenter.ts` loads one, follows the thambura's
+  Sa and plays a stroke; `player/StrokePad.tsx` draws whatever the manifest
+  declares. The mridangam is data, not code. `docs/mridangam.md` is the plan
+  (strokes and tuning, patterns per tala, packaging, views, build order).
+- **Kits aren't committed.** They're build products from the `thambura-data`
+  repo: `make devkit` copies one into `web/static/Resources/Kits/<kit>/`,
+  which is gitignored. Go looks for `*/kit.json` under there at startup and
+  only then writes `data-kit-url` on the page, so a checkout without a kit
+  asks for nothing and shows no pad.
+- **The instrument plays with the tala.** `engine/talaGrid.ts` turns the
+  beats and kalai into a cycle length and says which cycle, beat and repeat a
+  count falls in. `engine/strokeSequencer.ts` is a `Sequencer<StrokeEvent>` on
+  the tala's own `TempoMap`, queued a cycle at a time, so strokes and claps
+  are the same musical points and can't drift. `engine/patterns.ts` holds the
+  patterns, written per beat of the cycle: `pattern()` takes one token per
+  slot with `|` between aksharas and `,` for a rest, and `patternFor` matches
+  on beats per cycle and nadai, so one Adi pattern serves Adi and a chatusra
+  Thriputa and stretches with kalai. What's left for the mridangam is the
+  text format for patterns, then arrangements (`docs/mridangam.md`).
+- Drum strokes choke per head: a closed stroke cuts the ring of the last open
+  one on the same head, never the other head. `play` takes `chokeFade` for
+  that (8 ms, against the strings' 80 ms) and `bend`, which slides a note's
+  detune for the gumki. Takes go round per stroke, with a little gain jitter.
+  Trimmed mono samples matter, since decoded PCM is about 190 KB/s mono.
 
 ## Deploying
 
@@ -349,6 +367,32 @@ to override). It refuses to run with active `replace` directives in go.mod.
 The runtime is `go126` in `app.yaml`, which has to be at least the `go` line
 in go.mod. App Engine serves `/static` itself (`static_dir: web/static`) and
 forces HTTPS.
+
+`make deploydev` is the same build, sent to the `dev` version of the same
+project with `--no-promote`, to click through on a real App Engine before
+thambura.com gets it. It takes no traffic and has its own URL,
+https://dev-dot-thambura.uc.r.appspot.com, which the target prints from
+`gcloud app versions describe` (the appspot hostname is regionalized here but
+not on older apps, so don't build that URL by hand). The version id is reused,
+so dev deploys don't pile up the way `make deploy`'s timestamped ones do.
+Staying in the real project is the point: the test copy runs with the project's
+own service account, region, quotas and `app.yaml`. `DEV_PROJECT` sends it
+somewhere else instead (`layagnana` has an App Engine app, serving the 2016
+site at `layagnana.appspot.com`), `DEV_VERSION` renames the version, and
+`make devlogs` tails whichever it was.
+
+Traffic only moves with `PROMOTE=1`, and `checkpromote` refuses that in the
+project serving thambura.com, before the tests run: `make deploy` is the way to
+put a build there. `web.Staging()` keeps a test copy out of search, through
+`SiteHandler` marking every page `noindex` and `robots.txt` serving
+`Disallow: /`. It reads two App Engine variables: `GAE_VERSION`, since a dev
+version sits in the real project (App Engine names a real deploy's version
+after the time, so it never starts with `brand.DevVersionPrefix`), and
+`GOOGLE_CLOUD_PROJECT` for a deploy to another project. Neither is set locally.
+The `/static` and `/legacy` handlers are App Engine's own on a deploy, so that
+header doesn't reach them (`/legacy` has it from `app.yaml` anyway).
+`brand.URL` is a constant, so the dev copy's canonical link, share links and OG
+image still point at thambura.com.
 
 The dev container has `gcloud`, signed in as the project's owner, so
 `make deploy` runs from here. It takes a few minutes: the tests, a minified
@@ -402,7 +446,9 @@ edits. So:
 
 - Don't switch branches in the shared checkout. Start each piece of work in
   its own worktree: `git worktree add -b <branch> <dir> origin/master`, then
-  `cd <dir>/web && pnpm install`.
+  `cd <dir>/web && pnpm install`. A worktree gets its own `node_modules`,
+  and its own `tools/sound-analysis/.venv` if you're running the sound
+  analysis; both are gitignored, so a new worktree starts without them.
 - Stage explicit paths, and check `git status` for files you didn't touch.
 - Serve a worktree on its own port: `(cd web && pnpm buildcss && pnpm build)`,
   then `PORT=8011 go run .` from the worktree root. Check the port is free

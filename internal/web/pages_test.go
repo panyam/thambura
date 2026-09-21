@@ -219,6 +219,52 @@ func TestLegacyIsNoindex(t *testing.T) {
 	}
 }
 
+// `make deploydev` deploys a test copy, which must not turn up in search
+// beside thambura.com. It lands on a dev version of the real project by
+// default, or in another project altogether.
+func TestStagingIsNoindex(t *testing.T) {
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "thambura")
+	t.Setenv("GAE_VERSION", "dev")
+	if !Staging() {
+		t.Fatal("Staging() = false on a dev version")
+	}
+	webDir := filepath.Join("..", "..", "web")
+	app, err := NewApp(filepath.Join(webDir, "templates"))
+	if err != nil {
+		t.Fatalf("NewApp: %v", err)
+	}
+	mux := http.NewServeMux()
+	Register(app, mux, webDir)
+	srv := httptest.NewServer(SiteHandler(mux))
+	t.Cleanup(srv.Close)
+
+	if got := fetch(t, srv.URL+"/").robots; got != "noindex" {
+		t.Errorf("GET /: X-Robots-Tag = %q, want noindex", got)
+	}
+	if got := fetch(t, srv.URL+"/robots.txt").body; !strings.Contains(got, "Disallow: /") {
+		t.Errorf("robots.txt = %q, want Disallow", got)
+	}
+
+	// Another project is a test copy however its version is named.
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "layagnana")
+	t.Setenv("GAE_VERSION", "20260921t120000")
+	if !Staging() {
+		t.Error("Staging() = false on another project")
+	}
+
+	// A version App Engine named itself is the real site, and a server run
+	// outside App Engine has neither variable.
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "thambura")
+	if Staging() {
+		t.Error("Staging() = true on a deployed production version")
+	}
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "")
+	t.Setenv("GAE_VERSION", "")
+	if Staging() {
+		t.Error("Staging() = true outside App Engine")
+	}
+}
+
 type response struct {
 	code         int
 	contentType  string
@@ -297,5 +343,49 @@ func TestMissingAssets(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "static", "css", "tailwind.css"), nil, 0o644)
 	if got := MissingAssets(dir); len(got) != 0 {
 		t.Errorf("built dir: missing = %v, want none", got)
+	}
+}
+
+// A kit is a build product that isn't committed (see docs/mridangam.md), so
+// the page must only name one when the folder actually holds it. Otherwise
+// every visitor's browser asks for a kit.json that isn't there.
+func TestFindKit(t *testing.T) {
+	static := t.TempDir()
+	if got := findKit(static); got != "" {
+		t.Fatalf("findKit with no kits = %q, want empty", got)
+	}
+	dir := filepath.Join(static, "Resources", "Kits", "compmusic")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A folder without a manifest still counts as no kit.
+	if got := findKit(static); got != "" {
+		t.Fatalf("findKit with an empty kit folder = %q, want empty", got)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "kit.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	want := "/static/Resources/Kits/compmusic/kit.json"
+	if got := findKit(static); got != want {
+		t.Fatalf("findKit = %q, want %q", got, want)
+	}
+}
+
+// The home page carries the kit URL only when Register found one.
+func TestHomePageKitAttribute(t *testing.T) {
+	webDir := filepath.Join("..", "..", "web")
+	app, err := NewApp(filepath.Join(webDir, "templates"))
+	if err != nil {
+		t.Fatalf("NewApp: %v", err)
+	}
+	mux := http.NewServeMux()
+	Register(app, mux, webDir)
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	_, body := get(t, srv.URL+"/")
+	found := app.Context.KitURL
+	if has := strings.Contains(body, "data-kit-url="); has != (found != "") {
+		t.Fatalf("data-kit-url present = %v, but the kit found at startup was %q", has, found)
 	}
 }

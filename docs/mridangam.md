@@ -26,7 +26,7 @@ much all of them play fixed recorded loops, and only one lets you compose.
 | [My TalaVadyam](https://www.upbeatlabs.com/my-talavadyam/) | the only composer: 15 strokes, 16 stock phrases, drag-and-drop tiles | 1st/2nd/3rd speed, separate pitch and volume per head, a view of the phrase playing | no tambura ("hard for my dance classes") |
 | [Talanome](https://www.upbeatlabs.com/talanome/) | tala keeper, all 108 talas | a count-in for eduppu | a redesign that confused its users |
 | [Tala Keeper](https://talakeeper.org/notes.html) | tala keeper | patterns tapped on pads drawn as the two drum heads; patterns shared as URLs that play in a browser | |
-| [iTablaPro](https://apps.apple.com/us/app/itablapro-tabla-tanpura-player/id337350026) (tabla) | loops per taal | different thekas for slow, medium and fast tempos; an auto-tuner to your harmonium | "same old beats" |
+| [iTablaPro](https://apps.apple.com/us/app/itablapro-tabla-tanpura-player/id337350026) (tabla) | loops per taal | different patterns for slow, medium and fast tempos; an auto-tuner to your harmonium | "same old beats" |
 | [TaalMala](https://apps.apple.com/us/app/taalmala/id900947127) (tabla) | loops plus a bol composer | bols typed as text; variations picked at random, or picked to suit the tempo | "horribly buggy", "cluttered", 5 free minutes an hour |
 
 (Download counts and ratings are from store pages and aggregators, and the
@@ -252,11 +252,11 @@ and the `percussion` bus has its own volume. The additions:
 - A **phrase** is a short named group, the way a player thinks in "tha dhi
   thom nam".
 - A **pattern** lays phrases and strokes out over some number of aksharas,
-  and has a role. A *theka* is the basic loop for a tala, nadai and speed. A
+  and has a role. A *sarvalaghu* is the flowing basic pattern for a tala, nadai and speed. A
   *variation* is another loop of the same length to swap in. A *fill* replaces
   the end of a cycle. A *mohra* or *korvai* is a multi-cycle ending that lands
   on sam (or on the eduppu).
-- An **arrangement** decides what plays each cycle: mostly the theka, a
+- An **arrangement** decides what plays each cycle: mostly the pattern, a
   variation now and then, a fill every few cycles, and a korvai when asked.
 
 ### Writing patterns down
@@ -269,7 +269,7 @@ pattern  adi-chatusram-1
 tala     custom_adi
 nadai    chatusram
 speed    1
-role     theka
+role     pattern
 
 | tha  dhi  thom nam  | tha  dhi  thom nam  | ...
 | ta   ka   dhi  mi   | ta   ka   dhi  mi   | ...
@@ -306,7 +306,7 @@ tempo changes. The new pieces:
   this cycle, queues that pattern's strokes at exact positions, and hands
   each out when its own time enters the look-ahead window, as the tala's
   ticks do now.
-- **The arrangement** (engine, pure). Picks theka, variation, fill or korvai
+- **The arrangement** (engine, pure). Picks pattern, variation, fill or korvai
   per cycle from the settings and a seeded random draw, so it's testable and
   repeatable.
 - **The presenter.** The mridangam rides the tala's transport, so it belongs
@@ -315,7 +315,7 @@ tempo changes. The new pieces:
   settings change.
 
 What to play for each tala and nadai has three sources, in order: a curated
-pattern from the library, a pattern that fits the tempo (sparser thekas at
+pattern from the library, a pattern that fits the tempo (sparser patterns at
 high tempos, the iTablaPro idea), and a generated fallback. The fallback is
 kept simple on purpose: tham on sam, a stroke on each beat that follows the tala's
 angas (a bass stroke on the claps, lighter strokes on the finger counts, chapu
@@ -418,17 +418,23 @@ tala player, not in a second floating bar like the thambura's.
 
 Each step is a PR that works on its own.
 
-1. **Strokes and tuning.** The kit manifest and loader, `bend`, per-head
-   choke, left/right levels, the stroke pad, and the pitch-measuring script.
-   Built against the dataset locally. The measuring scripts, a candidate kit
-   and a plain-HTML stroke pad already exist in the data repo, so what's left
-   here is the in-app version. Done when every stroke sounds right on the pad
-   at a few keys, by ear, next to the thambura.
-2. **One theka.** `TalaGrid`, `StrokeSequencer`, and a hand-written Adi
-   theka, with an on/off switch. A test that the strokes and claps agree
-   through tempo changes, and an in-browser capture of the scheduled times.
+1. **Strokes and tuning.** Done, but for the listening. The kit manifest and
+   loader, `bend`, per-zone choke, a level per zone and the stroke pad are in
+   the app; the measuring scripts and the kit itself are in the data repo.
+   None of that code is about the mridangam: a kit declares its zones, its
+   tunings and its strokes, so a ghatam or a tabla needs no new code.
+   A kit is copied in with `make devkit` and isn't committed, so Go only
+   writes `data-kit-url` when one is there, and a plain checkout shows no pad.
+   What's left is the ear: every stroke at a few keys, next to the thambura.
+2. **One pattern.** Done, but for the listening. `TalaGrid` says where the
+   cycle's beats fall, `StrokeSequencer` plays a pattern against them on the
+   tala's own tempo map, and one Adi pattern in chatusram is written out in
+   `patterns.ts`, with a switch in the panel. Patterns are written per beat, so
+   the same pattern serves Adi and a chatusra Thriputa and stretches with kalai.
+   A tala with no pattern stays silent and the panel says so. The pattern itself
+   still wants a player's eye (open question 3).
 3. **The pattern format.** Parser, validation over the library, curated
-   thekas for Adi, Rupakam and the Misra and Khanda chapus at two speeds,
+   patterns for Adi, Rupakam and the Misra and Khanda chapus at two speeds,
    the generated fallback for the rest, and the stroke lane.
 4. **Arrangements.** Variations, fills, korvai, eduppu and count-in,
    tempo-based choice.
@@ -443,7 +449,7 @@ Each step is a PR that works on its own.
    own (and who plays?), or try synthesis first?
 2. **Speeds.** In slots per akshara, what should 1st, 2nd and 3rd speed mean
    for each nadai, so the app matches how a teacher counts?
-3. **Who checks the patterns?** The thekas, the stock phrases and the
+3. **Who checks the patterns?** The patterns, the stock phrases and the
    phrase-to-stroke mappings need a mridangam player to write or at least
    vet them. The same person could name the dataset's ten labels by ear,
    since `bheem` against `dheem` will confuse anyone reading a manifest.

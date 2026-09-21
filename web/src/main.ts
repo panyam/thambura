@@ -1,6 +1,7 @@
 import { BasePage, type LCMComponent } from "@panyam/tsappkit";
 import { AudioEngine } from "./player/audio";
 import { createPlayerIsland } from "./player/island";
+import { KitPresenter } from "./player/kitPresenter";
 import { isIOS, isInstalled, wireInstall } from "./player/install";
 import { KeepAwake, usePlaybackSession, type WakeLockLike } from "./player/keepAwake";
 import { createThamburaIsland } from "./player/thamburaIsland";
@@ -22,9 +23,20 @@ class HomePage extends BasePage {
     const audio = new AudioEngine();
     const awake = new KeepAwake({ wakeLock: (navigator as { wakeLock?: WakeLockLike }).wakeLock, doc: document });
     const components: LCMComponent[] = [];
+    // The struck instrument, built here so the thambura can tune it to the
+    // same Sa. One for now; the mixer plan has several.
+    const kit = new KitPresenter({
+      audio,
+      fetchJson: async (url) => {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+        return r.json();
+      },
+      frames: { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) },
+    });
     const player = document.getElementById("player");
     if (player) {
-      components.push(createPlayerIsland(player, this.eventBus, audio, (on) => awake.set("tala", on)));
+      components.push(createPlayerIsland(player, this.eventBus, audio, (on) => awake.set("tala", on), kit));
     }
     const thambura = document.getElementById("thambura");
     if (thambura) {
@@ -33,7 +45,16 @@ class HomePage extends BasePage {
         toggle: document.getElementById("thambura-toggle"),
         play: document.getElementById("thambura-play"),
       };
-      components.push(createThamburaIsland(thambura, this.eventBus, audio, controls, (on) => awake.set("thambura", on)));
+      components.push(
+        createThamburaIsland(
+          thambura,
+          this.eventBus,
+          audio,
+          controls,
+          (on) => awake.set("thambura", on),
+          (settings) => kit.setThambura(settings),
+        ),
+      );
     }
     wireInstall(
       window,

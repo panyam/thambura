@@ -22,9 +22,17 @@ export interface PlayOptions {
   pan?: number;
   /**
    * A choke group. When a later note in the same group starts, this one fades
-   * out quickly, as a re-plucked string stops its old vibration.
+   * out quickly, as a re-plucked string stops its old vibration. A drum head
+   * wants a much faster fade than a string, so `chokeFade` overrides it.
    */
   choke?: string;
+  /** How long the choke fade takes, in seconds. Defaults to CHOKE_FADE. */
+  chokeFade?: number;
+  /**
+   * Bends the note's pitch while it sounds, in cents from `detune` over
+   * `seconds`, as the mridangam's gumki slides a thom.
+   */
+  bend?: { cents: number; seconds: number };
 }
 
 /** A continuous tone built from a harmonic spectrum. */
@@ -94,6 +102,8 @@ const FADE_OUT = 0.12;
 const GLIDE = 0.03;
 /** How fast a choked note fades, in seconds: quick, but not a click. */
 export const CHOKE_FADE = 0.08;
+/** A note bends over at least this long, so a bend of 0 doesn't click. */
+const MIN_BEND = 0.005;
 
 /** A scheduled sample, until it ends. */
 interface Note {
@@ -184,8 +194,13 @@ export class AudioEngine implements AudioOut {
     if (!buffer) return;
     const src = this.ctx.createBufferSource();
     src.buffer = buffer;
-    if (opts.detune) src.detune.value = opts.detune;
+    const detune = opts.detune ?? 0;
+    if (detune) src.detune.value = detune;
     const at = Math.max(when, this.ctx.currentTime);
+    if (opts.bend) {
+      src.detune.setValueAtTime(detune, at);
+      src.detune.linearRampToValueAtTime(detune + opts.bend.cents, at + Math.max(MIN_BEND, opts.bend.seconds));
+    }
     const level = opts.gain ?? 1;
     const note: Note = { src, at, level };
     let out: AudioNode = src;
@@ -200,7 +215,7 @@ export class AudioEngine implements AudioOut {
       out = out.connect(p);
     }
     out.connect(this.buses[bus]);
-    if (opts.choke) note.unchoke = this.choke(opts.choke, note);
+    if (opts.choke) note.unchoke = this.choke(opts.choke, note, opts.chokeFade ?? CHOKE_FADE);
     const scheduled = this.active[bus];
     scheduled.add(note);
     src.onended = () => {
@@ -211,7 +226,7 @@ export class AudioEngine implements AudioOut {
   }
 
   /** Makes `note` the group's latest, fading the previous one out as it starts. */
-  private choke(group: string, note: Note): () => void {
+  private choke(group: string, note: Note, fade: number): () => void {
     const prev = this.chokeGroups.get(group);
     this.chokeGroups.set(group, note);
     const restore = () => {
@@ -222,7 +237,7 @@ export class AudioEngine implements AudioOut {
     if (!prev?.amp || prev.released) return restore;
     const gain = prev.amp.gain;
     gain.setValueAtTime(prev.level, note.at);
-    gain.linearRampToValueAtTime(0, note.at + CHOKE_FADE);
+    gain.linearRampToValueAtTime(0, note.at + fade);
     return () => {
       gain.cancelScheduledValues(note.at);
       restore();

@@ -33,6 +33,17 @@ test:
 soundtest:
 	cd tools/sound-analysis && .venv/bin/python -m pytest -q && .venv/bin/python tables.py --check
 
+# Copy an instrument kit in from the thambura-data checkout, for local
+# listening. Kits are gitignored; DATA overrides where the data repo sits.
+DATA ?= ../mridangam-data
+KIT ?= compmusic
+
+devkit:
+	@test -f $(DATA)/kit/kit.json || { echo "no kit at $(DATA)/kit: run 'make kit' in thambura-data"; exit 1; }
+	mkdir -p web/static/Resources/Kits/$(KIT)
+	cp $(DATA)/kit/kit.json $(DATA)/kit/*.wav web/static/Resources/Kits/$(KIT)/
+	@echo "kit in web/static/Resources/Kits/$(KIT): $$(ls web/static/Resources/Kits/$(KIT) | wc -l) files"
+
 # Re-vendor goapplib's templates after bumping the ref in web/templates/templar.yaml.
 templates:
 	cd web/templates && templar get
@@ -60,6 +71,33 @@ deploy: checklinks test uiprod server
 prodlogs:
 	gcloud app logs tail -s default --project $(GCP_PROJECT)
 
+# Try a deploy before the real one: the same build, sent to a "dev" version of
+# the same project, which takes no traffic and has its own URL (printed at the
+# end). That way the test copy runs against the project the site really runs
+# in. The version id is reused, so dev deploys don't pile up, and the app marks
+# a dev version noindex so it can't turn up in search. DEV_PROJECT sends it to
+# a separate project instead (layagnana has an App Engine app, still serving
+# the 2016 site at its root).
+DEV_PROJECT ?= $(GCP_PROJECT)
+DEV_VERSION ?= dev
+PROMOTE ?=
+
+# Traffic only moves with PROMOTE=1, and never in the project serving
+# thambura.com: `make deploy` is the way to put a build there. The check runs
+# before the tests, so a refused deploy is refused at once.
+checkpromote:
+	@test -z "$(PROMOTE)" || test "$(DEV_PROJECT)" != "$(GCP_PROJECT)" || \
+		{ echo "PROMOTE=1 would put this build on thambura.com: run 'make deploy'"; exit 1; }
+
+deploydev: checkpromote checklinks test uiprod server
+	gcloud app deploy app.yaml --project $(DEV_PROJECT) --version=$(DEV_VERSION) \
+		$(if $(PROMOTE),--promote,--no-promote) --verbosity=info
+	@echo "== $$(gcloud app versions describe $(DEV_VERSION) --service=default \
+		--project $(DEV_PROJECT) --format='value(versionUrl)')"
+
+devlogs:
+	gcloud app logs tail -s default --project $(DEV_PROJECT)
+
 # One-time domain setup, see "Deploying" in CLAUDE.md. verifydomain opens
 # Search Console to prove ownership (a TXT record at the registrar); domains
 # then maps each name and prints the A/AAAA/CNAME records to add there.
@@ -84,4 +122,4 @@ domainstatus:
 clean:
 	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css
 
-.PHONY: all ui uiprod server build run watch test soundtest templates resymlink checklinks deploy prodlogs verifydomain domains domainstatus clean
+.PHONY: all ui uiprod server build run watch test soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean

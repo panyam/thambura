@@ -11,6 +11,8 @@ import {
   usesNadai,
   type TalaId,
 } from "../engine/selection";
+import type { KitState } from "./kitPresenter";
+import { StrokePad, type KitActions } from "./StrokePad";
 import type { PlayerPresenter, PlayerState } from "./presenter";
 
 export type PlayerActions = Pick<
@@ -31,7 +33,13 @@ export type PlayerActions = Pick<
  * The tala player: beat image, transport, tempo and volume, and the tala
  * settings. Renders PlayerState and sends every change to the presenter.
  */
-export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accessor<BeatPose>; actions: PlayerActions }) {
+export function PlayerView(props: {
+  state: Accessor<PlayerState>;
+  pose?: Accessor<BeatPose>;
+  actions: PlayerActions;
+  /** A struck instrument, when the page has a kit for one. */
+  kit?: { state: Accessor<KitState>; actions: KitActions };
+}) {
   const s = props.state;
   const a = props.actions;
   const tala = () => s().settings.tala;
@@ -237,6 +245,10 @@ export function PlayerView(props: { state: Accessor<PlayerState>; pose?: Accesso
           />
         </Field>
       </section>
+
+      <Show when={props.kit} keyed>
+        {(k) => <StrokePad state={k.state} actions={k.actions} />}
+      </Show>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	goal "github.com/panyam/goapplib"
 	tmplr "github.com/panyam/templar"
@@ -18,9 +19,12 @@ import (
 	"github.com/panyam/thambura/internal/brand"
 )
 
-// App is the goapplib app context. Empty for now; the pages need no server
-// state.
-type App struct{}
+// App is the goapplib app context, which every page's Load is handed.
+type App struct {
+	// KitURL is the instrument kit found under static at startup, or empty.
+	// Register fills it in, since it knows where static is.
+	KitURL string
+}
 
 // Header is the data goapplib's Header template renders with.
 type Header struct {
@@ -54,6 +58,20 @@ type Social struct {
 // HomePage is the practice page: a shell for the player island.
 type HomePage struct {
 	SitePage
+	// KitURL is the instrument kit the page should load, or empty for none.
+	// Kits are build products copied in (make devkit) and aren't committed, so
+	// most checkouts have none and the page must not ask for one.
+	KitURL string
+}
+
+// findKit returns the URL of the first kit manifest under
+// static/Resources/Kits, or empty when there is none.
+func findKit(static string) string {
+	matches, err := filepath.Glob(filepath.Join(static, "Resources", "Kits", "*", "kit.json"))
+	if err != nil || len(matches) == 0 {
+		return ""
+	}
+	return "/static/Resources/Kits/" + filepath.Base(filepath.Dir(matches[0])) + "/kit.json"
 }
 
 // The home page's search and preview text, near the lengths results show in
@@ -84,6 +102,7 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 		ImageHeight: 630,
 	}
 	p.StructuredData = webApplicationLD()
+	p.KitURL = app.Context.KitURL
 	return nil, false
 }
 
@@ -134,9 +153,11 @@ func NewApp(templatesDir string) (*goal.App[*App], error) {
 // serves the 2016 Laya Gnana app as it was at the pre-sadhana-port tag
 // (web/legacy, see its README.md), marked noindex so it doesn't compete with
 // the app in search. On App Engine, app.yaml serves /static and /legacy
-// itself (and sends the same header); everything else comes here.
+// itself (and sends the same header); everything else comes here, wrapped in
+// SiteHandler.
 func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	static := filepath.Join(webDir, "static")
+	app.Context.KitURL = findKit(static)
 	goal.Register[*HomePage](app, mux, "/{$}")
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
 	mux.Handle("/legacy/", noindex(http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy"))))))
@@ -151,6 +172,10 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	})
 	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		if Staging() {
+			fmt.Fprint(w, "User-agent: *\nDisallow: /\n")
+			return
+		}
 		fmt.Fprintf(w, "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n", brand.URL)
 	})
 	mux.HandleFunc("GET /sitemap.xml", func(w http.ResponseWriter, r *http.Request) {
@@ -161,6 +186,29 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 </urlset>
 `, brand.URL)
 	})
+}
+
+// Staging reports whether this process is a test copy of the site rather than
+// the real one. `make deploydev` deploys a brand.DevVersionPrefix version,
+// which App Engine reports in GAE_VERSION, by default into the real project;
+// DEV_PROJECT sends it to another project instead, which GOOGLE_CLOUD_PROJECT
+// reports. Both variables are unset on a server run locally, which is not
+// staging.
+func Staging() bool {
+	if p := os.Getenv("GOOGLE_CLOUD_PROJECT"); p != "" && p != brand.ProjectID {
+		return true
+	}
+	return strings.HasPrefix(os.Getenv("GAE_VERSION"), brand.DevVersionPrefix)
+}
+
+// SiteHandler wraps the mux with what a whole deploy needs. On a staging
+// project every response is marked noindex, so a test copy can't turn up in
+// search beside the real site; on production h is returned as it is.
+func SiteHandler(h http.Handler) http.Handler {
+	if !Staging() {
+		return h
+	}
+	return noindex(h)
 }
 
 // noindex asks search engines to leave a response out of their index.

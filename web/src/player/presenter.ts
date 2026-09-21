@@ -10,6 +10,9 @@ import {
 } from "../engine/selection";
 import { add, type Ratio } from "../engine/ratio";
 import { TalaSequencer, type TalaEvent } from "../engine/sequencer";
+import { StrokeSequencer, type StrokeEvent } from "../engine/strokeSequencer";
+import { TalaGrid } from "../engine/talaGrid";
+import { patternFor, type Pattern } from "../engine/patterns";
 import { DEFAULT_MOTION, isBeatMotion, motionAt, REST, type BeatMotion, type BeatPose } from "../engine/motion";
 import { TempoMap } from "../engine/tempoMap";
 import type { AudioOut } from "./audio";
@@ -68,6 +71,17 @@ export interface PlayerDeps {
   preloadImages(urls: string[]): Promise<void>;
   store?: PlayerStore;
   rng?: () => number;
+  /**
+   * A struck instrument to play the tala's pattern on, if the page has one.
+   * It rides the same transport as the claps, so the two can't drift.
+   */
+  strokes?: StrokeOut;
+}
+
+/** What the player needs from an instrument: book a stroke, and be told what it plays. */
+export interface StrokeOut {
+  playAt(id: string, when: number, gain?: number): boolean;
+  setPattern(name: string | null): void;
 }
 
 export const DEFAULT_VOLUME = 50;
@@ -92,7 +106,11 @@ export class PlayerPresenter {
   private readonly cursor = new BeatCursor();
   private readonly tempo = new TempoMap(DEFAULT_TEMPO);
   private readonly seq: TalaSequencer;
+  private readonly strokes: StrokeSequencer;
   private readonly transport: Transport;
+  // Where the cycle's beats fall, and what the instrument plays over them.
+  private grid = new TalaGrid([]);
+  private pattern: Pattern | null = null;
   // Images waiting for their sound to reach the speakers, in time order.
   private cues: Cue[] = [];
   // The beat being heard, while playing.
@@ -107,6 +125,8 @@ export class PlayerPresenter {
     this.seq = new TalaSequencer(this.cursor, this.tempo, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker, { tempo: this.tempo });
     this.transport.add(this.seq, (e) => this.schedule(e));
+    this.strokes = new StrokeSequencer(() => ({ grid: this.grid, pattern: this.pattern }), this.tempo);
+    this.transport.add(this.strokes, (e: StrokeEvent) => deps.strokes?.playAt(e.stroke, e.time, e.gain));
     this.state = {
       status: "loading",
       error: null,
@@ -165,6 +185,8 @@ export class PlayerPresenter {
     if (!this.state.playing) return;
     this.transport.stop();
     this.deps.audio.cancel("tala");
+    // Strokes are booked ahead on their own bus, so they need cancelling too.
+    if (this.deps.strokes) this.deps.audio.cancel("percussion");
     // Drop images for steps that won't sound now; the one showing stays.
     this.cues = [];
     this.heard = null;
@@ -278,6 +300,9 @@ export class PlayerPresenter {
     const beats = beatsFor(this.state.settings);
     this.cursor.setBeats(beats);
     this.cursor.setRepeat(this.state.settings.kalai);
+    this.grid = new TalaGrid(beats, this.state.settings.kalai);
+    this.pattern = patternFor(this.grid, this.state.settings.nadai);
+    this.deps.strokes?.setPattern(this.pattern?.name ?? null);
     this.update({ beatCount: beats.length, position: this.cursor.position });
   }
 

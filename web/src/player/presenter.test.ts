@@ -295,3 +295,80 @@ describe("PlayerPresenter", () => {
     expect(audio.busVolume.tala).toBe(0);
   });
 });
+
+describe("PlayerPresenter with an instrument", () => {
+  let audio: FakeAudio;
+  let ticker: FakeTicker;
+  let frames: FakeFrames;
+  let p: PlayerPresenter;
+  let booked: { id: string; when: number; gain?: number }[];
+  let patterns: (string | null)[];
+
+  const advance = (to: number) => {
+    audio.now = to;
+    ticker.onTick?.();
+    frames.flush();
+  };
+
+  beforeEach(async () => {
+    audio = new FakeAudio();
+    ticker = new FakeTicker();
+    frames = new FakeFrames();
+    booked = [];
+    patterns = [];
+    p = new PlayerPresenter({
+      audio,
+      ticker,
+      frames,
+      fetchJson: async () => FIXTURES,
+      preloadImages: async () => {},
+      rng: () => 0.9,
+      strokes: {
+        playAt: (id, when, gain) => {
+          booked.push({ id, when, gain });
+          return true;
+        },
+        setPattern: (name) => patterns.push(name),
+      },
+    });
+    p.attach({ setState: () => {} });
+    await p.load("/fixtures.json");
+    p.setSettings({ tala: "custom_adi", nadai: "chatusram" });
+    p.setTempo(60);
+  });
+
+  it("names the pattern it found for the tala, and says when it has none", () => {
+    expect(patterns.at(-1)).toBe("Adi sarvalaghu, chatusram");
+    p.setSettings({ tala: "chaapu_misram" });
+    expect(patterns.at(-1)).toBeNull();
+    p.setSettings({ tala: "custom_adi", nadai: "khandam" });
+    expect(patterns.at(-1)).toBeNull();
+  });
+
+  it("books strokes against the claps once playing", async () => {
+    await p.start();
+    advance(0.05);
+    expect(booked.length).toBeGreaterThan(0);
+    // The pattern opens on sam, where the tala's first clap is.
+    const firstClap = audio.played.find((n) => n.bus === "tala")!.when;
+    expect(booked[0]).toMatchObject({ id: "L.tham" });
+    expect(booked[0].when).toBe(firstClap);
+    expect(booked[0].gain).toBeGreaterThan(1); // sam is accented
+  });
+
+  it("books nothing for a tala with no pattern", async () => {
+    p.setSettings({ tala: "chaapu_misram" });
+    await p.start();
+    advance(0.05);
+    advance(1.0);
+    expect(booked).toEqual([]);
+    expect(audio.played.some((n) => n.bus === "tala")).toBe(true);
+  });
+
+  it("takes back what hasn't sounded when it stops", async () => {
+    await p.start();
+    advance(0.05);
+    p.stop();
+    expect(audio.cancelled).toContain("percussion");
+  });
+});
