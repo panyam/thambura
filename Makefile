@@ -5,6 +5,23 @@ PORT ?= 8000
 
 all: build
 
+# The Python tools (tools/sound-analysis) run in a venv. One venv is shared by
+# every worktree and by the thambura-data checkout, since they all sit under
+# the same parent; override with VENV=... to put it elsewhere.
+VENV ?= ../.venv
+PY = $(VENV)/bin/python
+
+setupvenv:
+	@test -d $(VENV) || python3 -m venv $(VENV)
+	@$(VENV)/bin/pip install -q -r tools/sound-analysis/requirements.txt
+	@echo "venv ready: $(VENV)"
+	@echo "make targets use it as is. To activate it in this shell:"
+	@echo "    source $(VENV)/bin/activate"
+
+# Prints the venv path, for `source "$$(make -s venvpath)"/bin/activate`.
+venvpath:
+	@echo $(VENV)
+
 # Frontend: install deps, compile Tailwind, bundle the TS (web/static/app.js).
 ui:
 	cd web && pnpm install && pnpm buildcss && pnpm build
@@ -29,15 +46,18 @@ test:
 	cd web && pnpm typecheck && pnpm test
 
 # Copy an instrument kit in from the thambura-data checkout, for local
-# listening. Kits are gitignored; DATA overrides where the data repo sits.
+# listening. Kits are gitignored; DATA overrides where the data repo sits,
+# and KITSRC picks the compressed copy (kit-aac) or the master WAVs (kit).
 DATA ?= ../mridangam-data
+KITSRC ?= kit-flac
 KIT ?= compmusic
 
 devkit:
-	@test -f $(DATA)/kit/kit.json || { echo "no kit at $(DATA)/kit: run 'make kit' in thambura-data"; exit 1; }
-	mkdir -p web/static/Resources/Kits/$(KIT)
-	cp $(DATA)/kit/kit.json $(DATA)/kit/*.wav web/static/Resources/Kits/$(KIT)/
-	@echo "kit in web/static/Resources/Kits/$(KIT): $$(ls web/static/Resources/Kits/$(KIT) | wc -l) files"
+	@test -f $(DATA)/$(KITSRC)/kit.json || { echo "no kit at $(DATA)/$(KITSRC): run 'make kit' in thambura-data"; exit 1; }
+	rm -rf web/static/Resources/Kits/$(KIT)
+	mkdir -p web/static/Resources/Kits
+	cp -R $(DATA)/$(KITSRC) web/static/Resources/Kits/$(KIT)
+	@echo "kit in web/static/Resources/Kits/$(KIT): $$(find web/static/Resources/Kits/$(KIT) -type f | wc -l) files, $$(du -sh web/static/Resources/Kits/$(KIT) | cut -f1)"
 
 # Re-vendor goapplib's templates after bumping the ref in web/templates/templar.yaml.
 templates:
@@ -117,4 +137,4 @@ domainstatus:
 clean:
 	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css
 
-.PHONY: all ui uiprod server build run watch test templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean
+.PHONY: all setupvenv venvpath ui uiprod server build run watch test templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean
