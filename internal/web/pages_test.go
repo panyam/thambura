@@ -389,3 +389,49 @@ func TestHomePageKitAttribute(t *testing.T) {
 		t.Fatalf("data-kit-url present = %v, but the kit found at startup was %q", has, found)
 	}
 }
+
+// A kit is a build product that isn't committed, so this only runs where one
+// has been copied in (make devkit). It is the check that the manifest and the
+// files agree: takes are named relative to kit.json and live in a folder per
+// pack, so a kit copied in flat, or a manifest left pointing at another
+// format, serves 404s and the instrument goes silent with no other sign.
+func TestStaticServesTheKit(t *testing.T) {
+	webDir := filepath.Join("..", "..", "web")
+	url := findKit(filepath.Join(webDir, "static"))
+	if url == "" {
+		t.Skip("no kit under web/static/Resources/Kits; run `make devkit`")
+	}
+	srv := newServer(t)
+	code, body := get(t, srv.URL+url)
+	if code != http.StatusOK {
+		t.Fatalf("GET %s = %d", url, code)
+	}
+	var kit struct {
+		Strokes []struct {
+			ID    string              `json:"id"`
+			Takes map[string][]string `json:"takes"`
+		} `json:"strokes"`
+	}
+	if err := json.Unmarshal([]byte(body), &kit); err != nil {
+		t.Fatalf("kit.json: %v", err)
+	}
+	if len(kit.Strokes) == 0 {
+		t.Fatal("kit.json names no strokes")
+	}
+	base := url[:strings.LastIndex(url, "/")+1]
+	takes := 0
+	for _, stroke := range kit.Strokes {
+		if len(stroke.Takes) == 0 {
+			t.Errorf("stroke %s has no takes", stroke.ID)
+		}
+		for pack, names := range stroke.Takes {
+			for _, name := range names {
+				if code, _ := get(t, srv.URL+base+name); code != http.StatusOK {
+					t.Errorf("GET %s%s (stroke %s, pack %s) = %d", base, name, stroke.ID, pack, code)
+				}
+				takes++
+			}
+		}
+	}
+	t.Logf("%s: %d strokes, %d takes all served", url, len(kit.Strokes), takes)
+}
