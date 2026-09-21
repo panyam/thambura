@@ -281,15 +281,16 @@ accents:
 \cycle("|4|2|2|")
 \beatDuration(4)
 mrid: tham , thi ,
-mrid: nam , thi ,
-...
+      nam , thi ,
+      ...
 ```
 
 `\cycle("|4|2|2|")` is Adi's angas, a laghu of four and two dhruthams.
 `\beatDuration(4)` says four slots to the akshara, which is the nadai.
 `mrid:` is a role, and its atoms are the strokes, with `,` for a rest as
-karvai is written in Carnatic notation. A role's atoms carry on across source
-lines, so one akshara per line reads well. The front matter is ours: which
+karvai is written in Carnatic notation. A role stays selected until another
+one is named, so the tag goes on the first line only and the rest are plain
+atoms: one akshara per line reads well. The front matter is ours: which
 cycle shape the pattern fits, which aksharas are leaned on, and where the
 pattern came from.
 

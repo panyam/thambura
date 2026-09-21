@@ -5,7 +5,8 @@ counts: 8
 shape: down one two three down open down open
 nadai: chatusram
 source: drafted by Claude from the stroke names, unverified by a mridangist
-# One akshara per mrid line: the laghu's four, then the two dhruthams.
+# One akshara per line: the laghu's four, then the two dhruthams. The role
+# is named once and stays selected for the lines under it.
 # Bar lines would read better but are a tokenizer error (notations#19), and
 # the DSL has no working comment syntax outside this front matter
 # (notations#21), so these notes live here.
@@ -16,10 +17,10 @@ accents:
 \cycle("|4|2|2|")
 \beatDuration(4)
 mrid: tham , thi ,
-mrid: nam , thi ,
-mrid: thom , thi ,
-mrid: nam , thi thi
-mrid: tham , thi ,
-mrid: nam , thi ,
-mrid: thom , thi ,
-mrid: nam thi nam ,
+      nam , thi ,
+      thom , thi ,
+      nam , thi thi
+      tham , thi ,
+      nam , thi ,
+      thom , thi ,
+      nam thi nam ,
