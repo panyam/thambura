@@ -43,7 +43,7 @@ watch:
 
 test:
 	go test ./...
-	cd web && pnpm typecheck && pnpm test
+	cd web && pnpm typecheck && pnpm patterns:check && pnpm test
 
 # Copy an instrument kit in from the thambura-data checkout, for local
 # listening. Kits are gitignored; DATA overrides where the data repo sits,

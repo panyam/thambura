@@ -261,34 +261,59 @@ and the `percussion` bus has its own volume. The additions:
 
 ### Writing patterns down
 
-Patterns are plain text, so they're easy to write, review in a PR, and share.
-A sketch of the format:
+Patterns are written in the [notations](https://github.com/panyam/notations)
+DSL, the library behind the notation web app, rather than a format of our own.
+A pattern is a file under `web/patterns/`:
 
 ```
-pattern  adi-chatusram-1
-tala     custom_adi
-nadai    chatusram
-speed    1
-role     pattern
-
-| tha  dhi  thom nam  | tha  dhi  thom nam  | ...
-| ta   ka   dhi  mi   | ta   ka   dhi  mi   | ...
+---
+id: adi-chatusram-1
+name: Adi sarvalaghu, chatusram
+shape: down one two three down open down open
+nadai: chatusram
+accents:
+  0: 1.15
+  4: 1.05
+---
+\cycle("|4|2|2|")
+\beatDuration(4)
+mrid: tham , thi ,
+mrid: nam , thi ,
+...
 ```
 
-The first line of strokes is what plays. The optional second line is the
-solkattu, shown in the view and never played. Each token takes one slot, and
-a slot is 1/(g × 2^(s-1)) of a count, where g is the nadai's group (3, 4, 5, 7
-or 9) and s the speed. Speeds double rather than step: first speed is one
-unit per beat, second is two, third is four
-([eviolinguru](https://www.eviolinguru.com/kaala-tempo.html)). A `,` is a rest for one slot, as karvai is written in
-Carnatic notation. `R.nam+L.thom`, or a composite's short name `tham`, plays
-several primitives at once. `|` marks an akshara boundary and has to fall on
-one, which is what makes a typo in a long pattern easy to catch. The parser
-turns all of it into strokes at exact `Ratio` positions, and a vitest suite
-parses every bundled pattern and checks it fills its cycle exactly.
+`\cycle("|4|2|2|")` is Adi's angas, a laghu of four and two dhruthams.
+`\beatDuration(4)` says four slots to the akshara, which is the nadai.
+`mrid:` is a role, and its atoms are the strokes, with `,` for a rest as
+karvai is written in Carnatic notation. A role's atoms carry on across source
+lines, so one akshara per line reads well. The front matter is ours: which
+cycle shape the pattern fits, and which aksharas are leaned on.
 
-Which slot count "first speed" means is a naming question we'd like settled
-with a player (see Open questions). The format only needs g and s.
+The DSL gives us exact rational positions, cycles with kalai and gati, speed
+doubling with `[ ]` groups, and several roles on one cycle, none of which we
+would want to write again. It also means a pattern is renderable by the
+notation app, and a phrase written there plays here.
+
+**Syllables aren't stroke ids.** `web/patterns/strokes.json` maps each token
+to a stroke in the kit, and a token that isn't in it is a build error rather
+than a silence. That table is the one place the mapping lives, which matters
+because solkattu and strokes don't correspond one to one (see Primitives).
+
+**The parser runs at build time, not in the browser.** `pnpm patterns`
+compiles `web/patterns/*.not` into `src/engine/patterns.data.ts`, and the
+app ships only the result. Bundling `notations` would add 78 KB gzipped to a
+162 KB app, and compiling early turns a miscounted pattern into a build
+failure. `pnpm patterns:check` runs in `make test` and fails if the generated
+file has drifted from its source. The compiler also checks that a pattern
+fills its cycle and that its declared shape has as many beats as the cycle
+does.
+
+Where the library's own behaviour got in the way, it's filed upstream rather
+than worked around: bar lines inside a role are a tokenizer error
+(notations#19), `___` never lexes as a silent space (notations#17), there is
+no working comment syntax (notations#21), a failed load poisons later ones in
+the same process (notations#22), and the ESM build can't be imported from
+Node (notations#20).
 
 ### How it plays
 
@@ -432,9 +457,11 @@ Each step is a PR that works on its own.
    the same pattern serves Adi and a chatusra Thriputa and stretches with kalai.
    A tala with no pattern stays silent and the panel says so. The pattern itself
    still wants a player's eye (open question 3).
-3. **The pattern format.** Parser, validation over the library, curated
-   patterns for Adi, Rupakam and the Misra and Khanda chapus at two speeds,
-   the generated fallback for the rest, and the stroke lane.
+3. **The pattern format.** The notations DSL, compiled at build time, is in;
+   patterns live in `web/patterns/` with a stroke table beside them. What's
+   left of this step: curated patterns for Rupakam and the Misra and Khanda
+   chapus at two speeds, the generated fallback so every tala plays
+   something, and the stroke lane.
 4. **Arrangements.** Variations, fills, korvai, eduppu and count-in,
    tempo-based choice.
 5. **The editor**, local saving and share links.

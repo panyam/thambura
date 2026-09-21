@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ratio, ZERO } from "./ratio";
 import { beatsFor, type TalaSettings } from "./selection";
 import { TalaGrid } from "./talaGrid";
-import { ADI_CHATUSRAM, pattern, patternFor } from "./patterns";
+import { PATTERNS, patternFor, type Pattern } from "./patterns";
 
 const settings = (patch: Partial<TalaSettings> = {}): TalaSettings => ({
   tala: "custom_adi",
@@ -63,39 +63,29 @@ describe("TalaGrid", () => {
 });
 
 describe("patterns", () => {
-  it("lays a written line out in aksharas", () => {
-    const p = pattern({
-      id: "t",
-      name: "Test",
-      shape: "down open",
-      nadai: "chatusram",
-      line: "L.thom , R.nam , | R.thi R.thi , ,",
-    });
-    expect(p.beats).toBe(2);
-    expect(p.strokes.map((s) => [s.stroke, s.at.n / s.at.d])).toEqual([
-      ["L.thom", 0],
-      ["R.nam", 0.5],
-      ["R.thi", 1],
-      ["R.thi", 1.25],
-    ]);
-  });
+  const adi = PATTERNS.find((p) => p.id === "adi-chatusram-1") as Pattern;
 
-  it("rejects an akshara with the wrong number of slots", () => {
-    expect(() =>
-      pattern({ id: "t", name: "Test", shape: "down open", nadai: "chatusram", line: "L.thom , R.nam , | R.thi ," }),
-    ).toThrow(/slots/);
-  });
-
-  it("rejects a line that doesn't cover its cycle", () => {
-    expect(() =>
-      pattern({ id: "t", name: "Test", shape: "down open down", nadai: "chatusram", line: "L.thom , | R.nam ," }),
-    ).toThrow(/cycle of 3 beats/);
+  it("compiles the Adi sarvalaghu from its .not source", () => {
+    expect(adi).toBeDefined();
+    expect(adi.beats).toBe(8);
+    expect(adi.nadai).toBe("chatusram");
+    expect(adi.strokes).toHaveLength(18);
+    // Four slots to the akshara, so every stroke lands on a quarter.
+    for (const stroke of adi.strokes) {
+      const at = stroke.at.n / stroke.at.d;
+      expect(at).toBeGreaterThanOrEqual(0);
+      expect(at).toBeLessThan(8);
+      expect((at * 4) % 1).toBe(0);
+    }
+    // Sam is leaned on, the akshara after it is not.
+    expect(adi.strokes[0].gain).toBeGreaterThan(1);
+    expect(adi.strokes.find((x) => x.at.n / x.at.d === 1)!.gain).toBe(1);
   });
 
   it("fits the Adi pattern to Adi and to a chatusra Thriputa, the same eight beats", () => {
-    expect(patternFor(gridFor(), "chatusram")).toBe(ADI_CHATUSRAM);
-    expect(patternFor(gridFor({ tala: "sapta_thriputa", jaathi: "chatusram" }), "chatusram")).toBe(ADI_CHATUSRAM);
-    expect(patternFor(gridFor({ kalai: 4 }), "chatusram")).toBe(ADI_CHATUSRAM);
+    expect(patternFor(gridFor(), "chatusram")).toBe(adi);
+    expect(patternFor(gridFor({ tala: "sapta_thriputa", jaathi: "chatusram" }), "chatusram")).toBe(adi);
+    expect(patternFor(gridFor({ kalai: 4 }), "chatusram")).toBe(adi);
   });
 
   it("has nothing for a tala or nadai it wasn't written for", () => {
@@ -105,13 +95,5 @@ describe("patterns", () => {
     expect(patternFor(gridFor({ tala: "sapta_matya", jaathi: "thisram" }), "chatusram")).toBeNull();
     expect(patternFor(gridFor(), "misram")).toBeNull();
     expect(patternFor(gridFor({ tala: "chaapu_misram" }), "chatusram")).toBeNull();
-  });
-
-  it("keeps every stroke of the Adi sarvalaghu inside its cycle", () => {
-    expect(ADI_CHATUSRAM.beats).toBe(8);
-    for (const s of ADI_CHATUSRAM.strokes) {
-      expect(s.at.n / s.at.d).toBeGreaterThanOrEqual(0);
-      expect(s.at.n / s.at.d).toBeLessThan(8);
-    }
   });
 });

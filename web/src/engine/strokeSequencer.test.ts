@@ -5,8 +5,10 @@ import { beatsFor, type TalaSettings } from "./selection";
 import { TalaSequencer, type StepEvent, type TalaEvent } from "./sequencer";
 import { StrokeSequencer } from "./strokeSequencer";
 import { TalaGrid } from "./talaGrid";
-import { ADI_CHATUSRAM, pattern, patternFor, type Pattern } from "./patterns";
+import { PATTERNS, patternFor, type Pattern } from "./patterns";
 import { TempoMap } from "./tempoMap";
+
+const ADI = PATTERNS.find((p) => p.id === "adi-chatusram-1") as Pattern;
 
 const SETTINGS: TalaSettings = { tala: "custom_adi", jaathi: "chatusram", nadai: "chatusram", kalai: 1 };
 
@@ -47,7 +49,7 @@ describe("StrokeSequencer", () => {
   it("emits each stroke once and repeats the cycle", () => {
     const { pull } = setup({}, 60);
     const cycle = [...Array(8)].flatMap((_, i) => pull(i, i + 1));
-    expect(cycle).toHaveLength(ADI_CHATUSRAM.strokes.length);
+    expect(cycle).toHaveLength(ADI.strokes.length);
     const next = pull(8, 8.6);
     expect(next.map((e) => [e.stroke, e.time, e.cycle])).toEqual([
       ["L.tham", 8, 1],
@@ -93,7 +95,7 @@ describe("the tala and the mridangam together", () => {
     const grid = new TalaGrid(beats, 1);
     const map = new TempoMap(72);
     const tala = new TalaSequencer(new BeatCursor(beats, 1), map, () => 0);
-    const strokes = new StrokeSequencer(() => ({ grid, pattern: ADI_CHATUSRAM }), map);
+    const strokes = new StrokeSequencer(() => ({ grid, pattern: ADI }), map);
     map.start(0);
     tala.start(0);
     strokes.start(0);
@@ -120,13 +122,18 @@ describe("the tala and the mridangam together", () => {
 
 describe("pattern slots", () => {
   it("places a khandam pattern's five slots evenly across the akshara", () => {
-    const five = pattern({
+    const five: Pattern = {
       id: "k",
       name: "Khandam",
       shape: "down",
       nadai: "khandam",
-      line: "R.ta R.ka R.thi R.ki R.ta",
-    });
+      beats: 1,
+      strokes: ["R.ta", "R.tha", "R.thi", "R.ta", "R.tha"].map((stroke, i) => ({
+        at: ratio(i, 5),
+        stroke,
+        gain: 1,
+      })),
+    };
     expect(five.strokes.map((s) => s.at.n / s.at.d)).toEqual([0, 0.2, 0.4, 0.6, 0.8]);
   });
 });

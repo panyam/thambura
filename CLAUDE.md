@@ -354,11 +354,19 @@ See NEXTSTEPS.md for the order.
   count falls in. `engine/strokeSequencer.ts` is a `Sequencer<StrokeEvent>` on
   the tala's own `TempoMap`, queued a cycle at a time, so strokes and claps
   are the same musical points and can't drift. `engine/patterns.ts` holds the
-  patterns, written per beat of the cycle: `pattern()` takes one token per
-  slot with `|` between aksharas and `,` for a rest, and `patternFor` matches
-  on beats per cycle and nadai, so one Adi pattern serves Adi and a chatusra
-  Thriputa and stretches with kalai. What's left for the mridangam is the
-  text format for patterns, then arrangements (`docs/mridangam.md`).
+  types and `patternFor`, which matches a pattern to a tala on the cycle's
+  shape and the nadai, so one Adi pattern serves Adi and a chatusra Thriputa
+  and stretches with kalai. What's left for the mridangam is more patterns
+  and a generated fallback, then arrangements (`docs/mridangam.md`).
+- **Patterns are notations DSL, compiled at build time.** They live in
+  `web/patterns/*.not` (panyam/notations format: `\cycle`, `\beatDuration`
+  and a `mrid:` role of stroke tokens), with `patterns/strokes.json` mapping
+  each token to a stroke in the kit. `pnpm patterns` compiles them into
+  `src/engine/patterns.data.ts`, which is committed; `pnpm patterns:check`
+  runs in `make test` and fails on drift. The parser stays out of the bundle,
+  where it would cost 78 KB gzipped, and the compiler checks a pattern fills
+  its cycle and that its shape and cycle agree. Five bugs found on the way are
+  filed as notations#17 to #22.
 - Drum strokes choke per head: a closed stroke cuts the ring of the last open
   one on the same head, never the other head. `play` takes `chokeFade` for
   that (8 ms, against the strings' 80 ms) and `bend`, which slides a note's
