@@ -14,6 +14,8 @@ export interface StrokeEvent {
   gain: number;
   /** Which cycle of the tala it belongs to, for the view and for korvais. */
   cycle: number;
+  /** Which stroke of the pattern it is, so the view can light that one. */
+  index: number;
 }
 
 /** What the sequencer plays, asked afresh at each cycle so settings can change. */
@@ -82,12 +84,13 @@ export class StrokeSequencer implements Sequencer<StrokeEvent> {
     const start = this.nextCycleAt;
     if (pattern) {
       const perCycle = grid.cycleCounts;
-      this.queue = pattern.strokes.map((s) => ({
+      this.queue = pattern.strokes.map((s, index) => ({
         time: 0,
         at: add(start, strokeCount(s, perCycle)),
         stroke: s.stroke,
         gain: s.gain,
         cycle: this.cycle,
+        index,
       }));
       this.queue.sort((a, b) => cmp(a.at, b.at));
     }

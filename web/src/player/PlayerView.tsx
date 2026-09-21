@@ -12,6 +12,7 @@ import {
   type TalaId,
 } from "../engine/selection";
 import type { KitState } from "./kitPresenter";
+import { StrokeLane } from "./StrokeLane";
 import { StrokePad, type KitActions } from "./StrokePad";
 import type { PlayerPresenter, PlayerState } from "./presenter";
 
@@ -87,6 +88,16 @@ export function PlayerView(props: {
           </Show>
         </p>
       </section>
+
+      {/* What the instrument plays this cycle, under the image it goes with.
+          Only while it is switched on, since it is showing what you hear. */}
+      <Show when={props.kit && props.kit.state().enabled && props.kit.state().status === "ready"}>
+        <StrokeLane
+          lane={() => s().lane}
+          strokeIndex={() => s().strokeIndex}
+          kit={props.kit!.state}
+        />
+      </Show>
 
       {/* How the beat looks and sounds, next to the image it changes: a row of
           three, stacked on a phone so the choices' names fit. */}

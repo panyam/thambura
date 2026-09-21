@@ -370,6 +370,46 @@ describe("PlayerPresenter with an instrument", () => {
     expect(booked[0].when).toBe(firstClap);
   });
 
+  it("lays the pattern out for the lane, an akshara at a time", () => {
+    // Adi: eight aksharas, four slots each, the first holding tham then thi.
+    const lane = p.state.lane!;
+    expect(lane.name).toBe("Adi sarvalaghu, chatusram");
+    expect(lane.aksharas).toBe(8);
+    expect(lane.strokes.slice(0, 3)).toEqual([
+      { stroke: "L.tham", akshara: 0, within: 0 },
+      { stroke: "R.thi", akshara: 0, within: 0.5 },
+      { stroke: "R.nam", akshara: 1, within: 0 },
+    ]);
+
+    // A chaapu is one beat here, but its pattern is written in seven.
+    p.setSettings({ tala: "chaapu_misram" });
+    expect(p.state.lane!.aksharas).toBe(7);
+    expect(p.state.lane!.strokes[3]).toEqual({ stroke: "L.tham", akshara: 3, within: 0 });
+
+    // The generated skeleton says what it is, so the view can too.
+    p.setSettings({ tala: "sapta_ata", jaathi: "chatusram" });
+    expect(p.state.lane!.source).toMatch(/^generated/);
+  });
+
+  it("lights a stroke when it is heard, not when it is booked", async () => {
+    p.setTempo(60); // one count a second, so Adi's slots are a quarter apart
+    await p.start();
+    advance(0.04);
+    // The first stroke is booked at 0.05 and hasn't reached the speakers.
+    expect(booked[0].when).toBe(0.05);
+    expect(p.state.strokeIndex).toBeNull();
+
+    advance(0.06);
+    expect(p.state.strokeIndex).toBe(0);
+    advance(0.56);
+    expect(p.state.strokeIndex).toBe(1);
+
+    // Stopping drops the strokes that never sounded.
+    p.stop();
+    advance(1.1);
+    expect(p.state.strokeIndex).toBe(1);
+  });
+
   it("takes back what hasn't sounded when it stops", async () => {
     await p.start();
     advance(0.05);

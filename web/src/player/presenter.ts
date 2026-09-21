@@ -32,11 +32,26 @@ export interface PlayerState {
   imageGroup: string;
   /** How the beat image moves between beats (engine/motion.ts). */
   motion: BeatMotion;
+  /**
+   * What the instrument is playing this cycle, for the stroke lane, and which
+   * of its strokes is sounding. Null when no kit or no pattern.
+   */
+  lane: Lane | null;
+  strokeIndex: number | null;
   /** The image for the step being heard, or null for none. */
   image: string | null;
   /** The step being heard, and how many beats the cycle has. */
   position: Position;
   beatCount: number;
+}
+
+/** The pattern as the stroke lane draws it. */
+export interface Lane {
+  name: string;
+  source: string;
+  /** How many cells the cycle divides into. */
+  aksharas: number;
+  strokes: { stroke: string; akshara: number; within: number }[];
 }
 
 export interface PlayerView {
@@ -87,6 +102,12 @@ export interface StrokeOut {
 
 export const DEFAULT_VOLUME = 50;
 
+/** A stroke waiting to be heard, so the lane lights with the sound. */
+interface StrokeCue {
+  time: number;
+  index: number;
+}
+
 interface Cue {
   time: number;
   /** Where the next beat starts, in counts, for the motion. */
@@ -114,6 +135,7 @@ export class PlayerPresenter {
   private pattern: Pattern | null = null;
   // Images waiting for their sound to reach the speakers, in time order.
   private cues: Cue[] = [];
+  private strokeCues: StrokeCue[] = [];
   // The beat being heard, while playing.
   private heard: Cue | null = null;
   private pose: BeatPose = REST;
@@ -127,7 +149,7 @@ export class PlayerPresenter {
     this.transport = new Transport(deps.audio, deps.ticker, { tempo: this.tempo });
     this.transport.add(this.seq, (e) => this.schedule(e));
     this.strokes = new StrokeSequencer(() => ({ grid: this.grid, pattern: this.pattern }), this.tempo);
-    this.transport.add(this.strokes, (e: StrokeEvent) => deps.strokes?.playAt(e.stroke, e.time, e.gain));
+    this.transport.add(this.strokes, (e: StrokeEvent) => this.scheduleStroke(e));
     this.state = {
       status: "loading",
       error: null,
@@ -140,6 +162,8 @@ export class PlayerPresenter {
       soundGroup: "",
       imageGroup: "",
       motion: isBeatMotion(this.saved.motion) ? this.saved.motion : DEFAULT_MOTION,
+      lane: null,
+      strokeIndex: null,
       image: null,
       position: { beat: 0, repeat: 0 },
       beatCount: 0,
@@ -190,6 +214,7 @@ export class PlayerPresenter {
     if (this.deps.strokes) this.deps.audio.cancel("percussion");
     // Drop images for steps that won't sound now; the one showing stays.
     this.cues = [];
+    this.strokeCues = [];
     this.heard = null;
     this.setPose(REST);
     this.update({ playing: false });
@@ -308,7 +333,7 @@ export class PlayerPresenter {
       patternFor(this.grid, this.state.settings.nadai) ??
       generatedPattern(beats, this.grid.shape, this.grid.patternCounts);
     this.deps.strokes?.setPattern(this.pattern?.name ?? null);
-    this.update({ beatCount: beats.length, position: this.cursor.position });
+    this.update({ beatCount: beats.length, position: this.cursor.position, lane: laneFor(this.pattern), strokeIndex: null });
   }
 
   /** Plays the cursor's current beat once, now. */
@@ -318,6 +343,13 @@ export class PlayerPresenter {
     if (events.length === 0) return;
     for (const e of events) this.schedule(e);
     this.runFrames();
+  }
+
+  /** Books a stroke on the instrument, and queues it for the lane. */
+  private scheduleStroke(e: StrokeEvent): void {
+    if (this.deps.strokes?.playAt(e.stroke, e.time, e.gain)) {
+      this.strokeCues.push({ time: e.time, index: e.index });
+    }
   }
 
   private schedule(e: TalaEvent): void {
@@ -345,11 +377,16 @@ export class PlayerPresenter {
       let due: Cue | undefined;
       while (this.cues.length > 0 && this.cues[0].time <= heard) due = this.cues.shift();
       if (due) this.update({ image: due.image, position: due.position });
+      let stroke: StrokeCue | undefined;
+      while (this.strokeCues.length > 0 && this.strokeCues[0].time <= heard) stroke = this.strokeCues.shift();
+      if (stroke && stroke.index !== this.state.strokeIndex) this.update({ strokeIndex: stroke.index });
       if (this.state.playing) {
         if (due) this.heard = due;
         this.setPose(this.poseAt(heard));
       }
-      if (this.state.playing || this.cues.length > 0) this.frameId = this.deps.frames.request(frame);
+      if (this.state.playing || this.cues.length > 0 || this.strokeCues.length > 0) {
+        this.frameId = this.deps.frames.request(frame);
+      }
     };
     this.frameId = this.deps.frames.request(frame);
   }
@@ -394,4 +431,24 @@ function loadSafely(store: PlayerStore | undefined): Record<string, unknown> {
 
 function clampVolume(percent: number): number {
   return Math.min(100, Math.max(0, Math.round(Number.isFinite(percent) ? percent : DEFAULT_VOLUME)));
+}
+
+/**
+ * The pattern laid out for the lane: which akshara each stroke falls in, and
+ * how far through it. Positions are fractions of the cycle, so this is the
+ * one place that decides how a cycle is divided for reading.
+ */
+function laneFor(pattern: Pattern | null): Lane | null {
+  if (!pattern || pattern.strokes.length === 0) return null;
+  const aksharas = Math.max(1, pattern.aksharas);
+  return {
+    name: pattern.name,
+    source: pattern.source,
+    aksharas,
+    strokes: pattern.strokes.map((s) => {
+      const at = (s.at.n / s.at.d) * aksharas;
+      const akshara = Math.min(aksharas - 1, Math.floor(at));
+      return { stroke: s.stroke, akshara, within: at - akshara };
+    }),
+  };
 }

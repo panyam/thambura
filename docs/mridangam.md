@@ -473,10 +473,12 @@ tala player, not in a second floating bar like the thambura's.
   - the volume, with a left/right balance
   - the tuning, shown as "follows the thambura, C3 (1 kattai)", with a
     thoppi-pitch nudge
-- **A stroke lane** under the beat image shows the current cycle's aksharas,
-  with the pattern's strokes (and solkattu, when written) in each one, and the
-  stroke being heard lit up. It's driven by `heardNow` cues, as the images
-  are, so it lights with the sound and not when it was booked.
+- **A stroke lane** under the beat image shows the cycle's aksharas, with the
+  pattern's strokes in each one and the stroke being heard lit up. It lights
+  from `heardNow` cues, as the images do, so it agrees with the sound rather
+  than with what was booked. Sam is marked, a generated pattern says it is a
+  skeleton, and the lane goes away when the instrument is switched off. The
+  solkattu line is not shown yet, since no pattern carries one.
 - **A stroke pad** draws the two drum heads as pads, one per stroke, each
   labelled with its name and where it's struck. Tapping one plays it at the
   current shruthi. It's the first thing to build, because it's how we check
@@ -505,11 +507,11 @@ Each step is a PR that works on its own.
    the same pattern serves Adi and a chatusra Thriputa and stretches with kalai.
    A tala with no pattern stays silent and the panel says so. The pattern itself
    still wants a player's eye (open question 3).
-3. **The pattern format.** Done but for the stroke lane. The notations DSL
-   compiled at build time, patterns for Adi, Short Rupakam and the Misra and
-   Khanda chaapus, and a generated skeleton for every other tala and nadai.
-   What's left: the stroke lane in the view, and second-speed versions of the
-   written patterns.
+3. **The pattern format.** Done. The notations DSL compiled at build time,
+   patterns for Adi, Short Rupakam and the Misra and Khanda chaapus, a
+   generated skeleton for every other tala and nadai, and the stroke lane.
+   Still wanted here: second-speed versions of the written patterns, and the
+   solkattu line under the strokes.
 4. **Arrangements.** Variations, fills, korvai, eduppu and count-in,
    tempo-based choice.
 5. **The editor**, local saving and share links.
