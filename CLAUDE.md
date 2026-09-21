@@ -380,6 +380,11 @@ See NEXTSTEPS.md for the order.
   where it would cost 78 KB gzipped, and the compiler checks a pattern fills
   its cycle and that its shape and cycle agree. Five bugs found on the way are
   filed as notations#17 to #22.
+- **The stroke lane** (`player/StrokeLane.tsx`) shows the cycle's aksharas
+  and lights the stroke being heard. `Pattern.aksharas` says how many cells a
+  cycle divides into (seven for a misra chaapu, which our tables call one
+  beat), `StrokeEvent.index` says which stroke sounded, and the player queues
+  a cue per stroke so the lane lights from `heardNow` like the beat images.
 - **A kit can derive a stroke from another.** The gumki is `L.thom` with a
   bend (300 cents over 0.25 s, a guess), declared in the manifest rather than
   recorded, since a gumki is a bent thom and the dataset has no take for it.

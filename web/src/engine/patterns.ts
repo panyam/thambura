@@ -53,6 +53,11 @@ export interface Pattern {
   counts: Ratio;
   /** How many beats that is, ignoring kalai. */
   beats: number;
+  /**
+   * How many aksharas the pattern is written in, which is how the stroke lane
+   * divides a cycle. A chaapu has one beat but seven or five aksharas.
+   */
+  aksharas: number;
   /** The nadai it is written for, or "any" when the tala has none. */
   nadai: Gati | "any";
   strokes: PatternStroke[];

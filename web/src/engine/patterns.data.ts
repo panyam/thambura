@@ -10,6 +10,7 @@ export const PATTERNS: Pattern[] = [
     source: "drafted by Claude from the stroke names, unverified by a mridangist",
     shape: "down one two three down open down open",
     counts: ratio(8, 1),
+    aksharas: 8,
     nadai: "chatusram",
     beats: 8,
     strokes: [
@@ -39,6 +40,7 @@ export const PATTERNS: Pattern[] = [
     source: "karya, Solkattu/Score/MridangamSarva.hs, s_bhajan_kanda variation 2, the \"N,ND,\" line (youtube.com/watch?v=ctpe5H1Snd0), github.com/elaforge/karya, GPL-3.0, used with permission. Converted by us: karya's \",\" is kin, a light ki on meetu, which this kit has no take for, so it plays thi. Unverified.",
     shape: "down",
     counts: ratio(5, 2),
+    aksharas: 5,
     nadai: "any",
     beats: 1,
     strokes: [
@@ -55,6 +57,7 @@ export const PATTERNS: Pattern[] = [
     source: "karya, Solkattu/Score/MridangamSarva.hs, kir_misra_2, learned from Ganesh, 2017-09-26 (github.com/elaforge/karya, GPL-3.0, used with permission). Converted by us: karya's N is thom with nam, D is thom with din, and this kit plays those as tham and dheem. The mapping is ours and unverified.",
     shape: "down",
     counts: ratio(7, 2),
+    aksharas: 7,
     nadai: "any",
     beats: 1,
     strokes: [
@@ -74,6 +77,7 @@ export const PATTERNS: Pattern[] = [
     source: "karya, Solkattu/Score/MridangamSarva.hs, s_rupaka first line, 2026-02-05 (github.com/elaforge/karya, GPL-3.0, used with permission). \"D_oknoD_D_N_\" converted by us: D is thom with din (dheem here), N is thom with nam (tham), k is ki (thi). Unverified by a player.",
     shape: "down down open",
     counts: ratio(3, 1),
+    aksharas: 3,
     nadai: "chatusram",
     beats: 3,
     strokes: [
