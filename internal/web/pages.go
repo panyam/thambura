@@ -18,9 +18,12 @@ import (
 	"github.com/panyam/thambura/internal/brand"
 )
 
-// App is the goapplib app context. Empty for now; the pages need no server
-// state.
-type App struct{}
+// App is the goapplib app context, which every page's Load is handed.
+type App struct {
+	// KitURL is the mridangam kit found under static at startup, or empty.
+	// Register fills it in, since it knows where static is.
+	KitURL string
+}
 
 // Header is the data goapplib's Header template renders with.
 type Header struct {
@@ -60,10 +63,6 @@ type HomePage struct {
 	KitURL string
 }
 
-// kitURL is the kit found under static at startup, or empty. Package state
-// because the pages carry no server data of their own.
-var kitURL string
-
 // findKit returns the URL of the first kit manifest under
 // static/Resources/Mridangam, or empty when there is none.
 func findKit(static string) string {
@@ -102,7 +101,7 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 		ImageHeight: 630,
 	}
 	p.StructuredData = webApplicationLD()
-	p.KitURL = kitURL
+	p.KitURL = app.Context.KitURL
 	return nil, false
 }
 
@@ -156,7 +155,7 @@ func NewApp(templatesDir string) (*goal.App[*App], error) {
 // itself (and sends the same header); everything else comes here.
 func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	static := filepath.Join(webDir, "static")
-	kitURL = findKit(static)
+	app.Context.KitURL = findKit(static)
 	goal.Register[*HomePage](app, mux, "/{$}")
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
 	mux.Handle("/legacy/", noindex(http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy"))))))

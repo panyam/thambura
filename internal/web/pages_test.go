@@ -327,10 +327,19 @@ func TestFindKit(t *testing.T) {
 
 // The home page carries the kit URL only when Register found one.
 func TestHomePageKitAttribute(t *testing.T) {
-	srv := newServer(t)
+	webDir := filepath.Join("..", "..", "web")
+	app, err := NewApp(filepath.Join(webDir, "templates"))
+	if err != nil {
+		t.Fatalf("NewApp: %v", err)
+	}
+	mux := http.NewServeMux()
+	Register(app, mux, webDir)
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
 	_, body := get(t, srv.URL+"/")
-	has := strings.Contains(body, "data-kit-url=")
-	if want := kitURL != ""; has != want {
-		t.Fatalf("data-kit-url present = %v, but the kit found at startup was %q", has, kitURL)
+	found := app.Context.KitURL
+	if has := strings.Contains(body, "data-kit-url="); has != (found != "") {
+		t.Fatalf("data-kit-url present = %v, but the kit found at startup was %q", has, found)
 	}
 }
