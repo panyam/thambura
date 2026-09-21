@@ -380,6 +380,13 @@ See NEXTSTEPS.md for the order.
   where it would cost 78 KB gzipped, and the compiler checks a pattern fills
   its cycle and that its shape and cycle agree. Five bugs found on the way are
   filed as notations#17 to #22.
+- **Arrangements** (`engine/arrangement.ts`) decide what each cycle plays. A
+  pattern's `role` is `main` or `variation`; `arrangementFor` gathers the
+  alternates that fit the same cycle, and `patternForCycle` draws one per
+  cycle at the Variety setting's chance (off, 0.3, 0.7). The first cycle is
+  always the main one. The player asks per cycle through `StrokeSequencer`'s
+  source, and keeps a lane per cycle so the lane changes when that cycle is
+  heard, not when it was booked.
 - **The stroke lane** (`player/StrokeLane.tsx`) shows the cycle's aksharas
   and lights the stroke being heard. `Pattern.aksharas` says how many cells a
   cycle divides into (seven for a misra chaapu, which our tables call one

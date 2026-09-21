@@ -62,6 +62,7 @@ export function generatedPattern(beats: Beat[], shape: string, counts: Ratio): P
     shape,
     counts,
     nadai: "any",
+    role: "main",
     beats: beats.length,
     aksharas: beats.length,
     strokes,

@@ -189,6 +189,7 @@ describe("PlayerPresenter", () => {
         tempo: 96,
         volume: 50,
         soundGroup: "Clap",
+        variety: "some",
         imageGroup: "Swaras",
       });
     });
