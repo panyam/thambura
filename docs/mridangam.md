@@ -419,8 +419,10 @@ tala player, not in a second floating bar like the thambura's.
 Each step is a PR that works on its own.
 
 1. **Strokes and tuning.** Done, but for the listening. The kit manifest and
-   loader, `bend`, per-head choke, left/right levels and the stroke pad are
-   in the app; the measuring scripts and the kit itself are in the data repo.
+   loader, `bend`, per-zone choke, a level per zone and the stroke pad are in
+   the app; the measuring scripts and the kit itself are in the data repo.
+   None of that code is about the mridangam: a kit declares its zones, its
+   tunings and its strokes, so a ghatam or a tabla needs no new code.
    A kit is copied in with `make devkit` and isn't committed, so Go only
    writes `data-kit-url` when one is there, and a plain checkout shows no pad.
    What's left is the ear: every stroke at a few keys, next to the thambura.

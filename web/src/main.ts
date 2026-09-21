@@ -1,7 +1,7 @@
 import { BasePage, type LCMComponent } from "@panyam/tsappkit";
 import { AudioEngine } from "./player/audio";
 import { createPlayerIsland } from "./player/island";
-import { MridangamPresenter } from "./player/mridangamPresenter";
+import { KitPresenter } from "./player/kitPresenter";
 import { isIOS, isInstalled, wireInstall } from "./player/install";
 import { KeepAwake, usePlaybackSession, type WakeLockLike } from "./player/keepAwake";
 import { createThamburaIsland } from "./player/thamburaIsland";
@@ -23,8 +23,9 @@ class HomePage extends BasePage {
     const audio = new AudioEngine();
     const awake = new KeepAwake({ wakeLock: (navigator as { wakeLock?: WakeLockLike }).wakeLock, doc: document });
     const components: LCMComponent[] = [];
-    // One mridangam, built here so the thambura can tune it to the same Sa.
-    const mridangam = new MridangamPresenter({
+    // The struck instrument, built here so the thambura can tune it to the
+    // same Sa. One for now; the mixer plan has several.
+    const kit = new KitPresenter({
       audio,
       fetchJson: async (url) => {
         const r = await fetch(url);
@@ -35,7 +36,7 @@ class HomePage extends BasePage {
     });
     const player = document.getElementById("player");
     if (player) {
-      components.push(createPlayerIsland(player, this.eventBus, audio, (on) => awake.set("tala", on), mridangam));
+      components.push(createPlayerIsland(player, this.eventBus, audio, (on) => awake.set("tala", on), kit));
     }
     const thambura = document.getElementById("thambura");
     if (thambura) {
@@ -51,7 +52,7 @@ class HomePage extends BasePage {
           audio,
           controls,
           (on) => awake.set("thambura", on),
-          (settings) => mridangam.setThambura(settings),
+          (settings) => kit.setThambura(settings),
         ),
       );
     }

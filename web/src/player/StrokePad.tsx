@@ -1,19 +1,21 @@
 import { For, Show, createEffect, onCleanup, type Accessor } from "solid-js";
-import type { MridangamPresenter, MridangamState, PadStroke } from "./mridangamPresenter";
+import type { KitPresenter, KitState } from "./kitPresenter";
 
-export type MridangamActions = Pick<MridangamPresenter, "play" | "setVolume" | "setBalance" | "strokeForKey">;
+export type KitActions = Pick<KitPresenter, "play" | "setVolume" | "setZoneLevel" | "strokeForKey">;
 
 /**
- * The stroke pad: every stroke in the kit, laid out by head, played by click
- * or by the key on its face. It shows which pack is sounding and how far it is
+ * The stroke pad: every stroke in the kit, grouped by zone, played by click or
+ * by the key on its face. It shows which pack is sounding and how far it is
  * being shifted, which is how a kit gets checked by ear against the thambura.
  *
- * The whole section is hidden until a kit loads, since none is committed yet.
+ * It renders whatever the manifest says, so it serves a ghatam or a tabla as
+ * well as the mridangam. The section is hidden until a kit loads, since none
+ * is committed yet.
  */
-export function MridangamPad(props: { state: Accessor<MridangamState>; actions: MridangamActions }) {
+export function StrokePad(props: { state: Accessor<KitState>; actions: KitActions }) {
   const s = props.state;
   const a = props.actions;
-  const byHead = (head: PadStroke["head"]) => s().strokes.filter((x) => x.head === head);
+  const inZone = (zone: string) => s().strokes.filter((x) => x.zone === zone);
 
   // The keys play strokes while the pad is on the page, except while typing.
   createEffect(() => {
@@ -33,31 +35,33 @@ export function MridangamPad(props: { state: Accessor<MridangamState>; actions: 
 
   return (
     <Show when={s().status === "ready"}>
-      <section class="w-full max-w-md" aria-label="Mridangam">
+      <section class="w-full max-w-md" aria-label={title(s())}>
         <details class="group rounded-lg border border-gray-200 dark:border-gray-700">
-          <summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">Mridangam</summary>
+          <summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">{title(s())}</summary>
           <div class="grid gap-4 px-3 pb-3">
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              {s().kitName}, tuned to the thambura: {s().packLabel} drum
-              <Show when={s().shift !== 0}>
-                {" "}
-                shifted {s().shift > 0 ? "+" : ""}
-                {s().shift} cents
-              </Show>
-              <Show when={s().stretched}>
-                {" "}
-                <span class="text-amber-700 dark:text-amber-500">(further than one drum stretches)</span>
+              <Show when={s().pitched} fallback={<>{s().kitName}, played as recorded</>}>
+                {s().kitName}, tuned to the thambura: {s().packLabel}
+                <Show when={s().shift !== 0}>
+                  {" "}
+                  shifted {s().shift > 0 ? "+" : ""}
+                  {s().shift} cents
+                </Show>
+                <Show when={s().stretched}>
+                  {" "}
+                  <span class="text-amber-700 dark:text-amber-500">(further than one drum stretches)</span>
+                </Show>
               </Show>
             </p>
 
-            <For each={[{ head: "right", label: "Valanthalai (right)" }, { head: "left", label: "Thoppi (left)" }] as const}>
+            <For each={s().zones}>
               {(group) => (
                 <div>
                   <h3 class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                     {group.label}
                   </h3>
                   <div class="flex flex-wrap gap-2">
-                    <For each={byHead(group.head)}>
+                    <For each={inZone(group.id)}>
                       {(stroke) => (
                         <button
                           type="button"
@@ -89,7 +93,7 @@ export function MridangamPad(props: { state: Accessor<MridangamState>; actions: 
                 </span>
                 <input
                   type="range"
-                  aria-label="Mridangam volume"
+                  aria-label={`${title(s())} volume`}
                   min={0}
                   max={100}
                   value={s().volume}
@@ -97,20 +101,25 @@ export function MridangamPad(props: { state: Accessor<MridangamState>; actions: 
                   class="w-full accent-amber-600"
                 />
               </label>
-              <label class="text-sm">
-                <span class="mb-1 flex items-center justify-between">
-                  Balance <span class="text-gray-500 dark:text-gray-400">{balanceLabel(s().balance)}</span>
-                </span>
-                <input
-                  type="range"
-                  aria-label="Balance between the heads"
-                  min={-100}
-                  max={100}
-                  value={Math.round(s().balance * 100)}
-                  onInput={(e) => a.setBalance(e.currentTarget.valueAsNumber / 100)}
-                  class="w-full accent-amber-600"
-                />
-              </label>
+              <For each={s().zones}>
+                {(zone) => (
+                  <label class="text-sm">
+                    <span class="mb-1 flex items-center justify-between">
+                      {zone.label}
+                      <span class="text-gray-500 dark:text-gray-400">{Math.round((s().levels[zone.id] ?? 1) * 100)}%</span>
+                    </span>
+                    <input
+                      type="range"
+                      aria-label={`${zone.label} level`}
+                      min={0}
+                      max={100}
+                      value={Math.round((s().levels[zone.id] ?? 1) * 100)}
+                      onInput={(e) => a.setZoneLevel(zone.id, e.currentTarget.valueAsNumber / 100)}
+                      class="w-full accent-amber-600"
+                    />
+                  </label>
+                )}
+              </For>
             </div>
           </div>
         </details>
@@ -119,8 +128,8 @@ export function MridangamPad(props: { state: Accessor<MridangamState>; actions: 
   );
 }
 
-function balanceLabel(balance: number): string {
-  if (Math.abs(balance) < 0.05) return "even";
-  const side = balance > 0 ? "valanthalai" : "thoppi";
-  return `${Math.round(Math.abs(balance) * 100)}% ${side}`;
+/** The instrument's name, capitalised, for the heading and the labels. */
+function title(state: KitState): string {
+  const name = state.instrument || "Kit";
+  return name.charAt(0).toUpperCase() + name.slice(1);
 }

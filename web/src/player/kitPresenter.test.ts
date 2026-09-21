@@ -1,32 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { KEY_C3, KEY_G3, DEFAULT_THAMBURA, tunedTonicHz } from "../engine/shruthi";
-import { HEAD_CHOKE_FADE, MridangamPresenter, type MridangamState } from "./mridangamPresenter";
+import { KitPresenter, ZONE_CHOKE_FADE, type KitState } from "./kitPresenter";
 import { FakeAudio, FakeFrames } from "./testFakes";
 
 const KIT = {
   kit: "test",
   name: "Test kit",
+  instrument: "mridangam",
+  zones: [
+    { id: "valanthalai", label: "Valanthalai (right)" },
+    { id: "thoppi", label: "Thoppi (left)" },
+  ],
   packs: [
     { id: "c", label: "C", hz: 261.63, cents: 5 },
     { id: "g", label: "G", hz: 392.0, cents: 0 },
   ],
   strokes: [
-    { id: "R.chapu", label: "Chapu", head: "right", open: true, note: "the tuning stroke", takes: { c: ["cha-c-1.wav", "cha-c-2.wav"], g: ["cha-g-1.wav"] } },
-    { id: "R.ta", label: "Ta", head: "right", open: false, note: "closed", takes: { c: ["ta-c-1.wav"], g: ["ta-g-1.wav"] } },
-    { id: "L.thom", label: "Thom", head: "left", open: true, note: "open bass", takes: { c: ["thom-c-1.wav"] } },
+    { id: "R.chapu", label: "Chapu", zone: "valanthalai", open: true, note: "the tuning stroke", takes: { c: ["cha-c-1.wav", "cha-c-2.wav"], g: ["cha-g-1.wav"] } },
+    { id: "R.ta", label: "Ta", zone: "valanthalai", open: false, note: "closed", takes: { c: ["ta-c-1.wav"], g: ["ta-g-1.wav"] } },
+    { id: "L.thom", label: "Thom", zone: "thoppi", open: true, note: "open bass", takes: { c: ["thom-c-1.wav"] } },
   ],
 };
 
 const KIT_URL = "/static/Resources/Mridangam/test/kit.json";
 
-describe("MridangamPresenter", () => {
+describe("KitPresenter", () => {
   let audio: FakeAudio;
   let frames: FakeFrames;
-  let p: MridangamPresenter;
-  let views: MridangamState[];
+  let p: KitPresenter;
+  let views: KitState[];
 
   const setup = async (json: unknown = KIT) => {
-    p = new MridangamPresenter({
+    p = new KitPresenter({
       audio,
       frames,
       fetchJson: async () => {
@@ -83,7 +88,7 @@ describe("MridangamPresenter", () => {
     expect(p.strokeForKey("q")).toBeNull();
   });
 
-  it("plays a stroke on the percussion bus, choking only its own head", async () => {
+  it("plays a stroke on the percussion bus, choking only its own zone", async () => {
     await setup();
     audio.now = 4;
     expect(await p.play("R.chapu")).toBe(true);
@@ -93,9 +98,9 @@ describe("MridangamPresenter", () => {
       bus: "percussion",
       when: 4.01,
     });
-    expect(audio.played[0].opts).toMatchObject({ choke: "mridangam/right", chokeFade: HEAD_CHOKE_FADE });
+    expect(audio.played[0].opts).toMatchObject({ choke: "kit/Test kit/valanthalai", chokeFade: ZONE_CHOKE_FADE });
     await p.play("L.thom");
-    expect(audio.played[1].opts).toMatchObject({ choke: "mridangam/left" });
+    expect(audio.played[1].opts).toMatchObject({ choke: "kit/Test kit/thoppi" });
   });
 
   it("works through the takes rather than repeating one", async () => {
@@ -129,20 +134,39 @@ describe("MridangamPresenter", () => {
     expect(p.state.stretched).toBe(true);
   });
 
-  it("sets the bus volume and mixes the heads", async () => {
+  it("sets the bus volume and each zone's level", async () => {
     await setup();
     p.setVolume(40);
     expect(audio.busVolume.percussion).toBe(40);
     p.setVolume(NaN);
     expect(p.state.volume).toBe(70);
 
-    p.setBalance(-1); // all thoppi
+    // Every zone starts at full, and a zone turned down only affects its own strokes.
+    expect(p.state.levels).toEqual({ valanthalai: 1, thoppi: 1 });
+    p.setZoneLevel("valanthalai", 0);
     await p.play("R.chapu");
     await p.play("L.thom");
     expect(audio.played[0].opts?.gain).toBe(0);
     expect(audio.played[1].opts?.gain).toBe(1);
-    p.setBalance(5);
-    expect(p.state.balance).toBe(1);
+    p.setZoneLevel("valanthalai", 5);
+    expect(p.state.levels.valanthalai).toBe(1);
+    p.setZoneLevel("nosuchzone", 0.5);
+    expect(p.state.levels.nosuchzone).toBeUndefined();
+  });
+
+  it("plays an unpitched kit as recorded", async () => {
+    await setup({
+      kit: "hands",
+      name: "Hands",
+      instrument: "hands",
+      zones: [{ id: "hands", label: "Hands" }],
+      packs: [{ id: "any", label: "" }],
+      strokes: [{ id: "H.clap", label: "Clap", zone: "hands", open: true, note: "", takes: { any: ["clap.wav"] } }],
+    });
+    expect(p.state.pitched).toBe(false);
+    p.setThambura({ ...DEFAULT_THAMBURA, key: KEY_G3 });
+    await p.play("H.clap");
+    expect(audio.played[0].opts?.detune).toBe(0);
   });
 
   it("lights a pad when its stroke is heard, not when it is scheduled", async () => {

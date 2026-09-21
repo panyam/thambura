@@ -308,7 +308,7 @@ func TestFindKit(t *testing.T) {
 	if got := findKit(static); got != "" {
 		t.Fatalf("findKit with no kits = %q, want empty", got)
 	}
-	dir := filepath.Join(static, "Resources", "Mridangam", "compmusic")
+	dir := filepath.Join(static, "Resources", "Kits", "compmusic")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -319,7 +319,7 @@ func TestFindKit(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "kit.json"), []byte("{}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	want := "/static/Resources/Mridangam/compmusic/kit.json"
+	want := "/static/Resources/Kits/compmusic/kit.json"
 	if got := findKit(static); got != want {
 		t.Fatalf("findKit = %q, want %q", got, want)
 	}

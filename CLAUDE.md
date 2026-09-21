@@ -11,7 +11,7 @@ make run         # ui + go run on :8000 (8080 is taken in the dev container)
 make test        # go test ./... ; pnpm typecheck ; pnpm test (vitest)
 make ui          # pnpm install, Tailwind -> web/static/css/tailwind.css, esbuild -> web/static/app.js
 make templates   # templar get: re-vendor goapplib templates after a ref bump
-make devkit      # copy a mridangam kit in from ../mridangam-data (gitignored)
+make devkit      # copy an instrument kit in from ../mridangam-data (gitignored)
 make deploy      # tests + prod build, then App Engine project thambura (see Deploying)
 make prodlogs    # tail App Engine logs
 ```
@@ -297,17 +297,19 @@ See NEXTSTEPS.md for the order.
   tonic (`tunedTonicHz`). Sound quality is issue #8: the jawari voice, fitted
   to a real recording, is the default, and the Lab, links and presets are
   how it gets tuned by ear from here, by us and by listeners.
-- **Mridangam:** `docs/mridangam.md` is the plan (strokes and tuning,
-  patterns per tala, packaging, views, build order, open questions). Step 1,
-  the strokes themselves, is in: `engine/mridangam.ts` (kit manifest, which
-  pack suits a tonic, how far to shift it), `player/mridangamPresenter.ts`
-  (loads a kit, follows the thambura's Sa, plays one stroke) and
-  `player/MridangamPad.tsx` (the pad, in the tala player under the settings).
+- **Struck instruments are kits, and the code knows nothing about any one of
+  them.** `engine/kit.ts` reads a `kit.json`: zones (the groups of strokes
+  that choke each other, a mridangam's two heads or a ghatam's one surface),
+  packs (tunings, or one unpitched pack played as recorded), and strokes with
+  takes per pack. `player/kitPresenter.ts` loads one, follows the thambura's
+  Sa and plays a stroke; `player/StrokePad.tsx` draws whatever the manifest
+  declares. The mridangam is data, not code. `docs/mridangam.md` is the plan
+  (strokes and tuning, patterns per tala, packaging, views, build order).
 - **Kits aren't committed.** They're build products from the `thambura-data`
-  repo: `make devkit` copies one into
-  `web/static/Resources/Mridangam/<kit>/`, which is gitignored. Go looks for
-  `*/kit.json` under there at startup and only then writes `data-kit-url` on
-  the page, so a checkout without a kit asks for nothing and shows no pad.
+  repo: `make devkit` copies one into `web/static/Resources/Kits/<kit>/`,
+  which is gitignored. Go looks for `*/kit.json` under there at startup and
+  only then writes `data-kit-url` on the page, so a checkout without a kit
+  asks for nothing and shows no pad.
 - **Mridangam / tabla, what's left:** add a `Sequencer<StrokeEvent>` on the
   tala's `TempoMap` and `Transport` that emits per stroke at exact positions,
   reads the tala's position for eduppu and korvai alignment (nothing exposes

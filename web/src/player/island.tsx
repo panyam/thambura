@@ -3,7 +3,7 @@ import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
 import { createSignal } from "solid-js";
 import { REST } from "../engine/motion";
 import type { AudioEngine } from "./audio";
-import { MridangamPresenter } from "./mridangamPresenter";
+import { KitPresenter } from "./kitPresenter";
 import { PlayerPresenter } from "./presenter";
 import { PlayerView } from "./PlayerView";
 import { workerTicker } from "./transport";
@@ -17,16 +17,17 @@ const STORAGE_KEY = "thambura.player";
  * page shell names the fixtures file in `data-fixtures-url` and the mridangam
  * kit in `data-kit-url`. `onPlaying` hears whenever the tala starts or stops.
  *
- * The mridangam rides along here because it will share the tala's transport
- * once it has a sequencer. Its pad only appears once a kit loads, and no kit
- * is committed yet, so on a plain clone the page is unchanged.
+ * A struck instrument (the mridangam today) rides along here because it will
+ * share the tala's transport once it has a sequencer. Its pad only appears
+ * once a kit loads, and no kit is committed yet, so on a plain clone the page
+ * is unchanged.
  */
 export function createPlayerIsland(
   el: HTMLElement,
   eventBus: EventBus,
   audio: AudioEngine,
   onPlaying?: (playing: boolean) => void,
-  mridangam?: MridangamPresenter,
+  kit?: KitPresenter,
 ): SolidIsland {
   const presenter = new PlayerPresenter({
     audio,
@@ -43,8 +44,8 @@ export function createPlayerIsland(
     },
   });
   const drum =
-    mridangam ??
-    new MridangamPresenter({
+    kit ??
+    new KitPresenter({
       audio,
       fetchJson,
       frames: { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) },
@@ -71,7 +72,7 @@ export function createPlayerIsland(
   return new SolidIsland(
     "player",
     el,
-    () => <PlayerView state={state} pose={pose} actions={presenter} mridangam={{ state: drumState, actions: drum }} />,
+    () => <PlayerView state={state} pose={pose} actions={presenter} kit={{ state: drumState, actions: drum }} />,
     eventBus,
   );
 }

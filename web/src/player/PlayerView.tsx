@@ -11,8 +11,8 @@ import {
   usesNadai,
   type TalaId,
 } from "../engine/selection";
-import { MridangamPad, type MridangamActions } from "./MridangamPad";
-import type { MridangamState } from "./mridangamPresenter";
+import type { KitState } from "./kitPresenter";
+import { StrokePad, type KitActions } from "./StrokePad";
 import type { PlayerPresenter, PlayerState } from "./presenter";
 
 export type PlayerActions = Pick<
@@ -37,8 +37,8 @@ export function PlayerView(props: {
   state: Accessor<PlayerState>;
   pose?: Accessor<BeatPose>;
   actions: PlayerActions;
-  /** The mridangam, when the page has a kit for it. */
-  mridangam?: { state: Accessor<MridangamState>; actions: MridangamActions };
+  /** A struck instrument, when the page has a kit for one. */
+  kit?: { state: Accessor<KitState>; actions: KitActions };
 }) {
   const s = props.state;
   const a = props.actions;
@@ -246,8 +246,8 @@ export function PlayerView(props: {
         </Field>
       </section>
 
-      <Show when={props.mridangam} keyed>
-        {(m) => <MridangamPad state={m.state} actions={m.actions} />}
+      <Show when={props.kit} keyed>
+        {(k) => <StrokePad state={k.state} actions={k.actions} />}
       </Show>
     </div>
   );

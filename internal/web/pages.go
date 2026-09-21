@@ -20,7 +20,7 @@ import (
 
 // App is the goapplib app context, which every page's Load is handed.
 type App struct {
-	// KitURL is the mridangam kit found under static at startup, or empty.
+	// KitURL is the instrument kit found under static at startup, or empty.
 	// Register fills it in, since it knows where static is.
 	KitURL string
 }
@@ -57,20 +57,20 @@ type Social struct {
 // HomePage is the practice page: a shell for the player island.
 type HomePage struct {
 	SitePage
-	// KitURL is the mridangam kit the page should load, or empty for none.
+	// KitURL is the instrument kit the page should load, or empty for none.
 	// Kits are build products copied in (make devkit) and aren't committed, so
 	// most checkouts have none and the page must not ask for one.
 	KitURL string
 }
 
 // findKit returns the URL of the first kit manifest under
-// static/Resources/Mridangam, or empty when there is none.
+// static/Resources/Kits, or empty when there is none.
 func findKit(static string) string {
-	matches, err := filepath.Glob(filepath.Join(static, "Resources", "Mridangam", "*", "kit.json"))
+	matches, err := filepath.Glob(filepath.Join(static, "Resources", "Kits", "*", "kit.json"))
 	if err != nil || len(matches) == 0 {
 		return ""
 	}
-	return "/static/Resources/Mridangam/" + filepath.Base(filepath.Dir(matches[0])) + "/kit.json"
+	return "/static/Resources/Kits/" + filepath.Base(filepath.Dir(matches[0])) + "/kit.json"
 }
 
 // The home page's search and preview text, near the lengths results show in

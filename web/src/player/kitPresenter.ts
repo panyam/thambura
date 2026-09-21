@@ -1,13 +1,14 @@
 import {
+  isPitched,
   kitUrls,
   nearestPack,
+  parseKit,
   shiftCents,
   SHIFT_WARN_CENTS,
   strokeSound,
-  parseKit,
-  type Head,
   type Kit,
-} from "../engine/mridangam";
+  type Zone,
+} from "../engine/kit";
 import { DEFAULT_THAMBURA, tunedTonicHz, type ThamburaSettings } from "../engine/shruthi";
 import type { AudioOut } from "./audio";
 
@@ -15,7 +16,7 @@ import type { AudioOut } from "./audio";
 export interface PadStroke {
   id: string;
   label: string;
-  head: Head;
+  zone: string;
   note: string;
   /** The key that plays it, for the keyboard and the label. */
   key: string;
@@ -23,11 +24,15 @@ export interface PadStroke {
   playable: boolean;
 }
 
-export interface MridangamState {
+export interface KitState {
   /** "off" until a kit loads. A missing kit is normal: none is committed yet. */
   status: "off" | "ready";
   kitName: string;
+  instrument: string;
+  zones: Zone[];
   strokes: PadStroke[];
+  /** Whether it is tuned to the singer at all. */
+  pitched: boolean;
   /** The tonic it's tuned to, and how it gets there. */
   tonicHz: number;
   packLabel: string;
@@ -35,17 +40,17 @@ export interface MridangamState {
   /** True when the shift is far enough to sound like a different drum. */
   stretched: boolean;
   volume: number;
-  /** -1 all thoppi, 1 all valanthalai. */
-  balance: number;
+  /** Each zone's level, 0 to 1, so the hands can be balanced against each other. */
+  levels: Record<string, number>;
   /** The stroke heard a moment ago, for the pad's glow. */
   lit: string | null;
 }
 
-export interface MridangamView {
-  setState(state: MridangamState): void;
+export interface KitView {
+  setState(state: KitState): void;
 }
 
-export interface MridangamDeps {
+export interface KitDeps {
   audio: AudioOut;
   fetchJson(url: string): Promise<unknown>;
   /** requestAnimationFrame, for the pad glow. Injectable for tests. */
@@ -53,27 +58,28 @@ export interface MridangamDeps {
   rng?: () => number;
 }
 
-/** The keys under the fingers, right head then left, in the pad's order. */
+/** The keys under the fingers, in the pad's order. */
 const KEYS = ["a", "s", "d", "f", "g", "h", "j", "z", "x", "c", "v", "b"];
-export const DEFAULT_MRIDANGAM_VOLUME = 70;
+export const DEFAULT_KIT_VOLUME = 70;
 /** A drum head damps in a few ms; 80 ms is the string setting and would smear. */
-export const HEAD_CHOKE_FADE = 0.008;
+export const ZONE_CHOKE_FADE = 0.008;
 /** How long a pad stays lit after its stroke is heard, in seconds. */
 const GLOW = 0.25;
 /** Up to this much softer per hit, so repeats aren't machine-gunned. */
 const SOFTER = 0.12;
 
 /**
- * The mridangam's strokes: loads a kit, tunes it to the thambura's tonic, and
- * plays one stroke at a time on the percussion bus. No sequencer yet, so this
- * is the pad you check a kit with by ear.
+ * One struck instrument: loads a kit, tunes it to the thambura's tonic, and
+ * plays a stroke at a time on the percussion bus. No sequencer yet, so this is
+ * the pad a kit gets checked with by ear.
  *
- * A closed stroke chokes the ring of the last open stroke on the same head, as
- * the hand landing on the skin does, and never touches the other head.
+ * It knows nothing about any particular instrument. A closed stroke chokes the
+ * ring of the last open stroke in its own zone, as a hand landing on a head
+ * does, and never touches another zone.
  */
-export class MridangamPresenter {
-  state: MridangamState;
-  private view: MridangamView | null = null;
+export class KitPresenter {
+  state: KitState;
+  private view: KitView | null = null;
   private kit: Kit | null = null;
   private baseUrl = "";
   private tonic = tunedTonicHz(DEFAULT_THAMBURA);
@@ -84,24 +90,27 @@ export class MridangamPresenter {
   private litUntil = 0;
   private frameId: number | null = null;
 
-  constructor(private readonly deps: MridangamDeps) {
+  constructor(private readonly deps: KitDeps) {
     this.rng = deps.rng ?? Math.random;
     this.state = {
       status: "off",
       kitName: "",
+      instrument: "",
+      zones: [],
       strokes: [],
+      pitched: false,
       tonicHz: this.tonic,
       packLabel: "",
       shift: 0,
       stretched: false,
-      volume: DEFAULT_MRIDANGAM_VOLUME,
-      balance: 0,
+      volume: DEFAULT_KIT_VOLUME,
+      levels: {},
       lit: null,
     };
-    deps.audio.setBusVolume("percussion", DEFAULT_MRIDANGAM_VOLUME);
+    deps.audio.setBusVolume("percussion", DEFAULT_KIT_VOLUME);
   }
 
-  attach(view: MridangamView): void {
+  attach(view: KitView): void {
     this.view = view;
     view.setState(this.state);
   }
@@ -116,13 +125,21 @@ export class MridangamPresenter {
     try {
       kit = parseKit(await this.deps.fetchJson(url));
     } catch (err) {
-      console.info(`mridangam: no kit at ${url} (${String(err)})`);
+      console.info(`kit: none at ${url} (${String(err)})`);
       return;
     }
     this.kit = kit;
     this.baseUrl = url.replace(/[^/]*$/, "");
     await this.loadSamples();
-    this.update({ status: "ready", kitName: kit.name, ...this.tuning() });
+    this.update({
+      status: "ready",
+      kitName: kit.name,
+      instrument: kit.instrument,
+      zones: kit.zones,
+      pitched: isPitched(kit),
+      levels: Object.fromEntries(kit.zones.map((z) => [z.id, 1])),
+      ...this.tuning(),
+    });
   }
 
   // ---- intents -----------------------------------------------------------
@@ -145,14 +162,15 @@ export class MridangamPresenter {
   }
 
   setVolume(percent: number): void {
-    const volume = clamp(percent, 0, 100, DEFAULT_MRIDANGAM_VOLUME);
+    const volume = clamp(percent, 0, 100, DEFAULT_KIT_VOLUME);
     this.deps.audio.setBusVolume("percussion", volume);
     this.update({ volume });
   }
 
-  /** -1 is all thoppi, 1 all valanthalai. */
-  setBalance(value: number): void {
-    this.update({ balance: clamp(value, -1, 1, 0) });
+  /** One zone's level, 0 to 1, for balancing the hands against each other. */
+  setZoneLevel(zone: string, level: number): void {
+    if (!this.state.zones.some((z) => z.id === zone)) return;
+    this.update({ levels: { ...this.state.levels, [zone]: clamp(level, 0, 1, 1) } });
   }
 
   /** Plays one stroke now. Returns false when the kit has no take for it. */
@@ -164,9 +182,9 @@ export class MridangamPresenter {
     const at = this.deps.audio.now + 0.01;
     this.deps.audio.play(sound.url, "percussion", at, {
       detune: sound.detune,
-      gain: this.headGain(sound.head) * (1 - SOFTER * this.rng()),
-      choke: `mridangam/${sound.head}`,
-      chokeFade: HEAD_CHOKE_FADE,
+      gain: (this.state.levels[sound.zone] ?? 1) * (1 - SOFTER * this.rng()),
+      choke: `kit/${this.state.kitName}/${sound.zone}`,
+      chokeFade: ZONE_CHOKE_FADE,
     });
     this.cues.push({ time: at, id });
     this.runFrames();
@@ -181,7 +199,7 @@ export class MridangamPresenter {
   // ---- internals ---------------------------------------------------------
 
   /** Which pack is nearest, how far it has to move, and which strokes it has. */
-  private tuning(): Partial<MridangamState> {
+  private tuning(): Partial<KitState> {
     const kit = this.kit;
     if (!kit) return {};
     const pack = nearestPack(kit, this.tonic);
@@ -194,7 +212,7 @@ export class MridangamPresenter {
       strokes: kit.strokes.map((s, i) => ({
         id: s.id,
         label: s.label,
-        head: s.head,
+        zone: s.zone,
         note: s.note,
         key: KEYS[i] ?? "",
         playable: strokeSound(kit, s.id, this.tonic) !== null,
@@ -205,7 +223,7 @@ export class MridangamPresenter {
   private async loadSamples(): Promise<void> {
     if (!this.kit) return;
     const failed = await this.deps.audio.load(kitUrls(this.kit, this.tonic, this.baseUrl));
-    if (failed.length > 0) console.warn(`mridangam: ${failed.length} sample(s) failed`, failed);
+    if (failed.length > 0) console.warn(`kit: ${failed.length} sample(s) failed`, failed);
   }
 
   /** The takes in turn, so two hits in a row aren't the same recording. */
@@ -213,12 +231,6 @@ export class MridangamPresenter {
     const i = this.nextTake.get(id) ?? Math.floor(this.rng() * takes.length);
     this.nextTake.set(id, (i + 1) % takes.length);
     return takes[i % takes.length];
-  }
-
-  /** The balance as a gain for one head: centre leaves both at 1. */
-  private headGain(head: Head): number {
-    const towards = head === "right" ? this.state.balance : -this.state.balance;
-    return Math.min(1, 1 + towards);
   }
 
   /** Lights each pad once its stroke is heard, not when it was scheduled. */
@@ -238,7 +250,7 @@ export class MridangamPresenter {
     this.frameId = this.deps.frames.request(frame);
   }
 
-  private update(patch: Partial<MridangamState>): void {
+  private update(patch: Partial<KitState>): void {
     this.state = { ...this.state, ...patch };
     this.view?.setState(this.state);
   }

@@ -1,26 +1,36 @@
 /**
- * The mridangam's strokes and how a kit tunes to the shruthi. Pure: no audio,
- * DOM or timers.
+ * A struck instrument as a kit of recordings: what it can play, and how it
+ * tunes to the shruthi. Pure: no audio, DOM or timers.
  *
- * A kit is a folder of recordings with a `kit.json` manifest (the tools that
- * build one live in the thambura-data repo). The manifest holds packs, each
- * recorded with the drum tuned near one note, and strokes, each with a few
- * takes per pack. A stroke id carries its head, `R.chapu` or `L.thom`, so the
- * right head's ta and the left head's tha can't be confused.
+ * A kit is a folder with a `kit.json` manifest (the tools that build one live
+ * in the thambura-data repo). It describes one instrument, whichever it is:
  *
- * A real drum only covers a few semitones, which is why a kit has several
- * packs: we play the one nearest the tonic and detune it the rest of the way.
- * Resampling scales the decay along with the pitch, so a stroke shifted far
- * sounds like a smaller drum, and `SHIFT_WARN_CENTS` is where we say so.
+ * - **Zones** are the groups of strokes that choke each other, because one
+ *   hand can only be in one place. A mridangam has two (its heads), a tabla
+ *   two (its drums), a ghatam or a kanjira one, a drum kit several.
+ * - **Packs** are tunings: the same instrument recorded at several pitches,
+ *   since a real drum only covers a few semitones. We play the pack nearest
+ *   the tonic and detune it the rest of the way. Resampling scales the decay
+ *   along with the pitch, so a stroke shifted far sounds like a smaller drum,
+ *   and `SHIFT_WARN_CENTS` is where we say so. A pack with no `hz` is
+ *   unpitched, for an instrument that isn't tuned to the singer at all.
+ * - **Strokes** are what you play: which zone, whether they ring, and a few
+ *   takes per pack so repeats aren't identical.
+ *
+ * Nothing here knows what a mridangam is. That lives in the manifest.
  */
 
-export type Head = "left" | "right";
+export interface Zone {
+  id: string;
+  label: string;
+}
 
 export interface Stroke {
   id: string;
   label: string;
-  head: Head;
-  /** Whether the head is left to ring. Closed strokes choke open ones. */
+  /** Which zone it belongs to. Strokes in a zone choke each other. */
+  zone: string;
+  /** Whether it is left to ring. A closed stroke chokes the open ones. */
   open: boolean;
   /** A line for the view: where it's struck, what it sounds like. */
   note: string;
@@ -28,17 +38,21 @@ export interface Stroke {
   takes: Record<string, string[]>;
 }
 
-/** One tuning of the drum. `hz` is its nominal Sa; `cents` is where it really sits. */
+/** One tuning. `hz` is its nominal Sa; `cents` is where it really sits. */
 export interface Pack {
   id: string;
   label: string;
-  hz: number;
+  /** Missing on an unpitched kit, which is played as recorded. */
+  hz?: number;
   cents: number;
 }
 
 export interface Kit {
   kit: string;
   name: string;
+  /** What it is: "mridangam", "ghatam", "hands". For the view's wording. */
+  instrument: string;
+  zones: Zone[];
   packs: Pack[];
   strokes: Stroke[];
 }
@@ -47,7 +61,7 @@ export interface Kit {
 export interface StrokeSound {
   url: string;
   detune: number;
-  head: Head;
+  zone: string;
   open: boolean;
 }
 
@@ -56,7 +70,12 @@ export const SHIFT_WARN_CENTS = 200;
 
 /** The pitch a pack actually sounds, once its measured offset is applied. */
 export function packHz(pack: Pack): number {
-  return pack.hz * 2 ** (pack.cents / 1200);
+  return (pack.hz ?? 0) * 2 ** (pack.cents / 1200);
+}
+
+/** Whether the kit is tuned to the singer at all. */
+export function isPitched(kit: Kit): boolean {
+  return kit.packs.some((p) => (p.hz ?? 0) > 0);
 }
 
 /**
@@ -68,6 +87,8 @@ export function nearestPack(kit: Kit, tonicHz: number, strokeId?: string): Pack 
   const usable = strokeId ? kit.packs.filter((p) => hasTakes(kit, strokeId, p.id)) : kit.packs;
   let best: Pack | null = null;
   for (const pack of usable) {
+    // An unpitched pack is played as recorded, so it is always "nearest".
+    if (!(pack.hz ?? 0)) return pack;
     if (!best || Math.abs(shiftCents(pack, tonicHz)) < Math.abs(shiftCents(best, tonicHz))) best = pack;
   }
   return best;
@@ -75,6 +96,7 @@ export function nearestPack(kit: Kit, tonicHz: number, strokeId?: string): Pack 
 
 /** How far a pack has to move to sound `tonicHz`, in cents, folded to the nearest octave. */
 export function shiftCents(pack: Pack, tonicHz: number): number {
+  if (!(pack.hz ?? 0)) return 0;
   const raw = 1200 * Math.log2(tonicHz / packHz(pack));
   return raw - 1200 * Math.round(raw / 1200);
 }
@@ -100,7 +122,7 @@ export function strokeSound(
   return {
     url: `${baseUrl}${pick(takes)}`,
     detune: shiftCents(pack, tonicHz),
-    head: stroke.head,
+    zone: stroke.zone,
     open: stroke.open,
   };
 }
@@ -120,13 +142,22 @@ export function parseKit(json: unknown): Kit {
   if (!isRecord(json)) throw new Error("kit: expected a JSON object");
   const packs = asArray(json.packs, "packs").map((p, i) => {
     if (!isRecord(p)) throw new Error(`kit: packs[${i}] must be an object`);
+    const id = asString(p.id, `packs[${i}].id`);
     return {
-      id: asString(p.id, `packs[${i}].id`),
-      label: asString(p.label, `packs[${i}].label`),
-      hz: asNumber(p.hz, `packs[${i}].hz`),
+      id,
+      // An unpitched kit has one pack and nothing to call it.
+      label: typeof p.label === "string" && p.label !== "" ? p.label : id,
+      hz: p.hz === undefined ? undefined : asNumber(p.hz, `packs[${i}].hz`),
       cents: typeof p.cents === "number" ? p.cents : 0,
     };
   });
+  const zones = asArray(json.zones, "zones").map((z, i) => {
+    if (!isRecord(z)) throw new Error(`kit: zones[${i}] must be an object`);
+    const id = asString(z.id, `zones[${i}].id`);
+    return { id, label: typeof z.label === "string" ? z.label : id };
+  });
+  if (zones.length === 0) throw new Error("kit: no zones");
+  const zoneIds = new Set(zones.map((z) => z.id));
   const ids = new Set(packs.map((p) => p.id));
   const strokes = asArray(json.strokes, "strokes").map((s, i) => {
     if (!isRecord(s)) throw new Error(`kit: strokes[${i}] must be an object`);
@@ -138,12 +169,12 @@ export function parseKit(json: unknown): Kit {
       );
     }
     const id = asString(s.id, `strokes[${i}].id`);
-    const head: Head | null = s.head === "left" ? "left" : s.head === "right" ? "right" : null;
-    if (!head) throw new Error(`kit: strokes[${i}].head must be "left" or "right"`);
+    const zone = asString(s.zone, `strokes[${i}].zone`);
+    if (!zoneIds.has(zone)) throw new Error(`kit: strokes[${i}].zone names an unknown zone "${zone}"`);
     return {
       id,
       label: typeof s.label === "string" ? s.label : id,
-      head,
+      zone,
       open: s.open !== false,
       note: typeof s.note === "string" ? s.note : "",
       takes,
@@ -153,7 +184,9 @@ export function parseKit(json: unknown): Kit {
   if (strokes.length === 0) throw new Error("kit: no strokes");
   return {
     kit: typeof json.kit === "string" ? json.kit : "kit",
-    name: typeof json.name === "string" ? json.name : "Mridangam",
+    name: typeof json.name === "string" ? json.name : "Kit",
+    instrument: typeof json.instrument === "string" ? json.instrument : "instrument",
+    zones,
     packs,
     strokes,
   };
