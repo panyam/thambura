@@ -375,6 +375,13 @@ See NEXTSTEPS.md for the order.
   where it would cost 78 KB gzipped, and the compiler checks a pattern fills
   its cycle and that its shape and cycle agree. Five bugs found on the way are
   filed as notations#17 to #22.
+- **A kit can derive a stroke from another.** The gumki is `L.thom` with a
+  bend (300 cents over 0.25 s, a guess), declared in the manifest rather than
+  recorded, since a gumki is a bent thom and the dataset has no take for it.
+  `strokeSound` resolves the takes of the stroke it bends, and `play` applies
+  the bend. Arai chapu and the left-hand tha are still missing and need
+  recording; note that this kit's `tha` is the right head's closed stroke,
+  not karya's left-hand `p`.
 - Drum strokes choke per head: a closed stroke cuts the ring of the last open
   one on the same head, never the other head. `play` takes `chokeFade` for
   that (8 ms, against the strings' 80 ms) and `bend`, which slides a note's

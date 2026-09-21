@@ -19,6 +19,15 @@ const KIT_JSON = {
     { id: "R.ta", label: "Ta", zone: "right", open: false, note: "closed", takes: { c: ["ta-c-1.wav"], d: ["ta-d-1.wav"], e: ["ta-e-1.wav"] } },
     // Only recorded at one pack, as bheem is in the real dataset.
     { id: "L.thom", label: "Thom", zone: "left", open: true, note: "open bass", takes: { e: ["thom-e-1.wav"] } },
+    {
+      id: "L.gumki",
+      label: "Gumki",
+      zone: "left",
+      open: true,
+      note: "thom with the pitch bent up",
+      derived: { from: "L.thom", bend: { cents: 300, seconds: 0.25 } },
+      takes: {},
+    },
   ],
 };
 
@@ -102,7 +111,23 @@ describe("tuning a kit to the shruthi", () => {
   });
 
   it("has nothing to play for a stroke the kit doesn't have", () => {
-    expect(strokeSound(kit, "R.gumki", C3)).toBeNull();
+    expect(strokeSound(kit, "R.nam", C3)).toBeNull();
+  });
+
+  it("plays a derived stroke from the take it bends", () => {
+    // The gumki has no recording: it is the thom's take with a slide on it.
+    const gumki = strokeSound(kit, "L.gumki", C3)!;
+    const thom = strokeSound(kit, "L.thom", C3)!;
+    expect(gumki.url).toBe(thom.url);
+    expect(gumki.detune).toBe(thom.detune);
+    expect(gumki.bend).toEqual({ cents: 300, seconds: 0.25 });
+    expect(thom.bend).toBeUndefined();
+    expect(gumki.zone).toBe("left");
+  });
+
+  it("preloads what a derived stroke needs, without repeating it", () => {
+    const urls = kitUrls(kit, C3, "/kit/");
+    expect(urls.filter((u) => u.includes("thom"))).toEqual(["/kit/thom-e-1.wav"]);
   });
 
   it("lists what to preload for one tonic, without repeats", () => {

@@ -94,11 +94,14 @@ plays, not per syllable by a table.
 
 A gumki is a thom whose pitch the player bends with the other hand on the
 left head. It only works with paste on the head. Nobody we read gives numbers
-for how far or how fast it bends, so it goes in as a parameter to tune by ear:
-`AudioEngine.play` gains a `bend` option that ramps the note's `detune` from
-0 to some cents over some time, and the gumki stroke is a thom sample played
-with a bend. Something like +200 to +400 cents over 150-400 ms is our guess to
-start from, and a real player should correct it.
+for how far or how fast it bends, so it is a number to tune by ear.
+
+It's wired up. `AudioEngine.play` takes a `bend` that ramps the note's
+`detune`, and a kit can declare a stroke as **derived** from another: the
+gumki is `L.thom` with a bend, so it needs no recording of its own, which
+matters because the dataset has none. The kit ships 300 cents over 0.25 s,
+which is a guess inside the +200 to +400 range our reading suggested. A
+player should correct it, and it's one line in the manifest.
 
 ### Tuning to the shruthi
 

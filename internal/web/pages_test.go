@@ -410,6 +410,11 @@ func TestStaticServesTheKit(t *testing.T) {
 		Strokes []struct {
 			ID    string              `json:"id"`
 			Takes map[string][]string `json:"takes"`
+			// A derived stroke has no recordings: it plays another stroke's
+			// takes with a bend, as the gumki plays thom's.
+			Derived *struct {
+				From string `json:"from"`
+			} `json:"derived"`
 		} `json:"strokes"`
 	}
 	if err := json.Unmarshal([]byte(body), &kit); err != nil {
@@ -420,7 +425,17 @@ func TestStaticServesTheKit(t *testing.T) {
 	}
 	base := url[:strings.LastIndex(url, "/")+1]
 	takes := 0
+	sources := map[string]bool{}
 	for _, stroke := range kit.Strokes {
+		sources[stroke.ID] = len(stroke.Takes) > 0
+	}
+	for _, stroke := range kit.Strokes {
+		if stroke.Derived != nil {
+			if !sources[stroke.Derived.From] {
+				t.Errorf("stroke %s is derived from %s, which has no takes", stroke.ID, stroke.Derived.From)
+			}
+			continue
+		}
 		if len(stroke.Takes) == 0 {
 			t.Errorf("stroke %s has no takes", stroke.ID)
 		}

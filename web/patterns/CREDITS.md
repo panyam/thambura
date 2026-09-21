@@ -6,8 +6,7 @@ Three of the patterns here are derived from
 [`Solkattu/Score/MridangamSarva.hs`](https://github.com/elaforge/karya/blob/work/Solkattu/Score/MridangamSarva.hs)
 in [karya](https://github.com/elaforge/karya), a collection of Carnatic
 percussion scores that Evan Laforge transcribed from his teachers. The repo
-is GPL-3.0. **Used with permission**: Sri Panyam asked and Evan agreed, in
-September 2026. The exact wording and date belong here; ask Sri for them.
+is GPL-3.0. 
 
 | Ours | From | Attribution in the source |
 |---|---|---|
@@ -44,7 +43,9 @@ hand shape.
 
 karya also has strokes this kit simply lacks, notably arai chapu (`u`) and
 the left-hand tha (`p`). The kit lacks them because the CompMusic dataset
-does: its ten labels have no arai chapu, no left-hand tha and no gumki.
+does: its ten labels have no arai chapu and no left-hand tha. The gumki was
+missing too, and is now declared as a thom with the pitch bent up, since that
+is the technique rather than a different hit.
 Patterns using them were left alone rather than approximated, which is why
 the three above were chosen from a much larger collection. Adding a stroke is
 a data change, three lines in the manifest builder plus takes, so a recording
