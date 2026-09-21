@@ -397,7 +397,9 @@ edits. So:
 
 - Don't switch branches in the shared checkout. Start each piece of work in
   its own worktree: `git worktree add -b <branch> <dir> origin/master`, then
-  `cd <dir>/web && pnpm install`.
+  `cd <dir>/web && pnpm install`. A worktree gets its own `node_modules`,
+  and its own `tools/sound-analysis/.venv` if you're running the sound
+  analysis; both are gitignored, so a new worktree starts without them.
 - Stage explicit paths, and check `git status` for files you didn't touch.
 - Serve a worktree on its own port: `(cd web && pnpm buildcss && pnpm build)`,
   then `PORT=8011 go run .` from the worktree root. Check the port is free
