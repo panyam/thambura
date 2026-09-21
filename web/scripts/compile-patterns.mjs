@@ -72,12 +72,14 @@ function compile(file, strokes) {
     if (!name) continue;
     const stroke = strokes[name];
     if (!stroke) throw new Error(`${file}: no stroke for "${name}" (add it to patterns/strokes.json)`);
-    // Atom offsets count atoms; a beat holds beatDuration of them.
+    // Atom offsets count atoms, and a cycle holds beatDuration of them per
+    // beat, so this is the stroke's fraction of the whole cycle.
     events.push({
       n: Number(offset.num),
-      d: Number(offset.den) * perBeat,
+      d: Number(offset.den) * perBeat * cycleCounts,
       stroke,
       gain: meta.accents?.[String(Math.floor(Number(offset.num) / Number(offset.den) / perBeat))] ?? 1,
+      akshara: Math.floor(Number(offset.num) / Number(offset.den) / perBeat),
     });
   }
 
@@ -85,18 +87,23 @@ function compile(file, strokes) {
   if (beats !== cycleCounts) {
     throw new Error(`${file}: the line fills ${beats} beats, but its cycle is ${cycleCounts}`);
   }
+  if (meta.counts === undefined) {
+    throw new Error(`${file}: no counts in the front matter (how many counts is the tala's cycle?)`);
+  }
   if (!meta.source) {
     throw new Error(`${file}: no source in the front matter (who wrote this pattern, and has a player checked it?)`);
   }
+  // The shape is the app's own name for the cycle (its beat images), which a
+  // chaapu writes as one beat while its pattern is written per akshara. So
+  // the shape is not checked against the DSL's cycle, only that it is there.
   const shapeBeats = meta.shape.trim().split(/\s+/).length;
-  if (shapeBeats !== cycleCounts) {
-    throw new Error(`${file}: shape names ${shapeBeats} beats, but its cycle is ${cycleCounts}`);
-  }
 
+  const [countsN, countsD] = String(meta.counts).split("/");
   return {
     id: meta.id,
     name: meta.name,
     source: meta.source,
+    counts: [Number(countsN), Number(countsD ?? 1)],
     shape: meta.shape,
     nadai: meta.nadai,
     beats: shapeBeats,
@@ -112,6 +119,7 @@ function render(patterns) {
     name: ${JSON.stringify(p.name)},
     source: ${JSON.stringify(p.source)},
     shape: ${JSON.stringify(p.shape)},
+    counts: ratio(${p.counts[0]}, ${p.counts[1]}),
     nadai: ${JSON.stringify(p.nadai)},
     beats: ${p.beats},
     strokes: [

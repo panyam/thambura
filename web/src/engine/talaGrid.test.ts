@@ -70,16 +70,17 @@ describe("patterns", () => {
     expect(adi.beats).toBe(8);
     expect(adi.nadai).toBe("chatusram");
     expect(adi.strokes).toHaveLength(18);
-    // Four slots to the akshara, so every stroke lands on a quarter.
+    // Positions are fractions of the cycle, and Adi's eight aksharas carry
+    // four slots each, so every stroke lands on a quarter of an akshara.
     for (const stroke of adi.strokes) {
-      const at = stroke.at.n / stroke.at.d;
-      expect(at).toBeGreaterThanOrEqual(0);
-      expect(at).toBeLessThan(8);
-      expect((at * 4) % 1).toBe(0);
+      const akshara = (stroke.at.n / stroke.at.d) * 8;
+      expect(akshara).toBeGreaterThanOrEqual(0);
+      expect(akshara).toBeLessThan(8);
+      expect((akshara * 4) % 1).toBe(0);
     }
     // Sam is leaned on, the akshara after it is not.
     expect(adi.strokes[0].gain).toBeGreaterThan(1);
-    expect(adi.strokes.find((x) => x.at.n / x.at.d === 1)!.gain).toBe(1);
+    expect(adi.strokes.find((x) => (x.at.n / x.at.d) * 8 === 1)!.gain).toBe(1);
   });
 
   it("fits the Adi pattern to Adi and to a chatusra Thriputa, the same eight beats", () => {
@@ -94,6 +95,24 @@ describe("patterns", () => {
     expect(gridFor({ tala: "sapta_matya", jaathi: "thisram" }).beatCount).toBe(8);
     expect(patternFor(gridFor({ tala: "sapta_matya", jaathi: "thisram" }), "chatusram")).toBeNull();
     expect(patternFor(gridFor(), "misram")).toBeNull();
-    expect(patternFor(gridFor({ tala: "chaapu_misram" }), "chatusram")).toBeNull();
+  });
+
+  it("gives a chaapu its pattern whatever the nadai says", () => {
+    // A chaapu is one long beat in our tables and ignores nadai, so its
+    // patterns match on shape alone.
+    for (const nadai of ["chatusram", "misram", "khandam"] as const) {
+      expect(patternFor(gridFor({ tala: "chaapu_misram" }), nadai)?.id).toBe("misra-chaapu-1");
+      expect(patternFor(gridFor({ tala: "chaapu_khandam" }), nadai)?.id).toBe("khanda-chaapu-1");
+    }
+  });
+
+  it("spreads a chaapu's strokes across its one long beat", () => {
+    const misra = PATTERNS.find((p) => p.id === "misra-chaapu-1") as Pattern;
+    const grid = gridFor({ tala: "chaapu_misram" });
+    expect(grid.beatCount).toBe(1);
+    expect(grid.cycleCounts).toEqual(ratio(7, 2));
+    // Seven aksharas: one stroke each, with the fourth split in two.
+    expect(misra.strokes).toHaveLength(8);
+    expect(misra.strokes.map((s) => (s.at.n / s.at.d) * 7)).toEqual([0, 1, 2, 3, 3.5, 4, 5, 6]);
   });
 });

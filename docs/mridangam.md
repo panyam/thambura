@@ -293,9 +293,31 @@ pattern came from.
 **Every pattern declares its source**, and the build fails without one. A
 student can't tell a guess from a tradition by ear, so a pattern says whether
 it was transcribed from a player, generated from the tala's angas, or drafted
-and not yet checked. The Adi sarvalaghu in the repo today is the last of
-those: drafted from the stroke names, unverified. Open question 3 is about
-fixing that.
+and not yet checked.
+
+Three patterns (Misra Chaapu, Khanda Chaapu, Short Rupakam) come from
+[karya](https://github.com/elaforge/karya)'s `MridangamSarva.hs`, Evan
+Laforge's transcriptions from his teachers, used with his permission.
+`web/patterns/CREDITS.md` records which piece each came from, who taught it,
+and how karya's stroke characters were mapped onto this kit. The Adi pattern
+is still the odd one out: drafted here, unverified.
+
+**Why the CompMusic transcriptions aren't used.** The Mridangam
+Tani-avarthanam dataset (Sivaraman, around 8,800 transcribed strokes) and the
+Carnatic Rhythm dataset are both CC BY-NC-ND 4.0, and ND forbids exactly the
+adaptation we would need. They are also tani material, a solo, where what
+accompaniment needs is sarvalaghu.
+
+**A pattern is matched to a tala on its shape and its length.** The shape is
+the app's own name for the cycle, `down one two three down open down open`
+for Adi, so Adi and a chatusra-jaathi Thriputa share one pattern. The length
+is needed because both chaapus are a single clap, so they have the same
+shape, and only 7/2 counts against 5/2 tells them apart. Kalai is ignored in
+the match and applied in the playing: the same pattern stretches.
+
+**Positions are fractions of the cycle**, not of a beat, for the same reason.
+A chaapu is one long beat in our tables while its pattern is written per
+akshara, so `3/7` of the cycle means something in both.
 
 The DSL gives us exact rational positions, cycles with kalai and gati, speed
 doubling with `[ ]` groups, and several roles on one cycle, none of which we

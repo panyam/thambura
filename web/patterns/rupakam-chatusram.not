@@ -1,0 +1,19 @@
+---
+id: rupakam-chatusram-1
+name: Short Rupakam sarvalaghu, chatusram
+counts: 3
+shape: down down open
+nadai: chatusram
+source: >-
+  karya, Solkattu/Score/MridangamSarva.hs, s_rupaka first line, 2026-02-05
+  (github.com/elaforge/karya, GPL-3.0, used with permission). "D_oknoD_D_N_"
+  converted by us: D is thom with din (dheem here), N is thom with nam
+  (tham), k is ki (thi). Unverified by a player.
+accents:
+  0: 1.12
+---
+\cycle("|1|1|1|")
+\beatDuration(4)
+mrid: dheem , thom thi
+mrid: nam thom dheem ,
+mrid: dheem , tham ,

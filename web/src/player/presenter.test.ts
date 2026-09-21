@@ -340,6 +340,8 @@ describe("PlayerPresenter with an instrument", () => {
   it("names the pattern it found for the tala, and says when it has none", () => {
     expect(patterns.at(-1)).toBe("Adi sarvalaghu, chatusram");
     p.setSettings({ tala: "chaapu_misram" });
+    expect(patterns.at(-1)).toBe("Misra Chaapu sarvalaghu");
+    p.setSettings({ tala: "sapta_ata", jaathi: "chatusram" });
     expect(patterns.at(-1)).toBeNull();
     p.setSettings({ tala: "custom_adi", nadai: "khandam" });
     expect(patterns.at(-1)).toBeNull();
@@ -357,7 +359,7 @@ describe("PlayerPresenter with an instrument", () => {
   });
 
   it("books nothing for a tala with no pattern", async () => {
-    p.setSettings({ tala: "chaapu_misram" });
+    p.setSettings({ tala: "sapta_ata", jaathi: "chatusram" });
     await p.start();
     advance(0.05);
     advance(1.0);

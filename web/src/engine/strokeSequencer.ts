@@ -81,10 +81,10 @@ export class StrokeSequencer implements Sequencer<StrokeEvent> {
     if (cycleCounts.n <= 0) return false;
     const start = this.nextCycleAt;
     if (pattern) {
-      const perBeat = grid.countsPerBeat;
+      const perCycle = grid.cycleCounts;
       this.queue = pattern.strokes.map((s) => ({
         time: 0,
-        at: add(start, strokeCount(s, perBeat)),
+        at: add(start, strokeCount(s, perCycle)),
         stroke: s.stroke,
         gain: s.gain,
         cycle: this.cycle,

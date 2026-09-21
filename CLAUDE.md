@@ -358,6 +358,14 @@ See NEXTSTEPS.md for the order.
   shape and the nadai, so one Adi pattern serves Adi and a chatusra Thriputa
   and stretches with kalai. What's left for the mridangam is more patterns
   and a generated fallback, then arrangements (`docs/mridangam.md`).
+- **Patterns carry their provenance.** Three come from karya's
+  `MridangamSarva.hs` (Evan Laforge's transcriptions from his teachers, GPL,
+  used with permission, see `web/patterns/CREDITS.md` for the piece, the
+  teacher and the stroke mapping); the Adi one was drafted here and is
+  unverified. A pattern matches a tala on shape plus cycle length, since both
+  chaapus are one clap and share a shape, and its positions are fractions of
+  the cycle so a chaapu's single long beat works. CompMusic's transcriptions
+  are CC BY-NC-ND, so they can't be adapted.
 - **Patterns are notations DSL, compiled at build time.** They live in
   `web/patterns/*.not` (panyam/notations format: `\cycle`, `\beatDuration`
   and a `mrid:` role of stroke tokens), with `patterns/strokes.json` mapping

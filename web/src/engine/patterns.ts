@@ -1,5 +1,5 @@
 import type { Gati } from "./carnatic";
-import { mul, type Ratio } from "./ratio";
+import { cmp, mul, type Ratio } from "./ratio";
 import { PATTERNS } from "./patterns.data";
 
 export { PATTERNS };
@@ -22,7 +22,11 @@ import type { TalaGrid } from "./talaGrid";
 
 /** One stroke in a pattern. */
 export interface PatternStroke {
-  /** Where it falls, in aksharas from the start of the cycle. */
+  /**
+   * Where it falls, as a fraction of the cycle: 0 is sam, 1/2 is halfway.
+   * Fractions of the whole cycle rather than of a beat, because a chaapu is
+   * one long beat in our tables while its pattern is written per akshara.
+   */
   at: Ratio;
   /** A stroke id from the kit, such as `R.chapu`. */
   stroke: string;
@@ -42,10 +46,15 @@ export interface Pattern {
   source: string;
   /** The cycle it fits, as `TalaGrid.shape` writes one. */
   shape: string;
+  /**
+   * How many counts that cycle lasts. Both chaapus are one clap, so they
+   * share a shape and only their length tells them apart.
+   */
+  counts: Ratio;
   /** How many beats that is, ignoring kalai. */
   beats: number;
-  /** The nadai it is written for. */
-  nadai: Gati;
+  /** The nadai it is written for, or "any" when the tala has none. */
+  nadai: Gati | "any";
   strokes: PatternStroke[];
 }
 
@@ -58,11 +67,18 @@ export interface Pattern {
  * A chaapu is one long beat rather than even aksharas, so nothing fits it yet.
  */
 export function patternFor(grid: TalaGrid, nadai: Gati, from: Pattern[] = PATTERNS): Pattern | null {
-  if (!grid.uniform) return null;
-  return from.find((p) => p.shape === grid.shape && p.nadai === nadai) ?? null;
+  // A chaapu is one beat whatever the nadai says, so its patterns say "any".
+  return (
+    from.find(
+      (p) =>
+        p.shape === grid.shape &&
+        cmp(p.counts, grid.patternCounts) === 0 &&
+        (p.nadai === nadai || p.nadai === "any"),
+    ) ?? null
+  );
 }
 
-/** Where a pattern's stroke falls in counts, given how long one beat lasts. */
-export function strokeCount(stroke: PatternStroke, countsPerBeat: Ratio): Ratio {
-  return mul(stroke.at, countsPerBeat);
+/** Where a pattern's stroke falls in counts, given how long the cycle lasts. */
+export function strokeCount(stroke: PatternStroke, cycleCounts: Ratio): Ratio {
+  return mul(stroke.at, cycleCounts);
 }

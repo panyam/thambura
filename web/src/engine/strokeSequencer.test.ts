@@ -126,6 +126,7 @@ describe("pattern slots", () => {
       id: "k",
       name: "Khandam",
       source: "a test fixture",
+      counts: ratio(1),
       shape: "down",
       nadai: "khandam",
       beats: 1,

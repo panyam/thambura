@@ -84,6 +84,15 @@ export class TalaGrid {
     return mul(this.beats[0]?.duration ?? ZERO, ratio(Math.max(1, this.kalai)));
   }
 
+  /**
+   * The cycle's length ignoring kalai, which is what a pattern is written
+   * against. At kalai 2 the cycle takes twice as long, but it is the same
+   * eight aksharas, so the same pattern fits and simply stretches.
+   */
+  get patternCounts(): Ratio {
+    return mul(this.cycle, ratio(1, Math.max(1, this.kalai)));
+  }
+
   /** Where a cycle starts, in counts since the transport started. */
   cycleStart(cycle: number): Ratio {
     return mul(this.cycle, ratio(cycle));
