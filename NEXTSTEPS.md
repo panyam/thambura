@@ -77,13 +77,19 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       `notations` (engine, runtime, Solid components, assets, styles), so the
       pieces can be imported elsewhere, including into the notation app for
       practice. Planning only.
-- [ ] **Mridangam / tabla.** In progress; `docs/mridangam.md` is the plan and
-      its build order. Steps 1 and 2 are in and were heard in Chrome on
-      2026-09-21: the strokes tuned to the thambura with a pad, and one Adi
-      sarvalaghu played against the tala off the same tempo map. Next is
-      step 3, the pattern text format with a library and the stroke lane, then
-      arrangements (variations, fills, korvai, eduppu). Still open: who writes
-      or vets the patterns, and a kit we can ship.
+- [x] **Mridangam, steps 1 to 4** (`docs/mridangam.md`): strokes tuned to the
+      thambura with a pad, patterns written in the notations DSL and compiled
+      at build time, written patterns for Adi, Short Rupakam and the Misra and
+      Khanda chaapus with a generated skeleton for everything else, the stroke
+      lane, variations and a korvai. Heard in Chrome on 2026-09-21.
+- [ ] **Mridangam, what's left**, tracked as #77 (fills, eduppu, count-in),
+      #78 (pattern per tempo), #79 (more patterns, and replacing the drafted
+      Adi one), #80 (record arai chapu and the left-hand tha), #81 (the lane
+      on a long cycle), #82 (solkattu under the strokes). Still open too: who
+      vets the patterns, and a kit we can ship.
+- [ ] **Several instruments at once** (`docs/instruments.md`): tracks on one
+      clock, a mixer, the hand claps as a track, instance ids, and which views
+      an instrument offers. The next direction.
 - [ ] Output-latency calibration setting (Bluetooth headphones add
       150-250 ms, and Safari doesn't report `outputLatency`).
 - [x] Screen Wake Lock while the tala or thambura plays, so the screen doesn't

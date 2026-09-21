@@ -516,8 +516,25 @@ Each step is a PR that works on its own.
    whether it is the main one, an alternate to swap in (the Variety control
    sets how often), or an ending: the Korvai button gives the next cycle to
    an ending that resolves on the following sam, then the accompaniment
-   carries on. Still to come, filed as tickets: fills, eduppu with a
-   count-in, choosing a pattern to suit the tempo, and more patterns.
+   carries on.
+
+**The mridangam pauses here.** What plays today: written patterns for Adi,
+Short Rupakam and the Misra and Khanda chaapus, a variation for Adi and Misra
+Chaapu, an Adi korvai, a generated skeleton for every other tala and nadai,
+the stroke pad, and the lane. The rest is tracked rather than planned here:
+
+| What | Ticket |
+|---|---|
+| Fills, eduppu, count-in | #77 |
+| Choosing a pattern to suit the tempo | #78 |
+| More patterns, second speed, and replacing the drafted Adi one | #79 |
+| Recording arai chapu and the left-hand tha | #80 |
+| A lane that copes with a long cycle | #81 |
+| Solkattu under the strokes | #82 |
+
+Attention moves to several instruments at once and the views that go with
+them (`instruments.md`), which is likely to change how an instrument's
+controls are chosen and shown.
 5. **The editor**, local saving and share links.
 6. **A shippable kit.** Our own recordings, or the dataset with permission,
    covering both drums. Maybe synthesized open strokes if the experiment
