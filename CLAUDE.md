@@ -77,7 +77,12 @@ and what it would take to import these pieces from another project.
 recording, and how to rerun it: `pnpm render-mix` (web/scripts, over
 `src/tools/thamburaMix.ts`) renders the thambura offline to WAV, and the
 Python in `tools/sound-analysis/` measures and charts it against a recording
-kept in the gitignored `recordings/`. The notes below are the file-by-file
+kept in the gitignored `recordings/`. `features.py` writes every measurement
+to a feature file (one shape for a recording or a render), `score.py` scores
+two of them against each other, and `tables.py` writes the doc's tables from
+the committed files in `tools/sound-analysis/features/`, so they survive
+without the audio. `make soundtest` runs the Python tests and checks the doc's
+tables; it stays out of `make test` so a deploy needs no Python. The notes below are the file-by-file
 reference.
 
 **engine/** is pure TypeScript with no DOM, audio or timers, and is fully

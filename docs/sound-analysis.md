@@ -12,6 +12,9 @@ Everything here runs from the repo:
 |---|---|
 | `pnpm render-mix` (in `web/`) | Plays the app's thambura offline, through the real engine code, and writes a WAV plus a JSON of every pluck and damp. |
 | `tools/sound-analysis/analyse.py` | Prints every measurement for one file, a recording or a render. |
+| `tools/sound-analysis/features.py` | Writes those measurements to a feature file, the same shape for a recording and for a render. |
+| `tools/sound-analysis/score.py` | Scores one feature file against another: one distance, and a line per feature saying what is out. |
+| `tools/sound-analysis/tables.py` | Writes the tables on this page from the feature files, with no audio in reach. |
 | `tools/sound-analysis/compare.py` | Measures the recording and the renders together and draws the charts on this page. |
 | `tools/sound-analysis/fit.py` | Fits the jawari voice's bloom to a recording. |
 | `tools/sound-analysis/soundlab.py` | The measurements themselves, shared by the three scripts. |
@@ -37,7 +40,10 @@ puts it somewhere else. Without activating, call it by path instead:
 `../../.venv/bin/python analyse.py ...`.
 
 The tested versions were Python 3.12, numpy 2.5, scipy 1.18, soundfile 0.14
-and matplotlib 3.11.
+and matplotlib 3.11. The tests come with pytest in the same file;
+`make soundtest` from the repo root runs them in the same venv. They measure
+synthetic strings whose ring, stiffness and buzz the test chose, so they need
+neither a recording nor a render.
 
 Recordings go in `recordings/` at the repo root, which is gitignored too:
 they're someone else's audio and they're large. The one used here was
@@ -98,10 +104,64 @@ python analyse.py ../../recordings/renders/jawari.wav
 python compare.py            # defaults: recordings/tambura-C.mp3 at Sa 131.05, recordings/renders
 ```
 
-This writes the PNGs in `docs/images/sound-analysis/` and prints the tables
-below. Re-run it after changing a voice. It takes a few seconds.
+This writes the PNGs in `docs/images/sound-analysis/`. Re-run it after
+changing a voice. It takes a few seconds.
 
-**6. Refit, if you have a new recording.**
+**6. Measure them into feature files.**
+
+```sh
+python features.py ../../recordings/tambura-C.mp3 --sa 131.05 -o features/tambura-C.json
+for m in jawari tambura guitar; do
+  python features.py ../../recordings/renders/$m.wav -o features/$m.json
+done
+```
+
+A feature file holds every measurement on this page, in the same shape whether
+it came from a recording or a render. The files in `features/` are committed
+and the audio isn't, so a feature file is how a measurement travels between
+people and between commits. Re-run this after changing a voice and the diff
+says what the change did.
+
+**7. Score one against another.**
+
+```sh
+python score.py features/tambura-C.json features/jawari.json features/tambura.json features/guitar.json
+```
+
+```
+jawari against tambura-C: 1.75   (0 is the same measurements; 1 is about one tolerance out)
+  ✓ timing                        0.95   Sa 1 to Sa 2 -0.03 of the round
+  ✓ string stops                  0.86   first -0.04 of the round
+  ✓ pluck lift                    0.90   Sa 2 -1.57 dB
+  ~ level over a round            1.75   0.75 of the round +4.80 dB
+  ~ bloom                         1.51   first at 4 s +7.30 dB
+  ~ brightness                    1.55   low Sa at 2 s -0.75 octaves
+  ✗ string level                  2.72   first at 3 s +9.70 dB
+  ✗ attack                        3.27   first +6.40 dB
+  ✗ ring                          2.14   low Sa 2.14x
+  ✗ buzz between the harmonics    8.25   low Sa -51.20 dB  (not in the total)
+  ✓ inharmonicity                 0.06   first -0.35 cents
+```
+
+Every feature is divided by a tolerance before it counts, so a group's
+distance reads as how many tolerances out it is and the total is the weighted
+RMS over the groups. The weights and the tolerances sit in one table at the
+top of `score.py`, each with a comment saying why it is what it is, and
+arguing with them is what having them in one place is for. `--json` prints the
+same numbers for a program to read, which is how #45 will drive a search.
+
+**8. Write the tables on this page.**
+
+```sh
+python tables.py          # rewrites the generated blocks below
+python tables.py --check  # exits 1 if the page has drifted
+```
+
+`tables.py` reads `features/` and nothing else, so the tables can be redone
+from a clean checkout without any audio, and they can't drift from what the
+tools measure.
+
+**9. Refit, if you have a new recording.**
 
 ```sh
 python fit.py ../../recordings/tambura-C.mp3 --sa 131.05
@@ -111,7 +171,7 @@ This takes about 40 s. It prints the fitted parameters and the model beside
 the recording, band by band. "Fitting" below explains how its numbers turn
 into `pluckVoice`.
 
-**7. Tune by ear in the Lab, then measure.** Open the thambura bar, pick the
+**10. Tune by ear in the Lab, then measure.** Open the thambura bar, pick the
 Lab view, choose a starting sound under "Start from" and press Load. That
 copies the mode's plan into the Custom mode, which sounds the same until you
 change something. Each string has its own tab (level, force, attack, ring,
@@ -123,13 +183,16 @@ settings" and save the JSON, say as `recordings/lab.json`, then:
 cd ../../web
 pnpm render-mix --custom ../recordings/lab.json     # writes recordings/renders/custom.wav
 cd ../tools/sound-analysis
-python compare.py                          # adds "Custom (Lab)" to the tables and charts
+python features.py ../../recordings/renders/custom.wav -o features/custom.json
+python score.py features/tambura-C.json features/custom.json
+python compare.py                          # adds "Custom (Lab)" to the charts
 ```
 
 For example, raising only the second Sa's level from 0.7 to 1.0 (+3 dB)
 takes its pluck lift from +1.2 dB to +2.2 dB, against the recording's
-+2.8 dB. Delete `recordings/renders/custom.*` to take it out of the charts
-again. Pasting JSON into the Lab's "Settings JSON" box loads it back, so a
++2.8 dB, and the score's pluck lift group moves with it. Delete
+`recordings/renders/custom.*` and `features/custom.json` to take it out of the
+charts and tables again. Pasting JSON into the Lab's "Settings JSON" box loads it back, so a
 sound can travel both ways.
 
 To share a sound with other listeners, send the page's address: the `?s=`
@@ -246,6 +309,27 @@ to the string's own pluck:
   `fit.py` fits these.
 - *damp lead*: the steepest 0.3 s fall in its harmonics, measured from 3 s
   after the pluck, as seconds before its next pluck.
+- *T60 per harmonic*: how long each harmonic would take to fall 60 dB, from a
+  line through its dB curve over 2-4.5 s after the pluck, or less when the
+  round is shorter. The window opens after the bloom has swelled and fallen
+  back, so what it measures is the ring. Nothing falls 60 dB inside it, so
+  every T60 is an extrapolation from a few dB, and in a recording, where the
+  strings beat against each other, neighbouring harmonics can differ twofold.
+  Read the median.
+- *inharmonicity*: how far the upper harmonics run sharp of exact multiples,
+  as the stiffness B in `f_k = k f0 sqrt(1 + B k²)`, and as how sharp harmonic
+  20 runs in cents. Each peak is read from a 2 s window after the pluck and
+  placed between bins by a parabola; the fit runs over a widening range of
+  harmonics, each pass aiming the next search, since a stiff string's harmonic
+  30 can sit further from 30 f0 than one search reaches. A peak less than
+  15 dB above what surrounds it is skipped: reading one out of the noise moves
+  the fit further than leaving a harmonic out. The fitted f0 also says how the
+  string was tuned, which in a recording is the player rather than the string.
+- *between the harmonics*: the power midway between the harmonics against the
+  power at them, per bin. This takes its own spectrogram, with a
+  Blackman-Harris window whose sidelobes are 92 dB down, because the default
+  window would fill the gaps with the harmonics themselves. It is where the
+  jawari's buzz lives, and where a sum of sines has nothing.
 
 **What's measured on the whole mix.**
 
@@ -253,6 +337,9 @@ to the string's own pluck:
   averaged over rounds.
 - *pluck lift*: the loudest 30 ms in the 0.2 s after a pluck, against the
   0.23 s before it. This is how much a pluck stands out.
+- *A-weighted*: both of those again through an A-weighting filter, which
+  counts the bloom's band for about as much as the ear does and the
+  fundamental for much less. A drone that measures level can still swell.
 
 ## Results
 
@@ -266,11 +353,15 @@ measurement.
 
 ![When each string is plucked](images/sound-analysis/pluck-timing.png)
 
-| When each string is plucked (share of the round after the first string) | Recording | Tambura (new) | Tambura (classic) |
-|---|---|---|---|
-| Sa 1 | 0.288 ±0.012 | 0.298 | 0.198 |
-| Sa 2 | 0.524 ±0.022 | 0.504 | 0.399 |
-| low Sa | 0.708 ±0.022 | 0.709 | 0.599 |
+<!-- generated: timing -->
+| When each string is plucked (share of the round) | Recording | Tambura (new) | Tambura (classic) | Guitar |
+|---|---|---|---|---|
+| Sa 1, after the first string | 0.288 ±0.012 | 0.298 ±0.001 | 0.198 ±0.001 | 0.198 ±0.001 |
+| Sa 2, after the first string | 0.524 ±0.022 | 0.504 ±0.001 | 0.399 ±0.001 | 0.399 ±0.001 |
+| low Sa, after the first string | 0.708 ±0.022 | 0.709 ±0.001 | 0.599 ±0.001 | 0.599 ±0.001 |
+| first: stopped before its next pluck (s) | 0.63 | 0.39 | rings on | rings on |
+| low Sa: stopped before its next pluck (s) | 0.96 | 0.82 | rings on | rings on |
+<!-- /generated -->
 
 The player spaced the plucks unevenly: a long gap after the first string, a
 shorter one between the Sa strings, the shortest before the low Sa, then a
@@ -295,24 +386,39 @@ every string ring into its own next pluck.
 
 ![Brightness over a pluck](images/sound-analysis/centroid.png)
 
-| First string (Pa), seconds after its pluck | 0.05 | 0.4 | 1.0 | 1.3 | 1.6 | 2.0 | 2.5 | 3.0 | 4.0 |
+<!-- generated: bloom-first -->
+| First string (Pa), seconds after its pluck | 0.05 | 0.4 | 1 | 1.3 | 1.6 | 2 | 2.5 | 3 | 4 |
 |---|---|---|---|---|---|---|---|---|---|
-| 1-2.5 kHz share, recording (dB) | −19 | −2 | −2 | −2 | −1 | −7 | −13 | −17 | −19 |
-| 1-2.5 kHz share, Tambura (new) | −17 | −5 | −2 | −2 | −2 | −6 | −11 | −12 | −12 |
-| 1-2.5 kHz share, Tambura (classic) | −17 | −14 | −13 | −12 | −11 | −11 | −12 | −12 | −9 |
-| centroid, recording (Hz) | 175 | 1130 | 1064 | 1378 | 1334 | 683 | 540 | 449 | 354 |
-| centroid, Tambura (new) | 220 | 725 | 1105 | 1145 | 1115 | 694 | 370 | 344 | 338 |
-| centroid, Tambura (classic) | 395 | 550 | 590 | 601 | 582 | 545 | 510 | 475 | 471 |
-| centroid, guitar | 333 | 214 | 170 | 169 | 169 | 162 | 147 | 132 | 115 |
+| 1-2.5 kHz share (dB), Recording | -19 | -2 | -2 | -2 | -1 | -8 | -13 | -17 | -19 |
+| 1-2.5 kHz share (dB), Tambura (new) | -17 | -5 | -2 | -2 | -2 | -6 | -11 | -12 | -12 |
+| 1-2.5 kHz share (dB), Tambura (classic) | -17 | -14 | -13 | -12 | -11 | -11 | -12 | -12 | -9 |
+| 1-2.5 kHz share (dB), Guitar | -11 | -15 | -25 | -31 | -37 | -45 | -39 | -46 | -44 |
+| centroid (Hz), Recording | 175 | 1130 | 1064 | 1378 | 1334 | 683 | 540 | 449 | 354 |
+| centroid (Hz), Tambura (new) | 220 | 725 | 1105 | 1145 | 1115 | 694 | 370 | 344 | 338 |
+| centroid (Hz), Tambura (classic) | 395 | 550 | 590 | 601 | 582 | 545 | 510 | 475 | 471 |
+| centroid (Hz), Guitar | 333 | 214 | 170 | 169 | 169 | 162 | 147 | 132 | 115 |
+| level (dB re its loudest), Recording | -9 | -10 | -5 | -0 | -3 | -12 | -15 | -17 | -17 |
+| level (dB re its loudest), Tambura (new) | -2 | -2 | -0 | -0 | -1 | -5 | -6 | -7 | -9 |
+| level (dB re its loudest), Tambura (classic) | -0 | -0 | -1 | -2 | -2 | -4 | -5 | -6 | -8 |
+| level (dB re its loudest), Guitar | 0 | -4 | -11 | -14 | -17 | -20 | -24 | -28 | -38 |
+<!-- /generated -->
 
-| Low Sa, seconds after its pluck | 0.05 | 0.4 | 1.0 | 1.3 | 1.6 | 2.0 | 2.5 | 3.0 | 4.0 |
+<!-- generated: bloom-low-sa -->
+| Low Sa, seconds after its pluck | 0.05 | 0.4 | 1 | 1.3 | 1.6 | 2 | 2.5 | 3 | 4 |
 |---|---|---|---|---|---|---|---|---|---|
-| 1-2.5 kHz share, recording (dB) | −28 | −18 | −9 | −8 | −8 | −17 | −19 | −21 | −21 |
-| 1-2.5 kHz share, Tambura (new) | −24 | −15 | −10 | −9 | −10 | −16 | −20 | −21 | −21 |
-| 1-2.5 kHz share, Tambura (classic) | −12 | −10 | −9 | −9 | −9 | −10 | −10 | −11 | −9 |
-| centroid, recording (Hz) | 79 | 153 | 432 | 470 | 471 | 300 | 409 | 339 | 187 |
-| centroid, Tambura (new) | 106 | 189 | 349 | 394 | 358 | 178 | 128 | 123 | 121 |
-| centroid, Tambura (classic) | 250 | 371 | 382 | 376 | 361 | 341 | 316 | 296 | 311 |
+| 1-2.5 kHz share (dB), Recording | -28 | -18 | -9 | -8 | -8 | -17 | -19 | -21 | -21 |
+| 1-2.5 kHz share (dB), Tambura (new) | -24 | -15 | -10 | -9 | -10 | -16 | -20 | -21 | -21 |
+| 1-2.5 kHz share (dB), Tambura (classic) | -12 | -10 | -9 | -9 | -9 | -10 | -10 | -11 | -9 |
+| 1-2.5 kHz share (dB), Guitar | -17 | -29 | -45 | -52 | -58 | -67 | -44 | -54 | -55 |
+| centroid (Hz), Recording | 79 | 153 | 432 | 470 | 471 | 300 | 409 | 339 | 187 |
+| centroid (Hz), Tambura (new) | 106 | 189 | 349 | 394 | 358 | 178 | 128 | 123 | 121 |
+| centroid (Hz), Tambura (classic) | 250 | 371 | 382 | 376 | 361 | 341 | 316 | 296 | 311 |
+| centroid (Hz), Guitar | 181 | 118 | 94 | 94 | 93 | 85 | 76 | 70 | 66 |
+| level (dB re its loudest), Recording | -3 | -1 | -1 | -2 | -3 | -5 | -7 | -8 | -10 |
+| level (dB re its loudest), Tambura (new) | -0 | -1 | -2 | -2 | -3 | -3 | -4 | -5 | -7 |
+| level (dB re its loudest), Tambura (classic) | -0 | -0 | -1 | -2 | -2 | -3 | -5 | -6 | -8 |
+| level (dB re its loudest), Guitar | 0 | -4 | -11 | -14 | -16 | -20 | -24 | -28 | -37 |
+<!-- /generated -->
 
 A real pluck starts dark: the first string's centroid is under 200 Hz at
 the attack. Within half a second the 1-2.5 kHz band climbs about 17 dB, to
@@ -341,18 +447,77 @@ level where the low Sa is quiet. Treat it as noise.
 
 ![How much each pluck lifts the whole mix](images/sound-analysis/pluck-lift.png)
 
+<!-- generated: loudness -->
 | The whole mix | Recording | Tambura (new) | Tambura (classic) | Guitar |
 |---|---|---|---|---|
 | level range over a round (dB) | 5.6 | 3.8 | 4.2 | 20.6 |
-| first-string pluck lift (dB) | +2.8 | +2.1 | +2.1 | +21.3 |
-| Sa 1 pluck lift | +0.8 | +0.5 | +2.3 | +12.8 |
-| Sa 2 pluck lift | +2.8 | +1.2 | +2.4 | +13.9 |
-| low Sa pluck lift | +1.6 | +2.1 | +2.7 | +11.3 |
+| level range, A-weighted (dB) | 8.4 | 6.5 | 4.1 | 29.2 |
+| first pluck lift (dB) | +2.8 | +2.1 | +2.0 | +21.3 |
+| first pluck lift, A-weighted (dB) | +1.0 | +0.6 | +2.3 | +30.3 |
+| Sa 1 pluck lift (dB) | +0.8 | +0.5 | +2.3 | +12.8 |
+| Sa 1 pluck lift, A-weighted (dB) | -1.1 | -1.2 | +1.9 | +18.2 |
+| Sa 2 pluck lift (dB) | +2.8 | +1.2 | +2.4 | +13.9 |
+| Sa 2 pluck lift, A-weighted (dB) | +0.9 | +1.0 | +1.7 | +17.2 |
+| low Sa pluck lift (dB) | +1.6 | +2.1 | +2.6 | +11.3 |
+| low Sa pluck lift, A-weighted (dB) | +0.1 | +0.9 | +0.7 | +12.3 |
+<!-- /generated -->
 
 A tambura is a drone: over a round the recording's level moves about 6 dB,
 and each pluck lifts the mix by only 1-3 dB. The first string's level chart
 shows it about 10 dB louder at its bloom than at its attack, but that is
 only its odd harmonics, the ones that brighten. The whole mix barely swells.
+
+The A-weighted rows are the same measurements heard rather than counted. The
+recording's round swings 8.4 dB that way against 5.6 dB flat, since the bloom
+sits where hearing is sharpest; the new voice swings 6.5 against 3.8. The
+classic voice swings about as much either way, its brightness being the same
+all through.
+
+### Texture
+
+<!-- generated: texture -->
+| Texture | Recording | Tambura (new) | Tambura (classic) | Guitar |
+|---|---|---|---|---|
+| first: T60 of its harmonics, median (s) | 11.3 | 23.3 | 11.8 | 3.9 |
+| low Sa: T60 of its harmonics, median (s) | 9.6 | 20.5 | 11.6 | 3.9 |
+| first: between the harmonics (dB re the harmonics) | -21 | -68 | -59 | -64 |
+| low Sa: between the harmonics (dB re the harmonics) | -18 | -69 | -60 | -84 |
+| first: harmonic 20 sharp by (cents) | 0.37 | 0.02 | 0.02 | 0.27 |
+| low Sa: harmonic 20 sharp by (cents) | 0.18 | 0.01 | 0.01 | 0.20 |
+<!-- /generated -->
+
+The recording's harmonics fall roughly twice as fast as the new voice's: a
+median T60 of 11.3 s against 23.3 s on the first string, 9.6 against 20.5 on
+the low Sa. The recording's harmonics beat against each other and neighbours
+differ twofold, which is why the median is what gets compared, and the gap
+between the two columns is wider than that scatter. The level rows say it
+another way: 3 s after a pluck the render's first string is still 9.7 dB
+nearer its own loudest moment than the recording's is.
+
+Between the harmonics the recording carries -21 dB and -18 dB of what the
+harmonics carry. Every render is 40 to 50 dB below that, at the measurement's
+own floor, because a sum of sines puts nothing in the gaps. That gap is the
+jawari's rattle, and no setting in the Lab reaches it (#52). `score.py`
+prints it and keeps it out of the total, since it would add the same amount
+to every render and bury what tuning can change.
+
+Stiffness turns out not to be part of the difference. The recording's
+harmonic 20 runs 0.2 to 0.4 cents sharp, a B of about 1e-6, so a tambura's
+strings are close enough to ideal that our exact harmonics are right. The
+fitted pitches are worth more than the stiffness here: the first string sits
+4 cents above a just Pa and the low Sa 3 cents above the octave below Sa,
+measured half a second after each pluck, where a string still rings a little
+sharp of where it settles.
+
+### The score
+
+`score.py` puts the new voice at 1.75 against the recording, the classic
+voice at 3.19 and the guitar at 9.36. The breakdown in step 7 says where the
+new voice's 1.75 comes from: timing, string stops and pluck lift are inside
+a tolerance, the bloom and the brightness within two, and three groups are
+out. They are the attack (3.27), the ring (2.14) and the string level (2.72),
+which are the two things "What's still open" below already listed by ear,
+plus the ring the tables above just added.
 
 ### One round
 
@@ -414,11 +579,23 @@ fading bloom, and the low Sa's stood out by +6 dB. Two settings fixed it:
   than our 1.5 cents.
 - **The attack is sharper than the recording's.** The synthesized pluck rises
   in 4-10 ms. The recording's plucks look softer and slower in the
-  spectrogram.
+  spectrogram, and the score's attack group is the new voice's worst at 3.27:
+  0.05 s in, the render is 6.4 dB closer to its own loudest moment than the
+  recording is.
+- **The strings ring about twice as long as the recording's**, 23.3 s against
+  11.3 s as a median T60 on the first string. A shorter ring would also close
+  most of the string level group, which is the render sitting 9.7 dB nearer
+  its loudest moment 3 s after a pluck.
+- **No buzz at all.** Between the harmonics the recording carries -21 dB of
+  what the harmonics carry and every render is 40 to 50 dB below that. This
+  one is the model rather than its settings (#52).
 - **Tuning.** The recording's low Sa is about 3 cents flat of the octave
   below Sa. The first Sa should stand out more against the low Sa's octave
   harmonic when they differ like that. Trying it didn't change the measured
   pluck lift, so the voice leaves it out.
 
-The Lab view is the place to try these by ear, with `render-mix --custom`
-and `compare.py` checking each change against the recording.
+The Lab view is the place to try these by ear, with `render-mix --custom`,
+`features.py` and `score.py` saying whether a change helped and
+`compare.py` redrawing the charts. Fitting the parameters to the score
+automatically is #45, and what the model can't reach whatever the parameters
+is #46 and #52.

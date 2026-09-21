@@ -1,10 +1,12 @@
-"""Draws the comparison charts in docs/sound-analysis.md and prints their numbers.
+"""Draws the comparison charts in docs/sound-analysis.md.
 
     pnpm --dir ../../web render-mix          # renders jawari, tambura, guitar at C3
     python compare.py --recording ../../recordings/tambura-C.mp3 --sa 131.05
 
 Reads the renders from ../../recordings/renders and writes PNGs to
-../../docs/images/sound-analysis (change with --renders / --out).
+../../docs/images/sound-analysis (change with --renders / --out). The doc's
+tables come from the feature files instead, through features.py and tables.py,
+so they can be redone without the audio.
 """
 
 from __future__ import annotations
@@ -31,11 +33,11 @@ MUTED = "#52514e"
 GRID = "#e4e3df"
 SURFACE = "#fcfcfb"
 SOURCES = {
-    "recording": dict(label="Recording", color=INK, ls="-", lw=2.4),
-    "jawari": dict(label="Tambura (new)", color="#2a78d6", ls="-", lw=2),
-    "tambura": dict(label="Tambura (classic)", color="#eb6834", ls="--", lw=2),
-    "guitar": dict(label="Guitar", color="#1baf7a", ls=":", lw=2),
-    "custom": dict(label="Custom (Lab)", color="#eda100", ls="-.", lw=2),
+    "recording": dict(label=sl.LABELS["recording"], color=INK, ls="-", lw=2.4),
+    "jawari": dict(label=sl.LABELS["jawari"], color="#2a78d6", ls="-", lw=2),
+    "tambura": dict(label=sl.LABELS["tambura"], color="#eb6834", ls="--", lw=2),
+    "guitar": dict(label=sl.LABELS["guitar"], color="#1baf7a", ls=":", lw=2),
+    "custom": dict(label=sl.LABELS["custom"], color="#eda100", ls="-.", lw=2),
 }
 FINE_TIMES = list(np.round(np.arange(0.05, 4.51, 0.05), 2))
 
@@ -225,28 +227,7 @@ def main() -> None:
     spectrogram_chart(out / "spectrograms.png", {k: (inputs[k][0], starts[k]) for k in results},
                       results["recording"].plucks.round)
 
-    # The same numbers as tables, for the doc.
-    print("| | " + " | ".join(SOURCES[k]["label"] for k in results) + " |")
-    print("|---" * (len(results) + 1) + "|")
-    for s in sl.STRINGS[1:]:
-        print(f"| {s} after the first string (share of round) | "
-              + " | ".join(f"{r.timing[s][0]:.3f} ±{r.timing[s][1]:.3f}" for r in results.values()) + " |")
-    for s in sl.STRINGS:
-        print(f"| {s} pluck lift (dB) | " + " | ".join(f"{r.lifts[s][0]:+.1f}" for r in results.values()) + " |")
-    print("| mix level range over a round (dB) | " + " | ".join(f"{-r.round_db.min():.1f}" for r in results.values()) + " |")
-    # Only the recording and the damped voice stop strings; for the others the steepest fall means nothing.
-    damped = lambda k, r: k == "recording" or any(r.plucks.damps.values())
-    for s in ("first", "low Sa"):
-        print(f"| {s}: cut before its next pluck (s, median) | "
-              + " | ".join(f"{np.median(r.damp_leads[s]):.2f}" if damped(k, r) and r.damp_leads[s] else "rings on"
-                           for k, r in results.items()) + " |")
-    for s in ("first", "low Sa"):
-        for key, unit in (("level", "dB"), ("bloom", "dB"), ("centroid", "Hz")):
-            print(f"\n{s} {key} ({unit}) at " + ", ".join(f"{t:g}" for t in sl.TIMES) + " s:")
-            for k, r in results.items():
-                vals = getattr(r.curves[s], key)
-                print(f"  {SOURCES[k]['label']:18s} " + " ".join(f"{v:6.0f}" for v in vals))
-    print(f"\nCharts in {out}")
+    print(f"Charts in {out}. The tables come from features.py and tables.py.")
 
 
 if __name__ == "__main__":

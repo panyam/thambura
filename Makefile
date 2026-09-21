@@ -45,6 +45,13 @@ test:
 	go test ./...
 	cd web && pnpm typecheck && pnpm test
 
+# The sound-analysis tools (docs/sound-analysis.md). Kept out of `test`, and so
+# out of `deploy`, since they need a Python env the app itself never uses. The
+# venv is shared and sits outside the worktree, so the recipe calls it by
+# absolute path: $(PY) is relative to the repo root, and this cds below it.
+soundtest: | setupvenv
+	cd tools/sound-analysis && $(abspath $(PY)) -m pytest -q && $(abspath $(PY)) tables.py --check
+
 # Copy an instrument kit in from the thambura-data checkout, for local
 # listening. Kits are gitignored; DATA overrides where the data repo sits,
 # and KITSRC picks the compressed copy (kit-aac) or the master WAVs (kit).
@@ -137,4 +144,4 @@ domainstatus:
 clean:
 	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css
 
-.PHONY: all setupvenv venvpath ui uiprod server build run watch test templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean
+.PHONY: all setupvenv venvpath ui uiprod server build run watch test soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean
