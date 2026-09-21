@@ -18,9 +18,12 @@ import (
 	"github.com/panyam/thambura/internal/brand"
 )
 
-// App is the goapplib app context. Empty for now; the pages need no server
-// state.
-type App struct{}
+// App is the goapplib app context, which every page's Load is handed.
+type App struct {
+	// KitURL is the instrument kit found under static at startup, or empty.
+	// Register fills it in, since it knows where static is.
+	KitURL string
+}
 
 // Header is the data goapplib's Header template renders with.
 type Header struct {
@@ -54,6 +57,20 @@ type Social struct {
 // HomePage is the practice page: a shell for the player island.
 type HomePage struct {
 	SitePage
+	// KitURL is the instrument kit the page should load, or empty for none.
+	// Kits are build products copied in (make devkit) and aren't committed, so
+	// most checkouts have none and the page must not ask for one.
+	KitURL string
+}
+
+// findKit returns the URL of the first kit manifest under
+// static/Resources/Kits, or empty when there is none.
+func findKit(static string) string {
+	matches, err := filepath.Glob(filepath.Join(static, "Resources", "Kits", "*", "kit.json"))
+	if err != nil || len(matches) == 0 {
+		return ""
+	}
+	return "/static/Resources/Kits/" + filepath.Base(filepath.Dir(matches[0])) + "/kit.json"
 }
 
 // The home page's search and preview text, near the lengths results show in
@@ -84,6 +101,7 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 		ImageHeight: 630,
 	}
 	p.StructuredData = webApplicationLD()
+	p.KitURL = app.Context.KitURL
 	return nil, false
 }
 
@@ -137,6 +155,7 @@ func NewApp(templatesDir string) (*goal.App[*App], error) {
 // itself (and sends the same header); everything else comes here.
 func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	static := filepath.Join(webDir, "static")
+	app.Context.KitURL = findKit(static)
 	goal.Register[*HomePage](app, mux, "/{$}")
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
 	mux.Handle("/legacy/", noindex(http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy"))))))

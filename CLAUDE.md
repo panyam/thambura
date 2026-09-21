@@ -11,6 +11,7 @@ make run         # ui + go run on :8000 (8080 is taken in the dev container)
 make test        # go test ./... ; pnpm typecheck ; pnpm test (vitest)
 make ui          # pnpm install, Tailwind -> web/static/css/tailwind.css, esbuild -> web/static/app.js
 make templates   # templar get: re-vendor goapplib templates after a ref bump
+make devkit      # copy an instrument kit in from ../mridangam-data (gitignored)
 make deploy      # tests + prod build, then App Engine project thambura (see Deploying)
 make prodlogs    # tail App Engine logs
 ```
@@ -323,18 +324,28 @@ See NEXTSTEPS.md for the order.
   tonic (`tunedTonicHz`). Sound quality is issue #8: the jawari voice, fitted
   to a real recording, is the default, and the Lab, links and presets are
   how it gets tuned by ear from here, by us and by listeners.
-- **Mridangam:** `docs/mridangam.md` is the plan (strokes and tuning,
-  patterns per tala, packaging, views, build order, open questions).
-- **Mridangam / tabla:** the musical timeline is in (`ratio.ts`,
-  `tempoMap.ts`). Add a `Sequencer<StrokeEvent>` on the tala's `TempoMap` and
-  `Transport` that emits per stroke at exact positions, reads the tala's
-  position for eduppu and korvai alignment (nothing exposes the cycle and beat
-  for a count yet), and plays on the `percussion` bus.
-- Drum playback needs choke groups (a damped stroke cuts a ringing one on the
-  same head), so give each sounding note its own gain node and fade it out over
-  5-10 ms rather than calling `stop()`, which clicks. Also plan for 2-3 takes per
-  stroke, picked by the step's `variant`, and trimmed mono samples, since decoded
-  PCM is about 350 KB/s stereo.
+- **Struck instruments are kits, and the code knows nothing about any one of
+  them.** `engine/kit.ts` reads a `kit.json`: zones (the groups of strokes
+  that choke each other, a mridangam's two heads or a ghatam's one surface),
+  packs (tunings, or one unpitched pack played as recorded), and strokes with
+  takes per pack. `player/kitPresenter.ts` loads one, follows the thambura's
+  Sa and plays a stroke; `player/StrokePad.tsx` draws whatever the manifest
+  declares. The mridangam is data, not code. `docs/mridangam.md` is the plan
+  (strokes and tuning, patterns per tala, packaging, views, build order).
+- **Kits aren't committed.** They're build products from the `thambura-data`
+  repo: `make devkit` copies one into `web/static/Resources/Kits/<kit>/`,
+  which is gitignored. Go looks for `*/kit.json` under there at startup and
+  only then writes `data-kit-url` on the page, so a checkout without a kit
+  asks for nothing and shows no pad.
+- **Mridangam / tabla, what's left:** add a `Sequencer<StrokeEvent>` on the
+  tala's `TempoMap` and `Transport` that emits per stroke at exact positions,
+  reads the tala's position for eduppu and korvai alignment (nothing exposes
+  the cycle and beat for a count yet), and plays on the `percussion` bus.
+- Drum strokes choke per head: a closed stroke cuts the ring of the last open
+  one on the same head, never the other head. `play` takes `chokeFade` for
+  that (8 ms, against the strings' 80 ms) and `bend`, which slides a note's
+  detune for the gumki. Takes go round per stroke, with a little gain jitter.
+  Trimmed mono samples matter, since decoded PCM is about 190 KB/s mono.
 
 ## Deploying
 
