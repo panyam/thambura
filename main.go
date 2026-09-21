@@ -32,7 +32,7 @@ func main() {
 	web.Register(app, mux, *webDir)
 
 	log.Printf("%s listening on %s", brand.Name, addr)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	log.Fatal(http.ListenAndServe(addr, web.SiteHandler(mux)))
 }
 
 func envOr(key, fallback string) string {

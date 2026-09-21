@@ -219,6 +219,41 @@ func TestLegacyIsNoindex(t *testing.T) {
 	}
 }
 
+// A deploy to any project but the real one (`make deploydev`) is a test copy,
+// which must not turn up in search beside thambura.com.
+func TestStagingIsNoindex(t *testing.T) {
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "layagnana")
+	if !Staging() {
+		t.Fatal("Staging() = false on another project")
+	}
+	webDir := filepath.Join("..", "..", "web")
+	app, err := NewApp(filepath.Join(webDir, "templates"))
+	if err != nil {
+		t.Fatalf("NewApp: %v", err)
+	}
+	mux := http.NewServeMux()
+	Register(app, mux, webDir)
+	srv := httptest.NewServer(SiteHandler(mux))
+	t.Cleanup(srv.Close)
+
+	if got := fetch(t, srv.URL+"/").robots; got != "noindex" {
+		t.Errorf("GET /: X-Robots-Tag = %q, want noindex", got)
+	}
+	if got := fetch(t, srv.URL+"/robots.txt").body; !strings.Contains(got, "Disallow: /") {
+		t.Errorf("robots.txt = %q, want Disallow", got)
+	}
+
+	// The real project, and a server run outside App Engine, are indexed.
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "thambura")
+	if Staging() {
+		t.Error("Staging() = true on the production project")
+	}
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "")
+	if Staging() {
+		t.Error("Staging() = true with no project set")
+	}
+}
+
 type response struct {
 	code         int
 	contentType  string

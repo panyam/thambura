@@ -152,7 +152,8 @@ func NewApp(templatesDir string) (*goal.App[*App], error) {
 // serves the 2016 Laya Gnana app as it was at the pre-sadhana-port tag
 // (web/legacy, see its README.md), marked noindex so it doesn't compete with
 // the app in search. On App Engine, app.yaml serves /static and /legacy
-// itself (and sends the same header); everything else comes here.
+// itself (and sends the same header); everything else comes here, wrapped in
+// SiteHandler.
 func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	static := filepath.Join(webDir, "static")
 	app.Context.KitURL = findKit(static)
@@ -170,6 +171,10 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	})
 	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		if Staging() {
+			fmt.Fprint(w, "User-agent: *\nDisallow: /\n")
+			return
+		}
 		fmt.Fprintf(w, "User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n", brand.URL)
 	})
 	mux.HandleFunc("GET /sitemap.xml", func(w http.ResponseWriter, r *http.Request) {
@@ -180,6 +185,25 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 </urlset>
 `, brand.URL)
 	})
+}
+
+// Staging reports whether this process is a test copy of the site rather than
+// the real one. App Engine sets GOOGLE_CLOUD_PROJECT, and `make deploydev`
+// puts the app in a project other than brand.ProjectID; a server run locally
+// has the variable unset and is not staging.
+func Staging() bool {
+	p := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	return p != "" && p != brand.ProjectID
+}
+
+// SiteHandler wraps the mux with what a whole deploy needs. On a staging
+// project every response is marked noindex, so a test copy can't turn up in
+// search beside the real site; on production h is returned as it is.
+func SiteHandler(h http.Handler) http.Handler {
+	if !Staging() {
+		return h
+	}
+	return noindex(h)
 }
 
 // noindex asks search engines to leave a response out of their index.

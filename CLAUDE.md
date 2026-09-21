@@ -13,6 +13,7 @@ make ui          # pnpm install, Tailwind -> web/static/css/tailwind.css, esbuil
 make templates   # templar get: re-vendor goapplib templates after a ref bump
 make devkit      # copy an instrument kit in from ../mridangam-data (gitignored)
 make deploy      # tests + prod build, then App Engine project thambura (see Deploying)
+make deploydev   # the same, to the layagnana project, to try before thambura
 make prodlogs    # tail App Engine logs
 ```
 
@@ -355,6 +356,21 @@ to override). It refuses to run with active `replace` directives in go.mod.
 The runtime is `go126` in `app.yaml`, which has to be at least the `go` line
 in go.mod. App Engine serves `/static` itself (`static_dir: web/static`) and
 forces HTTPS.
+
+`make deploydev` is the same build sent to the `layagnana` project first, to
+click through on a real App Engine before thambura.com gets it. That project
+still serves the 2016 app at `layagnana.appspot.com`, so the dev deploy goes to
+its own version (`--version=dev --no-promote`) and takes no traffic: it's at
+https://dev-dot-layagnana.appspot.com, and `make deploydev PROMOTE=1` moves the
+root to it instead (version `1` is still there to promote back).
+`DEV_PROJECT`/`DEV_VERSION` override both, and `make devlogs` tails it. App
+Engine sets `GOOGLE_CLOUD_PROJECT`, so `web.Staging()` knows it isn't
+`brand.ProjectID`: `SiteHandler` then marks every page `noindex` and
+`robots.txt` says `Disallow: /`, so the test copy can't turn up in search. The
+`/static` and `/legacy` handlers are App Engine's own there, so that header
+doesn't reach them (`/legacy` has it from `app.yaml` anyway). `brand.URL` is a
+constant, so the dev copy's canonical link, share links and OG image still
+point at thambura.com.
 
 The dev container has `gcloud`, signed in as the project's owner, so
 `make deploy` runs from here. It takes a few minutes: the tests, a minified

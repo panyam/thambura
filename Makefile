@@ -66,6 +66,25 @@ deploy: checklinks test uiprod server
 prodlogs:
 	gcloud app logs tail -s default --project $(GCP_PROJECT)
 
+# A second App Engine project to try a deploy in before the real one, so a
+# change can be clicked through on a real App Engine and not just `make run`.
+# layagnana still serves the 2016 app at its root, so a dev deploy goes to its
+# own version and takes no traffic; PROMOTE=1 moves the root to it (the old
+# version is still there to promote back). The URL is printed at the end.
+# The app marks itself noindex on any project but thambura, so the test copy
+# can't turn up in search.
+DEV_PROJECT ?= layagnana
+DEV_VERSION ?= dev
+PROMOTE ?=
+
+deploydev: checklinks test uiprod server
+	gcloud app deploy app.yaml --project $(DEV_PROJECT) --version=$(DEV_VERSION) \
+		$(if $(PROMOTE),--promote,--no-promote) --verbosity=info
+	@echo "== https://$(DEV_VERSION)-dot-$(DEV_PROJECT).appspot.com"
+
+devlogs:
+	gcloud app logs tail -s default --project $(DEV_PROJECT)
+
 # One-time domain setup, see "Deploying" in CLAUDE.md. verifydomain opens
 # Search Console to prove ownership (a TXT record at the registrar); domains
 # then maps each name and prints the A/AAAA/CNAME records to add there.
@@ -90,4 +109,4 @@ domainstatus:
 clean:
 	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css
 
-.PHONY: all ui uiprod server build run watch test templates resymlink checklinks deploy prodlogs verifydomain domains domainstatus clean
+.PHONY: all ui uiprod server build run watch test templates resymlink checklinks deploy prodlogs deploydev devlogs verifydomain domains domainstatus clean

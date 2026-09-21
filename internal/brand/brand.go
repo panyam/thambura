@@ -8,3 +8,8 @@ const Name = "Thambura"
 // URL is the site's canonical origin. Canonical links, social previews and
 // the sitemap use it, so copies served from www or appspot count as this one.
 const URL = "https://thambura.com"
+
+// ProjectID is the App Engine project the real site runs on. A deploy to any
+// other project (`make deploydev`) is a test copy, and the server keeps it out
+// of search.
+const ProjectID = "thambura"
