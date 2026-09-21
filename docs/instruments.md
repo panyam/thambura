@@ -126,6 +126,18 @@ are playing.
 A layout also gives the sequencer something to show: the spot lights when its
 stroke is heard, which is how you see what a phrase is doing.
 
+## The open question: views
+
+The order below assumed each instrument brings the panel it has today, the
+thambura's floating bar and the mridangam's section. That is the part most
+likely to change. With several instruments, what a track shows when it is
+collapsed, which of an instrument's views a track is set to, and how the page
+remembers that arrangement are all decisions nobody has made, and they decide
+what a track is in the UI rather than in the audio graph.
+
+Worth settling before the mixer is built, since the mixer is easy once a
+track has a shape.
+
 ## The order
 
 Each step stands on its own, and the early ones are already in the mridangam

@@ -69,6 +69,16 @@ Sadhana).
 
 ## Frontend (web/src)
 
+Two things that have bitten:
+
+- **Pass presenter methods wrapped, not bare.** `onChange={a.setVariety}` in
+  JSX loses `this`, so the method throws on `this.state`. Write
+  `onChange={(v) => a.setVariety(v)}`. The control looks like it works while
+  the console fills with "Cannot read properties of undefined".
+- **The web tsconfig has no `@types/node`**, so a vitest test can't use
+  `node:child_process` or `process`. Checks that need them belong in the
+  Makefile instead: `pnpm patterns:check` runs there, not in vitest.
+
 `docs/architecture.md` explains how the sounds are made and timed, timed vs
 continuous voices, and what changed from the 2016 app. `docs/layouts.md` and
 `docs/library.md` are plans, not descriptions: where the thambura could sit,
@@ -579,4 +589,10 @@ A few probes that worked, all set up in an init script:
 - `pkill -f <pattern>` can match the shell running it and kill it, and
   `fuser` isn't installed. Find a server by its port instead:
   `ss -ltnp | grep :8011` gives the pid; kill it and its `go run` parent
-  (`ps -o ppid= -p <pid>`).
+  (`ps -o ppid= -p <pid>`). **Check the port is free afterwards.** A
+  `fuser -k` that silently did nothing leaves the old server holding the
+  port, the new binary fails to bind, and the browser keeps being served by
+  the old build. That looks like a code bug, not a stale process: a page
+  rendered by yesterday's binary against today's template gave
+  `can't evaluate field KitURL in type *web.HomePage`, which cost a while
+  before the log line `bind: address already in use` explained it.
