@@ -71,10 +71,13 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       `notations` (engine, runtime, Solid components, assets, styles), so the
       pieces can be imported elsewhere, including into the notation app for
       practice. Planning only.
-- [ ] **Mridangam / tabla.** The next big piece; `docs/mridangam.md` is the
-      plan. Per-stroke sequencer on the `percussion` bus, with choke groups,
-      several takes per stroke, eduppu/korvai alignment to the tala, and
-      tuning to the shruthi tonic.
+- [ ] **Mridangam / tabla.** In progress; `docs/mridangam.md` is the plan and
+      its build order. Steps 1 and 2 are in and were heard in Chrome on
+      2026-09-21: the strokes tuned to the thambura with a pad, and one Adi
+      sarvalaghu played against the tala off the same tempo map. Next is
+      step 3, the pattern text format with a library and the stroke lane, then
+      arrangements (variations, fills, korvai, eduppu). Still open: who writes
+      or vets the patterns, and a kit we can ship.
 - [ ] Output-latency calibration setting (Bluetooth headphones add
       150-250 ms, and Safari doesn't report `outputLatency`).
 - [x] Screen Wake Lock while the tala or thambura plays, so the screen doesn't

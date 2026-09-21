@@ -342,11 +342,12 @@ offsets within them.
 
 ## Known limits
 
-Only the thambura has been checked by ear, and tuned that way
-([sound-analysis.md](sound-analysis.md)). Headless Chromium has no audio
-device, so every other check is a number: pitch within a cent, decay
-tables, and the `when` of each `AudioBufferSourceNode.start` call. The
-limits we know about are these.
+The thambura has been checked by ear and tuned that way
+([sound-analysis.md](sound-analysis.md)), and the mridangam's strokes and its
+Adi pattern against the tala were heard in Chrome on 2026-09-21. Everything
+else is still numbers, because headless Chromium has no audio device: pitch
+within a cent, decay tables, and the `when` of each
+`AudioBufferSourceNode.start` call. The limits we know about are these.
 
 - **Only the tala is on the tempo map so far.** A mridangam sequencer will
   also need to read the tala's position (which beat of which cycle) for
