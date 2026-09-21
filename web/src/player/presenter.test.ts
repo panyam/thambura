@@ -338,7 +338,7 @@ describe("PlayerPresenter with an instrument", () => {
   });
 
   it("names the pattern it found for the tala, and says when it has none", () => {
-    expect(patterns.at(-1)).toBe("Adi, chatusram");
+    expect(patterns.at(-1)).toBe("Adi sarvalaghu, chatusram");
     p.setSettings({ tala: "chaapu_misram" });
     expect(patterns.at(-1)).toBeNull();
     p.setSettings({ tala: "custom_adi", nadai: "khandam" });
@@ -349,7 +349,7 @@ describe("PlayerPresenter with an instrument", () => {
     await p.start();
     advance(0.05);
     expect(booked.length).toBeGreaterThan(0);
-    // The theka opens on sam, where the tala's first clap is.
+    // The pattern opens on sam, where the tala's first clap is.
     const firstClap = audio.played.find((n) => n.bus === "tala")!.when;
     expect(booked[0]).toMatchObject({ id: "L.tham" });
     expect(booked[0].when).toBe(firstClap);

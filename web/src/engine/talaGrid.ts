@@ -44,9 +44,22 @@ export class TalaGrid {
     return this.cycle;
   }
 
-  /** How many beats the cycle has, ignoring kalai. Patterns are matched on this. */
+  /** How many beats the cycle has, ignoring kalai. */
   get beatCount(): number {
     return this.beats.length;
+  }
+
+  /**
+   * The cycle written as its beats: "down one two three down open down open"
+   * for Adi. Patterns are matched on this rather than on a count, because
+   * counting alone confuses talas that share a length. Adi and a
+   * chatusra-jaathi Thriputa are the same eight beats and take the same
+   * accompaniment; Matya in thisram is also eight beats, but its claps and
+   * waves fall elsewhere, so a sarvalaghu written for Adi would put thom where
+   * there is no sam.
+   */
+  get shape(): string {
+    return this.beats.map((b) => b.image).join(" ");
   }
 
   /** How many aksharas a cycle has, kalai included. */

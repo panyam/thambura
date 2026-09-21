@@ -12,7 +12,7 @@ import { add, type Ratio } from "../engine/ratio";
 import { TalaSequencer, type TalaEvent } from "../engine/sequencer";
 import { StrokeSequencer, type StrokeEvent } from "../engine/strokeSequencer";
 import { TalaGrid } from "../engine/talaGrid";
-import { patternFor, type Pattern } from "../engine/thekas";
+import { patternFor, type Pattern } from "../engine/patterns";
 import { DEFAULT_MOTION, isBeatMotion, motionAt, REST, type BeatMotion, type BeatPose } from "../engine/motion";
 import { TempoMap } from "../engine/tempoMap";
 import type { AudioOut } from "./audio";

@@ -341,10 +341,10 @@ See NEXTSTEPS.md for the order.
   beats and kalai into a cycle length and says which cycle, beat and repeat a
   count falls in. `engine/strokeSequencer.ts` is a `Sequencer<StrokeEvent>` on
   the tala's own `TempoMap`, queued a cycle at a time, so strokes and claps
-  are the same musical points and can't drift. `engine/thekas.ts` holds the
+  are the same musical points and can't drift. `engine/patterns.ts` holds the
   patterns, written per beat of the cycle: `pattern()` takes one token per
   slot with `|` between aksharas and `,` for a rest, and `patternFor` matches
-  on beats per cycle and nadai, so one Adi theka serves Adi and a chatusra
+  on beats per cycle and nadai, so one Adi pattern serves Adi and a chatusra
   Thriputa and stretches with kalai. What's left for the mridangam is the
   text format for patterns, then arrangements (`docs/mridangam.md`).
 - Drum strokes choke per head: a closed stroke cuts the ring of the last open

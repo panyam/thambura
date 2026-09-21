@@ -132,7 +132,7 @@ Each step stands on its own, and the early ones are already in the mridangam
 plan (`mridangam.md`).
 
 1. **The mridangam through step 3** of its own plan: the stroke sequencer on
-   the tala's clock, the pattern format, a library of thekas. This is the
+   the tala's clock, the pattern format, a library of patterns. This is the
    first metrical track, and it proves the clock carries someone else's
    events.
 2. **`TalaGrid`**, needed by that sequencer anyway, which is what lets a

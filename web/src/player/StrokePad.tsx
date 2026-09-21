@@ -48,7 +48,7 @@ export function StrokePad(props: { state: Accessor<KitState>; actions: KitAction
                 aria-label="Play with the tala"
                 checked={s().enabled}
                 onChange={(e) => a.setEnabled(e.currentTarget.checked)}
-                class="h-4 w-4 rounded border-gray-300 accent-amber-600 dark:border-gray-600"
+                class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-600 dark:bg-gray-800"
               />
               Play with the tala
               <span class="text-xs text-gray-500 dark:text-gray-400">

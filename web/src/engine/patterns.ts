@@ -28,7 +28,9 @@ export interface PatternStroke {
 export interface Pattern {
   id: string;
   name: string;
-  /** How many beats of tala it fits, ignoring kalai. Adi and Thriputa are 8. */
+  /** The cycle it fits, as `TalaGrid.shape` writes one. */
+  shape: string;
+  /** How many beats that is, ignoring kalai. */
   beats: number;
   /** The nadai it is written for. */
   nadai: Gati;
@@ -40,13 +42,18 @@ export interface Pattern {
  * a rest, as karvai is written in Carnatic notation. Every akshara has to
  * carry the same number of slots, which is what catches a typo.
  */
-export function pattern(
-  id: string,
-  name: string,
-  nadai: Gati,
-  line: string,
-  accents: Record<number, number> = {},
-): Pattern {
+export function pattern(spec: {
+  id: string;
+  name: string;
+  /** The cycle it accompanies, as `TalaGrid.shape` writes one. */
+  shape: string;
+  nadai: Gati;
+  /** One token per slot, `|` between aksharas, `,` for a rest. */
+  line: string;
+  /** Per-akshara loudness, so sam can be leaned on. */
+  accents?: Record<number, number>;
+}): Pattern {
+  const { id, name, shape, nadai, line, accents = {} } = spec;
   const aksharas = line
     .split("|")
     .map((a) => a.trim())
@@ -67,21 +74,27 @@ export function pattern(
       });
     });
   });
-  return { id, name, beats: aksharas.length, nadai, strokes };
+  const beats = shape.split(/\s+/).filter((b) => b !== "").length;
+  if (beats !== aksharas.length) {
+    throw new Error(`pattern ${id}: ${aksharas.length} aksharas written for a cycle of ${beats} beats`);
+  }
+  return { id, name, shape, beats, nadai, strokes };
 }
 
 /**
- * A plain Adi theka in chatusram, four slots to the akshara: thom on sam and
- * on the second laghu beat, the finger counts light, and the dhrutham's wave
- * answered with nam. It is a beginner's accompaniment, not a tani, and it
- * wants a player's eye before it goes near a student (see docs/mridangam.md,
- * open question 3).
+ * A plain Adi sarvalaghu in chatusram, four slots to the akshara: thom on sam
+ * and on the second laghu beat, the finger counts light, and the dhrutham's
+ * wave answered with nam. Sarvalaghu is the flowing accompaniment a mridangist
+ * plays through a cycle, as against the korvais and mohras that end one. This
+ * is a beginner's version and wants a player's eye before a student hears it
+ * (see docs/mridangam.md, open question 3).
  */
-export const ADI_CHATUSRAM = pattern(
-  "adi-chatusram-1",
-  "Adi, chatusram",
-  "chatusram",
-  [
+export const ADI_CHATUSRAM = pattern({
+  id: "adi-chatusram-1",
+  name: "Adi sarvalaghu, chatusram",
+  shape: "down one two three down open down open",
+  nadai: "chatusram",
+  line: [
     "L.tham , R.thi ,",
     "R.nam , R.thi ,",
     "L.thom , R.thi ,",
@@ -91,20 +104,21 @@ export const ADI_CHATUSRAM = pattern(
     "L.thom , R.thi ,",
     "R.nam R.thi R.nam ,",
   ].join("|"),
-  { 0: 1.15, 4: 1.05 },
-);
+  accents: { 0: 1.15, 4: 1.05 },
+});
 
-export const THEKAS: Pattern[] = [ADI_CHATUSRAM];
+export const PATTERNS: Pattern[] = [ADI_CHATUSRAM];
 
 /**
  * The pattern for a tala, or null when none fits. A pattern matches on the
- * beats in a cycle and the nadai, so the Adi theka serves both Adi and a
- * chatusra-jaathi Thriputa, which are the same eight aksharas. A chaapu has
- * one long beat rather than even aksharas, so nothing matches it yet.
+ * cycle's shape and the nadai, so the Adi sarvalaghu serves both Adi and a
+ * chatusra-jaathi Thriputa, which are the same eight beats played the same
+ * way, and not Matya in thisram, which is eight beats of a different shape.
+ * A chaapu is one long beat rather than even aksharas, so nothing fits it yet.
  */
-export function patternFor(grid: TalaGrid, nadai: Gati, from: Pattern[] = THEKAS): Pattern | null {
+export function patternFor(grid: TalaGrid, nadai: Gati, from: Pattern[] = PATTERNS): Pattern | null {
   if (!grid.uniform) return null;
-  return from.find((p) => p.beats === grid.beatCount && p.nadai === nadai) ?? null;
+  return from.find((p) => p.shape === grid.shape && p.nadai === nadai) ?? null;
 }
 
 /** Where a pattern's stroke falls in counts, given how long one beat lasts. */

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ratio, ZERO } from "./ratio";
 import { beatsFor, type TalaSettings } from "./selection";
 import { TalaGrid } from "./talaGrid";
-import { ADI_CHATUSRAM, pattern, patternFor } from "./thekas";
+import { ADI_CHATUSRAM, pattern, patternFor } from "./patterns";
 
 const settings = (patch: Partial<TalaSettings> = {}): TalaSettings => ({
   tala: "custom_adi",
@@ -64,7 +64,13 @@ describe("TalaGrid", () => {
 
 describe("patterns", () => {
   it("lays a written line out in aksharas", () => {
-    const p = pattern("t", "Test", "chatusram", "L.thom , R.nam , | R.thi R.thi , ,");
+    const p = pattern({
+      id: "t",
+      name: "Test",
+      shape: "down open",
+      nadai: "chatusram",
+      line: "L.thom , R.nam , | R.thi R.thi , ,",
+    });
     expect(p.beats).toBe(2);
     expect(p.strokes.map((s) => [s.stroke, s.at.n / s.at.d])).toEqual([
       ["L.thom", 0],
@@ -75,10 +81,18 @@ describe("patterns", () => {
   });
 
   it("rejects an akshara with the wrong number of slots", () => {
-    expect(() => pattern("t", "Test", "chatusram", "L.thom , R.nam , | R.thi ,")).toThrow(/slots/);
+    expect(() =>
+      pattern({ id: "t", name: "Test", shape: "down open", nadai: "chatusram", line: "L.thom , R.nam , | R.thi ," }),
+    ).toThrow(/slots/);
   });
 
-  it("fits the Adi theka to Adi and to a chatusra Thriputa, both eight aksharas", () => {
+  it("rejects a line that doesn't cover its cycle", () => {
+    expect(() =>
+      pattern({ id: "t", name: "Test", shape: "down open down", nadai: "chatusram", line: "L.thom , | R.nam ," }),
+    ).toThrow(/cycle of 3 beats/);
+  });
+
+  it("fits the Adi pattern to Adi and to a chatusra Thriputa, the same eight beats", () => {
     expect(patternFor(gridFor(), "chatusram")).toBe(ADI_CHATUSRAM);
     expect(patternFor(gridFor({ tala: "sapta_thriputa", jaathi: "chatusram" }), "chatusram")).toBe(ADI_CHATUSRAM);
     expect(patternFor(gridFor({ kalai: 4 }), "chatusram")).toBe(ADI_CHATUSRAM);
@@ -86,11 +100,14 @@ describe("patterns", () => {
 
   it("has nothing for a tala or nadai it wasn't written for", () => {
     expect(patternFor(gridFor({ tala: "sapta_eka" }), "chatusram")).toBeNull();
+    // Matya in thisram is also eight beats, but its claps fall elsewhere.
+    expect(gridFor({ tala: "sapta_matya", jaathi: "thisram" }).beatCount).toBe(8);
+    expect(patternFor(gridFor({ tala: "sapta_matya", jaathi: "thisram" }), "chatusram")).toBeNull();
     expect(patternFor(gridFor(), "misram")).toBeNull();
     expect(patternFor(gridFor({ tala: "chaapu_misram" }), "chatusram")).toBeNull();
   });
 
-  it("keeps every stroke of the Adi theka inside its cycle", () => {
+  it("keeps every stroke of the Adi sarvalaghu inside its cycle", () => {
     expect(ADI_CHATUSRAM.beats).toBe(8);
     for (const s of ADI_CHATUSRAM.strokes) {
       expect(s.at.n / s.at.d).toBeGreaterThanOrEqual(0);

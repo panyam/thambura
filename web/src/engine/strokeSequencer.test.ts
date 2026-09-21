@@ -5,17 +5,17 @@ import { beatsFor, type TalaSettings } from "./selection";
 import { TalaSequencer, type StepEvent, type TalaEvent } from "./sequencer";
 import { StrokeSequencer } from "./strokeSequencer";
 import { TalaGrid } from "./talaGrid";
-import { ADI_CHATUSRAM, pattern, patternFor, type Pattern } from "./thekas";
+import { ADI_CHATUSRAM, pattern, patternFor, type Pattern } from "./patterns";
 import { TempoMap } from "./tempoMap";
 
 const SETTINGS: TalaSettings = { tala: "custom_adi", jaathi: "chatusram", nadai: "chatusram", kalai: 1 };
 
 /** A sequencer on its own map, pulled the way Transport pulls it. */
-function setup(patch: Partial<TalaSettings> = {}, bpm = 60, theka: Pattern | null | undefined = undefined) {
+function setup(patch: Partial<TalaSettings> = {}, bpm = 60, given: Pattern | null | undefined = undefined) {
   const settings = { ...SETTINGS, ...patch };
   const beats = beatsFor(settings);
   const grid = new TalaGrid(beats, settings.kalai);
-  const chosen = theka === undefined ? patternFor(grid, settings.nadai) : theka;
+  const chosen = given === undefined ? patternFor(grid, settings.nadai) : given;
   const map = new TempoMap(bpm);
   const seq = new StrokeSequencer(() => ({ grid, pattern: chosen }), map);
   map.start(0);
@@ -29,10 +29,10 @@ function setup(patch: Partial<TalaSettings> = {}, bpm = 60, theka: Pattern | nul
 }
 
 describe("StrokeSequencer", () => {
-  it("plays the theka's strokes at their musical positions", () => {
+  it("plays the pattern's strokes at their musical positions", () => {
     const { pull } = setup({}, 60); // one count a second
     const first = pull(0, 1.1);
-    // The Adi theka opens with tham on sam and thi halfway through akshara 1.
+    // The Adi sarvalaghu opens with tham on sam and thi halfway through akshara 1.
     expect(first.map((e) => [e.stroke, e.time])).toEqual([
       ["L.tham", 0],
       ["R.thi", 0.5],
@@ -120,7 +120,13 @@ describe("the tala and the mridangam together", () => {
 
 describe("pattern slots", () => {
   it("places a khandam pattern's five slots evenly across the akshara", () => {
-    const five = pattern("k", "Khandam", "khandam", "R.ta R.ka R.thi R.ki R.ta");
+    const five = pattern({
+      id: "k",
+      name: "Khandam",
+      shape: "down",
+      nadai: "khandam",
+      line: "R.ta R.ka R.thi R.ki R.ta",
+    });
     expect(five.strokes.map((s) => s.at.n / s.at.d)).toEqual([0, 0.2, 0.4, 0.6, 0.8]);
   });
 });

@@ -1,7 +1,7 @@
 import { add, cmp, ZERO, type Ratio } from "./ratio";
 import type { Sequencer } from "./sequencer";
 import type { TalaGrid } from "./talaGrid";
-import { strokeCount, type Pattern } from "./thekas";
+import { strokeCount, type Pattern } from "./patterns";
 import type { TempoMap } from "./tempoMap";
 
 /** One stroke to play, on the audio clock. */
