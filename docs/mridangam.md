@@ -426,9 +426,13 @@ Each step is a PR that works on its own.
    A kit is copied in with `make devkit` and isn't committed, so Go only
    writes `data-kit-url` when one is there, and a plain checkout shows no pad.
    What's left is the ear: every stroke at a few keys, next to the thambura.
-2. **One theka.** `TalaGrid`, `StrokeSequencer`, and a hand-written Adi
-   theka, with an on/off switch. A test that the strokes and claps agree
-   through tempo changes, and an in-browser capture of the scheduled times.
+2. **One theka.** Done, but for the listening. `TalaGrid` says where the
+   cycle's beats fall, `StrokeSequencer` plays a pattern against them on the
+   tala's own tempo map, and one Adi theka in chatusram is written out in
+   `thekas.ts`, with a switch in the panel. Patterns are written per beat, so
+   the same theka serves Adi and a chatusra Thriputa and stretches with kalai.
+   A tala with no pattern stays silent and the panel says so. The theka itself
+   still wants a player's eye (open question 3).
 3. **The pattern format.** Parser, validation over the library, curated
    thekas for Adi, Rupakam and the Misra and Khanda chapus at two speeds,
    the generated fallback for the rest, and the stroke lane.

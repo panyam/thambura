@@ -29,8 +29,17 @@ export function createPlayerIsland(
   onPlaying?: (playing: boolean) => void,
   kit?: KitPresenter,
 ): SolidIsland {
+  const drum =
+    kit ??
+    new KitPresenter({
+      audio,
+      fetchJson,
+      frames: { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) },
+    });
+
   const presenter = new PlayerPresenter({
     audio,
+    strokes: drum,
     ticker: workerTicker(),
     frames: {
       request: (cb) => requestAnimationFrame(cb),
@@ -43,13 +52,6 @@ export function createPlayerIsland(
       save: (v) => localStorage.setItem(STORAGE_KEY, JSON.stringify(v)),
     },
   });
-  const drum =
-    kit ??
-    new KitPresenter({
-      audio,
-      fetchJson,
-      frames: { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) },
-    });
   const [drumState, setDrumState] = signalView(drum.state);
   drum.attach({ setState: setDrumState });
   // Only when the page shell says a kit is there, so a plain checkout doesn't
