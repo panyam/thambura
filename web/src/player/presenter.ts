@@ -43,6 +43,10 @@ export interface PlayerState {
   variety: Variety;
   /** Whether this tala has any alternates to swap in. */
   hasVariations: boolean;
+  /** Whether this tala has an ending written for it. */
+  hasKorvai: boolean;
+  /** True once a korvai is asked for, until the cycle that plays it is heard. */
+  korvaiQueued: boolean;
   /** The image for the step being heard, or null for none. */
   image: string | null;
   /** The step being heard, and how many beats the cycle has. */
@@ -140,6 +144,8 @@ export class PlayerPresenter {
   private grid = new TalaGrid([]);
   private pattern: Pattern | null = null;
   private arrangement: Arrangement | null = null;
+  // Which cycle the korvai was given, so the button clears when it is heard.
+  private korvaiAt: number | null = null;
   // The lane for each cycle the sequencer has laid out but the ear hasn't
   // reached yet, since a variation changes what the lane should show.
   private lanes = new Map<number, Lane>();
@@ -176,6 +182,8 @@ export class PlayerPresenter {
       strokeIndex: null,
       variety: isVariety(this.saved.variety) ? this.saved.variety : "some",
       hasVariations: false,
+      hasKorvai: false,
+      korvaiQueued: false,
       image: null,
       position: { beat: 0, repeat: 0 },
       beatCount: 0,
@@ -227,6 +235,8 @@ export class PlayerPresenter {
     // Drop images for steps that won't sound now; the one showing stays.
     this.cues = [];
     this.strokeCues = [];
+    this.korvaiAt = null;
+    if (this.state.korvaiQueued) this.update({ korvaiQueued: false });
     this.heard = null;
     this.setPose(REST);
     this.update({ playing: false });
@@ -271,6 +281,16 @@ export class PlayerPresenter {
     this.tempo.setTempo(tempo);
     this.update({ tempo });
     this.save();
+  }
+
+  /**
+   * Plays the ending at the next cycle. A korvai resolves on the sam after
+   * it, so it can start at any cycle boundary; it plays once and the
+   * accompaniment carries on.
+   */
+  askForKorvai(): void {
+    if (!this.arrangement?.korvai || this.state.korvaiQueued) return;
+    this.update({ korvaiQueued: true });
   }
 
   /** How often a variation is swapped in, from the next cycle on. */
@@ -357,7 +377,12 @@ export class PlayerPresenter {
       generatedPattern(beats, this.grid.shape, this.grid.patternCounts);
     this.arrangement = arrangementFor(this.grid, this.state.settings.nadai, this.pattern);
     this.lanes.clear();
-    this.update({ hasVariations: (this.arrangement?.variations.length ?? 0) > 0 });
+    this.korvaiAt = null;
+    this.update({
+      hasVariations: (this.arrangement?.variations.length ?? 0) > 0,
+      hasKorvai: this.arrangement?.korvai != null,
+      korvaiQueued: false,
+    });
     this.deps.strokes?.setPattern(this.pattern?.name ?? null);
     this.update({ beatCount: beats.length, position: this.cursor.position, lane: laneFor(this.pattern), strokeIndex: null });
   }
@@ -377,7 +402,10 @@ export class PlayerPresenter {
    */
   private cycleSource(cycle: number): { grid: TalaGrid; pattern: Pattern | null } {
     if (!this.arrangement) return { grid: this.grid, pattern: this.pattern };
-    const pattern = patternForCycle(this.arrangement, cycle, this.state.variety, this.rng);
+    // A korvai claims the next cycle to be laid out, once.
+    const korvai = this.state.korvaiQueued && this.korvaiAt === null ? this.arrangement.korvai : null;
+    if (korvai) this.korvaiAt = cycle;
+    const pattern = korvai ?? patternForCycle(this.arrangement, cycle, this.state.variety, this.rng);
     const lane = laneFor(pattern);
     if (lane) this.lanes.set(cycle, lane);
     return { grid: this.grid, pattern };
@@ -421,6 +449,11 @@ export class PlayerPresenter {
         // The lane follows the ear: a cycle's pattern shows when it sounds.
         const lane = this.lanes.get(stroke.cycle);
         if (lane && lane !== this.state.lane) this.update({ lane });
+        // The ending is under way, so the button stops saying it is coming.
+        if (this.korvaiAt !== null && stroke.cycle >= this.korvaiAt) {
+          this.korvaiAt = null;
+          this.update({ korvaiQueued: false });
+        }
         for (const cycle of this.lanes.keys()) if (cycle < stroke.cycle) this.lanes.delete(cycle);
         if (stroke.index !== this.state.strokeIndex) this.update({ strokeIndex: stroke.index });
       }

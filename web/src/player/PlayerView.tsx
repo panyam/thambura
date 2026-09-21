@@ -24,6 +24,7 @@ export type PlayerActions = Pick<
   | "restart"
   | "setTempo"
   | "setVariety"
+  | "askForKorvai"
   | "setVolume"
   | "setSettings"
   | "setSoundGroup"
@@ -100,6 +101,9 @@ export function PlayerView(props: {
           variety={() => s().variety}
           setVariety={(variety) => a.setVariety(variety)}
           hasVariations={() => s().hasVariations}
+          hasKorvai={() => s().hasKorvai}
+          korvaiQueued={() => s().korvaiQueued}
+          askForKorvai={() => a.askForKorvai()}
         />
       </Show>
 

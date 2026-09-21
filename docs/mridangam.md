@@ -512,10 +512,12 @@ Each step is a PR that works on its own.
    generated skeleton for every other tala and nadai, and the stroke lane.
    Still wanted here: second-speed versions of the written patterns, and the
    solkattu line under the strokes.
-4. **Arrangements.** Variations are in: a pattern can be written as an
-   alternate for a cycle, and the arrangement swaps one in now and then,
-   which the Variety control sets. Still to come: fills, a korvai that lands
-   on sam, eduppu with a count-in, and choosing a pattern to suit the tempo.
+4. **Arrangements.** Variations and the korvai are in. A pattern's role says
+   whether it is the main one, an alternate to swap in (the Variety control
+   sets how often), or an ending: the Korvai button gives the next cycle to
+   an ending that resolves on the following sam, then the accompaniment
+   carries on. Still to come, filed as tickets: fills, eduppu with a
+   count-in, choosing a pattern to suit the tempo, and more patterns.
 5. **The editor**, local saving and share links.
 6. **A shippable kit.** Our own recordings, or the dataset with permission,
    covering both drums. Maybe synthesized open strokes if the experiment

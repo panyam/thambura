@@ -61,10 +61,10 @@ export interface Pattern {
   /** The nadai it is written for, or "any" when the tala has none. */
   nadai: Gati | "any";
   /**
-   * What it is in an arrangement: the one that plays most cycles, or an
-   * alternate to swap in now and then.
+   * What it is in an arrangement: the one that plays most cycles, an
+   * alternate to swap in now and then, or an ending that lands on sam.
    */
-  role: "main" | "variation";
+  role: "main" | "variation" | "korvai";
   strokes: PatternStroke[];
 }
 
