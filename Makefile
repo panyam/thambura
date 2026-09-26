@@ -44,10 +44,30 @@ watch:
 test: liftcheck
 	go test ./...
 	cd web && pnpm typecheck && pnpm patterns:check && pnpm test
+	cd web && pnpm exec tsc -p ../docs/components
+	cd docs && go test ./...
 
 # internal/page and web/src/page are meant to move into goapplib and tsappkit
 # (#86), so they may import nothing else from this repo. Keeping it that way is
 # what makes the lift a copy.
+# The developer docs (docs/, served at /docs). The site is its own Go module,
+# so s3gen stays out of the app's build; `make test` builds it and checks every
+# link. docsrun serves it on DOCS_PORT and rebuilds on change, for writing.
+DOCS_PORT ?= 8012
+
+docs: docsjs
+	cd docs && go run . -build
+
+docsrun: docsjs
+	@! ss -ltn | grep -q ':$(DOCS_PORT) ' || { echo "port $(DOCS_PORT) is taken: make docsrun DOCS_PORT=..."; exit 1; }
+	cd docs && go run . -addr :$(DOCS_PORT)
+
+# The docs' script, checked and bundled with the app's TypeScript and esbuild.
+docsjs:
+	cd web && pnpm install && pnpm exec tsc -p ../docs/components && \
+		NODE_PATH=$$PWD/node_modules pnpm exec esbuild ../docs/components/DocsPage.ts \
+		--bundle --format=esm --minify --outfile=../docs/static/js/gen/docs.js
+
 liftcheck:
 	@bad=$$(go list -deps ./internal/page | grep '^github.com/panyam/thambura/' | grep -v '^github.com/panyam/thambura/internal/page$$'); \
 	  if [ -n "$$bad" ]; then echo "internal/page imports from this repo: $$bad"; exit 1; fi
@@ -96,7 +116,7 @@ DOMAINS ?= thambura.com www.thambura.com
 # Deploy to App Engine (https://thambura.appspot.com, https://thambura.com).
 # Tests and a production frontend build run first, and checklinks refuses to
 # ship with local replace directives.
-deploy: checklinks test uiprod server
+deploy: checklinks test uiprod docs server
 	gcloud app deploy app.yaml --project $(GCP_PROJECT) --verbosity=info
 
 prodlogs:
@@ -120,7 +140,7 @@ checkpromote:
 	@test -z "$(PROMOTE)" || test "$(DEV_PROJECT)" != "$(GCP_PROJECT)" || \
 		{ echo "PROMOTE=1 would put this build on thambura.com: run 'make deploy'"; exit 1; }
 
-deploydev: checkpromote checklinks test uiprod server
+deploydev: checkpromote checklinks test uiprod docs server
 	gcloud app deploy app.yaml --project $(DEV_PROJECT) --version=$(DEV_VERSION) \
 		$(if $(PROMOTE),--promote,--no-promote) --verbosity=info
 	@echo "== $$(gcloud app versions describe $(DEV_VERSION) --service=default \
@@ -151,6 +171,6 @@ domainstatus:
 	gcloud app domain-mappings list --project $(GCP_PROJECT)
 
 clean:
-	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css
+	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css web/docs docs/static/js/gen
 
-.PHONY: all setupvenv venvpath ui uiprod server build run watch test liftcheck soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean
+.PHONY: all setupvenv venvpath ui uiprod server build run watch test docs docsrun docsjs liftcheck soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean

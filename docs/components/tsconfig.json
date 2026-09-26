@@ -1,0 +1,10 @@
+// The docs' components are checked with the app's settings. Their packages
+// come from web/node_modules, since docs/ has none of its own.
+{
+  "extends": "../../web/tsconfig.json",
+  "compilerOptions": {
+    "paths": { "@panyam/tsappkit": ["../../web/node_modules/@panyam/tsappkit"] }
+  },
+  "include": ["."],
+  "exclude": []
+}

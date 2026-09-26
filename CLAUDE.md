@@ -93,8 +93,8 @@ Two things that have bitten:
   `node:child_process` or `process`. Checks that need them belong in the
   Makefile instead: `pnpm patterns:check` runs there, not in vitest.
 
-The design docs are in `docs/designs/`; `docs/` itself is for the developer
-docs site (#105). `docs/designs/architecture.md` explains how the sounds are made and timed, timed vs
+The design docs are in `docs/designs/`; `docs/` itself is the developer
+docs site (see Docs site below). `docs/designs/architecture.md` explains how the sounds are made and timed, timed vs
 continuous voices, and what changed from the 2016 app. `docs/designs/layouts.md` and
 `docs/designs/library.md` are plans, not descriptions: where the thambura could sit,
 and what it would take to import these pieces from another project.
@@ -453,6 +453,23 @@ See NEXTSTEPS.md for the order.
   that (8 ms, against the strings' 80 ms) and `bend`, which slides a note's
   detune for the gumki. Takes go round per stroke, with a little gain jitter.
   Trimmed mono samples matter, since decoded PCM is about 190 KB/s mono.
+
+## Docs site
+
+`docs/` is the developer docs site, served at thambura.com/docs (#95; the
+design docs sit apart in `docs/designs/`). It is s3gen, laid out like
+notations' docs, and `docs/README.md` covers writing a page. It is its own Go
+module, so s3gen stays out of the app's go.mod and build. `make docs` checks
+and bundles `docs/components` with web's tsc and esbuild, then writes the site
+to `web/docs/` (gitignored). The Go server serves that at `/docs/`
+(`internal/web/docs.go`) and on App Engine `app.yaml` does, with three
+`static_files` lines for folder index pages. `.gcloudignore` keeps the sources
+out. `make docsrun` serves it on :8012 with live reload. `make test` builds it
+and fails on a broken link or a template error: s3gen writes a failed page's
+error into the page and carries on, so the build checks the output for it.
+Every page is `noindex` until `SiteMetadata.json` says otherwise. The theme
+toggle uses tsappkit's `ThemeManager` on the same origin as the app, so a
+choice made in one holds in the other.
 
 ## Deploying
 
