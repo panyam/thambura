@@ -21,12 +21,13 @@ Rather more of this exists already than the names suggest.
 - **Struck instruments are already generic.** `engine/kit.ts` knows about
   zones, packs and strokes, not about mridangams. A ghatam or a tabla is a
   different `kit.json`, not different code.
-- **A small mixer exists**, hardcoded to three buses (`tala`, `drone`,
-  `percussion`), each with its own gain, into a master gain and a limiter.
+- **The mixer has tracks** (#96): a track id makes its own level, mute,
+  solo and pan on first use, into a master gain and a limiter. The three
+  used today are still named `tala`, `drone` and `percussion`.
 
-Two things are in the way, and both are mostly naming rather than depth. The
-buses are a fixed list, and the tala player schedules its own clap sounds
-instead of a track doing it.
+What's in the way now is mostly naming rather than depth: the instruments
+still play on those three shared names rather than a track each, and the tala
+player schedules its own clap sounds instead of a track doing it.
 
 ## The shape
 
@@ -82,8 +83,8 @@ the same grid, with the sound moved out of the timer.
 
 | Piece | Today | Becomes |
 |---|---|---|
-| Buses | three fixed names | one per track, made when the track is added |
-| `AudioOut` | `setBusVolume(bus, percent)` | levels, pan, mute and solo per track |
+| Buses | ~~three fixed names~~ | one per track, made on first use (done, #96) |
+| `AudioOut` | ~~`setBusVolume(bus, percent)`~~ | `setLevel`, `setPan`, `setMute`, `setSolo`, `removeTrack` per track (done, #96) |
 | Tala sounds | the player schedules them from fixture groups | a hands kit on a track |
 | Beat grid | inside `PlayerPresenter` | `TalaGrid`, read by any track (already needed for step 2) |
 | Thambura | one presenter, one localStorage key, one `?s=` link | one per track, with an id |

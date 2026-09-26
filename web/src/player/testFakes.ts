@@ -22,7 +22,11 @@ export class FakeAudio implements AudioOut {
   played: { url: string; bus: Bus; when: number; opts?: PlayOptions }[] = [];
   cancelled: Bus[] = [];
   released: { bus: Bus; seconds: number }[] = [];
-  damped: { group: string; when: number; seconds: number }[] = [];
+  damped: { track: Bus; group: string; when: number; seconds: number }[] = [];
+  pans: Partial<Record<Bus, number>> = {};
+  muted: Partial<Record<Bus, boolean>> = {};
+  soloed: Partial<Record<Bus, boolean>> = {};
+  removed: Bus[] = [];
   tones: FakeTone[] = [];
   get heardNow() {
     return this.now - this.latency;
@@ -50,8 +54,8 @@ export class FakeAudio implements AudioOut {
   release(bus: Bus, seconds: number) {
     this.released.push({ bus, seconds });
   }
-  damp(group: string, when: number, seconds: number) {
-    this.damped.push({ group, when, seconds });
+  damp(track: Bus, group: string, when: number, seconds: number) {
+    this.damped.push({ track, group, when, seconds });
   }
   startTone(bus: Bus, spec: ToneSpec): ToneHandle {
     const tone: FakeTone = { bus, spec: { ...spec }, stopped: false };
@@ -65,6 +69,21 @@ export class FakeAudio implements AudioOut {
   }
   setBusVolume(bus: Bus, p: number) {
     this.busVolume[bus] = p;
+  }
+  setLevel(bus: Bus, p: number) {
+    this.busVolume[bus] = p;
+  }
+  setPan(bus: Bus, pan: number) {
+    this.pans[bus] = pan;
+  }
+  setMute(bus: Bus, muted: boolean) {
+    this.muted[bus] = muted;
+  }
+  setSolo(bus: Bus, soloed: boolean) {
+    this.soloed[bus] = soloed;
+  }
+  removeTrack(bus: Bus) {
+    this.removed.push(bus);
   }
 }
 

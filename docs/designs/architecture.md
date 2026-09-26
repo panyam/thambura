@@ -56,7 +56,7 @@ flowchart LR
   spec["reedSpectrum"] -- "startTone" --> osc["OscillatorNode<br/>PeriodicWave"]
   src --> bus
   osc --> bus
-  bus["bus: tala / drone / percussion"] --> master["master gain"] --> lim["limiter"] --> out["speakers"]
+  bus["track: level → mute/solo → pan<br/>tala / drone / percussion / …"] --> master["master gain"] --> lim["limiter"] --> out["speakers"]
 ```
 
 **Recorded samples.** The tala's claps and metronome ticks are short WAV
@@ -116,10 +116,13 @@ playing that wave at its own level and pan until it is stopped. A second,
 much slower oscillator (0.12-0.2 Hz) moves each tone's gain up and down by
 6%, which is our fairly rough stand-in for the bellows.
 
-**The mixer.** Every note lands on a bus: `tala`, `drone` or `percussion`
-(reserved for the mridangam). Each bus has its own volume, squared so the
-slider feels even. The buses sum into a master gain and then a limiter at
--1 dB, so the tala, four ringing strings and a mridangam together can't clip.
+**The mixer.** Every note lands on a track, named by an id and made the
+first time the id is used (#96). Today there are three, `tala`, `drone` and
+`percussion` (the mridangam). A track is a level, squared so the slider
+feels even, then an on/off gain for mute and solo, then a pan. Choke groups
+belong to a track, so two drums never cut each other off. The tracks sum
+into a master gain and then a limiter at -1 dB, so the tala, four ringing
+strings and a mridangam together can't clip.
 
 ## How timing works
 

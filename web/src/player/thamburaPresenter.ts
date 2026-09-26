@@ -520,7 +520,7 @@ export class ThamburaPresenter {
 
   private setMutes(muted: ThamburaState["muted"]): void {
     muted.forEach((m, i) => {
-      if (m && !this.state.muted[i]) this.deps.audio.damp(`thambura/string${i}`, this.deps.audio.now, MUTE_FADE);
+      if (m && !this.state.muted[i]) this.deps.audio.damp("drone", `thambura/string${i}`, this.deps.audio.now, MUTE_FADE);
     });
     this.update({ muted });
   }
@@ -532,7 +532,7 @@ export class ThamburaPresenter {
   }
 
   private damp(e: DampEvent): void {
-    this.deps.audio.damp(`thambura/string${e.string}`, e.time, DAMP_FADE);
+    this.deps.audio.damp("drone", `thambura/string${e.string}`, e.time, DAMP_FADE);
   }
 
   /** Lights each string once its pluck is heard; runs while there is anything to show. */
