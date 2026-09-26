@@ -94,6 +94,18 @@ func Build(outDir string) error {
 	return os.WriteFile(filepath.Join(outDir, ".nojekyll"), nil, 0o644)
 }
 
+// serveAt serves h under prefix, as Pages does, so the site's links work
+// while writing; anything outside it is sent to the prefix.
+func serveAt(prefix string, h http.Handler) http.Handler {
+	if prefix == "" {
+		return h
+	}
+	mux := http.NewServeMux()
+	mux.Handle(prefix+"/", http.StripPrefix(prefix, h))
+	mux.Handle("/", http.RedirectHandler(prefix+"/", http.StatusFound))
+	return mux
+}
+
 // templateErrors fails a build that s3gen finished without complaint. When a
 // page's template fails, s3gen logs it and writes the error into the page as
 // "... Template error: ...", so the only sign is in the output.
@@ -133,6 +145,6 @@ func main() {
 	site := NewSite(*out)
 	site.Rebuild(nil)
 	site.Watch()
-	log.Printf("Serving the docs on %s", *addr)
-	log.Fatal(http.ListenAndServe(*addr, site))
+	log.Printf("Serving the docs on %s%s/", *addr, PathPrefix)
+	log.Fatal(http.ListenAndServe(*addr, serveAt(PathPrefix, site)))
 }
