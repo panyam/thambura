@@ -54,9 +54,16 @@ On a wide screen, put the tala and the thambura side by side, the drone in
 already take `{ state, actions }`, so this is a layout wrapper plus a rule
 about which presentation to use at which width.
 
-The catch is that `open` currently lives in the thambura's presenter and is
-saved with its settings. Docked, "open" stops meaning anything. That's the
-first real seam: presentation state belongs to whatever owns the layout.
+The catch was that `open` lived in the thambura's presenter and was saved
+with its settings. Docked, "open" stops meaning anything. That's the first
+real seam: presentation state belongs to whatever owns the layout. #88 moved
+`open` to the drawer.
+
+Tried as `/labs/side-by-side` (#90), with one change: on a phone it stacks
+the thambura under the tala instead of keeping the drawer, since stacking is
+pure CSS and one presentation. That puts the thambura about 1,280 px down
+the page on a 390-wide phone, which is the thing to judge before this
+layout goes anywhere near `/`.
 
 ### C. Let the person choose, and remember it
 

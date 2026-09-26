@@ -6,7 +6,8 @@ import type { ThamburaSettings } from "../engine/shruthi";
 import type { AudioEngine } from "./audio";
 import { isThamburaShortcut } from "./shortcuts";
 import { ThamburaBar } from "./ThamburaBar";
-import { ThamburaDrawer } from "./thamburaDrawer";
+import { linkShowsBar, ThamburaDrawer } from "./thamburaDrawer";
+import { ThamburaDocked } from "./ThamburaPanel";
 import { localStore } from "./storage";
 import { ThamburaPresenter, type ThamburaLink, type ThamburaState } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
@@ -19,27 +20,37 @@ const LINK_PARAM = "s";
 const LINK_SETTLE_MS = 400;
 
 /**
- * Mounts the thambura bar on `el` and wires the page's floating thambura
- * controls: `play` starts and stops it from anywhere on the page, as does the
+ * Mounts the thambura on `el`, in a drawer or docked (`presentation`). In a
+ * drawer it also wires the page's floating thambura controls: `play` starts and stops it from anywhere on the page, as does the
  * T key, and `toggle` opens and closes the bar. The bar's open state is the
  * drawer's; the presenter never sees it, so the link the presenter writes
  * gets the drawer's flag added here, on its way to the address bar. It plays
  * through the page's shared AudioEngine, on the drone bus. `onPlaying` hears
  * whenever it starts or stops.
  */
-export function createThamburaIsland(
-  el: HTMLElement,
-  eventBus: EventBus,
-  audio: AudioEngine,
-  controls: { root: HTMLElement | null; toggle: HTMLElement | null; play: HTMLElement | null },
-  onPlaying?: (playing: boolean) => void,
+/** How the thambura is shown: in a drawer with the page's floating controls, or docked in its slot. */
+export type ThamburaPresentation = "drawer" | "panel";
+
+export interface ThamburaIslandOptions {
+  presentation: ThamburaPresentation;
+  /** The page's floating play and toggle buttons, for the drawer. A docked thambura has none. */
+  controls?: { root: HTMLElement | null; toggle: HTMLElement | null; play: HTMLElement | null };
+  /** Hears whenever it starts or stops. */
+  onPlaying?: (playing: boolean) => void;
   /** Hears every settings change, so the mridangam can tune to the same Sa. */
-  onSettings?: (settings: ThamburaSettings) => void,
-): SolidIsland {
+  onSettings?: (settings: ThamburaSettings) => void;
+}
+
+export function createThamburaIsland(el: HTMLElement, eventBus: EventBus, audio: AudioEngine, opts: ThamburaIslandOptions): SolidIsland {
+  const { onPlaying, onSettings } = opts;
+  const controls = opts.controls ?? { root: null, toggle: null, play: null };
   const { toggle, play } = controls;
   const address = addressBarLink();
-  const drawer = new ThamburaDrawer({ store: localStore("drawer"), legacy: localStore("drone"), link: address.read() });
-  const [open, setOpen] = createSignal(drawer.open);
+  // Only a drawer has an open state; a docked thambura is always showing.
+  const drawer =
+    opts.presentation === "drawer" ? new ThamburaDrawer({ store: localStore("drawer"), legacy: localStore("drone"), link: address.read() }) : null;
+  const barFlag = () => linkShowsBar(opts.presentation, drawer);
+  const [open, setOpen] = createSignal(drawer?.open ?? true);
   const presenter = new ThamburaPresenter({
     audio,
     ticker: workerTicker(),
@@ -50,7 +61,7 @@ export function createThamburaIsland(
     defer: (cb, ms) => setTimeout(cb, ms),
     store: localStore("drone"),
     presets: localStore("presets"),
-    link: { read: address.read, write: (link) => address.write(withBarOpen(link, drawer.open)) },
+    link: { read: address.read, write: (link) => address.write(withBarOpen(link, barFlag())) },
   });
   const [state, setState] = signalView(presenter.state);
   presenter.attach({
@@ -61,13 +72,15 @@ export function createThamburaIsland(
       onSettings?.(s.settings);
     },
   });
-  drawer.onChange((o) => {
-    setOpen(o);
-    reflectOpen(controls, o);
-    address.write(withBarOpen(presenter.shareLink(), o));
-  });
-  reflectOpen(controls, drawer.open);
-  toggle?.addEventListener("click", () => drawer.toggle());
+  if (drawer) {
+    drawer.onChange((o) => {
+      setOpen(o);
+      reflectOpen(controls, o);
+      address.write(withBarOpen(presenter.shareLink(), o));
+    });
+    reflectOpen(controls, drawer.open);
+    toggle?.addEventListener("click", () => drawer.toggle());
+  }
   play?.addEventListener("click", () => void presenter.toggle());
   document.addEventListener("keydown", (e) => {
     if (!isThamburaShortcut(e as KeyboardEvent & { target: HTMLElement | null })) return;
@@ -77,21 +90,26 @@ export function createThamburaIsland(
 
   // Leave room at the bottom of the page for the open bar.
   const onHeight = (px: number) => document.documentElement.style.setProperty("--thambura-bar-height", `${px}px`);
+  const shareUrl = (link: string) => linkUrl(withBarOpen(link, barFlag()));
+  const analyser = () => audio.analyser("drone");
 
   return new SolidIsland(
     "thambura",
     el,
-    () => (
-      <ThamburaBar
-        state={state}
-        actions={presenter}
-        open={open}
-        onHide={() => drawer.setOpen(false)}
-        onHeight={onHeight}
-        shareUrl={(link) => linkUrl(withBarOpen(link, drawer.open))}
-        analyser={() => audio.analyser("drone")}
-      />
-    ),
+    () =>
+      drawer ? (
+        <ThamburaBar
+          state={state}
+          actions={presenter}
+          open={open}
+          onHide={() => drawer.setOpen(false)}
+          onHeight={onHeight}
+          shareUrl={shareUrl}
+          analyser={analyser}
+        />
+      ) : (
+        <ThamburaDocked state={state} actions={presenter} shareUrl={shareUrl} analyser={analyser} />
+      ),
     eventBus,
   );
 }

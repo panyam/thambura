@@ -1,5 +1,5 @@
 import type { EventBus, LCMComponent } from "@panyam/tsappkit";
-import { tunedTonicHz } from "./engine/shruthi";
+import { tunedTonicHz, type ThamburaSettings } from "./engine/shruthi";
 import { IslandPage } from "./page/islandPage";
 import type { Registry } from "./page/mount";
 import type { PageSpec } from "./page/spec";
@@ -33,23 +33,25 @@ const REGISTRY: Registry<PageContext, HTMLElement, LCMComponent, EventBus> = {
       kit: ctx.tracks.get("kit-1"),
       onPlaying: (on) => ctx.awake.set("tala", on),
     }),
-  // The drawer slot holds the bar's mount and the floating controls
-  // (layouts/Drawer.html).
-  thambura: (el, _island, ctx, bus) => {
+  // In a drawer (layouts/Drawer.html) the slot holds the bar's mount and
+  // the floating controls; docked (layouts/SideBySide.html) the thambura
+  // mounts straight into its slot.
+  thambura: (el, island, ctx, bus) => {
+    const onPlaying = (on: boolean) => ctx.awake.set("thambura", on);
+    const onSettings = (settings: ThamburaSettings) => ctx.tonic.set(tunedTonicHz(settings));
+    if (island.presentation !== "drawer") return createThamburaIsland(el, bus, ctx.audio, { presentation: "panel", onPlaying, onSettings });
     const mount = el.querySelector<HTMLElement>("#thambura");
     if (!mount) throw new Error("the drawer slot has no #thambura");
-    return createThamburaIsland(
-      mount,
-      bus,
-      ctx.audio,
-      {
+    return createThamburaIsland(mount, bus, ctx.audio, {
+      presentation: "drawer",
+      controls: {
         root: el.querySelector<HTMLElement>("#thambura-controls"),
         toggle: el.querySelector<HTMLElement>("#thambura-toggle"),
         play: el.querySelector<HTMLElement>("#thambura-play"),
       },
-      (on) => ctx.awake.set("thambura", on),
-      (settings) => ctx.tonic.set(tunedTonicHz(settings)),
-    );
+      onPlaying,
+      onSettings,
+    });
   },
 };
 

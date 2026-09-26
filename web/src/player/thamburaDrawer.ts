@@ -68,6 +68,16 @@ export class ThamburaDrawer {
   }
 }
 
+/**
+ * Whether a link written from a thambura shown as `presentation` should say
+ * the bar is open. In a drawer it's the drawer's state. A docked thambura is
+ * always in view, so its links always say open: whoever opens one on the
+ * drawer page sees the sound they were sent.
+ */
+export function linkShowsBar(presentation: string, drawer: ThamburaDrawer | null): boolean {
+  return presentation === "drawer" ? (drawer?.open ?? false) : true;
+}
+
 function loadSafely(store: ThamburaStore | undefined): unknown {
   try {
     return store?.load();

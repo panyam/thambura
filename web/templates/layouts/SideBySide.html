@@ -1,0 +1,31 @@
+<!-- thambura/web/templates/layouts/SideBySide.html -->
+<!--
+A labs layout: the tala (slot "main") and the thambura (slot "side") in two
+columns from lg up, one under the other below that. The thambura is docked as
+a panel, so there's no drawer and no floating controls. Which island goes in
+each slot comes from the page spec (internal/page), written by PageScripts.
+
+Pages include this file, define "PageContent" (shown under the two columns)
+and render "BasePage". The page must carry .Lab for the banner.
+-->
+{{# include "../BasePage.html" #}}
+{{# include "../page/Islands.html" #}}
+{{# include "./LabsBanner.html" #}}
+
+{{ define "BodySection" }}
+<main class="flex-1 overflow-auto">
+    {{ template "LabsBanner" . }}
+    <div class="mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 sm:py-10 lg:grid-cols-2 lg:items-start">
+        <div data-slot="main" class="min-w-0">
+            <noscript>Thambura needs JavaScript to play.</noscript>
+        </div>
+        <div data-slot="side" class="min-w-0"></div>
+    </div>
+{{ template "PageContent" . }}
+</main>
+{{ end }}
+
+{{ define "PageScripts" }}
+{{ template "PageSpecScript" .Spec }}
+<script type="module" src="/static/app.js"></script>
+{{ end }}

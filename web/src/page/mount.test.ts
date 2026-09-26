@@ -25,7 +25,7 @@ describe("mountIslands", () => {
       thambura: (el, island) => (calls.push([el, island.presentation]), "thambura-component"),
     };
     const logs: string[] = [];
-    const out = mountIslands(spec, registry, (slot) => (slot === "missing" ? null : { slot }), ctx, bus, (m) => logs.push(m));
+    const out = mountIslands(spec, registry, (slot) => (slot === "missing" ? null : { slot }), () => ctx, bus, (m) => logs.push(m));
     expect(out).toEqual(["tala-component", "thambura-component"]);
     expect(calls).toEqual([
       [{ slot: "main" }, spec.islands[0], ctx, bus],
@@ -48,11 +48,20 @@ describe("mountIslands", () => {
         thambura: () => "ok",
       },
       (slot) => ({ slot }),
-      ctx,
+      () => ctx,
       bus,
       (m) => logs.push(m),
     );
     expect(out).toEqual(["ok", "ok"]);
     expect(logs.some((m) => m.includes("boom"))).toBe(true);
+  });
+
+  it("builds the page's context once, and only when there's an island to mount", () => {
+    let built = 0;
+    const context = () => (built++, ctx);
+    mountIslands({ layout: "index", islands: [], instruments: [] }, {}, () => ({ slot: "" }), context, bus, () => {});
+    expect(built).toBe(0);
+    mountIslands(spec, { tala: () => "a", thambura: () => "b" }, (slot) => ({ slot }), context, bus, () => {});
+    expect(built).toBe(1);
   });
 });

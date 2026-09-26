@@ -11,7 +11,10 @@ export type Registry<Ctx, El, C, B> = Record<string, IslandFactory<Ctx, El, C, B
 
 /**
  * Mounts every island in `spec` into the element `findSlot` gives for its
- * slot, and returns what the factories built, in spec order. An island the
+ * slot, and returns what the factories built, in spec order. `context` builds
+ * the page's shared services; it's called once, before the first island
+ * mounts, and not at all on a page with nothing to mount, so a page without
+ * islands doesn't start audio. An island the
  * registry doesn't know, a slot that isn't on the page, or a factory that
  * throws is reported through `log` and skipped, so one bad entry doesn't take
  * the rest of the page down with it.
@@ -23,11 +26,12 @@ export function mountIslands<Ctx, El, C, B>(
   spec: PageSpec,
   registry: Registry<Ctx, El, C, B>,
   findSlot: (slot: string) => El | null,
-  ctx: Ctx,
+  context: () => Ctx,
   bus: B,
   log: (message: string) => void,
 ): C[] {
   const out: C[] = [];
+  let ctx: Ctx | undefined;
   for (const island of spec.islands) {
     const factory = Object.hasOwn(registry, island.name) ? registry[island.name] : undefined;
     if (!factory) {
@@ -40,6 +44,7 @@ export function mountIslands<Ctx, El, C, B>(
       continue;
     }
     try {
+      ctx ??= context();
       out.push(factory(el, island, ctx, bus));
     } catch (err) {
       log(`page spec: island "${island.name}" failed to mount: ${err instanceof Error ? err.message : String(err)}`);

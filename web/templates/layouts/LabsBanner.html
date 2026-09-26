@@ -1,0 +1,18 @@
+<!-- thambura/web/templates/layouts/LabsBanner.html -->
+<!--
+The strip at the top of every labs page (internal/web/labs.go): says the page
+is an experiment, that it shares the instruments and their settings with the
+usual page, and links back. Render it with the page as dot; it reads .Lab.
+-->
+{{ define "LabsBanner" }}
+<div data-labs-banner class="border-b border-amber-200 bg-amber-50 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200 print:hidden">
+    <div class="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2">
+        <span><span class="font-semibold">Experiment:</span> {{ .Lab.Title }}.
+            Your tala and thambura settings are the same as on the usual page.</span>
+        <span class="flex gap-4">
+            <a href="/" class="font-medium underline hover:no-underline">Back to the usual page</a>
+            <a href="/labs/" class="underline hover:no-underline">Other experiments</a>
+        </span>
+    </div>
+</div>
+{{ end }}
