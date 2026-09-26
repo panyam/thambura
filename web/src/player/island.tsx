@@ -18,10 +18,9 @@ export interface PlayerIslandDeps {
   /** The tala's sound and image groups, from the page spec's config. */
   fixturesUrl?: string;
   /**
-   * The struck instrument the tala plays its pattern on, from the page's
-   * tracks. The page loads it; its pad shows once a kit has loaded.
-   * TODO(instruments): the tala stops knowing about kits once stroke
-   * scheduling moves into a kit track.
+   * A struck instrument from the page's tracks, for the view only: its panel
+   * and stroke lane sit with the tala. It plays along on the page's clock by
+   * itself; the tala doesn't know it's there.
    */
   kit?: KitPresenter;
   /** Hears whenever the tala starts or stops. */
@@ -35,11 +34,10 @@ export interface PlayerIslandDeps {
 export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: PlayerIslandDeps): SolidIsland {
   const { audio, onPlaying } = deps;
   // A page with no kit still gets an idle one, so the view has something to show (nothing).
-  const drum = deps.kit ?? newKitPresenter(audio);
+  const drum = deps.kit ?? newKitPresenter(audio, "kit-0");
 
   const presenter = new PlayerPresenter({
     audio,
-    strokes: drum,
     clock: deps.clock,
     frames: {
       request: (cb) => requestAnimationFrame(cb),
@@ -73,10 +71,17 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: Pl
   );
 }
 
-/** A kit presenter on the page's audio, with nothing loaded. */
-export function newKitPresenter(audio: AudioEngine): KitPresenter {
+/**
+ * A kit presenter on the page's audio, with nothing loaded, playing on track
+ * `track`. Given the page's clock, it plays along with the tala.
+ */
+export function newKitPresenter(audio: AudioEngine, track: string, clock?: Clock): KitPresenter {
   return new KitPresenter({
     audio,
+    track,
+    clock,
+    store: localStore("kit"),
+    legacyStore: localStore("player"),
     fetchJson,
     frames: { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) },
   });

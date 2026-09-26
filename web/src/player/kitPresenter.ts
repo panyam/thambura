@@ -9,8 +9,17 @@ import {
   type Kit,
   type Zone,
 } from "../engine/kit";
+import { arrangementFor, patternForCycle, type Arrangement, type Variety } from "../engine/arrangement";
+import { generatedPattern } from "../engine/generated";
+import { laneFor, type Lane } from "../engine/lane";
+import { patternFor, type Pattern } from "../engine/patterns";
+import { ZERO } from "../engine/ratio";
 import { DEFAULT_THAMBURA, tunedTonicHz, type ThamburaSettings } from "../engine/shruthi";
-import type { AudioOut } from "./audio";
+import { StrokeSequencer, type StrokeEvent } from "../engine/strokeSequencer";
+import { TalaGrid } from "../engine/talaGrid";
+import type { AudioOut, TrackId } from "./audio";
+import type { Clock, TalaTiming } from "./pageContext";
+import type { Store } from "./storage";
 
 /** What the pad shows for one stroke. */
 export interface PadStroke {
@@ -44,10 +53,24 @@ export interface KitState {
   levels: Record<string, number>;
   /** Whether it plays along with the tala. The pad plays either way. */
   enabled: boolean;
-  /** The pattern the tala is having it play, or null for none. */
+  /** The pattern it plays with the tala, or null for none. */
   pattern: string | null;
   /** The stroke heard a moment ago, for the pad's glow. */
   lit: string | null;
+  /**
+   * What it is playing this cycle, for the stroke lane, and which of its
+   * strokes is sounding. Null with no tala or no pattern.
+   */
+  lane: Lane | null;
+  strokeIndex: number | null;
+  /** How often it swaps in a variation. */
+  variety: Variety;
+  /** Whether the tala has any alternates to swap in. */
+  hasVariations: boolean;
+  /** Whether the tala has an ending written for it. */
+  hasKorvai: boolean;
+  /** True once a korvai is asked for, until the cycle that plays it is heard. */
+  korvaiQueued: boolean;
 }
 
 export interface KitView {
@@ -56,6 +79,20 @@ export interface KitView {
 
 export interface KitDeps {
   audio: AudioOut;
+  /** The audio track it plays on, which is also its id on the page (`kit-1`). */
+  track: TrackId;
+  /**
+   * The page's clock. With it, the kit plays along with the tala on the same
+   * transport and follows the tala's cycle; without it, it's only a pad.
+   */
+  clock?: Clock;
+  /** Where its choices (Variety) are kept between visits. */
+  store?: Store;
+  /**
+   * Where the tala kept Variety before the kit had a store of its own. Read
+   * once, when the kit's own store has none.
+   */
+  legacyStore?: Store;
   fetchJson(url: string): Promise<unknown>;
   /** requestAnimationFrame, for the pad glow. Injectable for tests. */
   frames: { request(cb: () => void): number; cancel(id: number): void };
@@ -73,9 +110,11 @@ const GLOW = 0.25;
 const SOFTER = 0.12;
 
 /**
- * One struck instrument: loads a kit, tunes it to the thambura's tonic, and
- * plays a stroke at a time on the percussion bus. No sequencer yet, so this is
- * the pad a kit gets checked with by ear.
+ * One struck instrument, as a track on the page: loads a kit, tunes it to the
+ * thambura's tonic, and plays on its own audio track. On the page's clock it
+ * plays along with the tala, choosing a pattern for the tala's cycle each
+ * cycle (with variations and a korvai), and starts, stops and resumes with
+ * it. Its pad plays a stroke at a time, which is how a kit gets checked by ear.
  *
  * It knows nothing about any particular instrument. A closed stroke chokes the
  * ring of the last open stroke in its own zone, as a hand landing on a head
@@ -90,12 +129,25 @@ export class KitPresenter {
   private readonly rng: () => number;
   // Which take each stroke plays next, so repeats go round rather than repeat.
   private readonly nextTake = new Map<string, number>();
-  private cues: { time: number; id: string }[] = [];
+  // Strokes waiting to be heard: the pad glows for each, and the lane lights
+  // those that came from the pattern.
+  private cues: { time: number; id: string; index?: number; cycle?: number }[] = [];
+  // The tala's cycle, and what the kit plays over it.
+  private timing: TalaTiming | null = null;
+  private pattern: Pattern | null = null;
+  private arrangement: Arrangement | null = null;
+  // Which cycle the korvai was given, so the button clears when it is heard.
+  private korvaiAt: number | null = null;
+  // The lane for each cycle the sequencer has laid out but the ear hasn't
+  // reached yet, since a variation changes what the lane should show.
+  private readonly lanes = new Map<number, Lane>();
   private litUntil = 0;
   private frameId: number | null = null;
 
   constructor(private readonly deps: KitDeps) {
     this.rng = deps.rng ?? Math.random;
+    const saved = loadSafely(deps.store);
+    const legacy = isVariety(saved.variety) ? undefined : loadSafely(deps.legacyStore).variety;
     this.state = {
       status: "off",
       kitName: "",
@@ -112,8 +164,16 @@ export class KitPresenter {
       enabled: true,
       pattern: null,
       lit: null,
+      lane: null,
+      strokeIndex: null,
+      variety: isVariety(saved.variety) ? saved.variety : isVariety(legacy) ? legacy : "some",
+      hasVariations: false,
+      hasKorvai: false,
+      korvaiQueued: false,
     };
-    deps.audio.setBusVolume("percussion", DEFAULT_KIT_VOLUME);
+    deps.audio.setBusVolume(deps.track, DEFAULT_KIT_VOLUME);
+    if (isVariety(legacy)) this.save();
+    if (deps.clock) this.playAlong(deps.clock);
   }
 
   attach(view: KitView): void {
@@ -169,7 +229,7 @@ export class KitPresenter {
 
   setVolume(percent: number): void {
     const volume = clamp(percent, 0, 100, DEFAULT_KIT_VOLUME);
-    this.deps.audio.setBusVolume("percussion", volume);
+    this.deps.audio.setLevel(this.deps.track, volume);
     this.update({ volume });
   }
 
@@ -193,30 +253,30 @@ export class KitPresenter {
    * instrument is switched off.
    */
   playAt(id: string, when: number, gain = 1): boolean {
-    if (!this.kit || !this.state.enabled) return false;
-    const sound = strokeSound(this.kit, id, this.tonic, (takes) => this.take(id, takes), this.baseUrl);
-    if (!sound) return false;
-    this.deps.audio.play(sound.url, "percussion", when, {
-      detune: sound.detune,
-      gain: gain * (this.state.levels[sound.zone] ?? 1) * (1 - SOFTER * this.rng()),
-      choke: `kit/${this.state.kitName}/${sound.zone}`,
-      chokeFade: ZONE_CHOKE_FADE,
-      ...(sound.bend ? { bend: sound.bend } : {}),
-    });
-    this.cues.push({ time: when, id });
-    this.runFrames();
-    return true;
+    return this.book(id, when, gain);
   }
 
   /** Turns the instrument off without unloading it, as a mixer's mute does. */
   setEnabled(enabled: boolean): void {
-    if (!enabled) this.deps.audio.cancel("percussion");
+    if (!enabled) this.deps.audio.cancel(this.deps.track);
     this.update({ enabled });
   }
 
-  /** What the tala is having it play, for the panel to name. Null for nothing. */
-  setPattern(name: string | null): void {
-    if (name !== this.state.pattern) this.update({ pattern: name });
+  /**
+   * Plays the ending at the next cycle. A korvai resolves on the sam after
+   * it, so it can start at any cycle boundary; it plays once and the
+   * accompaniment carries on.
+   */
+  askForKorvai(): void {
+    if (!this.arrangement?.korvai || this.state.korvaiQueued) return;
+    this.update({ korvaiQueued: true });
+  }
+
+  /** How often a variation is swapped in, from the next cycle on. */
+  setVariety(variety: Variety): void {
+    if (!isVariety(variety) || variety === this.state.variety) return;
+    this.update({ variety });
+    this.save();
   }
 
   /** The stroke a key plays, or null. */
@@ -225,6 +285,97 @@ export class KitPresenter {
   }
 
   // ---- internals ---------------------------------------------------------
+
+  /**
+   * Joins the page's transport, so it starts, stops and resumes with the
+   * tala, and follows the tala's cycle to choose what to play.
+   */
+  private playAlong(clock: Clock): void {
+    const seq = new StrokeSequencer(
+      (cycle) => this.cycleSource(cycle),
+      clock.tempo,
+      () => this.timing?.resumesAt ?? ZERO,
+    );
+    clock.transport.add<StrokeEvent>(
+      {
+        start: (at) => seq.start(at),
+        stop: (now) => {
+          seq.stop(now);
+          this.halt();
+        },
+        pull: (now, until) => seq.pull(now, until),
+      },
+      (e) => this.book(e.stroke, e.time, e.gain, { index: e.index, cycle: e.cycle }),
+    );
+    clock.tala.follow((timing) => this.setTiming(timing));
+  }
+
+  /** A new cycle from the tala: a written pattern where there is one, otherwise a skeleton from its beats. */
+  private setTiming(timing: TalaTiming): void {
+    this.timing = timing;
+    const { grid, nadai } = timing;
+    this.pattern = patternFor(grid, nadai) ?? generatedPattern(grid.beats, grid.shape, grid.patternCounts);
+    this.arrangement = arrangementFor(grid, nadai, this.pattern);
+    this.lanes.clear();
+    this.korvaiAt = null;
+    this.update({
+      pattern: this.pattern?.name ?? null,
+      lane: laneFor(this.pattern),
+      strokeIndex: null,
+      hasVariations: (this.arrangement?.variations.length ?? 0) > 0,
+      hasKorvai: this.arrangement?.korvai != null,
+      korvaiQueued: false,
+    });
+  }
+
+  /**
+   * What the coming cycle plays. The arrangement decides, and the lane for
+   * that cycle is kept until a stroke from it reaches the speakers.
+   */
+  private cycleSource(cycle: number) {
+    const grid = this.timing?.grid ?? EMPTY_GRID;
+    if (!this.arrangement) return { grid, pattern: this.pattern };
+    // A korvai claims the next cycle to be laid out, once.
+    const korvai = this.state.korvaiQueued && this.korvaiAt === null ? this.arrangement.korvai : null;
+    if (korvai) this.korvaiAt = cycle;
+    const pattern = korvai ?? patternForCycle(this.arrangement, cycle, this.state.variety, this.rng);
+    const lane = laneFor(pattern);
+    if (lane) this.lanes.set(cycle, lane);
+    return { grid, pattern };
+  }
+
+  /** The tala stopped: take back what hasn't sounded, and any korvai still to come. */
+  private halt(): void {
+    this.deps.audio.cancel(this.deps.track);
+    this.cues = this.cues.filter((c) => c.index === undefined);
+    this.korvaiAt = null;
+    if (this.state.korvaiQueued) this.update({ korvaiQueued: false });
+  }
+
+  /** Books a stroke, and queues it for the pad's glow and, from a pattern, the lane. */
+  private book(id: string, when: number, gain = 1, from?: { index: number; cycle: number }): boolean {
+    if (!this.kit || !this.state.enabled) return false;
+    const sound = strokeSound(this.kit, id, this.tonic, (takes) => this.take(id, takes), this.baseUrl);
+    if (!sound) return false;
+    this.deps.audio.play(sound.url, this.deps.track, when, {
+      detune: sound.detune,
+      gain: gain * (this.state.levels[sound.zone] ?? 1) * (1 - SOFTER * this.rng()),
+      choke: `kit/${this.state.kitName}/${sound.zone}`,
+      chokeFade: ZONE_CHOKE_FADE,
+      ...(sound.bend ? { bend: sound.bend } : {}),
+    });
+    this.cues.push({ time: when, id, ...from });
+    this.runFrames();
+    return true;
+  }
+
+  private save(): void {
+    try {
+      this.deps.store?.save({ variety: this.state.variety });
+    } catch {
+      // Storage can be full or blocked; the choice still holds for this visit.
+    }
+  }
 
   /** Which pack is nearest, how far it has to move, and which strokes it has. */
   private tuning(): Partial<KitState> {
@@ -261,7 +412,7 @@ export class KitPresenter {
     return takes[i % takes.length];
   }
 
-  /** Lights each pad once its stroke is heard, not when it was scheduled. */
+  /** Lights each pad, and the lane, once its stroke is heard, not when it was scheduled. */
   private runFrames(): void {
     if (this.frameId !== null) return;
     const frame = () => {
@@ -271,11 +422,26 @@ export class KitPresenter {
         const cue = this.cues.shift()!;
         this.litUntil = cue.time + GLOW;
         if (this.state.lit !== cue.id) this.update({ lit: cue.id });
+        if (cue.index !== undefined && cue.cycle !== undefined) this.heardStroke(cue.index, cue.cycle);
       }
       if (this.state.lit && heard >= this.litUntil) this.update({ lit: null });
       if (this.cues.length > 0 || this.state.lit) this.frameId = this.deps.frames.request(frame);
     };
     this.frameId = this.deps.frames.request(frame);
+  }
+
+  /** A pattern's stroke reached the speakers: the lane follows the ear. */
+  private heardStroke(index: number, cycle: number): void {
+    // A cycle's pattern shows when it sounds.
+    const lane = this.lanes.get(cycle);
+    if (lane && lane !== this.state.lane) this.update({ lane });
+    // The ending is under way, so the button stops saying it is coming.
+    if (this.korvaiAt !== null && cycle >= this.korvaiAt) {
+      this.korvaiAt = null;
+      this.update({ korvaiQueued: false });
+    }
+    for (const c of this.lanes.keys()) if (c < cycle) this.lanes.delete(c);
+    if (index !== this.state.strokeIndex) this.update({ strokeIndex: index });
   }
 
   private update(patch: Partial<KitState>): void {
@@ -287,4 +453,20 @@ export class KitPresenter {
 function clamp(value: number, lo: number, hi: number, fallback: number): number {
   if (!Number.isFinite(value)) return fallback;
   return Math.min(hi, Math.max(lo, value));
+}
+
+const EMPTY_GRID = new TalaGrid([]);
+
+function loadSafely(store: Store | undefined): Record<string, unknown> {
+  try {
+    const saved = store?.load();
+    return typeof saved === "object" && saved !== null ? (saved as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Whether a saved value is one of the variety settings. */
+function isVariety(value: unknown): value is Variety {
+  return value === "off" || value === "some" || value === "lots";
 }

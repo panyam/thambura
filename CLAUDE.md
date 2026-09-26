@@ -224,8 +224,8 @@ unit-tested:
   `Bus` is the old name for it), made the first time its id is used: a level,
   an on/off gain that mute and solo set, then a pan, into a master gain, a
   limiter and the speakers. `setLevel`/`setBusVolume`, `setPan`, `setMute`,
-  `setSolo` and `removeTrack` work per track; the tala, thambura and
-  mridangam still use `tala`, `drone` and `percussion`. The track's pan node
+  `setSolo` and `removeTrack` work per track; the tala plays on `tala`, the
+  thambura on `drone`, and each kit on its page id (`kit-1`). The track's pan node
   is never set unless asked, so a probe wrapping the pan setter still sees
   only the strings. It holds a
   sample cache, which `addSamples` fills with rendered PCM as well as fetched
@@ -248,6 +248,9 @@ unit-tested:
   about 22 ms apart, every tick still gets its exact audio time.
 - `presenter.ts` (`PlayerPresenter`): owns the engine, plays on the page's
   clock (a required `clock` dep, so the tala and a kit can't end up on two),
+  and publishes its cycle there (`clock.tala`: the `TalaGrid`, the nadai, and
+  `resumesAt`, the count into the cycle it starts from, set on every rebuild
+  and every Start). It knows nothing about instruments, and
   turns
   steps into `audio.play` calls plus image cues, and shows each cue in a
   `requestAnimationFrame` loop once `heardNow` reaches it. The same loop
@@ -389,9 +392,11 @@ See NEXTSTEPS.md for the order.
   them.** `engine/kit.ts` reads a `kit.json`: zones (the groups of strokes
   that choke each other, a mridangam's two heads or a ghatam's one surface),
   packs (tunings, or one unpitched pack played as recorded), and strokes with
-  takes per pack. `player/kitPresenter.ts` loads one, follows the thambura's
-  Sa and plays a stroke; `player/StrokePad.tsx` draws whatever the manifest
-  declares. The mridangam is data, not code. `docs/designs/mridangam.md` is the plan
+  takes per pack. `player/kitPresenter.ts` is a kit as a track: it loads
+  one, follows the thambura's Sa, plays on its own audio track (`kit-1`,
+  numbered by kind in the spec's order) and, given the page's clock, plays
+  along with the tala (below); `player/StrokePad.tsx` draws whatever the
+  manifest declares. The mridangam is data, not code. `docs/designs/mridangam.md` is the plan
   (strokes and tuning, patterns per tala, packaging, views, build order).
 - **Kits aren't committed.** They're build products from the `thambura-data`
   repo: `make devkit` copies one into `web/static/Resources/Kits/<kit>/`,
@@ -413,7 +418,12 @@ See NEXTSTEPS.md for the order.
   beats and kalai into a cycle length and says which cycle, beat and repeat a
   count falls in. `engine/strokeSequencer.ts` is a `Sequencer<StrokeEvent>` on
   the tala's own `TempoMap`, queued a cycle at a time, so strokes and claps
-  are the same musical points and can't drift. `engine/patterns.ts` holds the
+  are the same musical points and can't drift. The kit adds it to the page's
+  transport itself (#97), wrapped so the transport's stop also cancels the
+  kit's track; the tala only publishes its cycle on `clock.tala` and never
+  sees the kit. After a stop the tala resumes from the first beat not heard,
+  and `resumesAt` makes the kit's first cycle start that far back, so sam
+  stays on sam. Every kit on the clock resumes the same way. `engine/patterns.ts` holds the
   types and `patternFor`, which matches a pattern to a tala on the cycle's
   shape and the nadai, so one Adi pattern serves Adi and a chatusra Thriputa
   and stretches with kalai. What's left for the mridangam is more patterns
@@ -441,14 +451,17 @@ See NEXTSTEPS.md for the order.
   cycle at the Variety setting's chance (off, 0.3, 0.7). The first cycle is
   always the main one. A `korvai` role is an ending: the Korvai button hands
   the next cycle to it, and it resolves on the sam after, which is how an
-  accompanist closes a section. The player asks per cycle through `StrokeSequencer`'s
+  accompanist closes a section. The kit asks per cycle through `StrokeSequencer`'s
   source, and keeps a lane per cycle so the lane changes when that cycle is
-  heard, not when it was booked.
+  heard, not when it was booked. Variety is saved per kit under
+  `thambura.kit`, taken once from `thambura.player`, where the tala kept it.
 - **The stroke lane** (`player/StrokeLane.tsx`) shows the cycle's aksharas
   and lights the stroke being heard. `Pattern.aksharas` says how many cells a
   cycle divides into (seven for a misra chaapu, which our tables call one
-  beat), `StrokeEvent.index` says which stroke sounded, and the player queues
+  beat), `StrokeEvent.index` says which stroke sounded, and the kit queues
   a cue per stroke so the lane lights from `heardNow` like the beat images.
+  `engine/lane.ts` lays a pattern out for it. It still sits under the beat
+  image and reads the kit's state; where a track's panel goes is #101.
 - **A kit can derive a stroke from another.** The gumki is `L.thom` with a
   bend (300 cents over 0.25 s, a guess), declared in the manifest rather than
   recorded, since a gumki is a bent thom and the dataset has no take for it.

@@ -22,12 +22,15 @@ Rather more of this exists already than the names suggest.
   zones, packs and strokes, not about mridangams. A ghatam or a tabla is a
   different `kit.json`, not different code.
 - **The mixer has tracks** (#96): a track id makes its own level, mute,
-  solo and pan on first use, into a master gain and a limiter. The three
-  used today are still named `tala`, `drone` and `percussion`.
+  solo and pan on first use, into a master gain and a limiter.
+- **A kit is a track** (#97). It plays on its own id, runs its own
+  `StrokeSequencer` on the page's transport, and follows the cycle the tala
+  publishes on `clock.tala`, including where it resumes after a stop. Ids
+  are `<kind>-<n>`, numbered in the order the page spec lists its
+  instruments, so the first kit is `kit-1`.
 
-What's in the way now is mostly naming rather than depth: the instruments
-still play on those three shared names rather than a track each, and the tala
-player schedules its own clap sounds instead of a track doing it.
+What's in the way now: the tala player still schedules its own clap sounds
+instead of a hands track doing it (#98).
 
 ## The shape
 
@@ -86,7 +89,7 @@ the same grid, with the sound moved out of the timer.
 | Buses | ~~three fixed names~~ | one per track, made on first use (done, #96) |
 | `AudioOut` | ~~`setBusVolume(bus, percent)`~~ | `setLevel`, `setPan`, `setMute`, `setSolo`, `removeTrack` per track (done, #96) |
 | Tala sounds | the player schedules them from fixture groups | a hands kit on a track |
-| Beat grid | inside `PlayerPresenter` | `TalaGrid`, read by any track (already needed for step 2) |
+| Beat grid | ~~inside `PlayerPresenter`~~ | `TalaGrid` on `clock.tala`, read by any track (done, #97) |
 | Thambura | one presenter, one localStorage key, one `?s=` link | one per track, with an id |
 | Views | a page with a player and a floating bar | a track list, each track with its own panel |
 

@@ -7,9 +7,8 @@
  *
  * Every instrument plays on a track of its own, made the first time its id
  * is used: a level, an on/off gain for mute and solo, and a pan, into the
- * master (see docs/designs/instruments.md). The tala plays on "tala", the thambura on
- * "drone" and the mridangam on "percussion" until each track gets an id of
- * its own (#97). Plucked and struck voices schedule samples ahead of time on
+ * master (see docs/designs/instruments.md). The tala plays on "tala", the
+ * thambura on "drone", and each kit on its id from the page (`kit-1`). Plucked and struck voices schedule samples ahead of time on
  * the audio clock (see Transport); the sruti drone runs continuous tones on
  * its track instead.
  */

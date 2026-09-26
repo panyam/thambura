@@ -1,7 +1,7 @@
 import { For, Show, type Accessor } from "solid-js";
 import { VARIETY_OPTIONS, type Variety } from "../engine/arrangement";
 import type { KitState } from "./kitPresenter";
-import type { Lane } from "./presenter";
+import type { Lane } from "../engine/lane";
 
 /**
  * What the mridangam is playing, a cycle at a time: one cell per akshara,

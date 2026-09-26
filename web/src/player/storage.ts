@@ -12,6 +12,8 @@ const KEYS = {
   presets: "thambura.presets",
   /** Whether the thambura's bar is open (thamburaDrawer.ts). */
   drawer: "thambura.drawer",
+  /** A kit's choices, such as Variety (kitPresenter.ts). Shared by every kit for now. */
+  kit: "thambura.kit",
 } as const;
 
 export type StoreName = keyof typeof KEYS;

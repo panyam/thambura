@@ -56,7 +56,7 @@ flowchart LR
   spec["reedSpectrum"] -- "startTone" --> osc["OscillatorNode<br/>PeriodicWave"]
   src --> bus
   osc --> bus
-  bus["track: level → mute/solo → pan<br/>tala / drone / percussion / …"] --> master["master gain"] --> lim["limiter"] --> out["speakers"]
+  bus["track: level → mute/solo → pan<br/>tala / drone / kit-1 / …"] --> master["master gain"] --> lim["limiter"] --> out["speakers"]
 ```
 
 **Recorded samples.** The tala's claps and metronome ticks are short WAV
@@ -117,8 +117,8 @@ much slower oscillator (0.12-0.2 Hz) moves each tone's gain up and down by
 6%, which is our fairly rough stand-in for the bellows.
 
 **The mixer.** Every note lands on a track, named by an id and made the
-first time the id is used (#96). Today there are three, `tala`, `drone` and
-`percussion` (the mridangam). A track is a level, squared so the slider
+first time the id is used (#96). The tala plays on `tala`, the thambura on
+`drone`, and each kit on its id from the page, `kit-1` for the first (#97). A track is a level, squared so the slider
 feels even, then an on/off gain for mute and solo, then a pan. Choke groups
 belong to a track, so two drums never cut each other off. The tracks sum
 into a master gain and then a limiter at -1 dB, so the tala, four ringing
@@ -275,7 +275,7 @@ halves of Web Audio.
 | Web Audio node | `AudioBufferSourceNode`, one per note | same | same | one oscillator per tone, for as long as it plays |
 | Who decides when | `TalaSequencer` via `Transport` | `ThamburaSequencer` via its own `Transport` | a stroke sequencer on the tala's timeline | nobody: it starts on Start |
 | Clock | the tala's `TempoMap` | thambura speed | the tala's `TempoMap` | none |
-| Bus | `tala` | `drone` | `percussion` | `drone` |
+| Track | `tala` | `drone` | the kit's id (`kit-1`) | `drone` |
 | A tempo or speed change | within 100 ms | next pluck | within 100 ms | n/a |
 | A pitch change | n/a | after a re-render | n/a | glides in about 30 ms |
 | Overlap | none needed | a re-pluck chokes the same string over 80 ms | damped strokes choke ringing ones on the same head | n/a |
