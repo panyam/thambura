@@ -178,6 +178,14 @@ bare HTML page on its own entry that calls `mountIslands` directly, passing an
 asset base URL and keeping our CSS scoped to the island roots. Later, serve
 it from another origin.
 
+**Built here, lifted later.** The page spec, registry and variants are meant
+to move to tsappkit (panyam/goapplib#27) and goapplib (panyam/goapplib#28)
+once a second app needs them: lilbattle's GameViewer layouts
+(turnforge/lilbattle#199) or the notation app (panyam/notation#304). So the
+TypeScript lives in `web/src/page/`, importing tsappkit and nothing from
+`engine/` or `player/`; the Go in `internal/page`, not importing
+`internal/brand`; and their tests use no thambura fixtures.
+
 ## The repo as a library
 
 The layering above is most of what a library needs, and the goal is for these
