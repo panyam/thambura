@@ -74,18 +74,26 @@ const fixturesURL = "/static/Resources/TalasFixtures.json"
 // aren't committed, so most checkouts have none, and then the spec seeds
 // none rather than sending the browser after a kit.json that isn't there.
 func homeSpec(kitURLs []string) page.Spec {
+	return page.Spec{
+		Layout:      "drawer",
+		Islands:     []page.Island{talaIsland("main"), {Name: "thambura", Slot: "drawer", Presentation: "drawer"}},
+		Instruments: kitInstruments(kitURLs),
+	}
+}
+
+// talaIsland is the tala filling a page-sized slot.
+func talaIsland(slot string) page.Island {
+	return page.Island{Name: "tala", Slot: slot, Presentation: "page", Config: map[string]any{"fixturesUrl": fixturesURL}}
+}
+
+// kitInstruments seeds a kit instrument for each kit found, the same on
+// every page, since which instruments are playing isn't a layout's business.
+func kitInstruments(kitURLs []string) []page.Instrument {
 	var instruments []page.Instrument
 	for _, u := range kitURLs {
 		instruments = append(instruments, page.Instrument{Kind: "kit", Config: map[string]any{"url": u}})
 	}
-	return page.Spec{
-		Layout: "drawer",
-		Islands: []page.Island{
-			{Name: "tala", Slot: "main", Presentation: "page", Config: map[string]any{"fixturesUrl": fixturesURL}},
-			{Name: "thambura", Slot: "drawer", Presentation: "drawer"},
-		},
-		Instruments: instruments,
-	}
+	return instruments
 }
 
 // findKits returns the URL of every kit manifest under static/Resources/Kits,
@@ -190,6 +198,7 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	static := filepath.Join(webDir, "static")
 	app.Context.KitURLs = findKits(static)
 	goal.Register[*HomePage](app, mux, "/{$}")
+	registerLabs(app, mux)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
 	registerDocs(mux, webDir)
 	mux.Handle("/legacy/", noindex(http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy"))))))

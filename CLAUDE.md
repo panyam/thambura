@@ -74,6 +74,16 @@ Sadhana).
   (`web/static/og.png`, `web/static/icons/`, `favicon.ico`) come from
   `node design/render-images.mjs` (preview layout in `design/og.html`),
   which needs `PLAYWRIGHT_CORE` and `CHROMIUM` pointed at an install.
+- **Labs** (#90, `internal/web/labs.go`): layout experiments on the live site
+  under `/labs/<slug>`, listed at `/labs/`. The `labs` slice drives both the
+  routes and the index. Each labs page is its own goapplib page type with a
+  template under `web/templates/labs/`, and they all sit on one mux wrapped
+  in `noindex`, with a canonical link to `/` and no sitemap entry. Every
+  labs layout shows the `LabsBanner` strip (`layouts/LabsBanner.html`). A
+  labs page shares the instruments and their settings with `/`; only
+  layout state would be its own, and none has any yet. `/labs/side-by-side`
+  (`layouts/SideBySide.html`) puts the tala and a docked thambura in two
+  columns from `lg` up and stacks them below that.
 - `/legacy/` serves the 2016 app from `web/legacy/`, copied from the
   `pre-sadhana-port` tag with its `/static/` paths moved under
   `/legacy/static/` (see `web/legacy/README.md`). Nothing links to it from
@@ -308,8 +318,15 @@ unit-tested:
   released so the re-pluck's choke leaves it alone. Sruti mode
   mixes its three tones swara-first (0.40 / 0.25 / 0.08, panned apart), since
   the octave Sa's otherwise fuse into one note and bury the swara.
+- `ThamburaPanel.tsx` is the thambura's controls wherever a layout puts
+  them: `ThamburaBar.tsx` slides it up from the bottom in a drawer, and
+  `ThamburaDocked` puts it in a page slot with no hide button (the
+  `thambura` island's `panel` presentation, as on `/labs/side-by-side`). A
+  docked thambura has no drawer and no floating controls, T still plays it,
+  and its links always set the bar's bit (`linkShowsBar`), since it's
+  always in view.
 - `ThamburaBar.tsx` is the bar that slides up from the bottom when the
-  floating `#thambura-toggle` is clicked. Its header holds the one start/stop button
+  floating `#thambura-toggle` is clicked. The panel's header holds the one start/stop button
   every view shares (the views have none of their own, except the Raagini's
   power switch, part of the replica), the Sound menu (the mode,
   from `THAMBURA_MODES`, the presets that ship (`BUILT_IN_PRESETS`) and the

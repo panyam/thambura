@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { encodeLink } from "../engine/shareLink";
 import { DEFAULT_THAMBURA } from "../engine/shruthi";
 import { planFor } from "../engine/thamburaPlan";
-import { ThamburaDrawer } from "./thamburaDrawer";
+import { linkShowsBar, ThamburaDrawer } from "./thamburaDrawer";
 
 class FakeStore {
   saved: unknown = undefined;
@@ -77,5 +77,16 @@ describe("ThamburaDrawer", () => {
     expect(d.open).toBe(false);
     d.toggle();
     expect(d.open).toBe(true);
+  });
+});
+
+describe("linkShowsBar", () => {
+  it("follows the drawer, and is always set for a docked thambura, which is always in view", () => {
+    const d = new ThamburaDrawer({});
+    expect(linkShowsBar("drawer", d)).toBe(false);
+    d.setOpen(true);
+    expect(linkShowsBar("drawer", d)).toBe(true);
+    expect(linkShowsBar("panel", null)).toBe(true);
+    expect(linkShowsBar("drawer", null)).toBe(false);
   });
 });

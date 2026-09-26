@@ -9,8 +9,8 @@ export const SPEC_ELEMENT_ID = "page-spec";
  * A tsappkit page whose islands come from the page spec. A subclass says
  * which islands it can mount (`registry`) and builds the services they share
  * (`makeContext`, called once with the spec, before the first island mounts,
- * so it can build the instruments the spec seeds); the spec says which
- * islands this page gets and where.
+ * so it can build the instruments the spec seeds, and not at all on a page
+ * with no islands); the spec says which islands this page gets and where.
  */
 export abstract class IslandPage<Ctx> extends BasePage {
   protected abstract registry(): Registry<Ctx, HTMLElement, LCMComponent, EventBus>;
@@ -26,7 +26,7 @@ export abstract class IslandPage<Ctx> extends BasePage {
       spec,
       this.registry(),
       (slot) => document.querySelector<HTMLElement>(`[data-slot="${slot}"]`),
-      this.makeContext(spec),
+      () => this.makeContext(spec),
       this.eventBus,
       (message) => console.warn(message),
     );

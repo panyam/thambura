@@ -1,0 +1,32 @@
+{{# include "../BasePage.html" #}}
+{{# include "../page/Islands.html" #}}
+
+{{/* The list of experiments (internal/web/labs.go). No islands; the page
+     script is here for the header's theme toggle and install button. */}}
+{{ define "BodySection" }}
+<main class="flex-1 overflow-auto">
+    <div class="mx-auto w-full max-w-3xl px-4 py-10">
+        <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Experiments</h1>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Other ways {{ brand }} could be laid out, to try before any of them
+            reaches the usual page. They share your tala and thambura settings
+            with it. <a class="underline" href="/">Back to the usual page</a>.
+        </p>
+        <ul class="mt-6 space-y-4">
+            {{ range .Labs }}
+            <li>
+                <a href="/labs/{{ .Slug }}" class="font-medium text-amber-700 underline hover:no-underline dark:text-amber-400">{{ .Title }}</a>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ .Blurb }}</p>
+            </li>
+            {{ end }}
+        </ul>
+    </div>
+</main>
+{{ end }}
+
+{{ define "PageScripts" }}
+{{ template "PageSpecScript" .Spec }}
+<script type="module" src="/static/app.js"></script>
+{{ end }}
+
+{{ define "LabsIndex" }}{{ template "BasePage" . }}{{ end }}
