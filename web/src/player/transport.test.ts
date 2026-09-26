@@ -8,7 +8,7 @@ import { Transport } from "./transport";
 
 function voice(settings: Partial<TalaSettings>, map: TempoMap) {
   const s: TalaSettings = { tala: "custom_adi", jaathi: "chatusram", nadai: "chatusram", kalai: 1, ...settings };
-  return new TalaSequencer(new BeatCursor(beatsFor(s)), map, () => 0);
+  return new TalaSequencer(new BeatCursor(beatsFor(s)), map);
 }
 
 describe("Transport with a TempoMap", () => {

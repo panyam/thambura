@@ -241,7 +241,7 @@ and the `percussion` bus has its own volume. The additions:
   right-hand stroke never chokes the left head. The choke fade is a fixed
   80 ms today, set for strings, and drums want something nearer 5-10 ms, so
   it becomes a per-note option.
-- A take picked per stroke from the step's `variant` draw, plus a little gain
+- Takes played in turn per stroke, plus a little gain
   jitter, so repeated strokes don't sound machine-gunned. The thambura
   already does the jitter.
 - Separate left and right levels, so the student can bring the bass up or

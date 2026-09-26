@@ -89,7 +89,7 @@ function setup(settings: Partial<TalaSettings> = {}, bpm = 60, start = 0) {
   const s: TalaSettings = { tala: "custom_rupakam", jaathi: "chatusram", nadai: "thisram", kalai: 1, ...settings };
   const cursor = new BeatCursor(beatsFor(s), s.kalai);
   const map = new TempoMap(bpm);
-  const seq = new TalaSequencer(cursor, map, () => 0.25);
+  const seq = new TalaSequencer(cursor, map);
   map.start(start);
   seq.start(start);
   const pull = (now: number, until: number) => {
@@ -125,7 +125,6 @@ describe("TalaSequencer", () => {
     const evs = pull(0, 1);
     expect(ticks(evs).map((e) => e.at)).toEqual([ZERO, ratio(1, 3), ONE, ratio(4, 3)]);
     expect(ticks(evs).map((e) => e.time)).toEqual([0, 0.5 / 3, 0.5, 0.5 + 0.5 / 3]);
-    expect(evs.every((e) => e.variant === 0.25)).toBe(true);
   });
 
   it("applies a tempo change past what has been handed out", () => {

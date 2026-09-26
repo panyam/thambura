@@ -319,6 +319,41 @@ func checkFixtureAssets(t *testing.T, srv *httptest.Server, root string) {
 	}
 }
 
+// The fixture's groups are the ones the menus offer, each a plain map from a
+// beat's name to a file. There are no random groups: SaRiGaMa played a random
+// metronome tick and showed a random swara per beat, and was dropped.
+func TestFixtureGroups(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "web", "static", "Resources", "TalasFixtures.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var f map[string]json.RawMessage
+	if err := json.Unmarshal(data, &f); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := f["RandomGroups"]; ok {
+		t.Error("fixtures still have RandomGroups")
+	}
+	for section, want := range map[string][]string{
+		"SoundGroups": {"Clap", "Metronome"},
+		"ImageGroups": {"Right hand", "Left hand", "Simple"},
+	} {
+		var groups map[string]map[string]string
+		if err := json.Unmarshal(f[section], &groups); err != nil {
+			t.Fatalf("%s: %v", section, err)
+		}
+		var got []string
+		for name := range groups {
+			got = append(got, name)
+		}
+		slices.Sort(got)
+		slices.Sort(want)
+		if !slices.Equal(got, want) {
+			t.Errorf("%s = %v, want %v", section, got, want)
+		}
+	}
+}
+
 // The 2016 app is served whole: its page, its scripts and the assets its
 // fixtures name, all under /legacy/.
 func TestLegacyServesOldApp(t *testing.T) {
