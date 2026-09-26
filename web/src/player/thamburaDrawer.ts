@@ -17,7 +17,7 @@ export interface ThamburaDrawerDeps {
 /**
  * Whether the thambura's bar is slid up. This belongs to the page's layout,
  * not to the instrument: the presenter holds what the thambura plays, and a
- * layout that docks the thambura has no drawer at all (docs/layouts.md).
+ * layout that docks the thambura has no drawer at all (docs/designs/layouts.md).
  *
  * A shared link's flag wins over the saved state but isn't saved over it
  * until the listener opens or closes the bar, as the presenter does with a

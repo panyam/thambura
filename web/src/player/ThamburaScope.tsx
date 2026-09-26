@@ -14,7 +14,7 @@ const WAVE_SECONDS = 0.04;
 const LOW_HZ = 50;
 const HIGH_HZ = 8000;
 const SPECTRUM_RANGE_DB = 50;
-// Where the jawari bloom lives (docs/sound-analysis.md).
+// Where the jawari bloom lives (docs/designs/sound-analysis.md).
 const BLOOM_BAND = [1000, 2500];
 
 /**

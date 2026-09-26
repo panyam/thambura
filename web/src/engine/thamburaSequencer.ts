@@ -34,7 +34,7 @@ export interface PluckPattern {
 export const EVEN_PATTERN: PluckPattern = { gaps: [1 / 5, 1 / 5, 1 / 5, 2 / 5], damp: null };
 
 /**
- * After the player in the recording from issue #8 (docs/sound-analysis.md), whose
+ * After the player in the recording from issue #8 (docs/designs/sound-analysis.md), whose
  * round was 5.8 s: 30% of the round from the first string to Sa and 29% from
  * the low Sa back to the first string. The recording spaced the two Sa strings
  * 24% and 18% apart; here they share that time evenly, since by ear the first

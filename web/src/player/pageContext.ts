@@ -9,7 +9,7 @@ import { Transport, type Ticker } from "./transport";
 /**
  * What every island on the page shares: services, not instruments. The
  * instruments playing are `tracks`; the clock they play on is `clock`; the Sa
- * the pitched ones follow is `tonic` (docs/instruments.md). The page builds
+ * the pitched ones follow is `tonic` (docs/designs/instruments.md). The page builds
  * one of these (main.ts) and hands it to each island it mounts.
  */
 export interface PageContext {

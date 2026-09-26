@@ -1,7 +1,7 @@
 /**
  * Where each part of the app keeps its state in localStorage. Every key goes
  * through here, so when the instrument work renames them to carry instance
- * ids (docs/instruments.md), and migrates the old ones, it's one place.
+ * ids (docs/designs/instruments.md), and migrates the old ones, it's one place.
  */
 const KEYS = {
   /** The tala player's choices (presenter.ts). */

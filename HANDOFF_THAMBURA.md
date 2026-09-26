@@ -3,7 +3,7 @@
 Written 2026-09-21, after the mridangam work (PRs #66, #68, #73, #74, #75,
 #76) and the checkpoint that parks it (#83, #84). It folds forward what was
 still open from the previous handoff and drops what closed. The durable notes
-are in CLAUDE.md, NEXTSTEPS.md and `docs/`; this file is only what's in
+are in CLAUDE.md, NEXTSTEPS.md and `docs/designs/`; this file is only what's in
 flight. Delete it once the items below close.
 
 ## Where things stand
@@ -13,9 +13,9 @@ flight. Delete it once the items below close.
   for Adi, Short Rupakam and the Misra and Khanda chaapus, a generated
   skeleton for every other tala and nadai, a stroke lane that lights with the
   sound, variations, and a korvai that lands on sam. Heard in Chrome on
-  2026-09-21 and called "great". `docs/mridangam.md` is the plan; the rest is
+  2026-09-21 and called "great". `docs/designs/mridangam.md` is the plan; the rest is
   filed as #77 to #82 and **the mridangam is deliberately paused**.
-- **Attention moves to several instruments at once**, `docs/instruments.md`.
+- **Attention moves to several instruments at once**, `docs/designs/instruments.md`.
   The open question is at the top of that doc and should be settled before
   the mixer is built: with several instruments, what a track shows when it is
   collapsed, which of an instrument's views it is set to, and how the page

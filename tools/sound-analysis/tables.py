@@ -1,4 +1,4 @@
-"""Writes the tables in docs/sound-analysis.md from the feature files.
+"""Writes the tables in docs/designs/sound-analysis.md from the feature files.
 
     python tables.py            # rewrite the tables in the doc
     python tables.py --check    # say whether the doc matches, and exit 1 if not
@@ -20,7 +20,7 @@ from pathlib import Path
 import soundlab as sl
 
 HERE = Path(__file__).resolve().parent
-DOC = HERE.parent.parent / "docs" / "sound-analysis.md"
+DOC = HERE.parent.parent / "docs" / "designs" / "sound-analysis.md"
 # Column order. A file that isn't there is left out, so a Lab render can join
 # the tables by being measured into features/custom.json.
 ORDER = ["tambura-C", "jawari", "tambura", "guitar", "custom"]

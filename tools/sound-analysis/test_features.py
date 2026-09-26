@@ -82,7 +82,7 @@ def test_a_recording_is_measured_from_its_plucks(mix, tmp_path):
     # Which string a pluck belongs to is worked out from what else is ringing, and
     # four synthetic strings of pure harmonics leak into each other far more than
     # a real tambura does. The recording is where that part is judged, in the
-    # tables in docs/sound-analysis.md.
+    # tables in docs/designs/sound-analysis.md.
 
 
 def test_a_recording_without_sa_says_so(mix, tmp_path):

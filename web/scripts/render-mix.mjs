@@ -1,6 +1,6 @@
 // Renders the thambura's plucked modes offline to WAV, with a JSON of what
 // was played when, for listening and for tools/sound-analysis. See
-// docs/sound-analysis.md.
+// docs/designs/sound-analysis.md.
 //
 //   pnpm render-mix [--modes jawari,tambura,guitar] [--key C3] [--cycle 5.8]
 //                   [--seconds 30] [--rate 44100] [--tone 50] [--pluck 50]

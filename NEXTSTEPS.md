@@ -26,7 +26,7 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [x] **Shruthi box.** The thambura: synthesized tambura and sruti modes,
       with Mini, Studio and Raagini views in a floating bar.
 - [x] **Thambura fitted to a real recording** (issue #8, PR #18): the jawari
-      voice, now the default; the method and tools in `docs/sound-analysis.md`.
+      voice, now the default; the method and tools in `docs/designs/sound-analysis.md`.
 - [x] **Tuning and sharing tools:** the Lab view (#21, #33: per-string
       controls, mute/solo, copy from a string, a scope), `?s=` share links
       (#28), presets and the "Share a preset" issue form (#30), one start/stop
@@ -70,14 +70,14 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       controls (MediaSession).
 - [x] **Musical timeline refactor.** A shared `TempoMap`; the tala emits
       steps and ticks at exact fractional positions.
-- [ ] **Where the thambura sits** (#54, `docs/layouts.md`): the overlay suits a
+- [ ] **Where the thambura sits** (#54, `docs/designs/layouts.md`): the overlay suits a
       practice session, not a singer or a teacher. Docked and side-by-side
       layouts, purpose modes, separate pages. Planning only.
-- [ ] **This repo as a library** (#53, `docs/library.md`): entry points shaped like
+- [ ] **This repo as a library** (#53, `docs/designs/library.md`): entry points shaped like
       `notations` (engine, runtime, Solid components, assets, styles), so the
       pieces can be imported elsewhere, including into the notation app for
       practice. Planning only.
-- [x] **Mridangam, steps 1 to 4** (`docs/mridangam.md`): strokes tuned to the
+- [x] **Mridangam, steps 1 to 4** (`docs/designs/mridangam.md`): strokes tuned to the
       thambura with a pad, patterns written in the notations DSL and compiled
       at build time, written patterns for Adi, Short Rupakam and the Misra and
       Khanda chaapus with a generated skeleton for everything else, the stroke
@@ -87,7 +87,7 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       Adi one), #80 (record arai chapu and the left-hand tha), #81 (the lane
       on a long cycle), #82 (solkattu under the strokes). Still open too: who
       vets the patterns, and a kit we can ship.
-- [ ] **Several instruments at once** (`docs/instruments.md`): tracks on one
+- [ ] **Several instruments at once** (`docs/designs/instruments.md`): tracks on one
       clock, a mixer, the hand claps as a track, instance ids, and which views
       an instrument offers. The next direction.
 - [ ] Output-latency calibration setting (Bluetooth headphones add

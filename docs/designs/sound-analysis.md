@@ -104,7 +104,7 @@ python analyse.py ../../recordings/renders/jawari.wav
 python compare.py            # defaults: recordings/tambura-C.mp3 at Sa 131.05, recordings/renders
 ```
 
-This writes the PNGs in `docs/images/sound-analysis/`. Re-run it after
+This writes the PNGs in `docs/designs/images/sound-analysis/`. Re-run it after
 changing a voice. It takes a few seconds.
 
 **6. Measure them into feature files.**

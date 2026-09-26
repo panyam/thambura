@@ -1,10 +1,10 @@
-"""Draws the comparison charts in docs/sound-analysis.md.
+"""Draws the comparison charts in docs/designs/sound-analysis.md.
 
     pnpm --dir ../../web render-mix          # renders jawari, tambura, guitar at C3
     python compare.py --recording ../../recordings/tambura-C.mp3 --sa 131.05
 
 Reads the renders from ../../recordings/renders and writes PNGs to
-../../docs/images/sound-analysis (change with --renders / --out). The doc's
+../../docs/designs/images/sound-analysis (change with --renders / --out). The doc's
 tables come from the feature files instead, through features.py and tables.py,
 so they can be redone without the audio.
 """
@@ -182,7 +182,7 @@ def main() -> None:
     ap.add_argument("--recording", default=str(ROOT / "recordings" / "tambura-C.mp3"))
     ap.add_argument("--sa", type=float, default=131.05, help="the recording's Sa in Hz")
     ap.add_argument("--renders", default=str(ROOT / "recordings" / "renders"))
-    ap.add_argument("--out", default=str(ROOT / "docs" / "images" / "sound-analysis"))
+    ap.add_argument("--out", default=str(ROOT / "docs" / "designs" / "images" / "sound-analysis"))
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
