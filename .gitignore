@@ -8,6 +8,10 @@
 /web/static/sw.js
 /web/static/css/tailwind.css
 
+# The docs site (make docs): the built pages and its bundled script
+/web/docs/
+/docs/static/js/gen/
+
 .DS_Store
 
 # Instrument kits copied in from the thambura-data repo (make devkit). Nothing

@@ -8,3 +8,5 @@
 /web/src/
 *.test.ts
 /design/
+# The docs site's sources and the design docs; the built site is web/docs.
+/docs/

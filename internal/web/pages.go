@@ -191,6 +191,7 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	app.Context.KitURLs = findKits(static)
 	goal.Register[*HomePage](app, mux, "/{$}")
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
+	registerDocs(mux, webDir)
 	mux.Handle("/legacy/", noindex(http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy"))))))
 	// The service worker has to come from the root to cover the whole site,
 	// and browsers revalidate it on every update check, so it isn't cached.

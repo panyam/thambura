@@ -1,0 +1,33 @@
+{{/* The sidebar lists the section the page is in, from HeaderNavLinks.json:
+     a guide or reference page is added by writing it and listing it there
+     under its section's children. */}}
+{{ define "Sidebar" }}
+{{ $Site := .Site }}
+{{ $path := .Res.FullPath }}
+<aside class="sidebar" aria-label="In this section">
+    {{ range (json "HeaderNavLinks.json" "") }}
+    {{ if Contains $path (printf "/%s" .url) }}
+    <h2 class="sidebar-title"><a href="{{ $Site.PathPrefix }}/{{ .url }}">{{ .name }}</a></h2>
+    {{ if .children }}
+    <ul>
+        {{ range .children }}
+        <li><a href="{{ $Site.PathPrefix }}/{{ .url }}"{{ if Contains $path (printf "/%s" .url) }} aria-current="page"{{ end }}>{{ .name }}</a></li>
+        {{ end }}
+    </ul>
+    {{ end }}
+    {{ end }}
+    {{ end }}
+    {{ if eq .Res.Ext ".md" }}{{ with StageGet "TOC" }}
+    <nav class="toc" aria-label="On this page">
+        <h2 class="sidebar-title">On this page</h2>
+        <ul>
+            {{ range . }}
+            <li><a href="#{{ .ID }}">{{ .Text }}</a>
+                {{ with .Children }}<ul>{{ range . }}<li><a href="#{{ .ID }}">{{ .Text }}</a></li>{{ end }}</ul>{{ end }}
+            </li>
+            {{ end }}
+        </ul>
+    </nav>
+    {{ end }}{{ end }}
+</aside>
+{{ end }}

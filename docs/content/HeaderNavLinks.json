@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Getting started",
+    "url": "getting-started/",
+    "children": []
+  },
+  {
+    "name": "Guides",
+    "url": "guides/",
+    "children": []
+  },
+  {
+    "name": "Reference",
+    "url": "reference/",
+    "children": []
+  }
+]

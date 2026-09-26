@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+{{# include "Header.html" #}}
+{{# include "Sidebar.html" #}}
+{{# include "Content.html" #}}
+{{# include "Footer.html" #}}
+{{ $meta := json "SiteMetadata.json" "" }}
+{{/* A Markdown page is parsed once here: Content renders the document and
+     Sidebar lists its headings. */}}
+{{ if eq .Res.Ext ".md" }}{{ $md := ParseMD .Content }}{{ $_ := StageSet "Doc" $md.Doc "TOC" $md.TOC }}{{ end }}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ if .FrontMatter.title }}{{ .FrontMatter.title }} · {{ end }}{{ $meta.siteName }}</title>
+    <meta name="description" content="{{ or .FrontMatter.description $meta.siteDescription }}">
+    {{/* Until the first guides are written (#95). Drop "noindex" from
+         SiteMetadata.json to let search engines in. */}}
+    {{ if $meta.noindex }}<meta name="robots" content="noindex">{{ end }}
+    {{/* The app's theme choice, under the same key the app's toggle uses
+         (tsappkit's ThemeManager), set before the first paint. */}}
+    <script>
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem("theme"); } catch (e) {}
+            if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+                document.documentElement.classList.add("dark");
+            }
+        })();
+    </script>
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="{{ .Site.PathPrefix }}/static/css/docs.css">
+</head>
+<body>
+    {{ template "Header" . }}
+    <div class="page">
+        {{ template "Sidebar" . }}
+        <main class="main">
+            {{ template "Content" . }}
+        </main>
+    </div>
+    {{ template "Footer" . }}
+    <script type="module" src="{{ .Site.PathPrefix }}/static/js/gen/docs.js"></script>
+</body>
+</html>
