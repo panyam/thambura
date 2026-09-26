@@ -283,7 +283,6 @@ describe("KitPresenter on the tala's clock", () => {
       frames,
       fetchJson: async () => TALA_FIXTURES,
       preloadImages: async () => {},
-      rng: () => 0.9,
     });
     tala.attach({ setState: () => {} });
     await tala.load("/fixtures.json");

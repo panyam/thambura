@@ -333,7 +333,7 @@ lg.BeatPlayer.prototype._nextStep = function() {
 | Image | set when the timer fires, before the sound is heard | set when `heardNow` reaches the beat |
 | Stop then Start within a beat | the old timer is still pending and sees `playing` true again, so two chains can run | Transport owns the only timer |
 | Stop | notes already booked still play | booked-but-unstarted notes are cancelled and the cursor rewinds to them |
-| Randomness (SaRiGaMa) | one global `currentRandom`, redrawn on every cursor move | a `variant` draw carried on each step, so its image and sound agree |
+| Randomness (SaRiGaMa) | one global `currentRandom`, redrawn on every cursor move | dropped, with the SaRiGaMa groups it served |
 | Mixing | one gain node | per-voice buses, master gain, limiter |
 | Drone | none | the thambura: rendered plucks and reed tones |
 | Code | jQuery objects mixing timing, DOM and audio | pure engine, presenters, Solid views |

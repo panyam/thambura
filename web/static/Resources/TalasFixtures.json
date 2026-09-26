@@ -1,5 +1,4 @@
 {
-    "RandomGroups": ["SaRiGaMa"],
     "SoundGroups": {
         "Clap": {
             "down": "/static/Resources/Sounds/Clap/high1.wav" ,
@@ -11,15 +10,6 @@
             "five": "/static/Resources/Sounds/Clap/low1.wav"
         },
         "Metronome": {
-            "down": "/static/Resources/Sounds/Metronome/tick_hi.wav" ,
-            "open": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "one": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "two": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "three": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "four": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
-            "five": "/static/Resources/Sounds/Metronome/tick_lo.wav"
-        },
-        "SaRiGaMa": {
             "down": "/static/Resources/Sounds/Metronome/tick_hi.wav" ,
             "open": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
             "one": "/static/Resources/Sounds/Metronome/tick_lo.wav" ,
@@ -56,16 +46,6 @@
             "three": "/static/Resources/Images/Simple/laghu_3.GIF",
             "four": "/static/Resources/Images/Simple/laghu_4.GIF",
             "five": "/static/Resources/Images/Simple/laghu_5.GIF"
-        },
-        "SaRiGaMa": {
-            "Sa": "/static/Resources/Images/SaRiGaMa/Sa.png",
-            "Ri": "/static/Resources/Images/SaRiGaMa/Ri.png",
-            "Ga": "/static/Resources/Images/SaRiGaMa/Ga.png",
-            "Ma": "/static/Resources/Images/SaRiGaMa/Ma.png",
-            "Pa": "/static/Resources/Images/SaRiGaMa/Pa.png",
-            "Da": "/static/Resources/Images/SaRiGaMa/Da.png",
-            "Ni": "/static/Resources/Images/SaRiGaMa/Ni.png",
-            "UpperSa": "/static/Resources/Images/SaRiGaMa/UpperSa.png"
         }
     }
 }

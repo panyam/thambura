@@ -75,7 +75,6 @@ export interface PlayerDeps {
   fetchJson(url: string): Promise<unknown>;
   preloadImages(urls: string[]): Promise<void>;
   store?: PlayerStore;
-  rng?: () => number;
 }
 
 export const DEFAULT_VOLUME = 50;
@@ -116,7 +115,7 @@ export class PlayerPresenter {
     this.saved = loadSafely(deps.store);
     this.tempo = deps.clock.tempo;
     this.transport = deps.clock.transport;
-    this.seq = new TalaSequencer(this.cursor, this.tempo, deps.rng);
+    this.seq = new TalaSequencer(this.cursor, this.tempo);
     this.transport.add(this.seq, (e) => this.schedule(e));
     this.state = {
       status: "loading",
@@ -273,7 +272,7 @@ export class PlayerPresenter {
     const group = this.findGroup(this.catalog.imageGroups, name);
     if (!group) return false;
     await this.deps.preloadImages(assetUrls(group));
-    // Show the group's clap image as a preview; random groups have none.
+    // Show the group's clap image as a preview.
     this.update({ imageGroup: name, image: group.entries["down"] ?? null });
     return true;
   }
@@ -319,7 +318,7 @@ export class PlayerPresenter {
   private schedule(e: TalaEvent): void {
     if (e.kind === "tick") {
       const sounds = this.findGroup(this.catalog.soundGroups, this.state.soundGroup);
-      const url = sounds ? resolveAsset(sounds, e.sound, e.variant) : null;
+      const url = sounds ? resolveAsset(sounds, e.sound) : null;
       if (url) this.deps.audio.play(url, "tala", e.time);
       return;
     }
@@ -327,7 +326,7 @@ export class PlayerPresenter {
     this.cues.push({
       time: e.time,
       endAt: add(e.at, e.beat.duration),
-      image: images ? resolveAsset(images, e.beat.image, e.variant) : null,
+      image: images ? resolveAsset(images, e.beat.image) : null,
       position: e.position,
     });
   }

@@ -26,12 +26,6 @@ export interface StepEvent {
   at: Ratio;
   position: Position;
   beat: Beat;
-  /**
-   * A uniform draw in [0, 1), made once per step. Random asset groups (the
-   * SaRiGaMa "randomness mode") use it to pick this step's image and sound, so
-   * both come from the same draw.
-   */
-  variant: number;
 }
 
 /** One sound struck within a step. */
@@ -40,8 +34,6 @@ export interface TickEvent {
   time: number;
   at: Ratio;
   sound: string;
-  /** The step's draw (see StepEvent). */
-  variant: number;
 }
 
 export type TalaEvent = StepEvent | TickEvent;
@@ -69,7 +61,6 @@ export class TalaSequencer implements Sequencer<TalaEvent> {
   constructor(
     private readonly cursor: BeatCursor,
     private readonly tempo: TempoMap,
-    private readonly rng: () => number = Math.random,
   ) {}
 
   get running(): boolean {
@@ -139,15 +130,13 @@ export class TalaSequencer implements Sequencer<TalaEvent> {
   private eventsFor(start: Ratio): TalaEvent[] {
     const beat = this.cursor.current();
     if (!beat) return [];
-    const variant = this.rng();
     const length = counts(beat);
-    const step: StepEvent = { kind: "step", time: 0, at: start, position: this.cursor.position, beat, variant };
+    const step: StepEvent = { kind: "step", time: 0, at: start, position: this.cursor.position, beat };
     const ticks: TickEvent[] = beat.ticks.map((t) => ({
       kind: "tick",
       time: 0,
       at: add(start, mul(t.offset, length)),
       sound: t.sound,
-      variant,
     }));
     return [step, ...ticks];
   }

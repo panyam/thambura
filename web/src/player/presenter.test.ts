@@ -6,14 +6,13 @@ import { createClock } from "./pageContext";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 
 const FIXTURES = {
-  RandomGroups: ["Swaras"],
   SoundGroups: {
     Clap: { down: "/clap-hi.wav", open: "/clap-lo.wav", one: "/clap-lo.wav", two: "/clap-lo.wav", three: "/clap-lo.wav" },
     Metronome: { down: "/tick-hi.wav", open: "/tick-lo.wav" },
   },
   ImageGroups: {
     Simple: { down: "/down.gif", open: "/open.gif", one: "/one.gif" },
-    Swaras: { Sa: "/sa.png", Ri: "/ri.png" },
+    Hands: { down: "/hand-down.svg", open: "/hand-open.svg" },
   },
 };
 
@@ -28,7 +27,6 @@ describe("PlayerPresenter on the page's clock", () => {
       frames: new FakeFrames(),
       fetchJson: async () => FIXTURES,
       preloadImages: async () => {},
-      rng: () => 0.9,
     });
     await p.load("/fixtures.json");
     p.setTempo(120);
@@ -65,7 +63,6 @@ describe("PlayerPresenter", () => {
       frames,
       fetchJson: async () => FIXTURES,
       preloadImages: async () => {},
-      rng: () => 0.9,
     });
     views = [];
     p.attach({ setState: (s) => views.push(s) });
@@ -192,9 +189,9 @@ describe("PlayerPresenter", () => {
 
     it("restores every choice from the last visit", async () => {
       const settings = { tala: "chaapu_misram", jaathi: "khandam", nadai: "thisram", kalai: 2 };
-      const q = make({ motion: "pop", settings, tempo: 72, volume: 30, soundGroup: "Metronome", imageGroup: "Swaras" });
+      const q = make({ motion: "pop", settings, tempo: 72, volume: 30, soundGroup: "Metronome", imageGroup: "Hands" });
       await q.load("/fixtures.json");
-      expect(q.state).toMatchObject({ motion: "pop", settings, tempo: 72, volume: 30, soundGroup: "Metronome", imageGroup: "Swaras" });
+      expect(q.state).toMatchObject({ motion: "pop", settings, tempo: 72, volume: 30, soundGroup: "Metronome", imageGroup: "Hands" });
       expect(audio.busVolume.tala).toBe(30);
       expect(q.state.beatCount).toBe(1); // a chaapu is one beat
     });
@@ -206,7 +203,7 @@ describe("PlayerPresenter", () => {
       expect(writes).toEqual([]);
       q.setTempo(96);
       q.setSettings({ kalai: 3 });
-      await q.setImageGroup("Swaras");
+      await q.setImageGroup("Hands");
       expect(writes).toHaveLength(3);
       expect(writes.at(-1)).toEqual({
         motion: DEFAULT_MOTION,
@@ -214,7 +211,7 @@ describe("PlayerPresenter", () => {
         tempo: 96,
         volume: 50,
         soundGroup: "Clap",
-        imageGroup: "Swaras",
+        imageGroup: "Hands",
       });
     });
 
@@ -299,17 +296,6 @@ describe("PlayerPresenter", () => {
     await p.start();
     advance(2);
     expect(audio.played.map((x) => x.url)).toEqual(["/clap-hi.wav", "/clap-hi.wav", "/clap-lo.wav"]);
-  });
-
-  it("picks from a random group with the step's draw", async () => {
-    await p.setImageGroup("Swaras");
-    expect(p.state.image).toBeNull(); // no "down" preview in a random group
-    p.next();
-    await Promise.resolve();
-    frames.flush();
-    audio.now = 1;
-    frames.flush();
-    expect(p.state.image).toBe("/ri.png"); // rng 0.9 of 2 entries
   });
 
   it("clamps tempo and volume", () => {

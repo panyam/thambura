@@ -129,29 +129,19 @@ describe("BeatCursor", () => {
 
 describe("assets", () => {
   const catalog = parseCatalog({
-    RandomGroups: ["Swaras"],
     SoundGroups: { Clap: { down: "/hi.wav", open: "/lo.wav", one: "/lo.wav" } },
-    ImageGroups: { Simple: { down: "/down.gif" }, Swaras: { Sa: "/sa.png", Ri: "/ri.png" } },
+    ImageGroups: { Simple: { down: "/down.gif" }, Hands: { down: "/hand.svg" } },
   });
 
-  it("parses groups in order and marks random ones", () => {
+  it("parses groups in order", () => {
     expect(catalog.soundGroups.map((g) => g.name)).toEqual(["Clap"]);
-    expect(catalog.imageGroups.map((g) => [g.name, g.random])).toEqual([
-      ["Simple", false],
-      ["Swaras", true],
-    ]);
+    expect(catalog.imageGroups.map((g) => g.name)).toEqual(["Simple", "Hands"]);
   });
 
   it("looks names up, returning null for a missing one", () => {
     const simple = catalog.imageGroups[0];
-    expect(resolveAsset(simple, "down", 0.9)).toBe("/down.gif");
-    expect(resolveAsset(simple, "guru_1", 0.9)).toBeNull();
-  });
-
-  it("picks by variant in a random group", () => {
-    const swaras = catalog.imageGroups[1];
-    expect(resolveAsset(swaras, "down", 0)).toBe("/sa.png");
-    expect(resolveAsset(swaras, "down", 0.99)).toBe("/ri.png");
+    expect(resolveAsset(simple, "down")).toBe("/down.gif");
+    expect(resolveAsset(simple, "guru_1")).toBeNull();
   });
 
   it("rejects malformed fixtures", () => {

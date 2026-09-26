@@ -114,7 +114,7 @@ describe("the tala and the mridangam together", () => {
     const beats = beatsFor(SETTINGS);
     const grid = new TalaGrid(beats, 1);
     const map = new TempoMap(72);
-    const tala = new TalaSequencer(new BeatCursor(beats, 1), map, () => 0);
+    const tala = new TalaSequencer(new BeatCursor(beats, 1), map);
     const strokes = new StrokeSequencer(() => ({ grid, pattern: ADI }), map);
     map.start(0);
     tala.start(0);
