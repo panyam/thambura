@@ -1,5 +1,6 @@
 // Command docs builds Thambura's developer docs with s3gen. They are
-// published to GitHub Pages at Domain (make ghpages). `-build` writes the site
+// published to GitHub Pages (make ghpages), at panyam.github.io/thambura for
+// now and at docs.thambura.com later. `-build` writes the site
 // to -out; without it the site is served on -addr and rebuilt on every
 // change, for writing.
 package main
@@ -24,15 +25,17 @@ var (
 	out   = flag.String("out", "dist", "Where the built site goes")
 )
 
-// Domain is where GitHub Pages serves the site, written into the build as
-// the CNAME file Pages reads. DNS points it at panyam.github.io.
-const Domain = "docs.thambura.com"
+// Domain is the custom domain GitHub Pages serves the site on, written into
+// the build as the CNAME file Pages reads; empty serves it at
+// panyam.github.io/thambura. Moving to docs.thambura.com means setting Domain
+// to it and PathPrefix to "", once DNS has a CNAME from docs to
+// panyam.github.io (see docs/README.md, "Publishing", for the order).
+const Domain = ""
 
-// PathPrefix is where the site sits on Domain, which is its root. Templates
-// still write links as {{.Site.PathPrefix}}/..., so moving the site under a
-// path (panyam.github.io/thambura, say) is a change here and in the content's
-// own links, which the link check finds.
-const PathPrefix = ""
+// PathPrefix is where the site sits on its host. Every link goes through
+// {{ .Site.PathPrefix }}, in the templates and the content alike, and the link
+// check fails on one that doesn't.
+const PathPrefix = "/thambura"
 
 // The app's favicons, copied in so the docs carry the same icon without a
 // second copy in the repo.
@@ -61,7 +64,7 @@ func NewSite(outDir string) *s3.Site {
 // Build writes the whole site to outDir, replacing what was there, ready to
 // publish as it is: the pages, the static folder (s3gen only serves static
 // folders itself, so a build served by something else has to carry them), the
-// app's favicons, and GitHub Pages' CNAME and .nojekyll (without which Pages
+// app's favicons, and GitHub Pages' CNAME (with a Domain) and .nojekyll (without which Pages
 // runs Jekyll over the site and drops anything starting with an underscore).
 func Build(outDir string) error {
 	if err := os.RemoveAll(outDir); err != nil {
@@ -83,8 +86,10 @@ func Build(outDir string) error {
 			return err
 		}
 	}
-	if err := os.WriteFile(filepath.Join(outDir, "CNAME"), []byte(Domain+"\n"), 0o644); err != nil {
-		return err
+	if Domain != "" {
+		if err := os.WriteFile(filepath.Join(outDir, "CNAME"), []byte(Domain+"\n"), 0o644); err != nil {
+			return err
+		}
 	}
 	return os.WriteFile(filepath.Join(outDir, ".nojekyll"), nil, 0o644)
 }

@@ -81,9 +81,9 @@ and a build of this site with every link checked.
 
 ## Where to go next
 
-- [Guides](/guides/) for adding an instrument, writing a pattern and
+- [Guides]({{ .Site.PathPrefix }}/guides/) for adding an instrument, writing a pattern and
   sharing a setup, as they are written.
-- [Reference](/reference/) for the engine's API, after the lift.
+- [Reference]({{ .Site.PathPrefix }}/reference/) for the engine's API, after the lift.
 - The design notes in the repo explain why things are the way they are:
   [architecture](https://github.com/panyam/thambura/blob/master/docs/designs/architecture.md)
   covers how sounds are made and timed, and
