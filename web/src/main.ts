@@ -10,7 +10,9 @@ import { createPlayerIsland, newHandsPresenter, newKitPresenter } from "./player
 import { KeepAwake, usePlaybackSession, type WakeLockLike } from "./player/keepAwake";
 import { KitPresenter } from "./player/kitPresenter";
 import { createClock, Tonic, Tracks, type Instrument, type PageContext } from "./player/pageContext";
-import { createThamburaIsland } from "./player/thamburaIsland";
+import { addressBar, PageLink } from "./player/pageLink";
+import { createThamburaIsland, newThamburaPresenter } from "./player/thamburaIsland";
+import { ThamburaPresenter } from "./player/thamburaPresenter";
 import { workerTicker } from "./player/transport";
 
 /**
@@ -39,12 +41,14 @@ const REGISTRY: Registry<PageContext, HTMLElement, LCMComponent, EventBus> = {
   // the floating controls; docked (layouts/SideBySide.html) the thambura
   // mounts straight into its slot.
   thambura: (el, island, ctx, bus) => {
+    const thambura = thamburaOf(ctx.tracks.get("thambura-1"));
+    if (!thambura) throw new Error("the page has no thambura-1 for its thambura island");
     const onPlaying = (on: boolean) => ctx.awake.set("thambura", on);
     const onSettings = (settings: ThamburaSettings) => ctx.tonic.set(tunedTonicHz(settings));
-    if (island.presentation !== "drawer") return createThamburaIsland(el, bus, ctx.audio, { presentation: "panel", onPlaying, onSettings });
+    if (island.presentation !== "drawer") return createThamburaIsland(el, bus, thambura, ctx.audio, ctx.link, { presentation: "panel", onPlaying, onSettings });
     const mount = el.querySelector<HTMLElement>("#thambura");
     if (!mount) throw new Error("the drawer slot has no #thambura");
-    return createThamburaIsland(mount, bus, ctx.audio, {
+    return createThamburaIsland(mount, bus, thambura, ctx.audio, ctx.link, {
       presentation: "drawer",
       controls: {
         root: el.querySelector<HTMLElement>("#thambura-controls"),
@@ -71,7 +75,13 @@ class HomePage extends IslandPage<PageContext> {
       tracks: new Tracks<Instrument>(),
       tonic: new Tonic(),
       awake: new KeepAwake({ wakeLock: (navigator as { wakeLock?: WakeLockLike }).wakeLock, doc: document }),
+      link: new PageLink(addressBar()),
     };
+    // The thambura, which the page's thambura island shows. Made before any
+    // kit, so a kit's first tuning can follow it.
+    if (spec.instruments.some((i) => i.kind === "thambura")) {
+      ctx.tracks.add("thambura-1", newThamburaPresenter(audio, "thambura-1", ctx.link));
+    }
     // The hand claps: the tala calls each sound on the clock, and they play it.
     const hands = spec.instruments.find((i) => i.kind === "hands" && typeof i.config.fixturesUrl === "string");
     if (hands) {
@@ -112,6 +122,10 @@ class HomePage extends IslandPage<PageContext> {
 
 function kitOf(track: Instrument | undefined): KitPresenter | undefined {
   return track instanceof KitPresenter ? track : undefined;
+}
+
+function thamburaOf(track: Instrument | undefined): ThamburaPresenter | undefined {
+  return track instanceof ThamburaPresenter ? track : undefined;
 }
 
 function handsOf(track: Instrument | undefined): HandsPresenter | undefined {

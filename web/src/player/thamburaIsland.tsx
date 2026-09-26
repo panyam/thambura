@@ -1,32 +1,26 @@
 import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
 import { createSignal } from "solid-js";
-import { withBarOpen } from "../engine/shareLink";
 import type { ThamburaSettings } from "../engine/shruthi";
 import type { AudioEngine } from "./audio";
 import { isThamburaShortcut } from "./shortcuts";
 import { ThamburaBar } from "./ThamburaBar";
 import { linkShowsBar, ThamburaDrawer } from "./thamburaDrawer";
 import { ThamburaDocked } from "./ThamburaPanel";
-import { localStore } from "./storage";
-import { ThamburaPresenter, type ThamburaLink, type ThamburaState } from "./thamburaPresenter";
+import type { PageLink } from "./pageLink";
+import { instrumentStore, localStore, withFallback } from "./storage";
+import { ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
-// The query parameter that carries a shared setup (engine/shareLink.ts).
-const LINK_PARAM = "s";
-// Address bar updates wait for this long after the last change: Safari throws
-// if replaceState is called more than 100 times in 30 s, and a slider drag
-// changes the setup on every step.
-const LINK_SETTLE_MS = 400;
-
 /**
- * Mounts the thambura on `el`, in a drawer or docked (`presentation`). In a
- * drawer it also wires the page's floating thambura controls: `play` starts and stops it from anywhere on the page, as does the
- * T key, and `toggle` opens and closes the bar. The bar's open state is the
- * drawer's; the presenter never sees it, so the link the presenter writes
- * gets the drawer's flag added here, on its way to the address bar. It plays
- * through the page's shared AudioEngine, on the drone bus. `onPlaying` hears
- * whenever it starts or stops.
+ * Mounts a view of `presenter`, the page's thambura, on `el`, in a drawer or
+ * docked (`presentation`). The page makes the presenter; this is only where
+ * it's shown. In a drawer it also wires the page's floating thambura
+ * controls: `play` starts and stops it from anywhere on the page, as does
+ * the T key, and `toggle` opens and closes the bar. The bar's open state is
+ * the drawer's; the presenter never sees it, so the drawer tells the page's
+ * link (`link.showsBar`), which adds it on the way to the address bar.
+ * `onPlaying` hears whenever it starts or stops.
  */
 /** How the thambura is shown: in a drawer with the page's floating controls, or docked in its slot. */
 export type ThamburaPresentation = "drawer" | "panel";
@@ -41,28 +35,24 @@ export interface ThamburaIslandOptions {
   onSettings?: (settings: ThamburaSettings) => void;
 }
 
-export function createThamburaIsland(el: HTMLElement, eventBus: EventBus, audio: AudioEngine, opts: ThamburaIslandOptions): SolidIsland {
+export function createThamburaIsland(
+  el: HTMLElement,
+  eventBus: EventBus,
+  presenter: ThamburaPresenter,
+  audio: AudioEngine,
+  link: PageLink,
+  opts: ThamburaIslandOptions,
+): SolidIsland {
   const { onPlaying, onSettings } = opts;
   const controls = opts.controls ?? { root: null, toggle: null, play: null };
   const { toggle, play } = controls;
-  const address = addressBarLink();
   // Only a drawer has an open state; a docked thambura is always showing.
   const drawer =
-    opts.presentation === "drawer" ? new ThamburaDrawer({ store: localStore("drawer"), legacy: localStore("drone"), link: address.read() }) : null;
-  const barFlag = () => linkShowsBar(opts.presentation, drawer);
+    opts.presentation === "drawer" ? new ThamburaDrawer({ store: localStore("drawer"), legacy: localStore("drone"), link: link.read() }) : null;
+  link.showsBar = () => linkShowsBar(opts.presentation, drawer);
+  // The presenter wrote the link before this layout was mounted; write it again with the bar's flag.
+  link.write(presenter.shareLink());
   const [open, setOpen] = createSignal(drawer?.open ?? true);
-  const presenter = new ThamburaPresenter({
-    audio,
-    ticker: workerTicker(),
-    frames: {
-      request: (cb) => requestAnimationFrame(cb),
-      cancel: (id) => cancelAnimationFrame(id),
-    },
-    defer: (cb, ms) => setTimeout(cb, ms),
-    store: localStore("drone"),
-    presets: localStore("presets"),
-    link: { read: address.read, write: (link) => address.write(withBarOpen(link, barFlag())) },
-  });
   const [state, setState] = signalView(presenter.state);
   presenter.attach({
     setState(s) {
@@ -76,7 +66,7 @@ export function createThamburaIsland(el: HTMLElement, eventBus: EventBus, audio:
     drawer.onChange((o) => {
       setOpen(o);
       reflectOpen(controls, o);
-      address.write(withBarOpen(presenter.shareLink(), o));
+      link.write(presenter.shareLink());
     });
     reflectOpen(controls, drawer.open);
     toggle?.addEventListener("click", () => drawer.toggle());
@@ -90,8 +80,8 @@ export function createThamburaIsland(el: HTMLElement, eventBus: EventBus, audio:
 
   // Leave room at the bottom of the page for the open bar.
   const onHeight = (px: number) => document.documentElement.style.setProperty("--thambura-bar-height", `${px}px`);
-  const shareUrl = (link: string) => linkUrl(withBarOpen(link, barFlag()));
-  const analyser = () => audio.analyser("drone");
+  const shareUrl = (setup: string) => link.url(setup);
+  const analyser = () => audio.analyser(presenter.id);
 
   return new SolidIsland(
     "thambura",
@@ -142,25 +132,23 @@ function reflectPlaying(play: HTMLElement | null, s: ThamburaState): void {
 }
 
 /**
- * The `s` parameter of the address bar, kept current without adding history
- * entries. Other parameters on the page are left as they are.
+ * A thambura on the page's audio, as the instrument with this `id`
+ * (`thambura-1`), reading and writing the page's share link. The first
+ * thambura takes the setup it saved before instance ids, once.
  */
-function addressBarLink(): ThamburaLink {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  return {
-    read: () => new URLSearchParams(location.search).get(LINK_PARAM),
-    write: (link) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        const url = linkUrl(link);
-        if (url !== location.href) history.replaceState(history.state, "", url);
-      }, LINK_SETTLE_MS);
+export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink): ThamburaPresenter {
+  const own = instrumentStore(id);
+  return new ThamburaPresenter({
+    id,
+    audio,
+    ticker: workerTicker(),
+    frames: {
+      request: (cb) => requestAnimationFrame(cb),
+      cancel: (frame) => cancelAnimationFrame(frame),
     },
-  };
-}
-
-function linkUrl(link: string): string {
-  const url = new URL(location.href);
-  url.searchParams.set(LINK_PARAM, link);
-  return url.toString();
+    defer: (cb, ms) => setTimeout(cb, ms),
+    store: id === "thambura-1" ? withFallback(own, localStore("drone")) : own,
+    presets: localStore("presets"),
+    link: { read: () => link.read(), write: (setup) => link.write(setup) },
+  });
 }

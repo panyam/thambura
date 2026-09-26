@@ -93,7 +93,7 @@ the same grid, with the sound moved out of the timer.
 | `AudioOut` | ~~`setBusVolume(bus, percent)`~~ | `setLevel`, `setPan`, `setMute`, `setSolo`, `removeTrack` per track (done, #96) |
 | Tala sounds | ~~the player schedules them from fixture groups~~ | a hands track playing the tala's calls (done, #98) |
 | Beat grid | ~~inside `PlayerPresenter`~~ | `TalaGrid` on `clock.tala`, read by any track (done, #97) |
-| Thambura | one presenter, one localStorage key, one `?s=` link | one per track, with an id |
+| Thambura | one presenter, one localStorage key, one `?s=` link | an instrument on the page with an id, `thambura-1`, its own track and key (done, #100a); links carrying several instruments are #100b |
 | Views | a page with a player and a floating bar | a track list, each track with its own panel |
 
 The thambura row is the expensive one, as far as we can tell. Its settings, its presets and its
@@ -162,7 +162,9 @@ plan (`mridangam.md`).
 4. **The hands become a track**, and the tala keeper becomes the clock, the
    grid and the images. The fixture's sound groups become a hands kit.
 5. **Instance ids** through the thambura's settings, presets and share links,
-   still limited to one thambura.
+   still limited to one thambura. Done in two parts: the thambura as an
+   instrument with an id, its own audio track and storage key (#100a), then
+   a link format that carries several instruments (#100b).
 6. **Drawn pads** from a manifest layout.
 7. **A second thambura**, once the render numbers allow it.
 8. **More instruments as kits**: ghatam, kanjira, a drum kit. By then adding

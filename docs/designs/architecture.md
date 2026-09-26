@@ -118,7 +118,7 @@ much slower oscillator (0.12-0.2 Hz) moves each tone's gain up and down by
 
 **The mixer.** Every note lands on a track, named by an id and made the
 first time the id is used (#96). The hand claps play on `hands-1` (#98), the
-thambura on `drone`, and each kit on its id from the page, `kit-1` for the
+thambura on `thambura-1` (#100), and each kit on its id from the page, `kit-1` for the
 first (#97). A track is a level, squared so the slider
 feels even, then an on/off gain for mute and solo, then a pan. Choke groups
 belong to a track, so two drums never cut each other off. The tracks sum
@@ -249,7 +249,7 @@ audio clock, so stopping means taking some of them back. `AudioEngine.cancel(bus
 hasn't started and undoes any fade it had booked on the note before it. A
 note already sounding is left alone, because cutting a waveform mid-cycle
 clicks. That is all the tala does. The thambura also calls
-`release("drone", 1.5)`, which fades whatever is still ringing over about
+`release("thambura-1", 1.5)`, which fades whatever is still ringing over about
 1.5 s, as a player's hand damps the strings.
 
 ### Showing what you hear
@@ -276,7 +276,7 @@ halves of Web Audio.
 | Web Audio node | `AudioBufferSourceNode`, one per note | same | same | one oscillator per tone, for as long as it plays |
 | Who decides when | `TalaSequencer` via `Transport`, played by the hands track | `ThamburaSequencer` via its own `Transport` | a stroke sequencer on the tala's timeline | nobody: it starts on Start |
 | Clock | the tala's `TempoMap` | thambura speed | the tala's `TempoMap` | none |
-| Track | `hands-1` | `drone` | the kit's id (`kit-1`) | `drone` |
+| Track | `hands-1` | `thambura-1` | the kit's id (`kit-1`) | `thambura-1` |
 | A tempo or speed change | within 100 ms | next pluck | within 100 ms | n/a |
 | A pitch change | n/a | after a re-render | n/a | glides in about 30 ms |
 | Overlap | none needed | a re-pluck chokes the same string over 80 ms | damped strokes choke ringing ones on the same head | n/a |

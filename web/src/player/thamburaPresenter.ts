@@ -12,7 +12,7 @@ import { BUILT_IN_PRESETS } from "../engine/presets";
 import { decodeLink, encodeLink } from "../engine/shareLink";
 import { normalizePlan, patternOf, planFor, type ThamburaPlan } from "../engine/thamburaPlan";
 import { ThamburaSequencer, type DampEvent, type PluckEvent, type ThamburaTiming } from "../engine/thamburaSequencer";
-import type { AudioOut, PlayOptions, ToneHandle } from "./audio";
+import type { AudioOut, PlayOptions, ToneHandle, TrackId } from "./audio";
 import type { FrameLoop } from "./presenter";
 import { Transport, type Ticker } from "./transport";
 
@@ -89,6 +89,11 @@ export interface ThamburaLink {
 }
 
 export interface ThamburaDeps {
+  /**
+   * Its id on the page (`thambura-1`), which is also the audio track it plays
+   * on, so two thamburas have their own levels and never choke each other.
+   */
+  id: TrackId;
   audio: AudioOut;
   ticker: Ticker;
   frames: FrameLoop;
@@ -203,11 +208,16 @@ export class ThamburaPresenter {
     this.seq = new ThamburaSequencer(this.timing, deps.rng);
     this.transport = new Transport(deps.audio, deps.ticker);
     this.transport.add(this.seq, (e) => ("damp" in e ? this.damp(e) : this.pluck(e)));
-    deps.audio.setBusVolume("drone", this.state.settings.volume);
+    deps.audio.setBusVolume(deps.id, this.state.settings.volume);
     // The address bar shows the current setup from the start. A shared one
     // isn't saved over this browser's own until the listener changes something.
     deps.link?.write(this.shareLink());
     this.savePresets();
+  }
+
+  /** Its id on the page, and the audio track it plays on. */
+  get id(): TrackId {
+    return this.deps.id;
   }
 
   attach(view: ThamburaView): void {
@@ -273,7 +283,7 @@ export class ThamburaPresenter {
     this.save();
 
     const plan = this.plan();
-    if (next.volume !== prev.volume) this.deps.audio.setBusVolume("drone", next.volume);
+    if (next.volume !== prev.volume) this.deps.audio.setBusVolume(this.deps.id, next.volume);
     this.timing.cycleSeconds = next.cycleSeconds;
     this.timing.pattern = patternOf(plan);
 
@@ -410,8 +420,8 @@ export class ThamburaPresenter {
     }
     this.startWhenReady = false;
     this.transport.stop();
-    this.deps.audio.cancel("drone");
-    this.deps.audio.release("drone", STOP_FADE);
+    this.deps.audio.cancel(this.deps.id);
+    this.deps.audio.release(this.deps.id, STOP_FADE);
     this.cues = [];
   }
 
@@ -419,7 +429,7 @@ export class ThamburaPresenter {
     const s = this.state.settings;
     const spectrum = reedSpectrum(s.tone);
     this.tones = srutiFrequencies(s).map((frequency, i) =>
-      this.deps.audio.startTone("drone", { frequency, detune: s.cents, gain: SRUTI_GAIN[i], pan: SRUTI_PAN[i], spectrum }),
+      this.deps.audio.startTone(this.deps.id, { frequency, detune: s.cents, gain: SRUTI_GAIN[i], pan: SRUTI_PAN[i], spectrum }),
     );
   }
 
@@ -512,7 +522,7 @@ export class ThamburaPresenter {
     if (from < 0) return;
     this.seq.startWith(from);
     // Drop what was booked but not yet heard; ringing strings are choked as they're replucked.
-    this.deps.audio.cancel("drone");
+    this.deps.audio.cancel(this.deps.id);
     this.cues = [];
     this.transport.start();
     this.runFrames();
@@ -520,19 +530,19 @@ export class ThamburaPresenter {
 
   private setMutes(muted: ThamburaState["muted"]): void {
     muted.forEach((m, i) => {
-      if (m && !this.state.muted[i]) this.deps.audio.damp("drone", `thambura/string${i}`, this.deps.audio.now, MUTE_FADE);
+      if (m && !this.state.muted[i]) this.deps.audio.damp(this.deps.id, `thambura/string${i}`, this.deps.audio.now, MUTE_FADE);
     });
     this.update({ muted });
   }
 
   private pluck(e: PluckEvent): void {
     if (this.state.muted[e.string]) return;
-    this.deps.audio.play(this.stringKeys[e.string], "drone", e.time, pluckOptions(this.plan(), this.state.settings.cents, e));
+    this.deps.audio.play(this.stringKeys[e.string], this.deps.id, e.time, pluckOptions(this.plan(), this.state.settings.cents, e));
     this.cues.push({ time: e.time, string: e.string });
   }
 
   private damp(e: DampEvent): void {
-    this.deps.audio.damp("drone", `thambura/string${e.string}`, e.time, DAMP_FADE);
+    this.deps.audio.damp(this.deps.id, `thambura/string${e.string}`, e.time, DAMP_FADE);
   }
 
   /** Lights each string once its pluck is heard; runs while there is anything to show. */
