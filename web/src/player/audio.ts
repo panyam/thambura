@@ -1,16 +1,17 @@
 /**
  * Audio output: one AudioContext and a small mixer shared by every voice.
  *
- *   track "tala" ───────┐
- *   track "drone" ──────┼─ master gain ─ limiter ─ speakers
- *   track "mridangam-1" ┘
+ *   track "hands-1" ┐
+ *   track "drone" ──┼─ master gain ─ limiter ─ speakers
+ *   track "kit-1" ──┘
  *
  * Every instrument plays on a track of its own, made the first time its id
  * is used: a level, an on/off gain for mute and solo, and a pan, into the
- * master (see docs/designs/instruments.md). The tala plays on "tala", the
- * thambura on "drone", and each kit on its id from the page (`kit-1`). Plucked and struck voices schedule samples ahead of time on
- * the audio clock (see Transport); the sruti drone runs continuous tones on
- * its track instead.
+ * master (see docs/designs/instruments.md). The hand claps play on
+ * "hands-1", the thambura on "drone", and each kit on its id from the page
+ * (`kit-1`). Plucked and struck voices schedule samples ahead of time on the
+ * audio clock (see Transport); the sruti drone runs continuous tones on its
+ * track instead.
  */
 export type TrackId = string;
 

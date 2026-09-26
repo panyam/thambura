@@ -14,6 +14,8 @@ const KEYS = {
   drawer: "thambura.drawer",
   /** A kit's choices, such as Variety (kitPresenter.ts). Shared by every kit for now. */
   kit: "thambura.kit",
+  /** The hand claps' Sounds and Volume (handsPresenter.ts). */
+  hands: "thambura.hands",
 } as const;
 
 export type StoreName = keyof typeof KEYS;

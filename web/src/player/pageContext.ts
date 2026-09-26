@@ -5,6 +5,7 @@ import { DEFAULT_THAMBURA, tunedTonicHz } from "../engine/shruthi";
 import type { TalaGrid } from "../engine/talaGrid";
 import { TempoMap } from "../engine/tempoMap";
 import type { AudioEngine } from "./audio";
+import type { HandsPresenter } from "./handsPresenter";
 import type { KeepAwake } from "./keepAwake";
 import type { KitPresenter } from "./kitPresenter";
 import { Transport, type Ticker } from "./transport";
@@ -18,10 +19,13 @@ import { Transport, type Ticker } from "./transport";
 export interface PageContext {
   audio: AudioEngine;
   clock: Clock;
-  tracks: Tracks<KitPresenter>;
+  tracks: Tracks<Instrument>;
   tonic: Tonic;
   awake: KeepAwake;
 }
+
+/** An instrument on the page, as a track: a kit, or the hand claps. */
+export type Instrument = KitPresenter | HandsPresenter;
 
 /**
  * The tala's clock, owned by the page so a page without the tala still has
@@ -35,6 +39,30 @@ export interface Clock {
   transport: Transport;
   /** The tala's cycle, set by the tala; empty until a tala is on the page. */
   tala: Latest<TalaTiming>;
+  /**
+   * Each sound the tala calls, as it books it: its name ("down", "open", ...)
+   * and when it sounds. The hands track plays them; the tala makes no sound.
+   */
+  ticks: Ticks;
+}
+
+/** One sound the tala calls, at a time on the audio clock. */
+export interface TickCall {
+  time: number;
+  sound: string;
+}
+
+/** The tala's calls, heard by whoever plays them. */
+export class Ticks {
+  private readonly listeners: ((call: TickCall) => void)[] = [];
+
+  on(listener: (call: TickCall) => void): void {
+    this.listeners.push(listener);
+  }
+
+  emit(call: TickCall): void {
+    for (const f of this.listeners) f(call);
+  }
 }
 
 /** What the tala tells the instruments playing along with it. */
@@ -51,7 +79,12 @@ export interface TalaTiming {
 
 export function createClock(audio: { readonly now: number }, ticker: Ticker, bpm = DEFAULT_TEMPO): Clock {
   const tempo = new TempoMap(bpm);
-  return { tempo, transport: new Transport(audio, ticker, { tempo }), tala: new Latest<TalaTiming>() };
+  return {
+    tempo,
+    transport: new Transport(audio, ticker, { tempo }),
+    tala: new Latest<TalaTiming>(),
+    ticks: new Ticks(),
+  };
 }
 
 /**

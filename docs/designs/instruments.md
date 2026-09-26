@@ -29,8 +29,9 @@ Rather more of this exists already than the names suggest.
   are `<kind>-<n>`, numbered in the order the page spec lists its
   instruments, so the first kit is `kit-1`.
 
-What's in the way now: the tala player still schedules its own clap sounds
-instead of a hands track doing it (#98).
+- **The claps are a track** (#98). The tala calls each tick's sound on
+  `clock.ticks`, and a hands track (`hands-1`) plays it from the chosen
+  sound group, with its own level. The tala makes no sound at all.
 
 ## The shape
 
@@ -75,8 +76,10 @@ clap sounds from the fixture's groups and schedules them itself. It becomes:
 - the **clock**, which it already owns,
 - a **beat grid** (which cycle, which akshara, which anga) that anything can
   read, which the mridangam needs anyway for eduppu and korvai,
-- a **hands track**, a kit like any other, whose strokes are the claps, the
-  finger counts and the waves,
+- a **hands track**, whose sounds are the claps, the finger counts and the
+  waves. It stayed a fixture of sound groups rather than a kit (#98): the
+  tala decides which sound each tick is, and Previous/Next play one beat
+  at once, which a kit's own sequencer can't,
 - the **beat images**, which are a consumer of the clock and make no sound.
 
 Nothing about that changes what a student sees today. It's the same claps, on
@@ -88,7 +91,7 @@ the same grid, with the sound moved out of the timer.
 |---|---|---|
 | Buses | ~~three fixed names~~ | one per track, made on first use (done, #96) |
 | `AudioOut` | ~~`setBusVolume(bus, percent)`~~ | `setLevel`, `setPan`, `setMute`, `setSolo`, `removeTrack` per track (done, #96) |
-| Tala sounds | the player schedules them from fixture groups | a hands kit on a track |
+| Tala sounds | ~~the player schedules them from fixture groups~~ | a hands track playing the tala's calls (done, #98) |
 | Beat grid | ~~inside `PlayerPresenter`~~ | `TalaGrid` on `clock.tala`, read by any track (done, #97) |
 | Thambura | one presenter, one localStorage key, one `?s=` link | one per track, with an id |
 | Views | a page with a player and a floating bar | a track list, each track with its own panel |
@@ -164,6 +167,17 @@ plan (`mridangam.md`).
 7. **A second thambura**, once the render numbers allow it.
 8. **More instruments as kits**: ghatam, kanjira, a drum kit. By then adding
    one is a recording session and a manifest, not code.
+
+## Several talas at once, later
+
+Some practice plays two or three talas against each other and watches them
+meet again after some number of cycles. Talas stay their own group, the
+conductors, rather than becoming instruments: `clock.tala` would become a
+set of talas keyed by id on one tempo map and transport, each instrument
+following one of them, and each tick carrying which tala called it. A tala
+only becomes an instrument if it has to follow something, such as one tala
+defined in another's counts. Nothing is built for this yet; the rule for now
+is not to add code that assumes there can only ever be one tala.
 
 ## What this doesn't change
 

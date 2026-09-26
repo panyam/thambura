@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { KEY_C3, KEY_G3, DEFAULT_THAMBURA, tunedTonicHz } from "../engine/shruthi";
 import { KitPresenter, ZONE_CHOKE_FADE, type KitState } from "./kitPresenter";
 import { ratio } from "../engine/ratio";
+import { HandsPresenter } from "./handsPresenter";
 import { createClock, type Clock } from "./pageContext";
 import { PlayerPresenter } from "./presenter";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
@@ -256,7 +257,7 @@ describe("KitPresenter on the tala's clock", () => {
   };
   const strokes = () => audio.played.filter((n) => n.bus === "kit-1");
   const stroke = (n: { url: string }) => n.url.split("/").pop()!.replace(/\.wav$/, "");
-  const claps = () => audio.played.filter((n) => n.bus === "tala");
+  const claps = () => audio.played.filter((n) => n.bus === "hands-1");
 
   const setup = async (opts: { playerSaved?: unknown; kitSaved?: unknown } = {}) => {
     audio = new FakeAudio();
@@ -277,6 +278,8 @@ describe("KitPresenter on the tala's clock", () => {
     });
     kit.attach({ setState: () => {} });
     await kit.load("/Kits/drum/kit.json");
+    const hands = new HandsPresenter({ audio, track: "hands-1", clock, fetchJson: async () => TALA_FIXTURES });
+    await hands.load("/fixtures.json");
     tala = new PlayerPresenter({
       audio,
       clock,
@@ -443,7 +446,7 @@ describe("KitPresenter on the tala's clock", () => {
     const after = audio.played.slice(before);
     const first = after.filter((n) => n.bus === "kit-1")[0];
     // The drum picks up on akshara 3 with the tala, on that akshara's stroke...
-    expect(first.when).toBe(after.find((n) => n.bus === "tala")!.when);
+    expect(first.when).toBe(after.find((n) => n.bus === "hands-1")!.when);
     expect(stroke(first)).toBe("R.nam");
     // ...and its tham lands on the tala's next sam, five counts on.
     const sam = secondsAt(5);
@@ -477,8 +480,8 @@ describe("KitPresenter on the tala's clock", () => {
   });
 });
 
-describe("the tala without a kit", () => {
-  it("plays its claps and books nothing else", async () => {
+describe("the tala on its own", () => {
+  it("books no audio: the claps are the hands track's", async () => {
     const audio = new FakeAudio();
     const ticker = new FakeTicker();
     const tala = new PlayerPresenter({
@@ -492,8 +495,7 @@ describe("the tala without a kit", () => {
     await tala.start();
     audio.now = 1;
     ticker.onTick?.();
-    expect(audio.played.length).toBeGreaterThan(0);
-    expect(audio.played.every((n) => n.bus === "tala")).toBe(true);
+    expect(audio.played).toEqual([]);
   });
 });
 

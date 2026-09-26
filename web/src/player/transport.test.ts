@@ -75,3 +75,17 @@ describe("Transport with a TempoMap", () => {
     expect(times.slice(4)).toEqual([expect.closeTo(count2, 9), expect.closeTo(count2, 9)]);
   });
 });
+
+describe("Transport.onStop", () => {
+  it("tells its listeners once per stop, after the sequencers have stopped", () => {
+    const transport = new Transport({ now: 0 }, new FakeTicker());
+    const heard: string[] = [];
+    transport.add({ start: () => {}, stop: () => heard.push("seq"), pull: () => [] }, () => {});
+    transport.onStop(() => heard.push("listener"));
+    transport.stop(); // not running: nothing to tell
+    transport.start(0);
+    transport.stop();
+    transport.stop();
+    expect(heard).toEqual(["seq", "listener"]);
+  });
+});

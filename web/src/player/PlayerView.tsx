@@ -11,6 +11,7 @@ import {
   usesNadai,
   type TalaId,
 } from "../engine/selection";
+import type { HandsPresenter, HandsState } from "./handsPresenter";
 import type { KitState } from "./kitPresenter";
 import { StrokeLane } from "./StrokeLane";
 import { StrokePad, type KitActions } from "./StrokePad";
@@ -23,9 +24,7 @@ export type PlayerActions = Pick<
   | "prev"
   | "restart"
   | "setTempo"
-  | "setVolume"
   | "setSettings"
-  | "setSoundGroup"
   | "setImageGroup"
   | "setMotion"
 >;
@@ -40,6 +39,11 @@ export function PlayerView(props: {
   actions: PlayerActions;
   /** A struck instrument, when the page has a kit for one. */
   kit?: { state: Accessor<KitState>; actions: KitActions };
+  /**
+   * The hand claps, whose Sounds menu and Volume sit with the tala. Without
+   * them the tala is silent, and those two controls aren't shown.
+   */
+  hands?: { state: Accessor<HandsState>; actions: HandsActions };
 }) {
   const s = props.state;
   const a = props.actions;
@@ -118,11 +122,17 @@ export function PlayerView(props: {
             <For each={s().imageGroups}>{(g) => <option value={g} selected={g === s().imageGroup}>{g}</option>}</For>
           </select>
         </Field>
-        <Field label="Sounds" id="sounds">
-          <select id="sounds" class={SELECT} onChange={(e) => void a.setSoundGroup(e.currentTarget.value)}>
-            <For each={s().soundGroups}>{(g) => <option value={g} selected={g === s().soundGroup}>{g}</option>}</For>
-          </select>
-        </Field>
+        <Show when={props.hands}>
+          {(hands) => (
+            <Field label="Sounds" id="sounds">
+              <select id="sounds" class={SELECT} onChange={(e) => void hands().actions.setSoundGroup(e.currentTarget.value)}>
+                <For each={hands().state().soundGroups}>
+                  {(g) => <option value={g} selected={g === hands().state().soundGroup}>{g}</option>}
+                </For>
+              </select>
+            </Field>
+          )}
+        </Show>
       </section>
 
       <section class="flex items-center justify-center gap-3" aria-label="Transport">
@@ -190,30 +200,34 @@ export function PlayerView(props: {
             />
           </Stepper>
         </div>
-        <div>
-          <div class="mb-1 flex items-center justify-between">
-            <label for="volume" class="text-sm font-medium">Volume</label>
-            <span class="text-sm tabular-nums text-gray-500 dark:text-gray-400">{s().volume}%</span>
-          </div>
-          <Stepper
-            label="volume"
-            unit={`${VOLUME_STEP}%`}
-            onDown={() => a.setVolume(s().volume - VOLUME_STEP)}
-            onUp={() => a.setVolume(s().volume + VOLUME_STEP)}
-            atMin={s().volume <= 0}
-            atMax={s().volume >= 100}
-          >
-            <input
-              id="volume"
-              type="range"
-              min={0}
-              max={100}
-              value={s().volume}
-              onInput={(e) => a.setVolume(e.currentTarget.valueAsNumber)}
-              class="w-full accent-amber-600"
-            />
-          </Stepper>
-        </div>
+        <Show when={props.hands}>
+          {(hands) => (
+            <div>
+              <div class="mb-1 flex items-center justify-between">
+                <label for="volume" class="text-sm font-medium">Volume</label>
+                <span class="text-sm tabular-nums text-gray-500 dark:text-gray-400">{hands().state().volume}%</span>
+              </div>
+              <Stepper
+                label="volume"
+                unit={`${VOLUME_STEP}%`}
+                onDown={() => hands().actions.setVolume(hands().state().volume - VOLUME_STEP)}
+                onUp={() => hands().actions.setVolume(hands().state().volume + VOLUME_STEP)}
+                atMin={hands().state().volume <= 0}
+                atMax={hands().state().volume >= 100}
+              >
+                <input
+                  id="volume"
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={hands().state().volume}
+                  onInput={(e) => hands().actions.setVolume(e.currentTarget.valueAsNumber)}
+                  class="w-full accent-amber-600"
+                />
+              </Stepper>
+            </div>
+          )}
+        </Show>
       </section>
 
       <section class="grid w-full max-w-md grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2" aria-label="Tala settings">
@@ -355,3 +369,5 @@ function GatiSelect(props: { id: string; value: Gati; disabled: boolean; onChang
     </select>
   );
 }
+
+type HandsActions = Pick<HandsPresenter, "setSoundGroup" | "setVolume">;
