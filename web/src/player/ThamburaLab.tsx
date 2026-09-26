@@ -41,7 +41,7 @@ const GROUP = "mb-5 grid break-inside-avoid content-start gap-2.5";
  * Lab starts from a sound you know. Any change switches the Sound to Custom
  * so it is heard at once. Strings can be muted or soloed to hear one alone,
  * and a scope shows what's playing. The plan copies out as JSON, for
- * render-mix --custom (docs/sound-analysis.md) or to paste back in later.
+ * render-mix --custom (docs/designs/sound-analysis.md) or to paste back in later.
  */
 export function ThamburaLab(props: ThamburaViewProps) {
   const st = () => props.state();

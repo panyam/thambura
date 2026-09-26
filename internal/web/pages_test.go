@@ -348,7 +348,7 @@ func TestMissingAssets(t *testing.T) {
 	}
 }
 
-// A kit is a build product that isn't committed (see docs/mridangam.md), so
+// A kit is a build product that isn't committed (see docs/designs/mridangam.md), so
 // the page must only name the kits the folder actually holds. Otherwise
 // every visitor's browser asks for a kit.json that isn't there.
 func TestFindKits(t *testing.T) {

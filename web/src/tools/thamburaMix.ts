@@ -20,7 +20,7 @@ export interface ThamburaMix {
  * Plays the thambura offline for `seconds`, the way ThamburaPresenter and
  * AudioEngine do in the browser: the same renders, sequencer, per-pluck
  * options (level, pan, detune), 80 ms choke on a re-pluck and damp fades.
- * For listening to a mode and measuring it (docs/sound-analysis.md); only
+ * For listening to a mode and measuring it (docs/designs/sound-analysis.md); only
  * the limiter and the bus volume are left out. Custom mode plays `custom`,
  * as exported from the Lab view.
  */

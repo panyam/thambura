@@ -28,7 +28,7 @@ diffpp uses.
 | esbuild + esbuild-plugin-solid | ^0.28 / ^0.6 | Bundling |
 | vitest | ^5.0 | Engine and presenter tests (bumped by Dependabot, PR #3) |
 | notations (dev) | ^1.0.9 | The DSL mridangam patterns are written in (panyam/notations). Build time only: `pnpm patterns` compiles `web/patterns/*.not` into `src/engine/patterns.data.ts`, so the parser never reaches the browser, where it would cost 78 KB gzipped |
-| numpy, scipy, soundfile, matplotlib (Python) | `tools/sound-analysis/requirements.txt` | Measuring recordings against offline renders (docs/sound-analysis.md); a venv in the tool's folder, never shipped |
+| numpy, scipy, soundfile, matplotlib (Python) | `tools/sound-analysis/requirements.txt` | Measuring recordings against offline renders (docs/designs/sound-analysis.md); a venv in the tool's folder, never shipped |
 
 ## Project Conventions
 

@@ -1,7 +1,7 @@
 # Sound analysis
 
 Measures tambura recordings and the app's offline renders side by side. See
-[docs/sound-analysis.md](../../docs/sound-analysis.md) for the method, the
+[docs/designs/sound-analysis.md](../../docs/designs/sound-analysis.md) for the method, the
 steps and the results.
 
 ```sh

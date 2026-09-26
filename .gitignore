@@ -11,10 +11,10 @@
 .DS_Store
 
 # Instrument kits copied in from the thambura-data repo (make devkit). Nothing
-# here is committed until we have a kit we can ship: see docs/mridangam.md.
+# here is committed until we have a kit we can ship: see docs/designs/mridangam.md.
 /web/static/Resources/Kits/
 
-# Tambura recordings and offline renders for tools/sound-analysis (docs/sound-analysis.md)
+# Tambura recordings and offline renders for tools/sound-analysis (docs/designs/sound-analysis.md)
 /recordings/
 /tools/sound-analysis/.venv/
 /.venv/

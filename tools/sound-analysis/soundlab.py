@@ -1,7 +1,7 @@
 """Measurements for comparing tambura recordings with the app's renders.
 
 Used by analyse.py (prints the numbers for one file) and compare.py (draws
-the charts in docs/sound-analysis.md). Everything works on a mono mix, so the
+the charts in docs/designs/sound-analysis.md). Everything works on a mono mix, so the
 four strings are told apart by pitch: each string's harmonics that no other
 string shares.
 """

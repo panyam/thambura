@@ -24,7 +24,7 @@ so a deploy still uploads them.
 `web/` has three pnpm scripts no make target and no CI runs, so they only run
 when you type them: `pnpm bench` (times the pluck renderer, see `tambura.ts`
 below), `pnpm render-mix` (renders the thambura to WAV, see
-`docs/sound-analysis.md`) and `pnpm watch`. There are no GitHub Actions in
+`docs/designs/sound-analysis.md`) and `pnpm watch`. There are no GitHub Actions in
 this repo at all; `make test` is the whole gate, and `make deploy` runs it.
 
 ## Naming
@@ -93,11 +93,12 @@ Two things that have bitten:
   `node:child_process` or `process`. Checks that need them belong in the
   Makefile instead: `pnpm patterns:check` runs there, not in vitest.
 
-`docs/architecture.md` explains how the sounds are made and timed, timed vs
-continuous voices, and what changed from the 2016 app. `docs/layouts.md` and
-`docs/library.md` are plans, not descriptions: where the thambura could sit,
+The design docs are in `docs/designs/`; `docs/` itself is for the developer
+docs site (#105). `docs/designs/architecture.md` explains how the sounds are made and timed, timed vs
+continuous voices, and what changed from the 2016 app. `docs/designs/layouts.md` and
+`docs/designs/library.md` are plans, not descriptions: where the thambura could sit,
 and what it would take to import these pieces from another project.
-`docs/sound-analysis.md` explains how the jawari voice was fitted to a
+`docs/designs/sound-analysis.md` explains how the jawari voice was fitted to a
 recording, and how to rerun it: `pnpm render-mix` (web/scripts, over
 `src/tools/thamburaMix.ts`) renders the thambura offline to WAV, and the
 Python in `tools/sound-analysis/` measures and charts it against a recording
@@ -382,7 +383,7 @@ See NEXTSTEPS.md for the order.
   packs (tunings, or one unpitched pack played as recorded), and strokes with
   takes per pack. `player/kitPresenter.ts` loads one, follows the thambura's
   Sa and plays a stroke; `player/StrokePad.tsx` draws whatever the manifest
-  declares. The mridangam is data, not code. `docs/mridangam.md` is the plan
+  declares. The mridangam is data, not code. `docs/designs/mridangam.md` is the plan
   (strokes and tuning, patterns per tala, packaging, views, build order).
 - **Kits aren't committed.** They're build products from the `thambura-data`
   repo: `make devkit` copies one into `web/static/Resources/Kits/<kit>/`,
@@ -408,7 +409,7 @@ See NEXTSTEPS.md for the order.
   types and `patternFor`, which matches a pattern to a tala on the cycle's
   shape and the nadai, so one Adi pattern serves Adi and a chatusra Thriputa
   and stretches with kalai. What's left for the mridangam is more patterns
-  and a generated fallback, then arrangements (`docs/mridangam.md`).
+  and a generated fallback, then arrangements (`docs/designs/mridangam.md`).
 - **Patterns carry their provenance.** Three come from karya's
   `MridangamSarva.hs` (Evan Laforge's transcriptions from his teachers, GPL,
   used with permission, see `web/patterns/CREDITS.md` for the piece, the

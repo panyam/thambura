@@ -24,7 +24,7 @@ from typing import Callable
 MEASURED = ["first", "low Sa"]  # the strings a mono mix lets us follow alone
 # How far into a string's ring its curves are worth comparing. The low Sa's
 # readings after 2 s are the first string's next pluck leaking in at a level
-# where the low Sa has gone quiet ("Results" in docs/sound-analysis.md).
+# where the low Sa has gone quiet ("Results" in docs/designs/sound-analysis.md).
 UNTIL = {"first": 4.0, "low Sa": 2.0}
 
 

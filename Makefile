@@ -54,7 +54,7 @@ liftcheck:
 	@bad=$$(grep -rnE "from ['\"]\.\./" web/src/page || true); \
 	  if [ -n "$$bad" ]; then echo "web/src/page imports from outside itself:"; echo "$$bad"; exit 1; fi
 
-# The sound-analysis tools (docs/sound-analysis.md). Kept out of `test`, and so
+# The sound-analysis tools (docs/designs/sound-analysis.md). Kept out of `test`, and so
 # out of `deploy`, since they need a Python env the app itself never uses. The
 # venv is shared and sits outside the worktree, so the recipe calls it by
 # absolute path: $(PY) is relative to the repo root, and this cds below it.

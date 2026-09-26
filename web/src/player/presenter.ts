@@ -172,7 +172,7 @@ export class PlayerPresenter {
     this.seq = new TalaSequencer(this.cursor, this.tempo, deps.rng);
     this.transport.add(this.seq, (e) => this.schedule(e));
     // TODO(instruments): stroke scheduling moves out of the tala into a kit
-    // track on the same clock (docs/instruments.md).
+    // track on the same clock (docs/designs/instruments.md).
     this.strokes = new StrokeSequencer((cycle) => this.cycleSource(cycle), this.tempo);
     this.transport.add(this.strokes, (e: StrokeEvent) => this.scheduleStroke(e));
     this.state = {

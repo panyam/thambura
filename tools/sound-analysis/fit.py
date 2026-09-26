@@ -1,4 +1,4 @@
-"""Fits the jawari voice's bloom to a recording (docs/sound-analysis.md, "Fitting").
+"""Fits the jawari voice's bloom to a recording (docs/designs/sound-analysis.md, "Fitting").
 
     python fit.py ../../recordings/tambura-C.mp3 --sa 131.05
 
