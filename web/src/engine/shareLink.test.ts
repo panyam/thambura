@@ -204,3 +204,81 @@ describe("presets that ship with the app", () => {
     }
   });
 });
+
+/**
+ * Links made by format 1, written down as they were sent. People keep links
+ * (and presets are links), so these must go on opening the same sound for
+ * as long as format 1 is read (docs: reference/share-link-format). A failure
+ * here means the format changed: put the old reading back, and put anything
+ * new behind a FORMAT bump.
+ */
+describe("format 1 links keep opening the same", () => {
+  const bytes = (link: string) => Uint8Array.from(atob(link.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+  const open = (link: string) => {
+    const d = decodeLink(link, current);
+    expect(d, link).not.toBeNull();
+    return d!;
+  };
+
+  it("a plain setup", () => {
+    const d = open("AQgAA0AHETABwjIyPA");
+    expect(d.settings).toEqual({ ...DEFAULT_THAMBURA, volume: 37 });
+    expect(d.view).toBe("studio");
+    expect(d.open).toBe(false);
+    expect(d.custom).toBeNull();
+  });
+
+  it("every flag, the view and the bar", () => {
+    const d = open("AR8BCTQFEUQBRR5GNw");
+    expect(d.settings).toEqual({
+      key: 9, cents: -12, voice: "ladies", firstString: "Ma1", temperament: "equal", a4: 442,
+      mode: "tambura", cycleSeconds: 3.25, volume: 37, tone: 30, pluck: 70, sustain: 55,
+    });
+    expect(d.view).toBe("lab");
+    expect(d.open).toBe(true);
+  });
+
+  it("sruti mode", () => {
+    const d = open("ARAEA0AHETABwjIyPA");
+    expect(d.settings.mode).toBe("sruti");
+    expect(d.view).toBe("raagini");
+  });
+
+  it("a Custom plan as edits: one string's level", () => {
+    const d = open("ARgDA0AHETABwjIyPADY5gFACD_gAAAAAAAAAA");
+    expect(bytes("ARgDA0AHETABwjIyPADY5gFACD_gAAAAAAAAAA")[13] & 0x80).toBe(0);
+    expect(d.drifted).toBe(false);
+    expect(d.custom!.strings.map((s) => s.level)).toEqual([...jawari.strings.slice(0, 3).map((s) => s.level), 0.5]);
+  });
+
+  it("a Custom plan as a whole, against guitar", () => {
+    const link =
+      "AQgDA0AHETABwjIyPIJaujsSChQOPwMWMgNTE2UDFQMAIwcQFyUDA8sBEjYPBxELPAATLwBQEGIAEgBkIAQNFCIAAMgBFjsUDBYQQQUYNAVVFWcFFwUAJQkSGScFBc0BFzoNBQ8JOgARLQBODmAAEABiHgILEiAAAMYBFwAH0AfQB9APoAA";
+    expect(bytes(link)[13]).toBe(0x80 | 2);
+    const d = open(link);
+    expect(d.drifted).toBe(false);
+    d.custom!.strings.forEach((s, i) => {
+      expect(s.voice.ringSeconds).toBeCloseTo([6.5, 5, 7.5, 4][i], 12);
+      expect(s.pan).toBeCloseTo([-0.2, 0, 0.05, 0.05][i], 12);
+    });
+    d.custom!.gaps.forEach((g, i) => expect(g).toBeCloseTo([0.2, 0.2, 0.2, 0.4][i], 4));
+  });
+
+  it("a hidden value the Lab doesn't show", () => {
+    const d = open("AQgDA0AHETABwjIyPADY5gABAAJAJwAAAAAAAA");
+    expect(d.custom!.strings.map((s) => s.voice.seconds)).toEqual([9, 11.5, 9, 9]);
+  });
+
+  it("the Shimmer preset, the reference page's worked example", () => {
+    const d = open(BUILT_IN_PRESETS[0].link);
+    expect(BUILT_IN_PRESETS[0].link).toBe("ARwDBEAHETABLDIyPADY5g8BDwcCDxEED2MFDwMGDwAHDxQJB1wJCDQKD2QLDxYMDzUNDzQODxgPDzcYBOEBAA");
+    expect(d.settings).toEqual({ ...DEFAULT_THAMBURA, key: 4, mode: "custom", cycleSeconds: 3, volume: 37 });
+    expect(d.custom!.strings.map((s) => [s.level, s.voice.ringSeconds, s.damp, s.voice.formantDb])).toEqual([
+      [0.8, 50, 0, 46],
+      [0.7, 50, 0, 46],
+      [0.7, 50, 0, 46],
+      [1, 50, 0, 26],
+    ]);
+    d.custom!.gaps.forEach((g, i) => expect(g).toBeCloseTo([0.3, 0.205, 0.205, 0.29][i], 4));
+  });
+});
