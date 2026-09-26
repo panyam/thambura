@@ -8,7 +8,7 @@ There is no server-side data.
 
 ```sh
 make run         # ui + go run on :8000 (8080 is taken in the dev container)
-make test        # go test ./... ; pnpm typecheck ; pnpm test (vitest)
+make test        # go test ./... ; pnpm typecheck ; pnpm test (vitest) ; pnpm buildcheck
 make ui          # pnpm install, Tailwind -> web/static/css/tailwind.css, esbuild -> web/static/app.js
 make templates   # templar get: re-vendor goapplib templates after a ref bump
 make devkit      # copy an instrument kit in from ../mridangam-data (gitignored)
@@ -18,8 +18,36 @@ make deploydev   # the same, to a no-traffic "dev" version, to try before thambu
 make prodlogs    # tail App Engine logs
 ```
 
-Built assets (`app.js`, `tailwind.css`) are gitignored. `.gcloudignore` exists
-so a deploy still uploads them.
+Built assets (`app.js`, `static/chunks/`, `tailwind.css`, `web/bundle.json`)
+are gitignored. `.gcloudignore` exists so a deploy still uploads them.
+
+**The bundle is split** (#91). `web/build.mjs` builds `app.js` with
+`splitting`: the Lab and Raagini views load on first use from
+`static/chunks/`, behind a "Loading the Lab…" indicator, and code they share
+with the app goes into shared chunks that `app.js` imports up front. Three
+things keep that from making a first visit slower or a deploy break a page:
+
+- The build writes `web/bundle.json`, the chunks `app.js` imports before it
+  runs, and Go (`internal/web/bundle.go`) reads it at startup and puts them in
+  every page's `<head>` as `<link rel="modulepreload">`. Without that the
+  browser finds them one after another, and a first visit measured slower
+  than an unsplit bundle. The manifest is outside `static/` because App
+  Engine serves that folder itself and the Go app can't read it. After a
+  `pnpm watch` rebuild the server's copy is stale until it restarts, which
+  only costs the preload.
+- The service worker precaches every script the build wrote (the list comes
+  from esbuild's metafile, `scripts/shell.mjs`), so the lazy views open
+  offline after one visit and an old worker always holds an `app.js` and the
+  chunks it asks for.
+- `app.yaml` makes `/static/*.js` revalidate on every load and keeps
+  `/static/chunks/` for a year (their names are content hashes). Otherwise a
+  browser holding a pre-deploy `app.js` would ask for chunks the deploy
+  removed. The build empties `static/chunks/` first, since esbuild never
+  deletes.
+
+`pnpm buildcheck` (in `make test`) builds into a temp folder and checks all
+of this: the views are in chunks, the worker precaches every script, stale
+chunks are gone, and `bundle.json` matches what `app.js` imports.
 
 `web/` has three pnpm scripts no make target and no CI runs, so they only run
 when you type them: `pnpm bench` (times the pluck renderer, see `tambura.ts`
@@ -373,7 +401,7 @@ unit-tested:
   listeners can offer sounds to become built-in presets.
 - `sw.ts` is the service worker (its own esbuild bundle, classic script, no
   source map, `__BUILD__` set to the git revision so each deploy gets a fresh
-  cache). Pages are network-first, everything else cache-first with a
+  cache, `__SHELL__` the precache list from the app build). Pages are network-first, everything else cache-first with a
   background refresh. It makes the app installable (browsers want a manifest
   plus a worker handling `fetch`) and it runs the whole app offline. It needs
   WebWorker types, not DOM, so `tsconfig.json` excludes it and

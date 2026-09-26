@@ -43,7 +43,7 @@ watch:
 
 test: liftcheck
 	go test ./...
-	cd web && pnpm typecheck && pnpm patterns:check && pnpm test
+	cd web && pnpm typecheck && pnpm patterns:check && pnpm test && pnpm buildcheck
 	cd web && pnpm exec tsc -p ../docs/components
 	cd docs && go test ./...
 

@@ -5,6 +5,8 @@
 /web/node_modules/
 /web/static/app.js
 /web/static/app.js.map
+/web/static/chunks/
+/web/bundle.json
 /web/static/sw.js
 /web/static/css/tailwind.css
 

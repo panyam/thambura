@@ -13,7 +13,8 @@
     "render-mix": "node scripts/render-mix.mjs",
     "bench": "node scripts/bench-render.mjs",
     "patterns": "node scripts/compile-patterns.mjs",
-    "patterns:check": "node scripts/compile-patterns.mjs --check"
+    "patterns:check": "node scripts/compile-patterns.mjs --check",
+    "buildcheck": "node scripts/check-build.mjs"
   },
   "dependencies": {
     "@panyam/tsappkit": "^0.0.5",

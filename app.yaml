@@ -2,6 +2,20 @@
 runtime: go126
 
 handlers:
+# The frontend's entry scripts (app.js) revalidate on every load, and its
+# chunks (web/build.mjs) are kept for a year: a chunk's name is a hash of its
+# content, so a new build means new names. Without the first rule, a browser
+# holding an app.js from before a deploy for App Engine's default ten minutes
+# would ask for chunks the deploy removed. These must come before /static.
+- url: /static/([^/]+\.js)$
+  static_files: web/static/\1
+  upload: web/static/[^/]+\.js$
+  secure: always
+  expiration: "0s"
+- url: /static/chunks
+  static_dir: web/static/chunks
+  secure: always
+  expiration: "365d"
 - url: /static
   static_dir: web/static
   secure: always

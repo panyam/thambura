@@ -1,12 +1,29 @@
-import { createSignal, For, Match, onCleanup, Show, Switch } from "solid-js";
+import { createSignal, For, lazy, Match, onCleanup, Show, Suspense, Switch } from "solid-js";
 import { BUILT_IN_PRESETS } from "../engine/presets";
 import { THAMBURA_MODES, type ThamburaMode } from "../engine/shruthi";
 import { THAMBURA_VIEWS } from "./thamburaPresenter";
 import { copyText, PlayButton, Segmented, SMALL_SELECT, type ThamburaViewProps } from "./thamburaControls";
-import { ThamburaLab } from "./ThamburaLab";
 import { ThamburaMini } from "./ThamburaMini";
-import { ThamburaRaagini } from "./ThamburaRaagini";
 import { ThamburaStudio } from "./ThamburaStudio";
+
+// The Lab and the Raagini are the two largest views and most visits use
+// neither, so they load on first use, from their own chunks (build.mjs). The
+// service worker precaches the chunks, so after one visit they open offline.
+const ThamburaLab = lazy(() => import("./ThamburaLab").then((m) => ({ default: m.ThamburaLab })));
+const ThamburaRaagini = lazy(() => import("./ThamburaRaagini").then((m) => ({ default: m.ThamburaRaagini })));
+
+/** Shown in place of a view while its code arrives, the first time it's opened. */
+function ViewLoading(props: { name: string }) {
+  return (
+    <div role="status" class="flex items-center justify-center gap-2 py-10 text-sm text-gray-500 dark:text-gray-400">
+      <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" class="opacity-25" />
+        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+      </svg>
+      Loading the {props.name}…
+    </div>
+  );
+}
 
 // Built-in sounds in the menu are prefixed, so they can't collide with a preset's id.
 const MODE = "mode:";
@@ -144,10 +161,14 @@ export function ThamburaPanel(props: ThamburaPanelProps) {
             <ThamburaStudio state={props.state} actions={a} />
           </Match>
           <Match when={st().view === "raagini"}>
-            <ThamburaRaagini state={props.state} actions={a} />
+            <Suspense fallback={<ViewLoading name="Raagini" />}>
+              <ThamburaRaagini state={props.state} actions={a} />
+            </Suspense>
           </Match>
           <Match when={st().view === "lab"}>
-            <ThamburaLab state={props.state} actions={a} shareUrl={props.shareUrl} analyser={props.analyser} />
+            <Suspense fallback={<ViewLoading name="Lab" />}>
+              <ThamburaLab state={props.state} actions={a} shareUrl={props.shareUrl} analyser={props.analyser} />
+            </Suspense>
           </Match>
         </Switch>
       </div>
