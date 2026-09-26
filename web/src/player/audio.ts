@@ -1,16 +1,22 @@
 /**
  * Audio output: one AudioContext and a small mixer shared by every voice.
  *
- *   tala ──────┐
- *   percussion ┼─ master gain ─ limiter ─ speakers
- *   drone ─────┘
+ *   track "tala" ───────┐
+ *   track "drone" ──────┼─ master gain ─ limiter ─ speakers
+ *   track "mridangam-1" ┘
  *
- * The tala plays on "tala" and the thambura on "drone"; "percussion" is for
- * the mridangam. Each bus has its own volume. Plucked and struck voices
- * schedule samples ahead of time on the audio clock (see Transport); the
- * sruti drone runs continuous tones on its bus instead.
+ * Every instrument plays on a track of its own, made the first time its id
+ * is used: a level, an on/off gain for mute and solo, and a pan, into the
+ * master (see docs/designs/instruments.md). The tala plays on "tala", the thambura on
+ * "drone" and the mridangam on "percussion" until each track gets an id of
+ * its own (#97). Plucked and struck voices schedule samples ahead of time on
+ * the audio clock (see Transport); the sruti drone runs continuous tones on
+ * its track instead.
  */
-export type Bus = "tala" | "drone" | "percussion";
+export type TrackId = string;
+
+/** The name the first three tracks were made under; any track id will do. */
+export type Bus = TrackId;
 
 /** Per-note adjustments for `play`. */
 export interface PlayOptions {
@@ -75,25 +81,46 @@ export interface AudioOut {
   addSamples(key: string, data: Float32Array): void;
   /** Forgets samples under `key`. Notes already playing them carry on. */
   dropSamples(key: string): void;
-  /** Plays a cached sample at `when` on the audio clock. Unknown keys are ignored. */
-  play(url: string, bus: Bus, when: number, opts?: PlayOptions): void;
   /**
-   * Cancels what is scheduled on the bus but hasn't started. A sample already
-   * sounding rings out, since cutting it off mid-waveform clicks.
+   * Plays a cached sample at `when` on the audio clock, on the track. Unknown
+   * keys are ignored. Choke groups are per track, so two drums on two tracks
+   * never cut each other off.
    */
-  cancel(bus: Bus): void;
-  /** Fades out every note sounding on the bus over about `seconds`. */
-  release(bus: Bus, seconds: number): void;
+  play(url: string, track: TrackId, when: number, opts?: PlayOptions): void;
   /**
-   * Fades out the latest note in a choke group, from `when` over `seconds`, as
-   * a finger stops a string. A later note in the group is unaffected, and so
-   * is a group with nothing playing.
+   * Cancels what is scheduled on the track but hasn't started. A sample
+   * already sounding rings out, since cutting it off mid-waveform clicks.
    */
-  damp(group: string, when: number, seconds: number): void;
-  /** Starts a continuous tone on the bus, fading in. */
-  startTone(bus: Bus, spec: ToneSpec): ToneHandle;
-  /** A bus's volume, 0-100. */
-  setBusVolume(bus: Bus, percent: number): void;
+  cancel(track: TrackId): void;
+  /** Fades out every note sounding on the track over about `seconds`. */
+  release(track: TrackId, seconds: number): void;
+  /**
+   * Fades out the latest note in the track's choke group, from `when` over
+   * `seconds`, as a finger stops a string. A later note in the group is
+   * unaffected, and so is a group with nothing playing.
+   */
+  damp(track: TrackId, group: string, when: number, seconds: number): void;
+  /** Starts a continuous tone on the track, fading in. */
+  startTone(track: TrackId, spec: ToneSpec): ToneHandle;
+  /** A track's level, 0-100 on a squared curve. Same as `setLevel`. */
+  setBusVolume(track: TrackId, percent: number): void;
+  /** A track's level, 0-100 on a squared curve. Mute and solo leave it alone. */
+  setLevel(track: TrackId, percent: number): void;
+  /** Where a track sits, -1 (left) to 1 (right). */
+  setPan(track: TrackId, pan: number): void;
+  /** Silences a track until unmuted. A muted track stays silent when soloed. */
+  setMute(track: TrackId, muted: boolean): void;
+  /**
+   * Solos a track. While any track is soloed, only soloed tracks sound,
+   * including tracks made after the solo.
+   */
+  setSolo(track: TrackId, soloed: boolean): void;
+  /**
+   * Stops everything on the track, scheduled or sounding, with a short fade,
+   * and forgets it: its level, pan, mute and solo. Using the id again makes a
+   * fresh track.
+   */
+  removeTrack(track: TrackId): void;
 }
 
 // Time constants (seconds) for tone fades and glides.
@@ -104,6 +131,10 @@ const GLIDE = 0.03;
 export const CHOKE_FADE = 0.08;
 /** A note bends over at least this long, so a bend of 0 doesn't click. */
 const MIN_BEND = 0.005;
+/** Mute and solo move a track's gain with this time constant: no click. */
+const GATE_TC = 0.003;
+/** How long a removed track fades before it's cut off and disconnected. */
+const REMOVE_FADE = 0.03;
 
 /** A scheduled sample, until it ends. */
 interface Note {
@@ -117,18 +148,26 @@ interface Note {
   unchoke?: () => void;
 }
 
+/** One instrument's strip on the mixer. */
+interface Track {
+  level: GainNode;
+  /** 1 or 0, from mute and solo, so unmuting brings the level back as it was. */
+  gate: GainNode;
+  pan: StereoPannerNode;
+  muted: boolean;
+  soloed: boolean;
+  // Scheduled notes, until they end, and the latest note in each choke group.
+  notes: Set<Note>;
+  chokes: Map<string, Note>;
+  /** Stops for the tones sounding on it. */
+  tones: Set<() => void>;
+  analyser?: AnalyserNode;
+}
+
 export class AudioEngine implements AudioOut {
   readonly ctx: AudioContext;
   private readonly master: GainNode;
-  private readonly buses: Record<Bus, GainNode>;
-  private readonly analysers = new Map<Bus, AnalyserNode>();
-  // Scheduled notes, until they end, and the latest note in each choke group.
-  private readonly active: Record<Bus, Set<Note>> = {
-    tala: new Set(),
-    drone: new Set(),
-    percussion: new Set(),
-  };
-  private readonly chokeGroups = new Map<string, Note>();
+  private readonly tracks = new Map<TrackId, Track>();
   private readonly buffers = new Map<string, AudioBuffer>();
   private readonly loading = new Map<string, Promise<AudioBuffer | null>>();
 
@@ -146,13 +185,34 @@ export class AudioEngine implements AudioOut {
 
     this.master = ctx.createGain();
     this.master.connect(limiter);
+  }
 
-    const bus = () => {
-      const g = ctx.createGain();
-      g.connect(this.master);
-      return g;
-    };
-    this.buses = { tala: bus(), drone: bus(), percussion: bus() };
+  /** The track, made on first use: level, then on/off, then pan, into the master. */
+  private track(id: TrackId): Track {
+    let t = this.tracks.get(id);
+    if (!t) {
+      const level = this.ctx.createGain();
+      const gate = this.ctx.createGain();
+      // Left at its default, 0, so a probe that wraps the pan setter only
+      // sees the pans that were asked for.
+      const pan = this.ctx.createStereoPanner();
+      level.connect(gate).connect(pan).connect(this.master);
+      t = { level, gate, pan, muted: false, soloed: false, notes: new Set(), chokes: new Map(), tones: new Set() };
+      this.tracks.set(id, t);
+      gate.gain.value = this.audible(t) ? 1 : 0;
+    }
+    return t;
+  }
+
+  private audible(t: Track): boolean {
+    if (t.muted) return false;
+    return t.soloed || ![...this.tracks.values()].some((o) => o.soloed);
+  }
+
+  /** Opens or closes every track's gate to match mute and solo. */
+  private regate(): void {
+    const now = this.ctx.currentTime;
+    for (const t of this.tracks.values()) t.gate.gain.setTargetAtTime(this.audible(t) ? 1 : 0, now, GATE_TC);
   }
 
   get now(): number {
@@ -189,7 +249,7 @@ export class AudioEngine implements AudioOut {
     this.buffers.delete(key);
   }
 
-  play(url: string, bus: Bus, when: number, opts: PlayOptions = {}): void {
+  play(url: string, id: TrackId, when: number, opts: PlayOptions = {}): void {
     const buffer = this.buffers.get(url);
     if (!buffer) return;
     const src = this.ctx.createBufferSource();
@@ -214,25 +274,25 @@ export class AudioEngine implements AudioOut {
       p.pan.value = opts.pan;
       out = out.connect(p);
     }
-    out.connect(this.buses[bus]);
-    if (opts.choke) note.unchoke = this.choke(opts.choke, note, opts.chokeFade ?? CHOKE_FADE);
-    const scheduled = this.active[bus];
-    scheduled.add(note);
+    const track = this.track(id);
+    out.connect(track.level);
+    if (opts.choke) note.unchoke = this.choke(track.chokes, opts.choke, note, opts.chokeFade ?? CHOKE_FADE);
+    track.notes.add(note);
     src.onended = () => {
-      scheduled.delete(note);
-      if (opts.choke && this.chokeGroups.get(opts.choke) === note) this.chokeGroups.delete(opts.choke);
+      track.notes.delete(note);
+      if (opts.choke && track.chokes.get(opts.choke) === note) track.chokes.delete(opts.choke);
     };
     src.start(at);
   }
 
   /** Makes `note` the group's latest, fading the previous one out as it starts. */
-  private choke(group: string, note: Note, fade: number): () => void {
-    const prev = this.chokeGroups.get(group);
-    this.chokeGroups.set(group, note);
+  private choke(groups: Map<string, Note>, group: string, note: Note, fade: number): () => void {
+    const prev = groups.get(group);
+    groups.set(group, note);
     const restore = () => {
-      if (this.chokeGroups.get(group) !== note) return;
-      if (prev) this.chokeGroups.set(group, prev);
-      else this.chokeGroups.delete(group);
+      if (groups.get(group) !== note) return;
+      if (prev) groups.set(group, prev);
+      else groups.delete(group);
     };
     if (!prev?.amp || prev.released) return restore;
     const gain = prev.amp.gain;
@@ -244,9 +304,14 @@ export class AudioEngine implements AudioOut {
     };
   }
 
-  cancel(bus: Bus): void {
+  cancel(id: TrackId): void {
+    const t = this.tracks.get(id);
+    if (t) this.cancelNotes(t);
+  }
+
+  private cancelNotes(t: Track): void {
     const now = this.ctx.currentTime;
-    const scheduled = this.active[bus];
+    const scheduled = t.notes;
     // Newest first, so each cancelled note hands its group back to the one before it.
     for (const note of [...scheduled].reverse()) {
       if (note.at <= now) continue;
@@ -257,9 +322,11 @@ export class AudioEngine implements AudioOut {
     }
   }
 
-  release(bus: Bus, seconds: number): void {
+  release(id: TrackId, seconds: number): void {
+    const t = this.tracks.get(id);
+    if (!t) return;
     const now = this.ctx.currentTime;
-    for (const note of this.active[bus]) {
+    for (const note of t.notes) {
       if (!note.amp || note.released) continue;
       note.released = true;
       note.amp.gain.cancelScheduledValues(now);
@@ -268,8 +335,8 @@ export class AudioEngine implements AudioOut {
     }
   }
 
-  damp(group: string, when: number, seconds: number): void {
-    const note = this.chokeGroups.get(group);
+  damp(id: TrackId, group: string, when: number, seconds: number): void {
+    const note = this.tracks.get(id)?.chokes.get(group);
     if (!note?.amp || note.released) return;
     // Released, so the group's next note doesn't set up a choke fade on it too.
     note.released = true;
@@ -279,7 +346,7 @@ export class AudioEngine implements AudioOut {
     note.src.stop(at + seconds + 0.05);
   }
 
-  startTone(bus: Bus, spec: ToneSpec): ToneHandle {
+  startTone(id: TrackId, spec: ToneSpec): ToneHandle {
     const ctx = this.ctx;
     const wave = (spectrum: Float32Array) =>
       ctx.createPeriodicWave(new Float32Array(spectrum.length), spectrum as Float32Array<ArrayBuffer>);
@@ -302,11 +369,24 @@ export class AudioEngine implements AudioOut {
       p.pan.value = spec.pan;
       out = out.connect(p);
     }
-    out.connect(this.buses[bus]);
+    const track = this.track(id);
+    out.connect(track.level);
     osc.start();
     bellows.start();
 
     let gain = spec.gain;
+    let stopped = false;
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      track.tones.delete(stop);
+      const now = ctx.currentTime;
+      amp.gain.cancelScheduledValues(now);
+      amp.gain.setTargetAtTime(0, now, FADE_OUT);
+      osc.stop(now + FADE_OUT * 8);
+      bellows.stop(now + FADE_OUT * 8);
+    };
+    track.tones.add(stop);
     return {
       set(patch) {
         const now = ctx.currentTime;
@@ -319,36 +399,62 @@ export class AudioEngine implements AudioOut {
           depth.gain.setTargetAtTime(gain * 0.06, now, GLIDE);
         }
       },
-      stop() {
-        const now = ctx.currentTime;
-        amp.gain.cancelScheduledValues(now);
-        amp.gain.setTargetAtTime(0, now, FADE_OUT);
-        osc.stop(now + FADE_OUT * 8);
-        bellows.stop(now + FADE_OUT * 8);
-      },
+      stop,
     };
   }
 
   /**
-   * An AnalyserNode listening to the bus after its volume, for drawing what
-   * it plays. Made on first use and shared; it passes nothing on.
+   * An AnalyserNode listening to the track after its level, mute and solo,
+   * for drawing what it plays. Made on first use and shared; it passes
+   * nothing on.
    */
-  analyser(bus: Bus): AnalyserNode {
-    let a = this.analysers.get(bus);
-    if (!a) {
-      a = this.ctx.createAnalyser();
-      a.fftSize = 8192;
-      a.smoothingTimeConstant = 0.6;
-      this.buses[bus].connect(a);
-      this.analysers.set(bus, a);
+  analyser(id: TrackId): AnalyserNode {
+    const t = this.track(id);
+    if (!t.analyser) {
+      t.analyser = this.ctx.createAnalyser();
+      t.analyser.fftSize = 8192;
+      t.analyser.smoothingTimeConstant = 0.6;
+      t.pan.connect(t.analyser);
     }
-    return a;
+    return t.analyser;
   }
 
-  setBusVolume(bus: Bus, percent: number): void {
+  setBusVolume(id: TrackId, percent: number): void {
+    this.setLevel(id, percent);
+  }
+
+  setLevel(id: TrackId, percent: number): void {
     // Squared, because loudness tracks it more evenly than a linear gain.
     const x = Math.min(100, Math.max(0, percent)) / 100;
-    this.buses[bus].gain.value = x * x;
+    this.track(id).level.gain.value = x * x;
+  }
+
+  setPan(id: TrackId, pan: number): void {
+    this.track(id).pan.pan.value = Math.min(1, Math.max(-1, pan));
+  }
+
+  setMute(id: TrackId, muted: boolean): void {
+    this.track(id).muted = muted;
+    this.regate();
+  }
+
+  setSolo(id: TrackId, soloed: boolean): void {
+    this.track(id).soloed = soloed;
+    this.regate();
+  }
+
+  removeTrack(id: TrackId): void {
+    const t = this.tracks.get(id);
+    if (!t) return;
+    this.tracks.delete(id);
+    this.regate();
+    this.cancelNotes(t);
+    const now = this.ctx.currentTime;
+    for (const note of t.notes) note.src.stop(now + REMOVE_FADE);
+    for (const stop of [...t.tones]) stop();
+    t.gate.gain.cancelScheduledValues(now);
+    t.gate.gain.setTargetAtTime(0, now, REMOVE_FADE / 4);
+    setTimeout(() => t.pan.disconnect(), (REMOVE_FADE * 2 + 0.05) * 1000);
   }
 
   private loadOne(url: string): Promise<AudioBuffer | null> {

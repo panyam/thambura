@@ -220,15 +220,23 @@ unit-tested:
 **player/** is the browser side:
 
 - `audio.ts` (`AudioEngine`): one AudioContext, created in `main.ts` and
-  shared by every island; buses `tala`, `drone`, `percussion` (each with its
-  own volume) feed a master gain, then a limiter, then the speakers. It holds a
+  shared by every island. Every note plays on a track (`TrackId`, a string;
+  `Bus` is the old name for it), made the first time its id is used: a level,
+  an on/off gain that mute and solo set, then a pan, into a master gain, a
+  limiter and the speakers. `setLevel`/`setBusVolume`, `setPan`, `setMute`,
+  `setSolo` and `removeTrack` work per track; the tala, thambura and
+  mridangam still use `tala`, `drone` and `percussion`. The track's pan node
+  is never set unless asked, so a probe wrapping the pan setter still sees
+  only the strings. It holds a
   sample cache, which `addSamples` fills with rendered PCM as well as fetched
   files. `play` takes detune/gain/pan and a choke group (a later note in the
-  group fades the earlier one over 80 ms, as a re-plucked string does);
-  `startTone` runs a continuous PeriodicWave tone. `cancel(bus)` stops only
-  samples that haven't started, and takes back the choke fades they scheduled.
-  `release(bus, s)` fades out what's sounding, and `damp(group, when, s)`
-  fades the latest note in a choke group, as a finger stops a string.
+  group fades the earlier one over 80 ms, as a re-plucked string does; groups
+  are per track); `startTone` runs a continuous PeriodicWave tone.
+  `cancel(track)` stops only samples that haven't started, and takes back the
+  choke fades they scheduled. `release(track, s)` fades out what's sounding,
+  and `damp(track, group, when, s)` fades the latest note in a choke group, as
+  a finger stops a string. `audio.test.ts` runs it against
+  `fakeAudioContext.ts`, which records the graph and every automation call.
   `heardNow` is the audio time minus output latency.
 - `transport.ts`: every 25 ms, driven by a Web Worker timer so background tabs
   aren't throttled, it pulls events up to 100 ms ahead from each sequencer. All
