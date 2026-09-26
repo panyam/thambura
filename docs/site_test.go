@@ -22,10 +22,23 @@ func TestSiteBuildsWithNoBrokenLinks(t *testing.T) {
 	for _, b := range broken {
 		t.Error(b)
 	}
-	for _, p := range []string{"index.html", "getting-started/index.html", "guides/index.html", "reference/index.html", "static/css/docs.css"} {
+	for _, p := range []string{"index.html", "getting-started/index.html", "guides/index.html", "reference/index.html", "static/css/docs.css", "favicon.svg", ".nojekyll"} {
 		if _, err := os.Stat(filepath.Join(out, p)); err != nil {
 			t.Errorf("built site has no %s", p)
 		}
+	}
+}
+
+// GitHub Pages serves the site at Domain only if the build carries a CNAME
+// file naming it; without one, a publish drops the custom domain.
+func TestBuildNamesTheDomain(t *testing.T) {
+	out := t.TempDir()
+	if err := Build(out); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(out, "CNAME"))
+	if err != nil || strings.TrimSpace(string(b)) != "docs.thambura.com" {
+		t.Errorf("CNAME = %q, %v; want docs.thambura.com", b, err)
 	}
 }
 
@@ -58,12 +71,12 @@ func TestCheckLinksFindsEachKindOfBrokenLink(t *testing.T) {
 		}
 	}
 	write("index.html", `<h2 id="top">x</h2>
-<a href="/docs/guides/">ok</a> <a href="guides/#kits">ok, relative</a> <a href="#top">ok</a>
-<a href="/">ok, the app</a> <a href="https://github.com/panyam/thambura">ok, external</a>
-<link href="/docs/static/css/docs.css"> <script src="/docs/static/js/gen/docs.js"></script>
-<a href="/docs/missing/">no page</a> <a href="#nowhere">no id</a>
-<a href="/docs/guides/#nope">no id there</a> <a href="/docs/guides">a folder</a>
-<a href="/somewhere">outside</a> <a href="">empty</a>`)
+<a href="/guides/">ok</a> <a href="guides/#kits">ok, relative</a> <a href="#top">ok</a> <a href="/">ok, home</a>
+<a href="https://thambura.com/">ok, the app</a> <a href="https://github.com/panyam/thambura">ok, external</a>
+<link href="/static/css/docs.css"> <script src="/static/js/gen/docs.js"></script>
+<a href="/missing/">no page</a> <a href="#nowhere">no id</a>
+<a href="/guides/#nope">no id there</a> <a href="/guides">a folder</a>
+<a href="/static/nope.css">no file</a> <a href="">empty</a>`)
 	write("guides/index.html", `<h2 id="kits">Kits</h2> <a href="../">ok, up</a>`)
 	write("static/css/docs.css", `body {}`)
 
@@ -80,10 +93,10 @@ func TestCheckLinksFindsEachKindOfBrokenLink(t *testing.T) {
 	want := []string{
 		`"" is empty`,
 		`"#nowhere" names an id the page doesn't have`,
-		`"/docs/guides" is a folder: end the link with /`,
-		`"/docs/guides/#nope" names an id the page doesn't have`,
-		`"/docs/missing/" goes to nothing`,
-		`"/somewhere" is outside /docs and not in AppPaths`,
+		`"/guides" is a folder: end the link with /`,
+		`"/guides/#nope" names an id the page doesn't have`,
+		`"/missing/" goes to nothing`,
+		`"/static/nope.css" goes to nothing`,
 	}
 	if !slices.Equal(got, want) {
 		t.Errorf("CheckLinks =\n  %s\nwant\n  %s", strings.Join(got, "\n  "), strings.Join(want, "\n  "))

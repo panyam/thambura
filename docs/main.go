@@ -1,7 +1,7 @@
-// Command docs builds Thambura's developer docs (thambura.com/docs) with
-// s3gen. `-build` writes the site to ../web/docs, where the app's Go server
-// and app.yaml serve it; without it the site is served on -addr and rebuilt
-// on every change, for writing.
+// Command docs builds Thambura's developer docs with s3gen. They are
+// published to GitHub Pages at Domain (make ghpages). `-build` writes the site
+// to -out; without it the site is served on -addr and rebuilt on every
+// change, for writing.
 package main
 
 import (
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,12 +21,22 @@ import (
 var (
 	addr  = flag.String("addr", ":8012", "Address to serve the docs on while writing")
 	build = flag.Bool("build", false, "Build the site into -out and quit")
-	out   = flag.String("out", "../web/docs", "Where the built site goes")
+	out   = flag.String("out", "dist", "Where the built site goes")
 )
 
-// PathPrefix is where the site is mounted on thambura.com. Every link in the
-// templates and content goes through {{.Site.PathPrefix}} or starts with it.
-const PathPrefix = "/docs"
+// Domain is where GitHub Pages serves the site, written into the build as
+// the CNAME file Pages reads. DNS points it at panyam.github.io.
+const Domain = "docs.thambura.com"
+
+// PathPrefix is where the site sits on Domain, which is its root. Templates
+// still write links as {{.Site.PathPrefix}}/..., so moving the site under a
+// path (panyam.github.io/thambura, say) is a change here and in the content's
+// own links, which the link check finds.
+const PathPrefix = ""
+
+// The app's favicons, copied in so the docs carry the same icon without a
+// second copy in the repo.
+var favicons = []string{"favicon.ico", "favicon.svg"}
 
 // NewSite returns the docs site, writing to outDir. It is read from the docs
 // folder, so run it from there.
@@ -47,9 +58,11 @@ func NewSite(outDir string) *s3.Site {
 	}
 }
 
-// Build writes the whole site to outDir, replacing what was there, with the
-// static folder copied in beside the pages. s3gen only serves static folders
-// itself, so a build that is served by something else has to carry them.
+// Build writes the whole site to outDir, replacing what was there, ready to
+// publish as it is: the pages, the static folder (s3gen only serves static
+// folders itself, so a build served by something else has to carry them), the
+// app's favicons, and GitHub Pages' CNAME and .nojekyll (without which Pages
+// runs Jekyll over the site and drops anything starting with an underscore).
 func Build(outDir string) error {
 	if err := os.RemoveAll(outDir); err != nil {
 		return err
@@ -58,7 +71,22 @@ func Build(outDir string) error {
 	if err := templateErrors(outDir); err != nil {
 		return err
 	}
-	return os.CopyFS(filepath.Join(outDir, "static"), os.DirFS("static"))
+	if err := os.CopyFS(filepath.Join(outDir, "static"), os.DirFS("static")); err != nil {
+		return err
+	}
+	for _, f := range favicons {
+		b, err := os.ReadFile(filepath.Join("..", "web", "static", f))
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(outDir, f), b, 0o644); err != nil {
+			return err
+		}
+	}
+	if err := os.WriteFile(filepath.Join(outDir, "CNAME"), []byte(Domain+"\n"), 0o644); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(outDir, ".nojekyll"), nil, 0o644)
 }
 
 // templateErrors fails a build that s3gen finished without complaint. When a
@@ -100,5 +128,6 @@ func main() {
 	site := NewSite(*out)
 	site.Rebuild(nil)
 	site.Watch()
-	log.Fatal(site.Serve(*addr))
+	log.Printf("Serving the docs on %s", *addr)
+	log.Fatal(http.ListenAndServe(*addr, site))
 }

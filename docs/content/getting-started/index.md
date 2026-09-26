@@ -73,7 +73,7 @@ You need Go, Node with pnpm, and `make`.
 git clone https://github.com/panyam/thambura
 cd thambura
 make run          # builds the frontend, then serves on :8000
-make docs         # builds these pages into web/docs, served at /docs/
+make docsrun      # serves these pages on :8012 as you edit them
 ```
 
 `make test` is the whole gate: the Go tests, type checks, the vitest suite,
@@ -81,9 +81,9 @@ and a build of this site with every link checked.
 
 ## Where to go next
 
-- [Guides](/docs/guides/) for adding an instrument, writing a pattern and
+- [Guides](/guides/) for adding an instrument, writing a pattern and
   sharing a setup, as they are written.
-- [Reference](/docs/reference/) for the engine's API, after the lift.
+- [Reference](/reference/) for the engine's API, after the lift.
 - The design notes in the repo explain why things are the way they are:
   [architecture](https://github.com/panyam/thambura/blob/master/docs/designs/architecture.md)
   covers how sounds are made and timed, and

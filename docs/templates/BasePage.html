@@ -16,8 +16,8 @@
     {{/* Until the first guides are written (#95). Drop "noindex" from
          SiteMetadata.json to let search engines in. */}}
     {{ if $meta.noindex }}<meta name="robots" content="noindex">{{ end }}
-    {{/* The app's theme choice, under the same key the app's toggle uses
-         (tsappkit's ThemeManager), set before the first paint. */}}
+    {{/* The theme choice, under the key tsappkit's ThemeManager uses (as the
+         app does), set before the first paint. */}}
     <script>
         (function () {
             var t = null;
@@ -27,8 +27,8 @@
             }
         })();
     </script>
-    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="icon" href="{{ .Site.PathPrefix }}/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="icon" type="image/svg+xml" href="{{ .Site.PathPrefix }}/favicon.svg">
     <link rel="stylesheet" href="{{ .Site.PathPrefix }}/static/css/docs.css">
 </head>
 <body>

@@ -10,15 +10,6 @@ import (
 	"strings"
 )
 
-// AppPaths are the links outside PathPrefix that the docs may use. They are
-// the app's, served by the Go server rather than built here, so the checker
-// can't look for them on disk; a new one is added here on purpose.
-var AppPaths = map[string]bool{
-	"/":                   true,
-	"/favicon.ico":        true,
-	"/static/favicon.svg": true,
-}
-
 // Built by esbuild from components/ (make docs), not by s3gen, so a build
 // without it still has to pass.
 const genPrefix = PathPrefix + "/static/js/gen/"
@@ -30,8 +21,9 @@ var (
 
 // CheckLinks reads every page under outDir, a site built for PathPrefix, and
 // returns one line per link that goes nowhere: a page or file that isn't
-// there, a #fragment with no matching id, or a path outside the docs that
-// isn't in AppPaths. External links (anything with a scheme) aren't fetched.
+// there, a #fragment with no matching id, or a folder without its trailing
+// slash. External links (anything with a scheme, the app's included) aren't
+// fetched.
 func CheckLinks(outDir string) ([]string, error) {
 	pages := map[string]string{} // URL path of each page -> its HTML
 	err := filepath.WalkDir(outDir, func(p string, d fs.DirEntry, err error) error {
@@ -86,15 +78,12 @@ func checkLink(outDir, page, link string, pages map[string]string, idsOf func(st
 	case !strings.HasPrefix(target, "/"):
 		dir := strings.HasSuffix(target, "/")
 		target = path.Join(path.Dir(page), target)
-		if dir {
+		if dir && !strings.HasSuffix(target, "/") {
 			target += "/"
 		}
 	}
 	if target != PathPrefix && !strings.HasPrefix(target, PathPrefix+"/") {
-		if AppPaths[target] {
-			return ""
-		}
-		return "is outside " + PathPrefix + " and not in AppPaths"
+		return "is outside " + PathPrefix + "/"
 	}
 	if strings.HasPrefix(target, genPrefix) {
 		return ""

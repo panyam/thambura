@@ -19,25 +19,6 @@ handlers:
   secure: always
   http_headers:
     X-Robots-Tag: noindex
-# The developer docs (docs/, built into web/docs by `make docs`). static_dir
-# serves no index page, so a folder URL is sent to its index.html, and one
-# without its trailing slash gets it too. The pages carry their own noindex
-# meta tag while the site is new (docs/content/SiteMetadata.json).
-- url: /docs/?
-  static_files: web/docs/index.html
-  upload: web/docs/index\.html
-  secure: always
-- url: /docs/(.+)/
-  static_files: web/docs/\1/index.html
-  upload: web/docs/.+/index\.html
-  secure: always
-- url: /docs/([^.]+)
-  static_files: web/docs/\1/index.html
-  upload: web/docs/[^.]+/index\.html
-  secure: always
-- url: /docs
-  static_dir: web/docs
-  secure: always
 - url: /.*
   script: auto
   secure: always

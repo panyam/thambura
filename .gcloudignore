@@ -8,5 +8,5 @@
 /web/src/
 *.test.ts
 /design/
-# The docs site's sources and the design docs; the built site is web/docs.
+# The docs site (published to GitHub Pages) and the design docs.
 /docs/
