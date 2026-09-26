@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"slices"
@@ -128,5 +130,25 @@ func TestTemplateErrorsFailTheBuild(t *testing.T) {
 	}
 	if err := templateErrors(out); err == nil || !strings.Contains(err.Error(), "b.html") {
 		t.Fatalf("templateErrors = %v, want an error naming b.html", err)
+	}
+}
+
+// make docsrun serves the site where Pages does, so its links work there.
+func TestServeAtPrefix(t *testing.T) {
+	out := t.TempDir()
+	if err := Build(out); err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(serveAt(PathPrefix, http.FileServer(http.Dir(out))))
+	defer srv.Close()
+	for _, p := range []string{PathPrefix + "/", PathPrefix + "/getting-started/", PathPrefix + "/static/css/docs.css", "/"} {
+		resp, err := http.Get(srv.URL + p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("GET %s = %d, want 200", p, resp.StatusCode)
+		}
 	}
 }

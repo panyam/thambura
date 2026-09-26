@@ -17,6 +17,12 @@
   --pre-bg: #1f2937;       /* gray-800 */
   --pre-text: #f3f4f6;
   --radius: 6px;
+  /* The page is as wide as what it holds, sidebar plus text column plus the
+     gap, and centered; the header and footer line up with it. */
+  --sidebar-w: 15rem;
+  --gap: 2.5rem;
+  --content-w: 46rem;
+  --page-w: calc(var(--sidebar-w) + var(--gap) + var(--content-w));
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   color-scheme: light;
@@ -67,7 +73,7 @@ a:hover { text-decoration-thickness: 2px; }
 }
 
 .header-inner {
-  max-width: 76rem;
+  max-width: calc(var(--page-w) + 2rem);
   margin: 0 auto;
   padding: 0.6rem 1rem;
   display: flex;
@@ -130,12 +136,12 @@ a:hover { text-decoration-thickness: 2px; }
 .page {
   flex: 1;
   width: 100%;
-  max-width: 76rem;
+  max-width: calc(var(--page-w) + 2rem);
   margin: 0 auto;
   padding: 0 1rem;
   display: grid;
-  grid-template-columns: 15rem minmax(0, 1fr);
-  gap: 2.5rem;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  gap: var(--gap);
 }
 
 .sidebar {
@@ -149,6 +155,8 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .sidebar:not(:has(*)) { display: none; }
 .page:not(:has(.sidebar *)) { grid-template-columns: minmax(0, 1fr); }
+/* A page without a sidebar (the home page) uses the whole width. */
+.page:not(:has(.sidebar *)) .content { max-width: none; }
 .sidebar-title {
   font-size: 0.75rem;
   font-weight: 600;
@@ -174,7 +182,7 @@ a:hover { text-decoration-thickness: 2px; }
 
 /* Content */
 
-.content { max-width: 46rem; }
+.content { max-width: var(--content-w); }
 .content-header { margin-bottom: 2rem; }
 .content-header h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 0.5rem; letter-spacing: -0.01em; }
 .lead { font-size: 1.15rem; color: var(--text-soft); margin: 0; }
@@ -249,7 +257,7 @@ blockquote { margin: 0 0 1rem; padding: 0.2rem 1rem; border-left: 3px solid var(
 /* Footer */
 
 .site-footer { border-top: 1px solid var(--border); color: var(--text-faint); font-size: 0.875rem; }
-.footer-inner { max-width: 76rem; margin: 0 auto; padding: 1.2rem 1rem; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.footer-inner { max-width: calc(var(--page-w) + 2rem); margin: 0 auto; padding: 1.2rem 1rem; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .site-footer a { color: var(--text-soft); }
 
 /* Narrow screens: the sidebar goes above the page, and the section links
