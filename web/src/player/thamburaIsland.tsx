@@ -7,13 +7,10 @@ import type { AudioEngine } from "./audio";
 import { isThamburaShortcut } from "./shortcuts";
 import { ThamburaBar } from "./ThamburaBar";
 import { ThamburaDrawer } from "./thamburaDrawer";
-import { ThamburaPresenter, type ThamburaLink, type ThamburaState, type ThamburaStore } from "./thamburaPresenter";
+import { localStore } from "./storage";
+import { ThamburaPresenter, type ThamburaLink, type ThamburaState } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
-const STORAGE_KEY = "thambura.drone";
-// The bar's open state, apart from the sound (thamburaDrawer.ts).
-const DRAWER_KEY = "thambura.drawer";
-const PRESETS_KEY = "thambura.presets";
 // The query parameter that carries a shared setup (engine/shareLink.ts).
 const LINK_PARAM = "s";
 // Address bar updates wait for this long after the last change: Safari throws
@@ -26,9 +23,9 @@ const LINK_SETTLE_MS = 400;
  * controls: `play` starts and stops it from anywhere on the page, as does the
  * T key, and `toggle` opens and closes the bar. The bar's open state is the
  * drawer's; the presenter never sees it, so the link the presenter writes
- * gets the drawer's flag added here, on its way to the address bar. It plays through the page's
- * shared AudioEngine, on the drone bus. `onPlaying` hears whenever it starts
- * or stops.
+ * gets the drawer's flag added here, on its way to the address bar. It plays
+ * through the page's shared AudioEngine, on the drone bus. `onPlaying` hears
+ * whenever it starts or stops.
  */
 export function createThamburaIsland(
   el: HTMLElement,
@@ -41,7 +38,7 @@ export function createThamburaIsland(
 ): SolidIsland {
   const { toggle, play } = controls;
   const address = addressBarLink();
-  const drawer = new ThamburaDrawer({ store: localStore(DRAWER_KEY), legacy: localStore(STORAGE_KEY), link: address.read() });
+  const drawer = new ThamburaDrawer({ store: localStore("drawer"), legacy: localStore("drone"), link: address.read() });
   const [open, setOpen] = createSignal(drawer.open);
   const presenter = new ThamburaPresenter({
     audio,
@@ -51,8 +48,8 @@ export function createThamburaIsland(
       cancel: (id) => cancelAnimationFrame(id),
     },
     defer: (cb, ms) => setTimeout(cb, ms),
-    store: localStore(STORAGE_KEY),
-    presets: localStore(PRESETS_KEY),
+    store: localStore("drone"),
+    presets: localStore("presets"),
     link: { read: address.read, write: (link) => address.write(withBarOpen(link, drawer.open)) },
   });
   const [state, setState] = signalView(presenter.state);
@@ -148,12 +145,4 @@ function linkUrl(link: string): string {
   const url = new URL(location.href);
   url.searchParams.set(LINK_PARAM, link);
   return url.toString();
-}
-
-/** localStorage under one key, as JSON. Throws are caught by the presenter. */
-function localStore(key: string): ThamburaStore {
-  return {
-    load: () => JSON.parse(localStorage.getItem(key) ?? "null"),
-    save: (v) => localStorage.setItem(key, JSON.stringify(v)),
-  };
 }

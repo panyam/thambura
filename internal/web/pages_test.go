@@ -13,6 +13,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/panyam/thambura/internal/page"
 )
 
 // newServer serves the real web/ folder, so the test covers the templar
@@ -51,7 +53,7 @@ func TestHomePageRenders(t *testing.T) {
 	for _, want := range []string{
 		"<title>" + homeTitle + "</title>",
 		`<link rel="canonical" href="https://thambura.com/">`,
-		`id="player"`,
+		`data-slot="main"`,
 		`id="theme-toggle-button"`,
 		`src="/static/app.js"`,
 		`href="/static/css/tailwind.css"`,
@@ -347,32 +349,83 @@ func TestMissingAssets(t *testing.T) {
 }
 
 // A kit is a build product that isn't committed (see docs/mridangam.md), so
-// the page must only name one when the folder actually holds it. Otherwise
+// the page must only name the kits the folder actually holds. Otherwise
 // every visitor's browser asks for a kit.json that isn't there.
-func TestFindKit(t *testing.T) {
+func TestFindKits(t *testing.T) {
 	static := t.TempDir()
-	if got := findKit(static); got != "" {
-		t.Fatalf("findKit with no kits = %q, want empty", got)
+	if got := findKits(static); len(got) != 0 {
+		t.Fatalf("findKits with no kits = %q, want none", got)
 	}
-	dir := filepath.Join(static, "Resources", "Kits", "compmusic")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
+	kits := filepath.Join(static, "Resources", "Kits")
+	for _, k := range []string{"compmusic", "adikit", "empty"} {
+		if err := os.MkdirAll(filepath.Join(kits, k), 0o755); err != nil {
+			t.Fatal(err)
+		}
 	}
 	// A folder without a manifest still counts as no kit.
-	if got := findKit(static); got != "" {
-		t.Fatalf("findKit with an empty kit folder = %q, want empty", got)
+	if got := findKits(static); len(got) != 0 {
+		t.Fatalf("findKits with empty kit folders = %q, want none", got)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "kit.json"), []byte("{}"), 0o644); err != nil {
-		t.Fatal(err)
+	for _, k := range []string{"compmusic", "adikit"} {
+		if err := os.WriteFile(filepath.Join(kits, k, "kit.json"), []byte("{}"), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
-	want := "/static/Resources/Kits/compmusic/kit.json"
-	if got := findKit(static); got != want {
-		t.Fatalf("findKit = %q, want %q", got, want)
+	want := []string{"/static/Resources/Kits/adikit/kit.json", "/static/Resources/Kits/compmusic/kit.json"}
+	if got := findKits(static); !slices.Equal(got, want) {
+		t.Fatalf("findKits = %q, want %q", got, want)
 	}
 }
 
-// The home page carries the kit URL only when Register found one.
-func TestHomePageKitAttribute(t *testing.T) {
+// pageSpec is the page spec the page carries for the browser (internal/page).
+func pageSpec(t *testing.T, body string) page.Spec {
+	t.Helper()
+	m := regexp.MustCompile(`(?s)<script type="application/json" id="page-spec">(.*?)</script>`).FindStringSubmatch(body)
+	if m == nil {
+		t.Fatalf("no page-spec script on the page")
+	}
+	var s page.Spec
+	if err := json.Unmarshal([]byte(m[1]), &s); err != nil {
+		t.Fatalf("page-spec doesn't parse: %v\n%s", err, m[1])
+	}
+	if err := s.Validate(); err != nil {
+		t.Fatalf("page-spec: %v", err)
+	}
+	return s
+}
+
+// The home page mounts the tala in the main slot and the thambura in the
+// drawer, and every slot its spec names is on the page.
+func TestHomePageSpec(t *testing.T) {
+	srv := newServer(t)
+	_, body := get(t, srv.URL+"/")
+	s := pageSpec(t, body)
+	var names []string
+	for _, is := range s.Islands {
+		names = append(names, is.Name+"@"+is.Slot)
+	}
+	if got := strings.Join(names, ","); got != "tala@main,thambura@drawer" || s.Layout != "drawer" {
+		t.Fatalf("spec = %s in layout %q", got, s.Layout)
+	}
+	for _, slot := range s.Slots() {
+		if n := strings.Count(body, `data-slot="`+slot+`"`); n != 1 {
+			t.Errorf("slot %q appears %d times on the page, want once", slot, n)
+		}
+	}
+	if got := s.Islands[0].Config["fixturesUrl"]; got != "/static/Resources/TalasFixtures.json" {
+		t.Errorf("tala fixturesUrl = %v", got)
+	}
+	// Config travels in the spec now, not in data-* attributes.
+	for _, gone := range []string{"data-fixtures-url", "data-kit-url"} {
+		if strings.Contains(body, gone) {
+			t.Errorf("page still carries %s", gone)
+		}
+	}
+}
+
+// The page seeds a kit instrument for each kit Register found, none when it
+// found none, and the tala's own config says nothing about kits.
+func TestHomePageSeedsKits(t *testing.T) {
 	webDir := filepath.Join("..", "..", "web")
 	app, err := NewApp(filepath.Join(webDir, "templates"))
 	if err != nil {
@@ -384,9 +437,23 @@ func TestHomePageKitAttribute(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	_, body := get(t, srv.URL+"/")
-	found := app.Context.KitURL
-	if has := strings.Contains(body, "data-kit-url="); has != (found != "") {
-		t.Fatalf("data-kit-url present = %v, but the kit found at startup was %q", has, found)
+	s := pageSpec(t, body)
+	var got []string
+	for _, in := range s.Instruments {
+		if in.Kind != "kit" {
+			t.Fatalf("instrument kind %q, want kit", in.Kind)
+		}
+		got = append(got, fmt.Sprint(in.Config["url"]))
+	}
+	if found := app.Context.KitURLs; !slices.Equal(got, found) {
+		t.Fatalf("kit instruments = %q, but the kits found at startup were %q", got, found)
+	}
+	for _, is := range s.Islands {
+		for k := range is.Config {
+			if strings.Contains(strings.ToLower(k), "kit") {
+				t.Errorf("island %q carries %q; kits are instruments, not island config", is.Name, k)
+			}
+		}
 	}
 }
 
@@ -395,13 +462,19 @@ func TestHomePageKitAttribute(t *testing.T) {
 // files agree: takes are named relative to kit.json and live in a folder per
 // pack, so a kit copied in flat, or a manifest left pointing at another
 // format, serves 404s and the instrument goes silent with no other sign.
-func TestStaticServesTheKit(t *testing.T) {
+func TestStaticServesTheKits(t *testing.T) {
 	webDir := filepath.Join("..", "..", "web")
-	url := findKit(filepath.Join(webDir, "static"))
-	if url == "" {
+	urls := findKits(filepath.Join(webDir, "static"))
+	if len(urls) == 0 {
 		t.Skip("no kit under web/static/Resources/Kits; run `make devkit`")
 	}
 	srv := newServer(t)
+	for _, url := range urls {
+		t.Run(url, func(t *testing.T) { checkKitServed(t, srv, url) })
+	}
+}
+
+func checkKitServed(t *testing.T, srv *httptest.Server, url string) {
 	code, body := get(t, srv.URL+url)
 	if code != http.StatusOK {
 		t.Fatalf("GET %s = %d", url, code)

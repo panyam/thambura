@@ -17,13 +17,14 @@ import (
 	tmplr "github.com/panyam/templar"
 
 	"github.com/panyam/thambura/internal/brand"
+	"github.com/panyam/thambura/internal/page"
 )
 
 // App is the goapplib app context, which every page's Load is handed.
 type App struct {
-	// KitURL is the instrument kit found under static at startup, or empty.
-	// Register fills it in, since it knows where static is.
-	KitURL string
+	// KitURLs are the instrument kits found under static at startup, in name
+	// order, or none. Register fills them in, since it knows where static is.
+	KitURLs []string
 }
 
 // Header is the data goapplib's Header template renders with.
@@ -55,23 +56,50 @@ type Social struct {
 	ImageHeight int
 }
 
-// HomePage is the practice page: a shell for the player island.
+// HomePage is the practice page: the tala in the main slot and the thambura
+// in a drawer, laid out by layouts/Drawer.html and mounted from Spec.
 type HomePage struct {
 	SitePage
-	// KitURL is the instrument kit the page should load, or empty for none.
-	// Kits are build products copied in (make devkit) and aren't committed, so
-	// most checkouts have none and the page must not ask for one.
-	KitURL string
+	// Spec says which islands the page mounts, and each one's config; the
+	// browser reads it from the page (web/src/page/).
+	Spec page.Spec
 }
 
-// findKit returns the URL of the first kit manifest under
-// static/Resources/Kits, or empty when there is none.
-func findKit(static string) string {
-	matches, err := filepath.Glob(filepath.Join(static, "Resources", "Kits", "*", "kit.json"))
-	if err != nil || len(matches) == 0 {
-		return ""
+// fixturesURL is the tala's sound and image groups.
+const fixturesURL = "/static/Resources/TalasFixtures.json"
+
+// homeSpec is the home page's islands and the instruments it starts with: a
+// kit for each kit found. Which instruments are playing after that is the
+// browser's business. Kits are build products copied in (make devkit) and
+// aren't committed, so most checkouts have none, and then the spec seeds
+// none rather than sending the browser after a kit.json that isn't there.
+func homeSpec(kitURLs []string) page.Spec {
+	var instruments []page.Instrument
+	for _, u := range kitURLs {
+		instruments = append(instruments, page.Instrument{Kind: "kit", Config: map[string]any{"url": u}})
 	}
-	return "/static/Resources/Kits/" + filepath.Base(filepath.Dir(matches[0])) + "/kit.json"
+	return page.Spec{
+		Layout: "drawer",
+		Islands: []page.Island{
+			{Name: "tala", Slot: "main", Presentation: "page", Config: map[string]any{"fixturesUrl": fixturesURL}},
+			{Name: "thambura", Slot: "drawer", Presentation: "drawer"},
+		},
+		Instruments: instruments,
+	}
+}
+
+// findKits returns the URL of every kit manifest under static/Resources/Kits,
+// in name order, or none.
+func findKits(static string) []string {
+	matches, err := filepath.Glob(filepath.Join(static, "Resources", "Kits", "*", "kit.json"))
+	if err != nil {
+		return nil
+	}
+	var urls []string
+	for _, m := range matches {
+		urls = append(urls, "/static/Resources/Kits/"+filepath.Base(filepath.Dir(m))+"/kit.json")
+	}
+	return urls
 }
 
 // The home page's search and preview text, near the lengths results show in
@@ -102,7 +130,10 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 		ImageHeight: 630,
 	}
 	p.StructuredData = webApplicationLD()
-	p.KitURL = app.Context.KitURL
+	p.Spec = homeSpec(app.Context.KitURLs)
+	if err := p.Spec.Validate(); err != nil {
+		return err, false
+	}
 	return nil, false
 }
 
@@ -157,7 +188,7 @@ func NewApp(templatesDir string) (*goal.App[*App], error) {
 // SiteHandler.
 func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	static := filepath.Join(webDir, "static")
-	app.Context.KitURL = findKit(static)
+	app.Context.KitURLs = findKits(static)
 	goal.Register[*HomePage](app, mux, "/{$}")
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
 	mux.Handle("/legacy/", noindex(http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy"))))))

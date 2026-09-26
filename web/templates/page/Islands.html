@@ -1,0 +1,8 @@
+<!-- thambura/web/templates/page/Islands.html -->
+<!--
+The page spec (internal/page) as a JSON script the browser reads to mount
+its islands (web/src/page/). Render it with the spec as dot:
+{{ template "PageSpecScript" .Spec }}. Knows nothing about Thambura, so it can
+move to goapplib with internal/page (panyam/goapplib#28).
+-->
+{{ define "PageSpecScript" }}<script type="application/json" id="page-spec">{{ .JSON }}</script>{{ end }}

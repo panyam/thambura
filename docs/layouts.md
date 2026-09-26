@@ -27,10 +27,12 @@ Worth stating first, because it decides what each option below would cost.
 - **The drawer is one file.** `ThamburaBar.tsx` owns the sliding panel, the
   height it reports, and the switch between views. Mounting `ThamburaMini`
   somewhere else needs no change to the view.
-- **The islands are independent.** `main.ts` mounts the tala on `#player` and
-  the thambura on `#thambura`. They share one `AudioEngine` (buses `tala`,
-  `drone`, `percussion`), one `KeepAwake`, and nothing else. Each runs its own
-  `Transport`, which is why the drone's speed is its own.
+- **The islands are independent.** The page spec puts the tala in the `main`
+  slot and the thambura in the `drawer` slot, and they share a page context
+  (one `AudioEngine` with buses `tala`, `drone` and `percussion`, the page's
+  clock, the instruments playing, the Sa and one `KeepAwake`). The tala plays
+  on the page's clock; the thambura runs its own `Transport`, which is why the
+  drone's speed is its own.
 - **A setup already travels.** `?s=` carries the whole thambura setup,
   including the Lab's plan, and each island keeps its own localStorage key.
 
@@ -117,6 +119,22 @@ In order of how much it moves:
    `create*Island(el, bus, audio, …)`. If the layout owns the slots, the
    islands need to say what sizes they can take (strip, panel, page), so the
    layout can pick a presentation rather than hard-coding one.
+
+Since #89 the page is built from a spec: Go names each island's slot,
+presentation and config, a layout template draws the slots, and the browser
+mounts islands from a registry into a shared page context. Two decisions
+there shape what comes next, and the instrument work (docs/instruments.md)
+builds on both:
+
+- **Islands are views; instruments are seeded, not mounted.** The spec lists
+  the islands a page shows and, separately, the instruments it *starts* with.
+  An island doesn't mean one instrument instance. Adding a ghatam happens in
+  the browser, and a track-list island will own adding and removing them,
+  saving the list as instrument state.
+- **Which instruments are on a page is instrument state, not layout state.**
+  It's shared between `/` and any labs page, the way the thambura's settings
+  are. What a layout keeps for itself is presentation: whether a drawer is
+  open, which panel is wide.
 
 ## The repo as a library
 
