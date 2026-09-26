@@ -11,7 +11,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ if .FrontMatter.title }}{{ .FrontMatter.title }} · {{ end }}{{ $meta.siteName }}</title>
+    <title>{{ if and .FrontMatter.title (ne .FrontMatter.title $meta.siteName) }}{{ .FrontMatter.title }} · {{ end }}{{ $meta.siteName }}</title>
     <meta name="description" content="{{ or .FrontMatter.description $meta.siteDescription }}">
     {{/* Until the first guides are written (#95). Drop "noindex" from
          SiteMetadata.json to let search engines in. */}}
