@@ -464,20 +464,19 @@ See NEXTSTEPS.md for the order.
 
 ## Docs site
 
-`docs/` is the developer docs site, served at thambura.com/docs (#95; the
-design docs sit apart in `docs/designs/`). It is s3gen, laid out like
-notations' docs, and `docs/README.md` covers writing a page. It is its own Go
-module, so s3gen stays out of the app's go.mod and build. `make docs` checks
-and bundles `docs/components` with web's tsc and esbuild, then writes the site
-to `web/docs/` (gitignored). The Go server serves that at `/docs/`
-(`internal/web/docs.go`) and on App Engine `app.yaml` does, with three
-`static_files` lines for folder index pages. `.gcloudignore` keeps the sources
-out. `make docsrun` serves it on :8012 with live reload. `make test` builds it
-and fails on a broken link or a template error: s3gen writes a failed page's
-error into the page and carries on, so the build checks the output for it.
-Every page is `noindex` until `SiteMetadata.json` says otherwise. The theme
-toggle uses tsappkit's `ThemeManager` on the same origin as the app, so a
-choice made in one holds in the other.
+`docs/` is the developer docs site, published to GitHub Pages at
+https://panyam.github.io/thambura/, to move to docs.thambura.com later (#95;
+the design docs sit apart in `docs/designs/`). It is s3gen, laid out like
+notations' docs, and `docs/README.md` covers writing a page and the steps for
+the move. It is its own Go module, so s3gen stays out of the app's go.mod and
+build, and the app neither serves nor deploys it. `make docs` checks and
+bundles `docs/components` with web's tsc and esbuild, then writes the site to
+`docs/dist/` (gitignored). `make docsrun` serves it on :8012 with live reload.
+`make test` builds it and fails on a broken link, a link missing the
+`/thambura` prefix, or a template error: s3gen writes a failed page's error
+into the page and carries on, so the build checks the output for it. `make
+ghpages` publishes, by force-pushing the build as the one commit on
+`gh-pages`. Every page is `noindex` until `SiteMetadata.json` says otherwise.
 
 ## Deploying
 

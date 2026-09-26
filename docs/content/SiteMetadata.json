@@ -3,6 +3,6 @@
   "siteDescription": "Guides and reference for building on Thambura: the tala keeper, the thambura drone, instrument kits and patterns.",
   "repository": "https://github.com/panyam/thambura",
   "issues": "https://github.com/panyam/thambura/issues",
-  "app": "/",
+  "app": "https://thambura.com/",
   "noindex": true
 }
