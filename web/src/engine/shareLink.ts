@@ -1,4 +1,4 @@
-import { normalizeThambura, type ThamburaSettings } from "./shruthi";
+import { DEFAULT_THAMBURA, normalizeThambura, type ThamburaSettings } from "./shruthi";
 import { ATTACK_LEVEL, type PluckVoice } from "./tambura";
 import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanField, type ThamburaPlan } from "./thamburaPlan";
 
@@ -41,6 +41,9 @@ const SWARAS = ["Sa", "Ri1", "Ri2", "Ri3", "Ga3", "Ma1", "Ma2", "Pa", "Da1", "Da
 // The built-in plans a Custom plan is stored against.
 const BASES = ["jawari", "tambura", "guitar"] as const;
 const WHOLE = 0x80;
+// Where the bar's open flag sits: the flags byte, bit 2.
+const FLAGS_AT = 1;
+const OPEN_FLAG = 4;
 const FIELDS: PlanField["key"][] = [
   "level", "bite", "attack", "pluckAt", "ringSeconds", "damping", "damp", "rolloff", "maxPartials",
   "formantDb", "formantHz", "formantOctaves", "formantRise", "formantHold", "formantFall", "formantRest",
@@ -59,7 +62,8 @@ export interface SharedSetup {
   settings: ThamburaSettings;
   custom: ThamburaPlan;
   view: (typeof VIEWS)[number];
-  open: boolean;
+  /** Whether the thambura's bar is showing. The page's layout owns it, not the sound. */
+  open?: boolean;
 }
 
 /** A decoded link, and anything the listener should know about it. */
@@ -78,7 +82,7 @@ export function encodeLink(x: SharedSetup): string {
   const w = new Writer();
   w.byte(FORMAT);
   const view = Math.max(0, VIEWS.indexOf(x.view));
-  w.byte((s.temperament === "equal" ? 1 : 0) | (s.voice === "ladies" ? 2 : 0) | (x.open ? 4 : 0) | (view << 3));
+  w.byte((s.temperament === "equal" ? 1 : 0) | (s.voice === "ladies" ? 2 : 0) | (x.open ? OPEN_FLAG : 0) | (view << 3));
   w.byte(MODES.indexOf(s.mode));
   w.byte(s.key);
   w.byte(s.cents + 64);
@@ -153,7 +157,7 @@ export function decodeLink(link: string, current: { settings: ThamburaSettings }
       custom = readHidden(r, layout & WHOLE ? readWhole(r, start) : readEdits(r, start));
     }
     if (!r.done) return null;
-    return { settings, custom, view, open: (flags & 4) !== 0, drifted };
+    return { settings, custom, view, open: (flags & OPEN_FLAG) !== 0, drifted };
   } catch {
     return null;
   }
@@ -405,6 +409,26 @@ class Reader {
     }
     throw new Error("bad varint");
   }
+}
+
+/**
+ * Whether a link says the bar is open, or null if it isn't a link this app can
+ * read. The layout that shows the bar reads this; the presenter never does.
+ */
+export function barOpen(link: string): boolean | null {
+  return decodeLink(link, { settings: DEFAULT_THAMBURA })?.open ?? null;
+}
+
+/**
+ * The same link with the bar's flag set to `open` and every other byte kept,
+ * so a Custom plan isn't re-encoded. A link this app can't read comes back as
+ * it was.
+ */
+export function withBarOpen(link: string, open: boolean): string {
+  if (barOpen(link) === null) return link;
+  const bytes = fromBase64url(link);
+  bytes[FLAGS_AT] = open ? bytes[FLAGS_AT] | OPEN_FLAG : bytes[FLAGS_AT] & ~OPEN_FLAG;
+  return base64url(bytes);
 }
 
 function base64url(bytes: Uint8Array): string {

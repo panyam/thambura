@@ -29,8 +29,6 @@ export const THAMBURA_VIEWS: { id: ThamburaViewId; label: string }[] = [
 export interface ThamburaState {
   settings: ThamburaSettings;
   playing: boolean;
-  /** Whether the floating bar is showing. Hiding it doesn't stop the sound. */
-  open: boolean;
   view: ThamburaViewId;
   /** The plan the Custom mode plays, edited in the Lab view. */
   custom: ThamburaPlan;
@@ -57,7 +55,7 @@ export interface ThamburaView {
   setState(state: ThamburaState): void;
 }
 
-/** Where the settings, view and open state are kept between visits. */
+/** Where the settings and view are kept between visits. */
 export interface ThamburaStore {
   load(): unknown;
   save(value: unknown): void;
@@ -167,7 +165,6 @@ export class ThamburaPresenter {
     let settings = normalizeThambura(saved.settings, DEFAULT_THAMBURA);
     let custom = normalizePlan(saved.custom, planFor({ ...settings, mode: "jawari" }));
     let view: ThamburaViewId = VIEW_IDS.includes(saved.view as ThamburaViewId) ? (saved.view as ThamburaViewId) : "studio";
-    let open = saved.open === true;
     let notice: string | null = null;
     let presets = normalizePresets(loadSafely(deps.presets));
     // A shared link wins over what this browser saved.
@@ -176,11 +173,11 @@ export class ThamburaPresenter {
       const shared = decodeLink(link, { settings });
       if (shared) {
         // Keep the listener's own setup, if they had one and the link changes it.
-        const own = encodeLink({ settings, custom, view, open });
+        const own = encodeLink({ settings, custom, view });
         if (saved.settings && soundOf(own) !== soundOf(link)) {
           presets = [{ id: presetId(), name: BEFORE_LINK_PRESET, link: own, auto: true }, ...presets.filter((p) => !p.auto)];
         }
-        ({ settings, view, open } = shared);
+        ({ settings, view } = shared);
         custom = shared.custom ?? custom;
         notice = shared.drifted
           ? "Opened a shared setup. Its Custom sound was made from an older version of a built-in sound, so it may sound a little different."
@@ -192,7 +189,6 @@ export class ThamburaPresenter {
     this.state = {
       settings,
       playing: false,
-      open,
       view,
       custom,
       plan: planFor(settings, custom),
@@ -318,15 +314,6 @@ export class ThamburaPresenter {
   solo(string: number): void {
     const alone = this.state.muted.every((m, i) => m === (i !== string));
     this.setMutes(alone ? NONE_MUTED : (NONE_MUTED.map((_, i) => i !== string) as ThamburaState["muted"]));
-  }
-
-  setOpen(open: boolean): void {
-    this.update({ open });
-    this.save();
-  }
-
-  toggleOpen(): void {
-    this.setOpen(!this.state.open);
   }
 
   dismissNotice(): void {
@@ -571,9 +558,9 @@ export class ThamburaPresenter {
   }
 
   private save(): void {
-    const { settings, view, open, custom } = this.state;
+    const { settings, view, custom } = this.state;
     try {
-      this.deps.store?.save({ settings, view, open, custom });
+      this.deps.store?.save({ settings, view, custom });
     } catch {
       // Storage can be full or blocked; the settings just won't be remembered.
     }
@@ -606,7 +593,7 @@ export class ThamburaPresenter {
   }
 
   private linkFor(s: ThamburaState): string {
-    return encodeLink({ settings: s.settings, custom: s.custom, view: s.view, open: s.open });
+    return encodeLink({ settings: s.settings, custom: s.custom, view: s.view });
   }
 }
 

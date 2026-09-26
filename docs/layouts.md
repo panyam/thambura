@@ -107,7 +107,9 @@ In order of how much it moves:
 2. **Presentation out of the presenter.** `open` becomes the layout's business.
    The presenter keeps what the *instrument* is doing: settings, playing, view.
    A good test: could the same presenter drive a docked panel, a drawer and a
-   full page without knowing which it's in? Today it can't, quite.
+   full page without knowing which it's in? Since #88 it can: the drawer
+   (`player/thamburaDrawer.ts`) owns `open`, and adds its flag to the
+   presenter's links on their way to the address bar.
 3. **The floating controls become layout-owned.** `#thambura-controls` is in
    the page template and hides when the drawer opens. In a docked layout it
    shouldn't exist at all.
