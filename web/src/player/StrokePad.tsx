@@ -3,7 +3,7 @@ import type { KitPresenter, KitState } from "./kitPresenter";
 
 export type KitActions = Pick<
   KitPresenter,
-  "play" | "setVolume" | "setZoneLevel" | "setEnabled" | "strokeForKey"
+  "play" | "setVolume" | "setZoneLevel" | "setEnabled" | "strokeForKey" | "setVariety" | "askForKorvai"
 >;
 
 /**

@@ -57,6 +57,26 @@ describe("StrokeSequencer", () => {
     ]);
   });
 
+  it("resumes partway through a cycle, from where the tala resumes", () => {
+    const beats = beatsFor(SETTINGS);
+    const grid = new TalaGrid(beats);
+    const map = new TempoMap(60);
+    // The tala resumes on akshara 3, so count 0 is three counts into the cycle.
+    const seq = new StrokeSequencer(() => ({ grid, pattern: ADI }), map, () => ratio(3));
+    map.start(0);
+    seq.start(0);
+    const out = seq.pull(0, 5.1);
+    map.reach(5.1);
+    // Akshara 3's strokes first, nothing from before it, and tham on the next sam.
+    expect(out.slice(0, 3).map((e) => [e.stroke, e.time, e.cycle])).toEqual([
+      ["R.nam", 0, 0],
+      ["R.thi", 0.5, 0],
+      ["R.thi", 0.75, 0],
+    ]);
+    expect(out.find((e) => e.stroke === "L.tham")).toMatchObject({ time: 1, cycle: 0 });
+    expect(out.at(-1)).toMatchObject({ stroke: "L.tham", time: 5, cycle: 1, index: 0 });
+  });
+
   it("stretches with kalai, since an akshara is then two counts", () => {
     const { pull } = setup({ kalai: 2 }, 60);
     expect(pull(0, 2.1).map((e) => [e.stroke, e.time])).toEqual([

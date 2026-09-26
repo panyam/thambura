@@ -26,7 +26,8 @@ export class TalaGrid {
   private readonly cycle: Ratio;
 
   constructor(
-    private readonly beats: Beat[],
+    /** The cycle's beats, once each whatever the kalai. */
+    readonly beats: Beat[],
     private readonly kalai = 1,
   ) {
     let at: Ratio = ZERO;

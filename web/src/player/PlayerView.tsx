@@ -23,8 +23,6 @@ export type PlayerActions = Pick<
   | "prev"
   | "restart"
   | "setTempo"
-  | "setVariety"
-  | "askForKorvai"
   | "setVolume"
   | "setSettings"
   | "setSoundGroup"
@@ -95,15 +93,15 @@ export function PlayerView(props: {
           Only while it is switched on, since it is showing what you hear. */}
       <Show when={props.kit && props.kit.state().enabled && props.kit.state().status === "ready"}>
         <StrokeLane
-          lane={() => s().lane}
-          strokeIndex={() => s().strokeIndex}
+          lane={() => props.kit!.state().lane}
+          strokeIndex={() => props.kit!.state().strokeIndex}
           kit={props.kit!.state}
-          variety={() => s().variety}
-          setVariety={(variety) => a.setVariety(variety)}
-          hasVariations={() => s().hasVariations}
-          hasKorvai={() => s().hasKorvai}
-          korvaiQueued={() => s().korvaiQueued}
-          askForKorvai={() => a.askForKorvai()}
+          variety={() => props.kit!.state().variety}
+          setVariety={(variety) => props.kit!.actions.setVariety(variety)}
+          hasVariations={() => props.kit!.state().hasVariations}
+          hasKorvai={() => props.kit!.state().hasKorvai}
+          korvaiQueued={() => props.kit!.state().korvaiQueued}
+          askForKorvai={() => props.kit!.actions.askForKorvai()}
         />
       </Show>
 

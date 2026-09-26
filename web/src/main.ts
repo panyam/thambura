@@ -30,7 +30,7 @@ const REGISTRY: Registry<PageContext, HTMLElement, LCMComponent, EventBus> = {
       audio: ctx.audio,
       clock: ctx.clock,
       fixturesUrl: typeof island.config.fixturesUrl === "string" ? island.config.fixturesUrl : undefined,
-      kit: ctx.tracks.get("kit"),
+      kit: ctx.tracks.get("kit-1"),
       onPlaying: (on) => ctx.awake.set("tala", on),
     }),
   // The drawer slot holds the bar's mount and the floating controls
@@ -68,13 +68,13 @@ class HomePage extends IslandPage<PageContext> {
       tonic: new Tonic(),
       awake: new KeepAwake({ wakeLock: (navigator as { wakeLock?: WakeLockLike }).wakeLock, doc: document }),
     };
-    // The instruments the page starts with. One kit for now, under a
-    // placeholder id; later kits in the spec are left for the instrument work.
-    // TODO(instruments): a track per instrument, with instance ids.
+    // The instruments the page starts with, as tracks numbered by kind in the
+    // spec's order (kit-1, kit-2, ...). Only the first kit plays for now; a
+    // second is for the track list (#101).
     const kits = spec.instruments.filter((i) => i.kind === "kit" && typeof i.config.url === "string");
     if (kits.length > 0) {
-      const kit = newKitPresenter(audio);
-      ctx.tracks.add("kit", kit);
+      const kit = newKitPresenter(audio, "kit-1", ctx.clock);
+      ctx.tracks.add("kit-1", kit);
       ctx.tonic.follow((hz) => kit.setTonic(hz));
       void kit.load(kits[0].config.url as string);
     }

@@ -1,5 +1,8 @@
+import type { Gati } from "../engine/carnatic";
+import type { Ratio } from "../engine/ratio";
 import { DEFAULT_TEMPO } from "../engine/selection";
 import { DEFAULT_THAMBURA, tunedTonicHz } from "../engine/shruthi";
+import type { TalaGrid } from "../engine/talaGrid";
 import { TempoMap } from "../engine/tempoMap";
 import type { AudioEngine } from "./audio";
 import type { KeepAwake } from "./keepAwake";
@@ -23,25 +26,61 @@ export interface PageContext {
 /**
  * The tala's clock, owned by the page so a page without the tala still has
  * one. One transport on one tempo map, so every voice on it agrees on where a
- * beat falls. The thambura keeps its own transport: its speed isn't the
- * tala's tempo.
- * TODO(instruments): the tala grid (engine/talaGrid.ts) joins this once the
- * tala sets one here rather than inside PlayerPresenter.
+ * beat falls, and the tala's cycle, so anything playing along knows where
+ * sam is. The thambura keeps its own transport: its speed isn't the tala's
+ * tempo.
  */
 export interface Clock {
   tempo: TempoMap;
   transport: Transport;
+  /** The tala's cycle, set by the tala; empty until a tala is on the page. */
+  tala: Latest<TalaTiming>;
+}
+
+/** What the tala tells the instruments playing along with it. */
+export interface TalaTiming {
+  grid: TalaGrid;
+  nadai: Gati;
+  /**
+   * Where in the cycle the transport's count 0 falls, in counts. Zero when
+   * the tala starts on sam; after a stop it resumes from the first beat not
+   * yet heard, and every instrument has to resume there too.
+   */
+  resumesAt: Ratio;
 }
 
 export function createClock(audio: { readonly now: number }, ticker: Ticker, bpm = DEFAULT_TEMPO): Clock {
   const tempo = new TempoMap(bpm);
-  return { tempo, transport: new Transport(audio, ticker, { tempo }) };
+  return { tempo, transport: new Transport(audio, ticker, { tempo }), tala: new Latest<TalaTiming>() };
 }
 
 /**
- * The instruments playing, by id, in the order they were added. It only
- * holds today's kit for now; the instrument work makes each one a track
- * with its own bus.
+ * A value one part of the page sets and others follow. `follow` hears the
+ * current value at once, if there is one, then every change.
+ */
+export class Latest<T> {
+  private current: T | undefined;
+  private readonly followers: ((value: T) => void)[] = [];
+
+  get value(): T | undefined {
+    return this.current;
+  }
+
+  set(value: T): void {
+    this.current = value;
+    for (const f of this.followers) f(value);
+  }
+
+  follow(f: (value: T) => void): void {
+    this.followers.push(f);
+    if (this.current !== undefined) f(this.current);
+  }
+}
+
+/**
+ * The instruments playing, by id, in the order they were added. Each plays
+ * on the audio track of the same id. Ids are `<kind>-<n>`, numbered in the
+ * order the page spec lists its instruments: `kit-1` is the first kit.
  */
 export class Tracks<T> {
   private readonly byId = new Map<string, T>();
