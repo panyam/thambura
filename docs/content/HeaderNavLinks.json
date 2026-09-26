@@ -7,11 +7,21 @@
   {
     "name": "Guides",
     "url": "guides/",
-    "children": []
+    "children": [
+      {
+        "name": "Share links and presets",
+        "url": "guides/share-links/"
+      }
+    ]
   },
   {
     "name": "Reference",
     "url": "reference/",
-    "children": []
+    "children": [
+      {
+        "name": "The share link format",
+        "url": "reference/share-link-format/"
+      }
+    ]
   }
 ]

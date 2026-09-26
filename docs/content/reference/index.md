@@ -8,7 +8,11 @@ libraries ([#53](https://github.com/panyam/thambura/issues/53)), so it
 documents names that will last. It is tracked in
 [#111](https://github.com/panyam/thambura/issues/111).
 
-## Until then
+## Formats
+
+- [The share link format]({{ .Site.PathPrefix }}/reference/share-link-format/): the bytes behind a `?s=` link, and the rules for changing them.
+
+## The engine, until then
 
 The engine lives in
 [`web/src/engine`](https://github.com/panyam/thambura/tree/master/web/src/engine),
