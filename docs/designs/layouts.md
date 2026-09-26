@@ -123,7 +123,7 @@ In order of how much it moves:
 Since #89 the page is built from a spec: Go names each island's slot,
 presentation and config, a layout template draws the slots, and the browser
 mounts islands from a registry into a shared page context. Two decisions
-there shape what comes next, and the instrument work (docs/instruments.md)
+there shape what comes next, and the instrument work ([instruments.md](instruments.md))
 builds on both:
 
 - **Islands are views; instruments are seeded, not mounted.** The spec lists
@@ -136,6 +136,48 @@ builds on both:
   are. What a layout keeps for itself is presentation: whether a drawer is
   open, which panel is wide.
 
+## Trying layouts: labs routes
+
+The playground is a set of pages on thambura.com itself, under
+`/labs/<name>`, rather than a `make deploydev` URL. The dev version still
+tests a *build* (Go, `app.yaml`, the service worker) before it's promoted; a
+route can't, since it ships in the same binary as `/`. What moves to labs is
+showing someone a layout. Tracked in #86, which lists the steps.
+
+**Three kinds of experiment, three homes.** An experiment *within a page* (a
+Layout menu) is a client-side choice and needs nothing new. A page that
+*rearranges the same islands* (`/labs/side-by-side`) is another layout
+template and another page spec, on the same `app.js`. A *truly different page*
+(`/embed/demo`, a mridangam studio) gets its own esbuild entry, built with
+`splitting: true` so Solid and the engine end up in shared chunks. The rule: a
+new entry only when a page brings code `/` doesn't need, or must not load code
+`/` does. Each entry has its own island registry, so it bundles only the
+islands it can mount.
+
+**What's already in place.** The page spec, the registry and the three
+template layers came in with #89 (above, and `CLAUDE.md`): the chrome
+(`BasePage.html` over goapplib's), a layout (`web/templates/layouts/`) that
+draws the slots, and the page's own content. The drawer owns `open` since #88.
+So a labs page is mostly a layout template, a spec, and a route. The
+`Layout` field of the spec, which nothing reads yet, is how a labs page keeps
+its own layout state.
+
+**Rules for a labs page on production.** Descriptive names (`/labs/concert`,
+never `/idea1`), since people will bookmark them. `noindex` like `/legacy/`,
+not in the sitemap, and a canonical link to `/`. Instrument state (settings,
+and which instruments are on the page) is shared with `/` on purpose; layout
+state is kept per layout, so an experiment can't change how `/` looks. Its
+keys go through `player/storage.ts` like the rest, since the instrument work
+will rename them. A banner says it's an experiment, and it ships through
+`make deploy` like anything else.
+
+**`/embed/demo` is the library's first test.** A same-origin labs page still
+gets our chrome, global Tailwind, `/static/` paths and service worker, which
+hides the problems [library.md](library.md) lists first. The embed page is a
+bare HTML page on its own entry that calls `mountIslands` directly, passing an
+asset base URL and keeping our CSS scoped to the island roots. Later, serve
+it from another origin.
+
 ## The repo as a library
 
 The layering above is most of what a library needs, and the goal is for these
@@ -147,7 +189,8 @@ notation app itself for practice. That has its own note:
 
 Cheapest first, and each is useful alone:
 
-1. The playground route, because it makes every later option easier to try.
+1. The playground route (labs, above), because it makes every later option
+   easier to try.
 2. Move `open` out of the thambura presenter into a layout owner (option B's
    groundwork), which is small and leaves the presenter owning only what the
    instrument does.
