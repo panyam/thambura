@@ -179,12 +179,13 @@ asset base URL and keeping our CSS scoped to the island roots. Later, serve
 it from another origin.
 
 **Built here, lifted later.** The page spec, registry and variants are meant
-to move to tsappkit (panyam/goapplib#27) and goapplib (panyam/goapplib#28)
-once a second app needs them: lilbattle's GameViewer layouts
-(turnforge/lilbattle#199) or the notation app (panyam/notation#304). So the
-TypeScript lives in `web/src/page/`, importing tsappkit and nothing from
-`engine/` or `player/`; the Go in `internal/page`, not importing
-`internal/brand`; and their tests use no thambura fixtures.
+to move to tsappkit (panyam/goapplib#27) and goapplib (panyam/goapplib#28),
+where lilbattle's GameViewer layouts (turnforge/lilbattle#199) and the notation
+app (panyam/notation#304) are waiting for them. The lift happens after #92,
+once per library, so #90 to #92 can still reshape the spec without a release
+each time. Until then the TypeScript lives in `web/src/page/` and the Go in
+`internal/page`, and `make liftcheck` (part of `make test`) fails if either
+imports anything else from this repo, so the lift stays a copy.
 
 ## The repo as a library
 
