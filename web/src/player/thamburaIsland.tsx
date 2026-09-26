@@ -1,13 +1,18 @@
 import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
+import { createSignal } from "solid-js";
+import { withBarOpen } from "../engine/shareLink";
 import type { ThamburaSettings } from "../engine/shruthi";
 import type { AudioEngine } from "./audio";
 import { isThamburaShortcut } from "./shortcuts";
 import { ThamburaBar } from "./ThamburaBar";
+import { ThamburaDrawer } from "./thamburaDrawer";
 import { ThamburaPresenter, type ThamburaLink, type ThamburaState, type ThamburaStore } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
 const STORAGE_KEY = "thambura.drone";
+// The bar's open state, apart from the sound (thamburaDrawer.ts).
+const DRAWER_KEY = "thambura.drawer";
 const PRESETS_KEY = "thambura.presets";
 // The query parameter that carries a shared setup (engine/shareLink.ts).
 const LINK_PARAM = "s";
@@ -19,7 +24,9 @@ const LINK_SETTLE_MS = 400;
 /**
  * Mounts the thambura bar on `el` and wires the page's floating thambura
  * controls: `play` starts and stops it from anywhere on the page, as does the
- * T key, and `toggle` opens and closes the bar. It plays through the page's
+ * T key, and `toggle` opens and closes the bar. The bar's open state is the
+ * drawer's; the presenter never sees it, so the link the presenter writes
+ * gets the drawer's flag added here, on its way to the address bar. It plays through the page's
  * shared AudioEngine, on the drone bus. `onPlaying` hears whenever it starts
  * or stops.
  */
@@ -33,6 +40,9 @@ export function createThamburaIsland(
   onSettings?: (settings: ThamburaSettings) => void,
 ): SolidIsland {
   const { toggle, play } = controls;
+  const address = addressBarLink();
+  const drawer = new ThamburaDrawer({ store: localStore(DRAWER_KEY), legacy: localStore(STORAGE_KEY), link: address.read() });
+  const [open, setOpen] = createSignal(drawer.open);
   const presenter = new ThamburaPresenter({
     audio,
     ticker: workerTicker(),
@@ -43,18 +53,24 @@ export function createThamburaIsland(
     defer: (cb, ms) => setTimeout(cb, ms),
     store: localStore(STORAGE_KEY),
     presets: localStore(PRESETS_KEY),
-    link: addressBarLink(),
+    link: { read: address.read, write: (link) => address.write(withBarOpen(link, drawer.open)) },
   });
   const [state, setState] = signalView(presenter.state);
   presenter.attach({
     setState(s) {
       setState(s);
-      reflect(controls, s);
+      reflectPlaying(play, s);
       onPlaying?.(s.playing);
       onSettings?.(s.settings);
     },
   });
-  toggle?.addEventListener("click", () => presenter.toggleOpen());
+  drawer.onChange((o) => {
+    setOpen(o);
+    reflectOpen(controls, o);
+    address.write(withBarOpen(presenter.shareLink(), o));
+  });
+  reflectOpen(controls, drawer.open);
+  toggle?.addEventListener("click", () => drawer.toggle());
   play?.addEventListener("click", () => void presenter.toggle());
   document.addEventListener("keydown", (e) => {
     if (!isThamburaShortcut(e as KeyboardEvent & { target: HTMLElement | null })) return;
@@ -69,29 +85,40 @@ export function createThamburaIsland(
     "thambura",
     el,
     () => (
-      <ThamburaBar state={state} actions={presenter} onHeight={onHeight} shareUrl={linkUrl} analyser={() => audio.analyser("drone")} />
+      <ThamburaBar
+        state={state}
+        actions={presenter}
+        open={open}
+        onHide={() => drawer.setOpen(false)}
+        onHeight={onHeight}
+        shareUrl={(link) => linkUrl(withBarOpen(link, drawer.open))}
+        analyser={() => audio.analyser("drone")}
+      />
     ),
     eventBus,
   );
 }
 
-/** Shows on the floating buttons whether the thambura is playing and the bar open. */
-function reflect(controls: { root: HTMLElement | null; toggle: HTMLElement | null; play: HTMLElement | null }, s: ThamburaState): void {
+/** Shows on the floating buttons whether the bar is open. */
+function reflectOpen(controls: { root: HTMLElement | null; toggle: HTMLElement | null }, open: boolean): void {
   // The open bar carries its own play and hide buttons, and on a phone it
   // leaves no room below it, so the floating pair fades out while it's open.
   const root = controls.root;
   if (root) {
-    root.classList.toggle("opacity-0", s.open);
-    root.classList.toggle("translate-y-6", s.open);
-    root.inert = s.open;
+    root.classList.toggle("opacity-0", open);
+    root.classList.toggle("translate-y-6", open);
+    root.inert = open;
   }
   const toggle = controls.toggle;
   if (toggle) {
-    toggle.setAttribute("aria-expanded", String(s.open));
-    toggle.setAttribute("aria-label", s.open ? "Hide the shruthi box" : "Shruthi box");
-    toggle.title = s.open ? "Hide the shruthi box" : "Show the shruthi box";
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("aria-label", open ? "Hide the shruthi box" : "Shruthi box");
+    toggle.title = open ? "Hide the shruthi box" : "Show the shruthi box";
   }
-  const play = controls.play;
+}
+
+/** Shows on the floating play button whether the thambura is playing. */
+function reflectPlaying(play: HTMLElement | null, s: ThamburaState): void {
   if (!play) return;
   play.dataset.playing = String(s.playing);
   play.setAttribute("aria-pressed", String(s.playing));

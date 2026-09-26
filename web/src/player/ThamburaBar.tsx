@@ -16,11 +16,14 @@ const MODE = "mode:";
  * open. Its header holds the start/stop button, the Sound menu (built-in
  * sounds and saved presets, which play as soon as they're picked) and a
  * switch between the views, all of which drive the same presenter.
- * `onHeight` reports the space it covers (0 when hidden) so the page can
- * leave room for it. With `shareUrl` the header can copy a link to the
+ * `open` says whether it is showing (the drawer's state, not the presenter's)
+ * and `onHide` is its hide button. `onHeight` reports the space it covers
+ * (0 when hidden) so the page can leave room for it. With `shareUrl` the header can copy a link to the
  * current setup; the Lab saves presets.
  */
-export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number) => void }) {
+export function ThamburaBar(
+  props: ThamburaViewProps & { open: () => boolean; onHide: () => void; onHeight?: (px: number) => void },
+) {
   const st = () => props.state();
   const a = props.actions;
   let panel!: HTMLDivElement;
@@ -34,7 +37,7 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
     copiedTimer = setTimeout(() => setCopied(""), 2500);
   };
 
-  const report = () => props.onHeight?.(st().open ? panel.offsetHeight : 0);
+  const report = () => props.onHeight?.(props.open() ? panel.offsetHeight : 0);
   onMount(() => {
     const ro = new ResizeObserver(report);
     ro.observe(panel);
@@ -42,7 +45,7 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
   });
   createEffect(() => {
     // A hidden bar keeps its controls out of the tab order and away from screen readers.
-    panel.inert = !st().open;
+    panel.inert = !props.open();
     report();
   });
 
@@ -53,7 +56,7 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
         role="region"
         aria-label="Thambura"
         class={`pointer-events-auto w-full ${st().view === "lab" ? "max-w-6xl" : "max-w-3xl"} rounded-t-2xl border border-b-0 border-gray-200 bg-white/95 backdrop-blur transition-[transform,box-shadow] duration-300 ease-out dark:border-gray-700 dark:bg-gray-900/95 ${
-          st().open ? "translate-y-0 shadow-[0_-8px_30px_rgba(0,0,0,0.15)]" : "translate-y-[110%] shadow-none"
+          props.open() ? "translate-y-0 shadow-[0_-8px_30px_rgba(0,0,0,0.15)]" : "translate-y-[110%] shadow-none"
         }`}
       >
         <div class="flex items-start gap-3 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
@@ -127,7 +130,7 @@ export function ThamburaBar(props: ThamburaViewProps & { onHeight?: (px: number)
           <button
             type="button"
             aria-label="Hide thambura"
-            onClick={() => a.setOpen(false)}
+            onClick={() => props.onHide()}
             class="shrink-0 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:hover:bg-gray-800 dark:hover:text-white"
           >
             <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

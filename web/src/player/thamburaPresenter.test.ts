@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_THAMBURA, KEY_G3, srutiFrequencies, type ThamburaSettings } from "../engine/shruthi";
 import { BUILT_IN_PRESETS } from "../engine/presets";
-import { decodeLink, encodeLink } from "../engine/shareLink";
+import { barOpen, decodeLink, encodeLink } from "../engine/shareLink";
 import { planFor } from "../engine/thamburaPlan";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 import { BEFORE_LINK_PRESET, ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
@@ -97,22 +97,30 @@ describe("ThamburaPresenter", () => {
   it("starts from the defaults, closed, on the studio view", () => {
     expect(p.state.settings).toEqual(DEFAULT_THAMBURA);
     expect(p.state.playing).toBe(false);
-    expect(p.state.open).toBe(false);
     expect(p.state.view).toBe("studio");
     expect(audio.busVolume.drone).toBe(DEFAULT_THAMBURA.volume);
     expect(audio.samples.size).toBe(0); // nothing rendered until it plays
   });
 
-  it("restores saved settings, view and open state, cleaning bad values", () => {
+  it("restores saved settings and view, cleaning bad values", () => {
     make({ settings: { key: KEY_G3, cents: 400, voice: "ladies" }, view: "raagini", open: true });
     expect(p.state.settings.key).toBe(KEY_G3);
     expect(p.state.settings.cents).toBe(50);
     expect(p.state.settings.voice).toBe("ladies");
     expect(p.state.view).toBe("raagini");
-    expect(p.state.open).toBe(true);
     make({ view: "hologram", open: "yes" });
     expect(p.state.view).toBe("studio");
-    expect(p.state.open).toBe(false);
+  });
+
+  it("neither keeps nor links the bar's state, which the drawer owns", () => {
+    const opened = encodeLink({ settings: DEFAULT_THAMBURA, custom: planFor(DEFAULT_THAMBURA), view: "lab", open: true });
+    const link = new FakeLink(opened);
+    make({ settings: DEFAULT_THAMBURA, view: "mini", open: true }, link);
+    expect("open" in p.state).toBe(false);
+    expect(barOpen(p.shareLink())).toBe(false);
+    set({ key: 7 });
+    expect(store.saved).not.toHaveProperty("open");
+    expect(link.writes.map(barOpen)).not.toContain(true);
   });
 
   it("plucks first, Sa, Sa, low Sa on the drone bus", async () => {
@@ -206,14 +214,12 @@ describe("ThamburaPresenter", () => {
     expect(audio.played[1].when - audio.played[0].when).toBeCloseTo(0.5, 9);
   });
 
-  it("stops scheduling and cancels unheard plucks on stop, keeping the bar open", async () => {
-    p.setOpen(true);
+  it("stops scheduling and cancels unheard plucks on stop", async () => {
     await start();
     run(1);
     const n = audio.played.length;
     p.toggle();
     expect(p.state.playing).toBe(false);
-    expect(p.state.open).toBe(true);
     expect(audio.cancelled).toEqual(["drone"]);
     expect(audio.released).toEqual([{ bus: "drone", seconds: 1.5 }]);
     expect(ticker.onTick).toBeNull();
@@ -496,7 +502,7 @@ describe("ThamburaPresenter", () => {
       });
       make({ settings: { ...DEFAULT_THAMBURA, key: 3, volume: 20 } }, new FakeLink(shared));
       expect(p.state.settings).toMatchObject({ key: 9, mode: "guitar", volume: 20 });
-      expect(p.state).toMatchObject({ view: "lab", open: true, notice: "Opened a shared setup." });
+      expect(p.state).toMatchObject({ view: "lab", notice: "Opened a shared setup." });
       // The listener's own setup stays saved until they change something.
       expect(store.saved).toBeUndefined();
       p.nudgeCents(1);
@@ -734,20 +740,11 @@ describe("ThamburaPresenter", () => {
     });
   });
 
-  it("saves settings, view and open state", () => {
+  it("saves settings and view", () => {
     set({ key: 7 });
     p.setView("mini");
-    p.toggleOpen();
-    expect(store.saved).toEqual({ settings: { ...DEFAULT_THAMBURA, key: 7 }, view: "mini", open: true, custom: p.state.custom });
+    expect(store.saved).toEqual({ settings: { ...DEFAULT_THAMBURA, key: 7 }, view: "mini", custom: p.state.custom });
     expect(views.at(-1)?.view).toBe("mini");
   });
 
-  it("keeps playing when the bar is hidden", async () => {
-    p.setOpen(true);
-    await start();
-    p.toggleOpen();
-    expect(p.state.open).toBe(false);
-    expect(p.state.playing).toBe(true);
-    expect(ticker.onTick).not.toBeNull();
-  });
 });

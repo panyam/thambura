@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mulberry32 } from "./tambura";
 import { BUILT_IN_PRESETS } from "./presets";
-import { decodeLink, encodeLink, type SharedSetup } from "./shareLink";
+import { barOpen, decodeLink, encodeLink, withBarOpen, type SharedSetup } from "./shareLink";
 import { DEFAULT_THAMBURA, KEYS, SWARAS, type ThamburaSettings } from "./shruthi";
 import { FIELD_SPECS, planFor, readField, setGap, writeField, type ThamburaPlan } from "./thamburaPlan";
 
@@ -155,6 +155,39 @@ describe("share links", () => {
     expect(d.settings.key).toBe(KEYS.length - 1);
     expect(d.settings.cents).toBe(50);
     expect(d.settings.cycleSeconds).toBe(8);
+  });
+});
+
+describe("the bar's open flag", () => {
+  const bytes = (link: string) => Uint8Array.from(atob(link.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+
+  it("is read from a link", () => {
+    expect(barOpen(encodeLink(setup({}, jawari, { open: true })))).toBe(true);
+    expect(barOpen(encodeLink(setup()))).toBe(false);
+  });
+
+  it("is set without changing anything else the link carries", () => {
+    const rng = mulberry32(5);
+    for (const s of [setup({ key: 3 }, jawari, { view: "lab" }), setup({ mode: "custom" }, labEdits(rng, jawari, 4))]) {
+      const closed = encodeLink(s);
+      const opened = withBarOpen(closed, true);
+      expect(opened).toBe(encodeLink({ ...s, open: true }));
+      expect(barOpen(opened)).toBe(true);
+      expect(withBarOpen(opened, false)).toBe(closed);
+      expect({ ...decodeLink(opened, current), open: false }).toEqual(decodeLink(closed, current));
+      // Only the flags byte differs.
+      const a = bytes(closed);
+      const b = bytes(opened);
+      expect(b.length).toBe(a.length);
+      expect([...a].map((v, i) => (v === b[i] ? -1 : i)).filter((i) => i >= 0)).toEqual([1]);
+    }
+  });
+
+  it("leaves a link it can't read alone", () => {
+    for (const bad of ["", "!!", "AAAA", `C${encodeLink(setup()).slice(1)}`]) {
+      expect(barOpen(bad)).toBeNull();
+      expect(withBarOpen(bad, true)).toBe(bad);
+    }
   });
 });
 

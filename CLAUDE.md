@@ -186,7 +186,9 @@ unit-tested:
   is refused on them and Save as… keeps your version.
 - `shareLink.ts`: the thambura's whole setup (settings but volume, view,
   whether the bar is open, and for Custom mode the plan) packed into the
-  `?s=` query parameter as base64url bytes. A Custom plan is stored as edits
+  `?s=` query parameter as base64url bytes. The presenter never sets the
+  bar's flag; `barOpen` and `withBarOpen` read and flip that one bit and
+  leave every other byte alone, so the drawer can add it on the way out. A Custom plan is stored as edits
   to the closest built-in plan (or field by field, whichever is shorter),
   with a checksum of that plan so a link made before a built-in sound
   changed can say so. Slider values take a byte or two; anything off a
@@ -238,7 +240,10 @@ unit-tested:
 - `thamburaPresenter.ts` (`ThamburaPresenter`): the thambura's state, its own
   `Transport` (so it starts and stops apart from the tala), the plucked
   (tambura, guitar) and reed (sruti) voices on the `drone` bus, and the
-  floating bar's open/view state and the Custom plan, saved to localStorage.
+  view and the Custom plan, saved to localStorage. Whether the bar is open
+  isn't its business (#88): `thamburaDrawer.ts` (`ThamburaDrawer`) holds
+  that under its own key, `thambura.drawer`, taking a link's flag over the
+  saved one and, once, the `open` the presenter used to save.
   Everything plucked goes through the settings' plan (`planFor`): its voices
   key and render the samples, and `pluckOptions` turns a pluck into
   level, pan and detune. `setCustom` / `loadCustom` edit the Custom plan and
@@ -294,8 +299,9 @@ unit-tested:
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
 - `thamburaIsland.tsx` wires the page's floating controls, the stack at the
   bottom right in `HomePage.html` (`#thambura-controls`): `#thambura-play`
-  (start/stop from anywhere on the page, bar open or not; `reflect` flips its
-  icon via `data-playing` and its label), `#thambura-toggle` (opens the bar: a
+  (start/stop from anywhere on the page, bar open or not; `reflectPlaying`
+  flips its icon via `data-playing` and its label, `reflectOpen` fades the
+  pair while the bar is open), `#thambura-toggle` (opens the bar: a
   tilted tambura icon, the whole button on a phone, in a pill with the
   "Shruthi box" label from `sm` up), and
   the T key (`shortcuts.ts`: not while typing in a field, not with
