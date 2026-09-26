@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_MOTION, motionAt, REST, SWING_DEPTH, type BeatPose } from "../engine/motion";
 import { DEFAULT_SETTINGS } from "../engine/selection";
 import { PlayerPresenter, type PlayerState } from "./presenter";
+import { createClock } from "./pageContext";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 
 const FIXTURES = {
@@ -15,6 +16,30 @@ const FIXTURES = {
     Swaras: { Sa: "/sa.png", Ri: "/ri.png" },
   },
 };
+
+describe("PlayerPresenter on the page's clock", () => {
+  it("plays on the transport and tempo map it is given, rather than its own", async () => {
+    const audio = new FakeAudio();
+    const ticker = new FakeTicker();
+    const clock = createClock(audio, ticker, 60);
+    const p = new PlayerPresenter({
+      audio,
+      clock,
+      frames: new FakeFrames(),
+      fetchJson: async () => FIXTURES,
+      preloadImages: async () => {},
+      rng: () => 0.9,
+    });
+    await p.load("/fixtures.json");
+    p.setTempo(120);
+    expect(clock.tempo.bpm).toBe(120);
+    await p.toggle();
+    expect(ticker.onTick).not.toBeNull();
+    audio.now = 0.2;
+    ticker.onTick?.();
+    expect(audio.played.length).toBeGreaterThan(0);
+  });
+});
 
 describe("PlayerPresenter", () => {
   let audio: FakeAudio;
@@ -36,7 +61,7 @@ describe("PlayerPresenter", () => {
     frames = new FakeFrames();
     p = new PlayerPresenter({
       audio,
-      ticker,
+      clock: createClock(audio, ticker),
       frames,
       fetchJson: async () => FIXTURES,
       preloadImages: async () => {},
@@ -61,7 +86,7 @@ describe("PlayerPresenter", () => {
   it("reports a fixture load failure", async () => {
     const q = new PlayerPresenter({
       audio,
-      ticker,
+      clock: createClock(audio, ticker),
       frames,
       fetchJson: async () => {
         throw new Error("404");
@@ -158,7 +183,7 @@ describe("PlayerPresenter", () => {
     const make = (saved: unknown, writes: unknown[] = []) =>
       new PlayerPresenter({
         audio,
-        ticker,
+        clock: createClock(audio, ticker),
         frames,
         fetchJson: async () => FIXTURES,
         preloadImages: async () => {},
@@ -203,7 +228,7 @@ describe("PlayerPresenter", () => {
     it("carries on when storage throws", async () => {
       const q = new PlayerPresenter({
         audio,
-        ticker,
+        clock: createClock(audio, ticker),
         frames,
         fetchJson: async () => FIXTURES,
         preloadImages: async () => {},
@@ -319,7 +344,7 @@ describe("PlayerPresenter with an instrument", () => {
     patterns = [];
     p = new PlayerPresenter({
       audio,
-      ticker,
+      clock: createClock(audio, ticker),
       frames,
       fetchJson: async () => FIXTURES,
       preloadImages: async () => {},

@@ -41,9 +41,18 @@ run: ui
 watch:
 	cd web && pnpm watch
 
-test:
+test: liftcheck
 	go test ./...
 	cd web && pnpm typecheck && pnpm patterns:check && pnpm test
+
+# internal/page and web/src/page are meant to move into goapplib and tsappkit
+# (#86), so they may import nothing else from this repo. Keeping it that way is
+# what makes the lift a copy.
+liftcheck:
+	@bad=$$(go list -deps ./internal/page | grep '^github.com/panyam/thambura/' | grep -v '^github.com/panyam/thambura/internal/page$$'); \
+	  if [ -n "$$bad" ]; then echo "internal/page imports from this repo: $$bad"; exit 1; fi
+	@bad=$$(grep -rnE "from ['\"]\.\./" web/src/page || true); \
+	  if [ -n "$$bad" ]; then echo "web/src/page imports from outside itself:"; echo "$$bad"; exit 1; fi
 
 # The sound-analysis tools (docs/sound-analysis.md). Kept out of `test`, and so
 # out of `deploy`, since they need a Python env the app itself never uses. The
@@ -144,4 +153,4 @@ domainstatus:
 clean:
 	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css
 
-.PHONY: all setupvenv venvpath ui uiprod server build run watch test soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean
+.PHONY: all setupvenv venvpath ui uiprod server build run watch test liftcheck soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean

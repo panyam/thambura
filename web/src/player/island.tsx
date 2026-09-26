@@ -5,58 +5,52 @@ import { REST } from "../engine/motion";
 import type { AudioEngine } from "./audio";
 import { KitPresenter } from "./kitPresenter";
 import { PlayerPresenter } from "./presenter";
+import type { Clock } from "./pageContext";
 import { PlayerView } from "./PlayerView";
-import { workerTicker } from "./transport";
+import { localStore } from "./storage";
 
 const DEFAULT_FIXTURES_URL = "/static/Resources/TalasFixtures.json";
-const STORAGE_KEY = "thambura.player";
+
+export interface PlayerIslandDeps {
+  audio: AudioEngine;
+  /** The page's clock; the tala plays on it and sets its tempo. */
+  clock: Clock;
+  /** The tala's sound and image groups, from the page spec's config. */
+  fixturesUrl?: string;
+  /**
+   * The struck instrument the tala plays its pattern on, from the page's
+   * tracks. The page loads it; its pad shows once a kit has loaded.
+   * TODO(instruments): the tala stops knowing about kits once stroke
+   * scheduling moves into a kit track.
+   */
+  kit?: KitPresenter;
+  /** Hears whenever the tala starts or stops. */
+  onPlaying?: (playing: boolean) => void;
+}
 
 /**
- * Wires the real browser pieces (the page's AudioEngine, a worker ticker,
- * animation frames, fetch) into a presenter and mounts its view on `el`. The
- * page shell names the fixtures file in `data-fixtures-url` and the mridangam
- * kit in `data-kit-url`. `onPlaying` hears whenever the tala starts or stops.
- *
- * A struck instrument (the mridangam today) rides along here because it will
- * share the tala's transport once it has a sequencer. Its pad only appears
- * once a kit loads, and no kit is committed yet, so on a plain clone the page
- * is unchanged.
+ * Wires the real browser pieces (the page's AudioEngine and clock, animation
+ * frames, fetch) into a presenter and mounts its view on `el`.
  */
-export function createPlayerIsland(
-  el: HTMLElement,
-  eventBus: EventBus,
-  audio: AudioEngine,
-  onPlaying?: (playing: boolean) => void,
-  kit?: KitPresenter,
-): SolidIsland {
-  const drum =
-    kit ??
-    new KitPresenter({
-      audio,
-      fetchJson,
-      frames: { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) },
-    });
+export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: PlayerIslandDeps): SolidIsland {
+  const { audio, onPlaying } = deps;
+  // A page with no kit still gets an idle one, so the view has something to show (nothing).
+  const drum = deps.kit ?? newKitPresenter(audio);
 
   const presenter = new PlayerPresenter({
     audio,
     strokes: drum,
-    ticker: workerTicker(),
+    clock: deps.clock,
     frames: {
       request: (cb) => requestAnimationFrame(cb),
       cancel: (id) => cancelAnimationFrame(id),
     },
     fetchJson,
     preloadImages,
-    store: {
-      load: () => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null"),
-      save: (v) => localStorage.setItem(STORAGE_KEY, JSON.stringify(v)),
-    },
+    store: localStore("player"),
   });
   const [drumState, setDrumState] = signalView(drum.state);
   drum.attach({ setState: setDrumState });
-  // Only when the page shell says a kit is there, so a plain checkout doesn't
-  // ask for one and get a 404.
-  if (el.dataset.kitUrl) void drum.load(el.dataset.kitUrl);
 
   const [state, setState] = signalView(presenter.state);
   const [pose, setPose] = createSignal(REST);
@@ -67,7 +61,7 @@ export function createPlayerIsland(
     },
     setPose,
   });
-  void presenter.load(el.dataset.fixturesUrl || DEFAULT_FIXTURES_URL);
+  void presenter.load(deps.fixturesUrl || DEFAULT_FIXTURES_URL);
 
   // Drop the <noscript> fallback; the island owns the element's children.
   el.replaceChildren();
@@ -77,6 +71,15 @@ export function createPlayerIsland(
     () => <PlayerView state={state} pose={pose} actions={presenter} kit={{ state: drumState, actions: drum }} />,
     eventBus,
   );
+}
+
+/** A kit presenter on the page's audio, with nothing loaded. */
+export function newKitPresenter(audio: AudioEngine): KitPresenter {
+  return new KitPresenter({
+    audio,
+    fetchJson,
+    frames: { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) },
+  });
 }
 
 async function fetchJson(url: string): Promise<unknown> {

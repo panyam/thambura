@@ -16,9 +16,10 @@ import { generatedPattern } from "../engine/generated";
 import { arrangementFor, patternForCycle, type Arrangement, type Variety } from "../engine/arrangement";
 import { patternFor, type Pattern } from "../engine/patterns";
 import { DEFAULT_MOTION, isBeatMotion, motionAt, REST, type BeatMotion, type BeatPose } from "../engine/motion";
-import { TempoMap } from "../engine/tempoMap";
+import type { TempoMap } from "../engine/tempoMap";
 import type { AudioOut } from "./audio";
-import { Transport, type Ticker } from "./transport";
+import type { Transport } from "./transport";
+import type { Clock } from "./pageContext";
 
 export interface PlayerState {
   status: "loading" | "ready" | "error";
@@ -90,7 +91,12 @@ export interface FrameLoop {
 
 export interface PlayerDeps {
   audio: AudioOut;
-  ticker: Ticker;
+  /**
+   * The page's clock (pageContext.ts), which the tala plays on and sets the
+   * tempo of. Required, so the tala and an instrument on the same page can't
+   * end up on two clocks.
+   */
+  clock: Clock;
   frames: FrameLoop;
   fetchJson(url: string): Promise<unknown>;
   preloadImages(urls: string[]): Promise<void>;
@@ -136,7 +142,7 @@ export class PlayerPresenter {
   private view: PlayerView | null = null;
   private catalog: AssetCatalog = { soundGroups: [], imageGroups: [] };
   private readonly cursor = new BeatCursor();
-  private readonly tempo = new TempoMap(DEFAULT_TEMPO);
+  private readonly tempo: TempoMap;
   private readonly seq: TalaSequencer;
   private readonly strokes: StrokeSequencer;
   private readonly transport: Transport;
@@ -161,9 +167,12 @@ export class PlayerPresenter {
 
   constructor(private readonly deps: PlayerDeps) {
     this.saved = loadSafely(deps.store);
+    this.tempo = deps.clock.tempo;
+    this.transport = deps.clock.transport;
     this.seq = new TalaSequencer(this.cursor, this.tempo, deps.rng);
-    this.transport = new Transport(deps.audio, deps.ticker, { tempo: this.tempo });
     this.transport.add(this.seq, (e) => this.schedule(e));
+    // TODO(instruments): stroke scheduling moves out of the tala into a kit
+    // track on the same clock (docs/instruments.md).
     this.strokes = new StrokeSequencer((cycle) => this.cycleSource(cycle), this.tempo);
     this.transport.add(this.strokes, (e: StrokeEvent) => this.scheduleStroke(e));
     this.state = {

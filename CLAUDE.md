@@ -42,11 +42,25 @@ Sadhana).
 - `internal/web/pages.go`: `NewApp` loads templates through templar's
   `SourceLoader` (`web/templates/templar.yaml` maps `@goapplib/` to the vendored
   copy in `templar_modules/`, which is committed). `HomePage` embeds
-  `goal.BasePage` plus a `Header` struct for goapplib's header.
-- `web/templates/BasePage.html` extends goapplib's BasePage: our logo, no login
-  actions, no HTMX, no header drawer. Pages must define both `BodySection` and
-  `PageScripts`; Go templates reject a second definition, so the base can't give
-  them defaults.
+  `goal.BasePage` plus a `Header` struct for goapplib's header, and a
+  `page.Spec`.
+- **Page spec** (#89): `internal/page` describes what a page starts with, its
+  islands (views: a name, a `data-slot`, a presentation and config) and the
+  instruments it seeds (a kind and config). `homeSpec` in `pages.go` builds
+  the home page's, with a `kit` instrument per kit found. The partial
+  `web/templates/page/Islands.html` writes it as
+  `<script type="application/json" id="page-spec">`, and all island config
+  travels there, never in `data-*` attributes. `internal/page` and
+  `web/src/page/` import nothing else from this repo (`make liftcheck`, part of
+  `make test`), since they're meant to move into goapplib and tsappkit after
+  #92.
+- Templates come in three layers. `web/templates/BasePage.html` extends
+  goapplib's BasePage: our logo, no login actions, no HTMX, no header drawer.
+  A layout (`web/templates/layouts/Drawer.html`) includes it, defines
+  `BodySection` with the slots and `PageScripts` with the spec, and asks the
+  page for `PageContent`. `HomePage.html` is only that content (the About
+  text) plus the include. Go templates reject a second definition, so none of
+  these can give another's blocks defaults.
 - Search and link previews: pages render a `SitePage` (goapplib's
   `BasePage` plus our `Header`, `Social` and `StructuredData`), and
   `BasePage.html` turns it into the canonical link, Open Graph and Twitter
@@ -223,7 +237,9 @@ unit-tested:
   plays late. A late note is clamped to `currentTime`, and later notes stay on
   the grid. Tempo isn't limited by the window: at 300 bpm with sankeernam ticks
   about 22 ms apart, every tick still gets its exact audio time.
-- `presenter.ts` (`PlayerPresenter`): owns the engine and the transport, turns
+- `presenter.ts` (`PlayerPresenter`): owns the engine, plays on the page's
+  clock (a required `clock` dep, so the tala and a kit can't end up on two),
+  turns
   steps into `audio.play` calls plus image cues, and shows each cue in a
   `requestAnimationFrame` loop once `heardNow` reaches it. The same loop
   sends the image's pose through `PlayerView.setPose`, a signal apart from
@@ -235,8 +251,21 @@ unit-tested:
   the catalog, so a stale value falls back to its default. It doesn't import
   Solid, and its tests run it under fakes.
 - `PlayerView.tsx`: renders `PlayerState` and calls the presenter's intents.
-  `island.tsx` wires the real browser dependencies in, and `main.ts` mounts it
-  from a tsappkit `BasePage`, which also wires the theme toggle.
+  `island.tsx` wires the real browser dependencies in. `main.ts` is the
+  page's island registry (`tala`, `thambura`) and its `makeContext`; the
+  generic `web/src/page/islandPage.ts` (a tsappkit `BasePage`, which also
+  wires the theme toggle) reads the page spec and mounts each island in its
+  slot through `mountIslands`, which logs and skips an unknown island, a
+  missing slot or a factory that throws.
+- `pageContext.ts`: what every island shares, services rather than
+  instruments: `audio`, `clock` (one `Transport` on one `TempoMap`,
+  `createClock`), `tracks` (the instruments playing, by id; today the kit,
+  under a placeholder id), `tonic` (the Sa; the thambura sets it, the kit
+  follows) and `awake`. `makeContext` fills `tracks` from the spec's
+  instruments, loading only the first kit for now.
+- `storage.ts`: every localStorage key the instruments use goes through
+  `storageKey` / `localStore`, so the instrument work's rename to instance
+  ids is one place.
 - `thamburaPresenter.ts` (`ThamburaPresenter`): the thambura's state, its own
   `Transport` (so it starts and stops apart from the tala), the plucked
   (tambura, guitar) and reed (sruti) voices on the `drone` bus, and the
@@ -357,9 +386,10 @@ See NEXTSTEPS.md for the order.
   (strokes and tuning, patterns per tala, packaging, views, build order).
 - **Kits aren't committed.** They're build products from the `thambura-data`
   repo: `make devkit` copies one into `web/static/Resources/Kits/<kit>/`,
-  which is gitignored. Go looks for `*/kit.json` under there at startup and
-  only then writes `data-kit-url` on the page, so a checkout without a kit
-  asks for nothing and shows no pad.
+  which is gitignored. Go looks for every `*/kit.json` under there at startup
+  (`App.KitURLs`) and seeds a `kit` instrument in the page spec for each, so
+  a checkout without a kit asks for nothing and shows no pad. Only the first
+  kit loads for now.
 - **A kit keeps a folder per pack**, `compmusic/c/cha-c-1.flac`, because App
   Engine caps a directory at 1,000 files and says so is final. A flat kit was
   232 files and a second drum would have walked into it. `KITSRC` picks which
