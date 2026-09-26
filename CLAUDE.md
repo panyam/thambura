@@ -235,8 +235,8 @@ unit-tested:
   `Bus` is the old name for it), made the first time its id is used: a level,
   an on/off gain that mute and solo set, then a pan, into a master gain, a
   limiter and the speakers. `setLevel`/`setBusVolume`, `setPan`, `setMute`,
-  `setSolo` and `removeTrack` work per track; the tala plays on `tala`, the
-  thambura on `drone`, and each kit on its page id (`kit-1`). The track's pan node
+  `setSolo` and `removeTrack` work per track; the hand claps play on
+  `hands-1`, the thambura on `drone`, and each kit on its page id (`kit-1`). The track's pan node
   is never set unless asked, so a probe wrapping the pan setter still sees
   only the strings. It holds a
   sample cache, which `addSamples` fills with rendered PCM as well as fetched
@@ -251,7 +251,9 @@ unit-tested:
   `heardNow` is the audio time minus output latency.
 - `transport.ts`: every 25 ms, driven by a Web Worker timer so background tabs
   aren't throttled, it pulls events up to 100 ms ahead from each sequencer. All
-  tracks share one start time and, when given one, a `TempoMap`. The 25/100 ms numbers are
+  tracks share one start time and, when given one, a `TempoMap`. `onStop`
+  tells a voice that books sounds without a sequencer of its own (the hands
+  track) to take them back. The 25/100 ms numbers are
   the defaults from "A Tale of Two Clocks" (web.dev), not tuned. They tolerate
   about 75 ms (look-ahead minus interval) of main-thread stall before a note
   plays late. A late note is clamped to `currentTime`, and later notes stay on
@@ -261,19 +263,30 @@ unit-tested:
   clock (a required `clock` dep, so the tala and a kit can't end up on two),
   and publishes its cycle there (`clock.tala`: the `TalaGrid`, the nadai, and
   `resumesAt`, the count into the cycle it starts from, set on every rebuild
-  and every Start). It knows nothing about instruments, and
-  turns
-  steps into `audio.play` calls plus image cues, and shows each cue in a
+  and every Start). It knows nothing about instruments and makes no sound:
+  each tick it books is called on `clock.ticks` (its sound's name and time)
+  for the hands track to play, and each step becomes an image cue, shown in a
   `requestAnimationFrame` loop once `heardNow` reaches it. The same loop
   sends the image's pose through `PlayerView.setPose`, a signal apart from
   `PlayerState`, so a frame only restyles the image. The beat ends at the
   next booked step, or at the `TempoMap`'s time for it before it's booked.
-  The student's choices (motion, tala settings, tempo, volume, sound and
-  image groups) are saved in localStorage under `thambura.player` on each
+  The student's choices (motion, tala settings, tempo and image group) are
+  saved in localStorage under `thambura.player` on each
   change, never while loading, and restored through `normalizeSettings` and
   the catalog, so a stale value falls back to its default. It doesn't import
   Solid, and its tests run it under fakes.
+- `handsPresenter.ts` (`HandsPresenter`): the hand claps as a track,
+  `hands-1`, seeded by Go as a `hands` instrument in the page spec. It loads
+  the fixture's sound groups, plays each call on `clock.ticks` from the
+  chosen one, cancels its track on `transport.onStop`, and keeps Sounds and
+  Volume under `thambura.hands` (taken once from `thambura.player`). The
+  claps stay a fixture of sound groups rather than a kit: the tala decides
+  which sound each tick is, and Previous/Next play one beat at once, which a
+  kit's own sequencer can't. Talas are their own group, not instruments;
+  several at once is later (`docs/designs/instruments.md`).
 - `PlayerView.tsx`: renders `PlayerState` and calls the presenter's intents.
+  Its Sounds menu and Volume slider are the hands track's, and the lane,
+  Variety and Korvai the kit's; both come in as props.
   `island.tsx` wires the real browser dependencies in. `main.ts` is the
   page's island registry (`tala`, `thambura`) and its `makeContext`; the
   generic `web/src/page/islandPage.ts` (a tsappkit `BasePage`, which also

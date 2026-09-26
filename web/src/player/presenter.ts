@@ -22,11 +22,8 @@ export interface PlayerState {
   error: string | null;
   playing: boolean;
   tempo: number;
-  volume: number;
   settings: TalaSettings;
-  soundGroups: string[];
   imageGroups: string[];
-  soundGroup: string;
   imageGroup: string;
   /** How the beat image moves between beats (engine/motion.ts). */
   motion: BeatMotion;
@@ -49,7 +46,8 @@ export interface PlayerView {
 
 /**
  * Where the player's choices are kept between visits: one record of the
- * motion, tala settings, tempo, volume and sound and image groups.
+ * motion, tala settings, tempo and image group. (Sounds and Volume are the
+ * hands track's, handsPresenter.ts.)
  */
 export interface PlayerStore {
   load(): unknown;
@@ -77,7 +75,6 @@ export interface PlayerDeps {
   store?: PlayerStore;
 }
 
-export const DEFAULT_VOLUME = 50;
 
 interface Cue {
   time: number;
@@ -122,11 +119,8 @@ export class PlayerPresenter {
       error: null,
       playing: false,
       tempo: typeof this.saved.tempo === "number" ? clampTempo(this.saved.tempo) : DEFAULT_TEMPO,
-      volume: typeof this.saved.volume === "number" ? clampVolume(this.saved.volume) : DEFAULT_VOLUME,
       settings: normalizeSettings(this.saved.settings ?? DEFAULT_SETTINGS),
-      soundGroups: [],
       imageGroups: [],
-      soundGroup: "",
       imageGroup: "",
       motion: isBeatMotion(this.saved.motion) ? this.saved.motion : DEFAULT_MOTION,
       image: null,
@@ -134,7 +128,6 @@ export class PlayerPresenter {
       beatCount: 0,
     };
     this.tempo.setTempo(this.state.tempo);
-    deps.audio.setBusVolume("tala", this.state.volume);
     this.rebuild();
   }
 
@@ -150,14 +143,10 @@ export class PlayerPresenter {
       this.update({ status: "error", error: `Could not load ${fixturesUrl}: ${String(err)}` });
       return;
     }
-    // The saved groups if the fixture still has them, else its first ones.
-    const soundGroup = this.findGroup(this.catalog.soundGroups, String(this.saved.soundGroup)) ?? this.catalog.soundGroups[0];
+    // The saved group if the fixture still has it, else its first one.
     const imageGroup = this.findGroup(this.catalog.imageGroups, String(this.saved.imageGroup)) ?? this.catalog.imageGroups[0];
-    this.update({
-      soundGroups: this.catalog.soundGroups.map((g) => g.name),
-      imageGroups: this.catalog.imageGroups.map((g) => g.name),
-    });
-    await Promise.all([this.applySoundGroup(soundGroup?.name ?? ""), this.applyImageGroup(imageGroup?.name ?? "")]);
+    this.update({ imageGroups: this.catalog.imageGroups.map((g) => g.name) });
+    await this.applyImageGroup(imageGroup?.name ?? "");
     this.update({ status: "ready" });
   }
 
@@ -176,8 +165,8 @@ export class PlayerPresenter {
 
   stop(): void {
     if (!this.state.playing) return;
+    // Stopping the transport also tells the hands track to take back its claps.
     this.transport.stop();
-    this.deps.audio.cancel("tala");
     // Drop images for steps that won't sound now; the one showing stays.
     this.cues = [];
     this.heard = null;
@@ -226,13 +215,6 @@ export class PlayerPresenter {
     this.save();
   }
 
-  setVolume(percent: number): void {
-    const volume = clampVolume(percent);
-    this.deps.audio.setBusVolume("tala", volume);
-    this.update({ volume });
-    this.save();
-  }
-
   /** Changes the tala, jaathi, nadai or kalai; the cycle starts over. */
   setSettings(patch: Partial<TalaSettings>): void {
     const wasPlaying = this.state.playing;
@@ -241,10 +223,6 @@ export class PlayerPresenter {
     this.rebuild();
     this.save();
     if (wasPlaying) void this.start();
-  }
-
-  async setSoundGroup(name: string): Promise<void> {
-    if (await this.applySoundGroup(name)) this.save();
   }
 
   async setImageGroup(name: string): Promise<void> {
@@ -259,15 +237,6 @@ export class PlayerPresenter {
 
   // ---- internals ---------------------------------------------------------
 
-  private async applySoundGroup(name: string): Promise<boolean> {
-    const group = this.findGroup(this.catalog.soundGroups, name);
-    if (!group) return false;
-    const failed = await this.deps.audio.load(assetUrls(group));
-    if (failed.length > 0) console.warn(`sound group ${name}: ${failed.length} sample(s) failed`, failed);
-    this.update({ soundGroup: name });
-    return true;
-  }
-
   private async applyImageGroup(name: string): Promise<boolean> {
     const group = this.findGroup(this.catalog.imageGroups, name);
     if (!group) return false;
@@ -279,9 +248,9 @@ export class PlayerPresenter {
 
   /** Keeps the student's choices for the next visit. Loading never calls this. */
   private save(): void {
-    const { motion, settings, tempo, volume, soundGroup, imageGroup } = this.state;
+    const { motion, settings, tempo, imageGroup } = this.state;
     try {
-      this.deps.store?.save({ motion, settings, tempo, volume, soundGroup, imageGroup });
+      this.deps.store?.save({ motion, settings, tempo, imageGroup });
     } catch {
       // Storage can be full or blocked; the choices still hold for this visit.
     }
@@ -317,9 +286,8 @@ export class PlayerPresenter {
 
   private schedule(e: TalaEvent): void {
     if (e.kind === "tick") {
-      const sounds = this.findGroup(this.catalog.soundGroups, this.state.soundGroup);
-      const url = sounds ? resolveAsset(sounds, e.sound) : null;
-      if (url) this.deps.audio.play(url, "tala", e.time);
+      // Whoever plays the claps hears the call; the tala makes no sound.
+      this.deps.clock.ticks.emit({ time: e.time, sound: e.sound });
       return;
     }
     const images = this.findGroup(this.catalog.imageGroups, this.state.imageGroup);
@@ -389,6 +357,3 @@ function loadSafely(store: PlayerStore | undefined): Record<string, unknown> {
   }
 }
 
-function clampVolume(percent: number): number {
-  return Math.min(100, Math.max(0, Math.round(Number.isFinite(percent) ? percent : DEFAULT_VOLUME)));
-}

@@ -20,6 +20,7 @@ export interface Ticker {
  */
 export class Transport {
   private readonly tracks: { seq: Sequencer<unknown>; handle: (e: unknown) => void }[] = [];
+  private readonly stopListeners: (() => void)[] = [];
   private running = false;
 
   private readonly tempo: TempoMap | undefined;
@@ -44,6 +45,15 @@ export class Transport {
     this.tracks.push({ seq, handle: handle as (e: unknown) => void });
   }
 
+  /**
+   * Hears every stop of a running transport, after the sequencers have
+   * stopped. For a voice that books sounds without a sequencer of its own,
+   * such as the hands track, to take back what hasn't sounded.
+   */
+  onStop(listener: () => void): void {
+    this.stopListeners.push(listener);
+  }
+
   /** Starts every track at `at` (default: a hair from now, so the first step isn't late). */
   start(at = this.clock.now + 0.05): void {
     if (this.running) this.stop();
@@ -61,6 +71,7 @@ export class Transport {
     const now = this.clock.now;
     for (const t of this.tracks) t.seq.stop(now);
     this.tempo?.stop();
+    for (const f of this.stopListeners) f();
   }
 
   private tick(): void {

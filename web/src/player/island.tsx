@@ -3,6 +3,7 @@ import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
 import { createSignal } from "solid-js";
 import { REST } from "../engine/motion";
 import type { AudioEngine } from "./audio";
+import { HandsPresenter } from "./handsPresenter";
 import { KitPresenter } from "./kitPresenter";
 import { PlayerPresenter } from "./presenter";
 import type { Clock } from "./pageContext";
@@ -23,6 +24,12 @@ export interface PlayerIslandDeps {
    * itself; the tala doesn't know it's there.
    */
   kit?: KitPresenter;
+  /**
+   * The hand claps from the page's tracks, for the view only: their Sounds
+   * menu and Volume sit with the tala. They play the tala's calls from the
+   * page's clock by themselves.
+   */
+  hands?: HandsPresenter;
   /** Hears whenever the tala starts or stops. */
   onPlaying?: (playing: boolean) => void;
 }
@@ -49,6 +56,13 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: Pl
   });
   const [drumState, setDrumState] = signalView(drum.state);
   drum.attach({ setState: setDrumState });
+  const hands = deps.hands;
+  let handsView: { state: () => HandsPresenter["state"]; actions: HandsPresenter } | undefined;
+  if (hands) {
+    const [handsState, setHandsState] = signalView(hands.state);
+    hands.attach({ setState: setHandsState });
+    handsView = { state: handsState, actions: hands };
+  }
 
   const [state, setState] = signalView(presenter.state);
   const [pose, setPose] = createSignal(REST);
@@ -66,9 +80,24 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: Pl
   return new SolidIsland(
     "player",
     el,
-    () => <PlayerView state={state} pose={pose} actions={presenter} kit={{ state: drumState, actions: drum }} />,
+    () => <PlayerView state={state} pose={pose} actions={presenter} kit={{ state: drumState, actions: drum }} hands={handsView} />,
     eventBus,
   );
+}
+
+/**
+ * The hand claps on the page's audio, playing the tala's calls from `clock`
+ * on track `track`. Load the fixture's sound groups before they're heard.
+ */
+export function newHandsPresenter(audio: AudioEngine, track: string, clock: Clock): HandsPresenter {
+  return new HandsPresenter({
+    audio,
+    track,
+    clock,
+    fetchJson,
+    store: localStore("hands"),
+    legacyStore: localStore("player"),
+  });
 }
 
 /**

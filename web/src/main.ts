@@ -5,10 +5,11 @@ import type { Registry } from "./page/mount";
 import type { PageSpec } from "./page/spec";
 import { AudioEngine } from "./player/audio";
 import { isIOS, isInstalled, wireInstall } from "./player/install";
-import { createPlayerIsland, newKitPresenter } from "./player/island";
+import { HandsPresenter } from "./player/handsPresenter";
+import { createPlayerIsland, newHandsPresenter, newKitPresenter } from "./player/island";
 import { KeepAwake, usePlaybackSession, type WakeLockLike } from "./player/keepAwake";
-import type { KitPresenter } from "./player/kitPresenter";
-import { createClock, Tonic, Tracks, type PageContext } from "./player/pageContext";
+import { KitPresenter } from "./player/kitPresenter";
+import { createClock, Tonic, Tracks, type Instrument, type PageContext } from "./player/pageContext";
 import { createThamburaIsland } from "./player/thamburaIsland";
 import { workerTicker } from "./player/transport";
 
@@ -30,7 +31,8 @@ const REGISTRY: Registry<PageContext, HTMLElement, LCMComponent, EventBus> = {
       audio: ctx.audio,
       clock: ctx.clock,
       fixturesUrl: typeof island.config.fixturesUrl === "string" ? island.config.fixturesUrl : undefined,
-      kit: ctx.tracks.get("kit-1"),
+      kit: kitOf(ctx.tracks.get("kit-1")),
+      hands: handsOf(ctx.tracks.get("hands-1")),
       onPlaying: (on) => ctx.awake.set("tala", on),
     }),
   // In a drawer (layouts/Drawer.html) the slot holds the bar's mount and
@@ -66,10 +68,17 @@ class HomePage extends IslandPage<PageContext> {
     const ctx: PageContext = {
       audio,
       clock: createClock(audio, workerTicker()),
-      tracks: new Tracks<KitPresenter>(),
+      tracks: new Tracks<Instrument>(),
       tonic: new Tonic(),
       awake: new KeepAwake({ wakeLock: (navigator as { wakeLock?: WakeLockLike }).wakeLock, doc: document }),
     };
+    // The hand claps: the tala calls each sound on the clock, and they play it.
+    const hands = spec.instruments.find((i) => i.kind === "hands" && typeof i.config.fixturesUrl === "string");
+    if (hands) {
+      const claps = newHandsPresenter(audio, "hands-1", ctx.clock);
+      ctx.tracks.add("hands-1", claps);
+      void claps.load(hands.config.fixturesUrl as string);
+    }
     // The instruments the page starts with, as tracks numbered by kind in the
     // spec's order (kit-1, kit-2, ...). Only the first kit plays for now; a
     // second is for the track list (#101).
@@ -99,6 +108,14 @@ class HomePage extends IslandPage<PageContext> {
     }
     return components;
   }
+}
+
+function kitOf(track: Instrument | undefined): KitPresenter | undefined {
+  return track instanceof KitPresenter ? track : undefined;
+}
+
+function handsOf(track: Instrument | undefined): HandsPresenter | undefined {
+  return track instanceof HandsPresenter ? track : undefined;
 }
 
 IslandPage.loadAfterPageLoaded("homePage", HomePage, "HomePage");

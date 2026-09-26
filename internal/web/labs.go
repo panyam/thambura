@@ -92,7 +92,7 @@ func (p *SideBySidePage) Load(r *http.Request, w http.ResponseWriter, app *goal.
 	p.Spec = page.Spec{
 		Layout:      "side-by-side",
 		Islands:     []page.Island{talaIsland("main"), {Name: "thambura", Slot: "side", Presentation: "panel"}},
-		Instruments: kitInstruments(app.Context.KitURLs),
+		Instruments: startingInstruments(app.Context.KitURLs),
 	}
 	if err := p.Spec.Validate(); err != nil {
 		return err, false
