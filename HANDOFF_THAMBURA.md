@@ -1,46 +1,57 @@
 # Handoff: Thambura
 
-Written 2026-09-21, after the mridangam work (PRs #66, #68, #73, #74, #75,
-#76) and the checkpoint that parks it (#83, #84). It folds forward what was
-still open from the previous handoff and drops what closed. The durable notes
-are in CLAUDE.md, NEXTSTEPS.md and `docs/designs/`; this file is only what's in
-flight. Delete it once the items below close.
+Written 2026-09-26, after the instruments track's first four PRs (#114,
+#118, #122, #124), on top of the 2026-09-21 handoff (the mridangam parked).
+It folds forward what is still open and drops what closed. The durable notes
+are in CLAUDE.md, NEXTSTEPS.md and `docs/designs/`; this file is only what's
+in flight. Delete it once the items below close.
 
 ## Where things stand
 
-- **The mridangam plays.** Strokes tuned to the thambura with a pad, patterns
-  written in the notations DSL and compiled at build time, written patterns
-  for Adi, Short Rupakam and the Misra and Khanda chaapus, a generated
-  skeleton for every other tala and nadai, a stroke lane that lights with the
-  sound, variations, and a korvai that lands on sam. Heard in Chrome on
-  2026-09-21 and called "great". `docs/designs/mridangam.md` is the plan; the rest is
-  filed as #77 to #82 and **the mridangam is deliberately paused**.
-- **Attention moves to several instruments at once**, `docs/designs/instruments.md`.
-  The open question is at the top of that doc and should be settled before
-  the mixer is built: with several instruments, what a track shows when it is
-  collapsed, which of an instrument's views it is set to, and how the page
-  remembers that. The plan's order (tracks and mixer, then the hands as a
-  track, then instance ids) assumed today's panels, which is the part most
-  likely to change.
+- **Every audible thing is a track on one clock** (epic #94,
+  `docs/designs/instruments.md`). The mixer has a track per instrument with
+  level, pan, mute and solo (#96). The mridangam is a kit track (`kit-1`)
+  that plays along by itself and resumes on sam after a stop (#97; the old
+  code put the drum's sam wherever the tala resumed). The claps are a hands
+  track (`hands-1`) playing the tala's calls on `clock.ticks` (#98), so the
+  tala keeps time and shows the images and makes no sound. SaRiGaMa and its
+  per-step random draw are gone (#122). Talas stay their own group; several
+  at once is later.
+- **Next in that track:** #100 (instance ids through the thambura's
+  settings, presets and links; a share-link `FORMAT` bump, old links must
+  still open), then #101 (the track list), which waits on a decision below.
+  #99, #102 and #104 are ready and independent; #103 waits on #100 and on
+  render speed (#39, #40).
+- **Other tracks, run by other sessions:** layouts (#86): the page spec and
+  labs routes are in, `/embed/demo` (#92) is left and now unblocked. Docs
+  (#95): the site skeleton is in (#105); the guides #106, #107, #109 and #110
+  are unblocked, #111 waits on the library lift (#53).
+- **The mridangam is still deliberately paused** (#77 to #82). Its patterns
+  now live in the kit track (`KitPresenter`), not the tala.
 - **Kits are not committed.** `make devkit` copies one from the
   `thambura-data` checkout into a gitignored folder; Go looks for
-  `*/kit.json` at startup and only then tells the page about it, so a plain
+  `*/kit.json` at startup and only then seeds a kit instrument, so a plain
   clone has no pad and no 404. A fresh box needs `thambura-data` cloned
   beside the app (`git clone git@github.com:panyam/thambura-data.git`) before
   `make devkit` works.
-- **panyam/thambura-data** (private, new this session) holds the sample work:
-  `kit/` the lossless master, `kit-flac/` what the app loads, `kit-aac/` a
-  third the size for when #72 settles, `tools/` the measuring and building
-  scripts, `pad.html` for listening, and a README with the measurements.
-- **thambura.com is behind master.** It served 14b1c48 before this session,
-  and master is now well past it. `/sw.js` carries the build revision, which
-  is the quickest way to ask. `make deploy` runs from this container, which
-  has `gcloud` signed in as the project's owner, and `make deploydev` puts it
-  on `dev-dot-layagnana.appspot.com` first. Note that deploying with a kit
-  installed uploads it, which distributes the dataset publicly.
+- **panyam/thambura-data** (private) holds the sample work: `kit/` the
+  lossless master, `kit-flac/` what the app loads, `kit-aac/` a third the
+  size for when #72 settles, `tools/` the measuring and building scripts,
+  `pad.html` for listening, and a README with the measurements.
+- **thambura.com is behind master.** It serves a78db12 (checked 2026-09-26),
+  before the layouts, docs and instruments work. `/sw.js` carries the build
+  revision, which is the quickest way to ask. `make deploydev` puts a build
+  on `dev-dot-thambura.uc.r.appspot.com` first, and `make deploy` runs from
+  this container. Deploying with a kit installed uploads it, which
+  distributes the dataset publicly.
 
 ## Waiting on the user
 
+0. **How a track looks, for #101.** With several instruments on the page:
+   what a track shows collapsed (suggested: name, level, mute, solo,
+   start), what it shows expanded (that instrument's own panel), and where
+   the arrangement is remembered. The suggestion was to try it on a labs
+   page (#90) before `/`. Parked on 2026-09-26 to think over.
 1. **The wording and date of Evan Laforge's permission** for karya's
    patterns. `web/patterns/CREDITS.md` has a placeholder asking for it.
 2. **Phone checks** on the live site, which headless Chromium can't do:
@@ -68,6 +79,11 @@ flight. Delete it once the items below close.
 
 ## Open issues
 
+- **Instruments (#94):** #99, #100, #101, #102, #103, #104, above.
+- **Filed by other sessions since the last handoff:** #113 (pluck patterns
+  beyond Pa Sa Sa Sa), #116 (the Lab as a string editor beside any skin),
+  #121 (a bug: a built-in sound's hidden values change old Custom links
+  without the drift notice).
 - **Mridangam, paused:** #77 fills, eduppu and a count-in; #78 a pattern to
   suit the tempo; #79 more patterns and replacing the drafted Adi one; #80
   recording arai chapu and the left-hand tha; #81 the lane on a long cycle;
@@ -95,9 +111,10 @@ flight. Delete it once the items below close.
 
 ## Environment
 
-- This session worked from `thambura/main` in worktrees. Two are left, both
-  with open PRs: `thambura/mridangam-handoff` (#83) and
-  `thambura/checkpoint-instruments` (#84). Remove them once those land.
+- This session worked from `thambura/main` in worktrees and removed each
+  when its PR merged, and the two left over from the last handoff. Only
+  `thambura/checkpoint-tracks` (this checkpoint's PR) is left; remove it once
+  that lands.
 - **No servers left running from this session.** Other sessions hold 8001 and
   8002; 8080 and 8091 are something else. Serve a worktree on a free port and
   **check it is free afterwards**: `fuser` is not installed, so `fuser -k`

@@ -11,8 +11,10 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [x] Redeploy after the thambura work (#18-#34): thambura.com serves the
       same bundle as master at 3514e1b (checked 2026-09-19).
 - [x] Listen to the thambura on a real machine (it's been tuned by ear since).
-- [ ] Deploy. thambura.com serves 14b1c48; master has the render work on top
-      of it (#61, #62 and 9af6095).
+- [ ] Deploy. thambura.com serves a78db12 (checked 2026-09-26); master has the
+      page spec and labs routes (#86), the docs site (#95) and the instruments
+      track so far (#114, #118, #122, #124) on top. Deploying with a kit
+      installed uploads it, which publishes the dataset.
 - [ ] Listen to the tala on a real machine, and check it stays in step with
       the images. Headless Chromium has no audio device.
 - [ ] Record iTablaPro's tanpura, or any real tanpura, and run it through
@@ -87,9 +89,15 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       Adi one), #80 (record arai chapu and the left-hand tha), #81 (the lane
       on a long cycle), #82 (solkattu under the strokes). Still open too: who
       vets the patterns, and a kit we can ship.
-- [ ] **Several instruments at once** (`docs/designs/instruments.md`): tracks on one
-      clock, a mixer, the hand claps as a track, instance ids, and which views
-      an instrument offers. The next direction.
+- [ ] **Several instruments at once** (`docs/designs/instruments.md`, epic #94).
+      Done: a mixer track per instrument (#96), the kit as a track that
+      resumes on sam (#97), the claps as a track so the tala only keeps time
+      (#98), SaRiGaMa dropped (#122). Next: instance ids (#100), then the
+      track list (#101), waiting on how a track looks collapsed and expanded.
+      Also #99 (patterns per instrument, with the first new kit), #102 (drawn
+      pads), #103 (a second thambura), #104 (ghatam and kanjira kits).
+- [ ] **Several talas at once**, later: talas stay their own group, not
+      instruments (`docs/designs/instruments.md`, "Several talas at once").
 - [ ] Output-latency calibration setting (Bluetooth headphones add
       150-250 ms, and Safari doesn't report `outputLatency`).
 - [x] Screen Wake Lock while the tala or thambura plays, so the screen doesn't
