@@ -138,7 +138,7 @@ export class PlayerPresenter {
 
   async load(fixturesUrl: string): Promise<void> {
     try {
-      this.catalog = parseCatalog(await this.deps.fetchJson(fixturesUrl));
+      this.catalog = parseCatalog(await this.deps.fetchJson(fixturesUrl), fixturesUrl);
     } catch (err) {
       this.update({ status: "error", error: `Could not load ${fixturesUrl}: ${String(err)}` });
       return;

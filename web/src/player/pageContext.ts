@@ -26,6 +26,11 @@ export interface PageContext {
   awake: KeepAwake;
   /** The page's share link, which the thambura reads and writes. */
   link: PageLink;
+  /**
+   * What relative URLs in the page spec resolve against: the page's own
+   * address on our site, embed.js's address on someone else's (embed.ts).
+   */
+  assetBase: string;
 }
 
 /** An instrument on the page, as a track: a kit, the hand claps, or a thambura. */

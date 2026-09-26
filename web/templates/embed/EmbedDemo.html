@@ -1,0 +1,38 @@
+{{/* A host's page, as another site would write it (internal/web/embed.go).
+     Deliberately not built on BasePage: nothing of ours but embed.js. */}}
+{{ define "EmbedDemo" }}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embedding the tala and the thambura</title>
+{{ range .Preload }}<link rel="modulepreload" href="{{ . }}">
+{{ end }}<style>
+  /* The host's own styles. Deliberately heavy-handed, to show they stop at
+     the islands' shadow roots: none of this reaches the tala or thambura. */
+  body { max-width: 60rem; margin: 2rem auto; padding: 0 1rem; font: 17px/1.6 Georgia, serif; color: #222; }
+  button { background: #c00; color: #fff; border-radius: 0; }
+  .host-note { background: #f4f1ea; padding: 0.75rem 1rem; }
+  .islands { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); align-items: start; }
+</style>
+</head>
+<body>
+<h1>Practising a kriti</h1>
+<p class="host-note">
+  This page stands in for another site that embeds the tala keeper and the
+  thambura: its own styles, its own layout, and the two islands loaded from
+  <a href="{{ .AppURL }}">Thambura</a> by one script. The source of this page
+  is all a host needs to write.
+  <button type="button">The host's own button</button>
+</p>
+<div class="islands">
+  <div data-thambura-slot="tala"></div>
+  <div data-thambura-slot="thambura"></div>
+</div>
+<script type="application/json" data-thambura-spec>
+{"islands": [{"name": "tala", "slot": "tala"}, {"name": "thambura", "slot": "thambura", "presentation": "panel"}]}
+</script>
+<script type="module" src="/static/embed.js"></script>
+</body>
+</html>
+{{ end }}

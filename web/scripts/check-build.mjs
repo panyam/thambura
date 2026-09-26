@@ -8,7 +8,11 @@
 // - Chunks left from an earlier build are removed, so a deploy never uploads
 //   a chunk nothing asks for.
 // - The bundle manifest Go reads (bundle.json) preloads exactly the chunks
-//   app.js imports before it runs, found here by reading the built files.
+//   each entry (app.js, embed.js) imports before it runs, found here by
+//   reading the built files.
+// - embed.js, which runs on other sites, carries none of our page chrome
+//   (the service worker, the install button), and shares its chunks with
+//   app.js rather than a second copy of Solid and the player.
 import { execFileSync } from "child_process";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "fs";
 import { tmpdir } from "os";
@@ -42,28 +46,49 @@ try {
     if (!sw.includes(`"${url}"`)) fail(`the service worker doesn't precache ${url}`);
   }
 
-  // What app.js imports statically, following chunks into chunks.
-  const eager = new Set();
-  const follow = (file, from) => {
-    for (const m of readFileSync(file, "utf8").matchAll(/(?:from|import)\s*"(\.\/[^"]+\.js)"/g)) {
-      const rel = join(from, m[1]);
-      const url = "/static/" + rel.slice(out.length + 1);
-      if (eager.has(url)) continue;
-      eager.add(url);
-      follow(rel, join(rel, ".."));
-    }
+  // What an entry imports statically, following chunks into chunks.
+  const eagerOf = (entry) => {
+    const found = new Set();
+    const follow = (file, from) => {
+      for (const m of readFileSync(file, "utf8").matchAll(/(?:from|import)\s*"(\.\/[^"]+\.js)"/g)) {
+        const rel = join(from, m[1]);
+        const url = "/static/" + rel.slice(out.length + 1);
+        if (found.has(url)) continue;
+        found.add(url);
+        follow(rel, join(rel, ".."));
+      }
+    };
+    follow(join(out, `${entry}.js`), out);
+    return found;
   };
-  follow(join(out, "app.js"), out);
-  if (eager.size === 0) fail("app.js imports no chunks, so there's nothing to preload; did splitting change?");
   let bundle = {};
   try {
     bundle = JSON.parse(readFileSync(manifest, "utf8"));
   } catch (e) {
     fail(`no readable bundle manifest: ${e.message}`);
   }
-  const listed = [...(bundle.app?.preload ?? [])].sort();
-  const want = [...eager].sort();
-  if (JSON.stringify(listed) !== JSON.stringify(want)) fail(`bundle.json preloads ${JSON.stringify(listed)}, but app.js imports ${JSON.stringify(want)}`);
+  const eager = {};
+  for (const entry of ["app", "embed"]) {
+    if (!existsSync(join(out, `${entry}.js`))) {
+      fail(`the build wrote no ${entry}.js`);
+      continue;
+    }
+    eager[entry] = eagerOf(entry);
+    if (eager[entry].size === 0) fail(`${entry}.js imports no chunks, so there's nothing to preload; did splitting change?`);
+    const listed = [...(bundle[entry]?.preload ?? [])].sort();
+    const want = [...eager[entry]].sort();
+    if (JSON.stringify(listed) !== JSON.stringify(want)) fail(`bundle.json preloads ${JSON.stringify(listed)} for ${entry}, but ${entry}.js imports ${JSON.stringify(want)}`);
+  }
+  if (eager.embed) {
+    const embedCode = [join(out, "embed.js"), ...[...eager.embed].map((u) => join(out, u.slice("/static/".length)))].map((f) => readFileSync(f, "utf8")).join("\n");
+    for (const [what, marker] of [
+      ["the service worker registration", '"/sw.js"'],
+      ["the install button", "install-app"],
+    ]) {
+      if (embedCode.includes(marker)) fail(`embed.js loads ${what}, which belongs to our pages, not a host's`);
+    }
+    if (eager.app && ![...eager.embed].some((c) => eager.app.has(c))) fail("embed.js shares no chunk with app.js; it carries its own copy of everything");
+  }
 } finally {
   rmSync(out, { recursive: true, force: true });
 }

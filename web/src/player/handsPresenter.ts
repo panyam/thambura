@@ -72,7 +72,7 @@ export class HandsPresenter {
   /** Loads the fixture's sound groups and the saved one's samples, or the first group's. */
   async load(fixturesUrl: string): Promise<void> {
     try {
-      this.groups = parseCatalog(await this.deps.fetchJson(fixturesUrl)).soundGroups;
+      this.groups = parseCatalog(await this.deps.fetchJson(fixturesUrl), fixturesUrl).soundGroups;
     } catch (err) {
       console.warn(`hands: could not load ${fixturesUrl}:`, err);
       this.update({ status: "error" });

@@ -15,7 +15,9 @@ import (
 // so a checkout that hasn't built the frontend has none, and the pages then
 // preload nothing, which only costs a little speed.
 type Bundle struct {
-	App BundleEntry `json:"app"`
+	// App runs our pages; Embed runs the same islands on other sites.
+	App   BundleEntry `json:"app"`
+	Embed BundleEntry `json:"embed"`
 }
 
 // BundleEntry is one entry script and the chunks it imports before it can
@@ -48,12 +50,17 @@ func loadBundle(webDir string) Bundle {
 		log.Printf("reading %s: %v; pages will preload nothing", path, err)
 		return Bundle{}
 	}
-	kept := b.App.Preload[:0]
-	for _, p := range b.App.Preload {
+	b.App.Preload = onlyChunks(b.App.Preload)
+	b.Embed.Preload = onlyChunks(b.Embed.Preload)
+	return b
+}
+
+func onlyChunks(urls []string) []string {
+	var kept []string
+	for _, p := range urls {
 		if strings.HasPrefix(p, chunkPrefix) && !strings.Contains(p, "..") {
 			kept = append(kept, p)
 		}
 	}
-	b.App.Preload = kept
-	return b
+	return kept
 }

@@ -33,6 +33,12 @@ export interface ThamburaIslandOptions {
   onPlaying?: (playing: boolean) => void;
   /** Hears every settings change, so the mridangam can tune to the same Sa. */
   onSettings?: (settings: ThamburaSettings) => void;
+  /**
+   * Whether the T key anywhere on the page starts and stops it. Off when the
+   * thambura is on someone else's page (embed.ts): the page isn't ours to
+   * take keys from.
+   */
+  pageKeys?: boolean;
 }
 
 export function createThamburaIsland(
@@ -72,7 +78,7 @@ export function createThamburaIsland(
     toggle?.addEventListener("click", () => drawer.toggle());
   }
   play?.addEventListener("click", () => void presenter.toggle());
-  document.addEventListener("keydown", (e) => {
+  if (opts.pageKeys !== false) document.addEventListener("keydown", (e) => {
     if (!isThamburaShortcut(e as KeyboardEvent & { target: HTMLElement | null })) return;
     e.preventDefault();
     void presenter.toggle();
