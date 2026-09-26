@@ -16,14 +16,17 @@
  */
 
 declare const __BUILD__: string;
+/** The URLs to precache, worked out from the build (scripts/shell.mjs). */
+declare const __SHELL__: string[];
 
 // `self` is typed as a plain worker scope; this is what it really is.
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
 const CACHE = `thambura-${__BUILD__}`;
 
-// Enough to open the app offline; the rest arrives as it is used.
-const SHELL = ["/", "/static/app.js", "/static/css/tailwind.css", "/static/Resources/TalasFixtures.json"];
+// Enough to open the app offline, and every view in it (the Lab and Raagini
+// load on first use, from chunks). Sounds and images arrive as they're used.
+const SHELL = __SHELL__;
 
 sw.addEventListener("install", (e) => {
   e.waitUntil(

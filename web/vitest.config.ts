@@ -5,6 +5,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    // scripts/ holds the build helpers, plain ESM with no types to check.
+    include: ["src/**/*.test.ts", "scripts/**/*.test.mjs"],
   },
 });

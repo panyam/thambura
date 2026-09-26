@@ -53,6 +53,10 @@ defaults for them), and render "BasePage".
      absolute image URL; `og:*` covers Facebook, WhatsApp, Slack and LinkedIn,
      and X reads them too once `twitter:card` asks for the large image. */}}
 {{ define "SiteExtraHead" }}
+{{/* The chunks app.js imports before it runs (internal/web/bundle.go), so the
+     browser fetches them alongside app.js rather than one after another. */}}
+{{ range .Preload }}<link rel="modulepreload" href="{{ . }}">
+{{ end }}
 <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">

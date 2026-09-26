@@ -52,13 +52,14 @@ func registerLabs(app *goal.App[*App], mux *http.ServeMux) {
 // labPage fills in what every labs page shares: its titles, a canonical link
 // to the real page (so search engines credit /, not the experiment) and the
 // header.
-func labPage(p *SitePage, title, description string) {
+func labPage(p *SitePage, app *goal.App[*App], title, description string) {
 	p.Title = title + " · " + brand.Name + " labs"
 	p.MetaTitle = p.Title
 	p.MetaDescription = description
 	p.CanonicalUrl = brand.URL + "/"
 	p.DisableSplashScreen = true
 	p.Header.AppName = brand.Name
+	p.Preload = app.Context.Bundle.App.Preload
 }
 
 // LabsIndexPage lists the experiments.
@@ -71,7 +72,7 @@ type LabsIndexPage struct {
 
 // Load implements the goapplib View.
 func (p *LabsIndexPage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*App]) (error, bool) {
-	labPage(&p.SitePage, "Experiments", "Experiments with how "+brand.Name+" is laid out.")
+	labPage(&p.SitePage, app, "Experiments", "Experiments with how "+brand.Name+" is laid out.")
 	p.Labs = labs
 	p.Spec = page.Spec{Layout: "index"}
 	return nil, false
@@ -88,7 +89,7 @@ type SideBySidePage struct {
 // Load implements the goapplib View.
 func (p *SideBySidePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*App]) (error, bool) {
 	p.Lab = labBySlug("side-by-side")
-	labPage(&p.SitePage, p.Lab.Title, p.Lab.Blurb)
+	labPage(&p.SitePage, app, p.Lab.Title, p.Lab.Blurb)
 	p.Spec = page.Spec{
 		Layout:      "side-by-side",
 		Islands:     []page.Island{talaIsland("main"), {Name: "thambura", Slot: "side", Presentation: "panel"}},

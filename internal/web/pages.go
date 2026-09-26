@@ -25,6 +25,8 @@ type App struct {
 	// KitURLs are the instrument kits found under static at startup, in name
 	// order, or none. Register fills them in, since it knows where static is.
 	KitURLs []string
+	// Bundle is the frontend build's manifest, read once at startup.
+	Bundle Bundle
 }
 
 // Header is the data goapplib's Header template renders with.
@@ -43,6 +45,9 @@ type SitePage struct {
 	Social Social
 	// StructuredData is JSON-LD for search engines, or empty for none.
 	StructuredData template.JS
+	// Preload is the chunks app.js imports before it runs, for
+	// <link rel="modulepreload"> in the head (bundle.go).
+	Preload []string
 }
 
 // Social describes a page's link preview on chat apps and social sites.
@@ -138,6 +143,7 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 		ImageHeight: 630,
 	}
 	p.StructuredData = webApplicationLD()
+	p.Preload = app.Context.Bundle.App.Preload
 	p.Spec = homeSpec(app.Context.KitURLs)
 	if err := p.Spec.Validate(); err != nil {
 		return err, false
@@ -197,6 +203,7 @@ func NewApp(templatesDir string) (*goal.App[*App], error) {
 func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	static := filepath.Join(webDir, "static")
 	app.Context.KitURLs = findKits(static)
+	app.Context.Bundle = loadBundle(webDir)
 	goal.Register[*HomePage](app, mux, "/{$}")
 	registerLabs(app, mux)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
