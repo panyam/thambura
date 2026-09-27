@@ -5,6 +5,8 @@ import {
   srutiFrequencies,
   stringFrequencies,
   MAX_CENTS,
+  samePitch,
+  type Pitch,
   type ThamburaSettings,
 } from "../engine/shruthi";
 import { PluckRender, reedSpectrum } from "../engine/tambura";
@@ -106,7 +108,20 @@ export interface ThamburaDeps {
   /** Where presets are kept, apart from the settings so neither can spoil the other. */
   presets?: ThamburaStore;
   link?: ThamburaLink;
+  /**
+   * The page's Sa (pageContext.ts, Shruthi). Given one, the thambura plays
+   * to it, whatever its own saved settings or link say, and moves it when
+   * its own key, fine tune or A4 changes; a preset keeps it.
+   */
+  shruthi?: PitchSource;
   rng?: () => number;
+}
+
+/** A pitch the page shares, which the thambura follows and moves. */
+export interface PitchSource {
+  readonly pitch: Pitch;
+  set(patch: Partial<Pitch>): void;
+  follow(f: (pitch: Pitch) => void): void;
 }
 
 // Work per deferred render call, in harmonic-samples (see PluckRender.step):
@@ -144,6 +159,7 @@ const VIEW_IDS = THAMBURA_VIEWS.map((v) => v.id);
 export class ThamburaPresenter {
   state: ThamburaState;
   private view: ThamburaView | null = null;
+  private readonly watchers: ((state: ThamburaState) => void)[] = [];
   private readonly timing: ThamburaTiming;
   private readonly transport: Transport;
   private readonly seq: ThamburaSequencer;
@@ -191,6 +207,7 @@ export class ThamburaPresenter {
         notice = "The link in the address bar isn't one this version can read, so your own setup is playing.";
       }
     }
+    if (deps.shruthi) settings = { ...settings, ...deps.shruthi.pitch };
     this.state = {
       settings,
       playing: false,
@@ -213,6 +230,9 @@ export class ThamburaPresenter {
     // isn't saved over this browser's own until the listener changes something.
     deps.link?.write(this.shareLink());
     this.savePresets();
+    deps.shruthi?.follow((pitch) => {
+      if (!samePitch(pitch, this.state.settings)) this.set(pitch);
+    });
   }
 
   /** Its id on the page, and the audio track it plays on. */
@@ -223,6 +243,11 @@ export class ThamburaPresenter {
   attach(view: ThamburaView): void {
     this.view = view;
     view.setState(this.state);
+  }
+
+  /** Hears every state change, as the view does; the session strip reads whether it's playing. */
+  watch(f: (state: ThamburaState) => void): void {
+    this.watchers.push(f);
   }
 
   // ---- intents -----------------------------------------------------------
@@ -281,6 +306,8 @@ export class ThamburaPresenter {
     const prevKeys = sampleKeys(prev, planFor(prev, this.state.custom));
     this.update({ settings: next, custom });
     this.save();
+
+    if (!samePitch(next, prev)) this.deps.shruthi?.set({ key: next.key, cents: next.cents, a4: next.a4 });
 
     const plan = this.plan();
     if (next.volume !== prev.volume) this.deps.audio.setBusVolume(this.deps.id, next.volume);
@@ -353,8 +380,8 @@ export class ThamburaPresenter {
   }
 
   /**
-   * Plays a preset's sound: every setting but the volume, and its Custom
-   * plan if it has one. The view and the bar stay as they are, and a notice
+   * Plays a preset's sound: every setting but the volume (and the pitch,
+   * when the page shares one), and its Custom plan if it has one. The view and the bar stay as they are, and a notice
    * about an opened link goes, since it no longer describes what's playing.
    */
   applyPreset(id: string): void {
@@ -362,7 +389,8 @@ export class ThamburaPresenter {
     const shared = preset && decodeLink(preset.link, { settings: this.state.settings });
     if (!shared) return;
     this.update({ notice: null });
-    this.apply(shared.settings, shared.custom ?? this.state.custom);
+    const pitch = this.deps.shruthi?.pitch ?? {};
+    this.apply({ ...shared.settings, ...pitch }, shared.custom ?? this.state.custom);
     this.update({ presetId: id, edited: false });
     this.audition();
   }
@@ -600,6 +628,7 @@ export class ThamburaPresenter {
     }
     this.state = next;
     this.view?.setState(this.state);
+    for (const f of this.watchers) f(this.state);
   }
 
   private linkFor(s: ThamburaState): string {

@@ -1,7 +1,7 @@
 import type { Gati } from "../engine/carnatic";
 import type { Ratio } from "../engine/ratio";
 import { DEFAULT_TEMPO } from "../engine/selection";
-import { DEFAULT_THAMBURA, tunedTonicHz } from "../engine/shruthi";
+import { DEFAULT_PITCH, KEYS, MAX_CENTS, normalizePitch, samePitch, tunedTonicHz, type Pitch } from "../engine/shruthi";
 import type { TalaGrid } from "../engine/talaGrid";
 import { TempoMap } from "../engine/tempoMap";
 import type { AudioEngine } from "./audio";
@@ -9,20 +9,31 @@ import type { HandsPresenter } from "./handsPresenter";
 import type { KeepAwake } from "./keepAwake";
 import type { KitPresenter } from "./kitPresenter";
 import type { PageLink } from "./pageLink";
+import type { PlayerPresenter } from "./presenter";
+import type { SessionPresenter } from "./session";
+import type { Store } from "./storage";
 import type { ThamburaPresenter } from "./thamburaPresenter";
 import { Transport, type Ticker } from "./transport";
 
 /**
  * What every island on the page shares: services, not instruments. The
  * instruments playing are `tracks`; the clock they play on is `clock`; the Sa
- * the pitched ones follow is `tonic` (docs/designs/instruments.md). The page builds
+ * the pitched ones play to is `shruthi` (docs/designs/instruments.md). The page builds
  * one of these (main.ts) and hands it to each island it mounts.
  */
 export interface PageContext {
   audio: AudioEngine;
   clock: Clock;
   tracks: Tracks<Instrument>;
-  tonic: Tonic;
+  shruthi: Shruthi;
+  /**
+   * The tala, when the page has one: it keeps time on `clock` and shows the
+   * images. Made with the page, not by its island, since the session strip
+   * and the page link need it too.
+   */
+  tala?: PlayerPresenter;
+  /** The speed and shruthi strip's state, and Start all. */
+  session: SessionPresenter;
   awake: KeepAwake;
   /** The page's share link, which the thambura reads and writes. */
   link: PageLink;
@@ -143,27 +154,57 @@ export class Tracks<T> {
 }
 
 /**
- * The Sa the pitched instruments follow, in Hz. The thambura sets it; a drum
- * follows it. Starts on the default thambura's Sa, so a page without the
- * thambura still has one.
+ * The Sa every pitched instrument on the page plays to (#101). There is one
+ * per page: the thambura sets it and follows it, a kit follows it, and the
+ * session strip shows and changes it, so a change anywhere is heard
+ * everywhere. A change is saved (`store`), but the pitch it starts with
+ * isn't, so a shared link's shruthi isn't kept until the listener changes it.
  */
-export class Tonic {
-  private current = tunedTonicHz(DEFAULT_THAMBURA);
-  private readonly followers: ((hz: number) => void)[] = [];
+export class Shruthi {
+  private current: Pitch;
+  private readonly followers: ((pitch: Pitch) => void)[] = [];
 
-  get hz(): number {
+  constructor(
+    initial: Pitch = DEFAULT_PITCH,
+    private readonly store?: Store,
+  ) {
+    this.current = normalizePitch(initial);
+  }
+
+  get pitch(): Pitch {
     return this.current;
   }
 
-  /** Moves the Sa. A value that isn't a positive number, or doesn't change it, is ignored. */
-  set(hz: number): void {
-    if (!Number.isFinite(hz) || hz <= 0 || hz === this.current) return;
-    this.current = hz;
-    for (const f of this.followers) f(hz);
+  /** Sa in Hz, fine tune included. */
+  get hz(): number {
+    return tunedTonicHz(this.current);
+  }
+
+  /** Moves the Sa, clamped to the thambura's ranges. A patch that changes nothing is ignored. */
+  set(patch: Partial<Pitch>): void {
+    const next = normalizePitch({ ...this.current, ...patch }, this.current);
+    if (samePitch(next, this.current)) return;
+    this.current = next;
+    try {
+      this.store?.save(next);
+    } catch {
+      // Storage can be full or blocked; the Sa still holds for this visit.
+    }
+    for (const f of this.followers) f(next);
+  }
+
+  /** A semitone at a time, stopping at the ends of the 15 keys. */
+  stepKey(delta: number): void {
+    this.set({ key: Math.min(KEYS.length - 1, Math.max(0, this.current.key + delta)) });
+  }
+
+  /** Fine tune by `delta` cents, stopping at ±50. */
+  nudgeCents(delta: number): void {
+    this.set({ cents: Math.max(-MAX_CENTS, Math.min(MAX_CENTS, this.current.cents + delta)) });
   }
 
   /** Calls `f` with the current Sa now, then on every change. */
-  follow(f: (hz: number) => void): void {
+  follow(f: (pitch: Pitch) => void): void {
     this.followers.push(f);
     f(this.current);
   }

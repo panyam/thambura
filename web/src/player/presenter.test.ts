@@ -202,6 +202,23 @@ describe("PlayerPresenter", () => {
       expect(q.state.beatCount).toBe(1); // a chaapu is one beat
     });
 
+    it("plays a shared tala and speed without saving them, and tells its watchers", async () => {
+      const writes: unknown[] = [];
+      const q = make({ tempo: 72 }, writes);
+      const clock = q["tempo"];
+      const heard: number[] = [];
+      q.watch((s) => heard.push(s.tempo));
+      q.applyShared({ tala: "chaapu_misram", jaathi: "khandam", nadai: "thisram", kalai: 2 }, 132);
+      await q.load("/fixtures.json");
+      expect(q.state).toMatchObject({ tempo: 132, settings: { tala: "chaapu_misram", kalai: 2 } });
+      expect(clock.bpm).toBe(132);
+      expect(q.state.beatCount).toBe(1);
+      expect(heard).toContain(132);
+      expect(writes).toEqual([]);
+      q.setTempo(100);
+      expect(writes).toHaveLength(1);
+    });
+
     it("saves on each change, and never while loading", async () => {
       const writes: unknown[] = [];
       const q = make(null, writes);

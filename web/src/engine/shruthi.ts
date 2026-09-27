@@ -177,6 +177,27 @@ export function swaraInfo(id: Swara): SwaraInfo {
   return SWARAS.find((s) => s.id === id) ?? SWARAS[0];
 }
 
+/** The Sa every pitched instrument on the page plays to: the key, the fine tune and the A4 reference. */
+export type Pitch = Pick<ThamburaSettings, "key" | "cents" | "a4">;
+
+export const DEFAULT_PITCH: Pitch = { key: DEFAULT_THAMBURA.key, cents: DEFAULT_THAMBURA.cents, a4: DEFAULT_THAMBURA.a4 };
+
+/** A pitch from anything (saved JSON, a patch, a whole ThamburaSettings), clamped as normalizeThambura clamps it. */
+export function normalizePitch(raw: unknown, base: Pitch = DEFAULT_PITCH): Pitch {
+  const s = normalizeThambura(raw, { ...DEFAULT_THAMBURA, ...base });
+  return { key: s.key, cents: s.cents, a4: s.a4 };
+}
+
+export function samePitch(a: Pitch, b: Pitch): boolean {
+  return a.key === b.key && a.cents === b.cents && a.a4 === b.a4;
+}
+
+/** "C3", "F#3": the key as a note and octave. */
+export function keyName(key: number): string {
+  const k = KEYS[clamp(key, 0, KEYS.length - 1)];
+  return `${k.note}${k.octave}`;
+}
+
 /** "C · 1", "F# · 4½". */
 export function keyLabel(key: number): string {
   const k = KEYS[clamp(key, 0, KEYS.length - 1)];

@@ -107,6 +107,7 @@ export class PlayerPresenter {
   private frameId: number | null = null;
   // What the last visit saved; load() takes its groups once the catalog is in.
   private readonly saved: Record<string, unknown>;
+  private readonly watchers: ((state: PlayerState) => void)[] = [];
 
   constructor(private readonly deps: PlayerDeps) {
     this.saved = loadSafely(deps.store);
@@ -134,6 +135,25 @@ export class PlayerPresenter {
   attach(view: PlayerView): void {
     this.view = view;
     view.setState(this.state);
+  }
+
+  /**
+   * Hears every state change, as the view does. The session strip and the
+   * page link read the tempo and the tala from here.
+   */
+  watch(f: (state: PlayerState) => void): void {
+    this.watchers.push(f);
+  }
+
+  /**
+   * Plays a shared link's tala and speed, without saving them over this
+   * browser's own: they're kept only once the listener changes something.
+   */
+  applyShared(settings: TalaSettings, tempo: number): void {
+    const bpm = clampTempo(tempo);
+    this.tempo.setTempo(bpm);
+    this.update({ settings: normalizeSettings(settings), tempo: bpm });
+    this.rebuild();
   }
 
   async load(fixturesUrl: string): Promise<void> {
@@ -345,6 +365,7 @@ export class PlayerPresenter {
   private update(patch: Partial<PlayerState>): void {
     this.state = { ...this.state, ...patch };
     this.view?.setState(this.state);
+    for (const f of this.watchers) f(this.state);
   }
 }
 

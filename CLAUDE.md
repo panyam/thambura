@@ -284,9 +284,12 @@ unit-tested:
   append, never reorder, and bump `FORMAT` for anything else. Format 2 is a
   page link (#100): one part per instrument, keyed by its page id, each a
   kind, a number, a length and a payload; a thambura's payload is a whole
-  format 1 link. `encodePage` writes a page with only `thambura-1` as that
-  part alone, in format 1, so everyday links are unchanged; `decodePage`
-  reads a format 1 link as `thambura-1` and skips parts it can't read.
+  format 1 link. A `session-1` part (#101, `encodeSession`) carries the
+  tala, speed and shruthi in 11 bytes, and its shruthi wins over the
+  thambura part's key; every page writes one, so today's links are format 2
+  (about 60 characters with a thambura). `encodePage` would still write a
+  lone `thambura-1` as format 1, and `decodePage` reads a format 1 link as
+  `thambura-1` and skips parts it can't read.
   The docs site's reference page (`docs/content/reference/share-link-format/`)
   describes both.
 - `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa in a `PluckPattern`:
@@ -341,7 +344,24 @@ unit-tested:
   saved in localStorage under `thambura.player` on each
   change, never while loading, and restored through `normalizeSettings` and
   the catalog, so a stale value falls back to its default. It doesn't import
-  Solid, and its tests run it under fakes.
+  Solid, and its tests run it under fakes. `buildContext` makes it (as
+  `ctx.tala`), not its island, since the session strip and the page link
+  need it too; `applyShared` plays a link's tala and speed without saving
+  them, and `watch` hears every state change beside the view.
+- `session.ts` (`SessionPresenter`) and `SessionStrip.tsx`: what the page
+  shares rather than one instrument (#101), in a strip under the beat
+  image. The speed is the tala's and the shruthi the page's `Shruthi`; the
+  strip shows them iTanpura's way (the note between semitone arrows, a fine
+  tune between ♭ and ♯, the note opening all 15 keys with a dot where a kit
+  would sound stretched, `KitPresenter.stretchedAt`), plus Start all (the
+  tala and the thambura together, or stop everything). It writes the page
+  link's `session-1` part on every change, but not on each beat's state
+  update. `startingPitch` picks the shruthi a page opens on: a shared
+  session part, a shared thambura part, `thambura.shruthi`, the saved
+  thambura's key, C. On our pages (`main.ts`, `wireSessionKeys`) Space is
+  Start all and Shift+↑/↓ steps the shruthi (`shortcuts.ts`,
+  `pageShortcut`); Space leaves a focused button alone, since it presses it.
+  `sessionIsland.tsx` mounts the strip alone, as the `session` island.
 - `handsPresenter.ts` (`HandsPresenter`): the hand claps as a track,
   `hands-1`, seeded by Go as a `hands` instrument in the page spec. It loads
   the fixture's sound groups, plays each call on `clock.ticks` from the
@@ -352,10 +372,11 @@ unit-tested:
   kit's own sequencer can't. Talas are their own group, not instruments;
   several at once is later (`docs/designs/instruments.md`).
 - `PlayerView.tsx`: renders `PlayerState` and calls the presenter's intents.
-  Its Sounds menu and Volume slider are the hands track's, and the lane,
-  Variety and Korvai the kit's; both come in as props.
+  Its Sounds menu and Volume slider are the hands track's, the lane,
+  Variety and Korvai the kit's, and the speed the session strip's; all come
+  in as props. `Stepper.tsx` is the slider between − and + both use.
   `island.tsx` wires the real browser dependencies in. `islands.ts` holds
-  the island registry (`tala`, `thambura`) and `buildContext`, which both
+  the island registry (`tala`, `thambura`, `session`) and `buildContext`, which both
   entries use: `main.ts` for our pages, through the generic
   `web/src/page/islandPage.ts` (a tsappkit `BasePage`, which also wires the
   theme toggle), and `embed.ts` for other sites. Both mount through
@@ -378,15 +399,17 @@ unit-tested:
 - `pageContext.ts`: what every island shares, services rather than
   instruments: `audio`, `clock` (one `Transport` on one `TempoMap`,
   `createClock`), `tracks` (the instruments playing, by id: `hands-1`,
-  `thambura-1`, `kit-1`), `tonic` (the Sa; the thambura sets it, the kit
-  follows), `awake`, `link`, and `assetBase`, what the spec's URLs resolve
+  `thambura-1`, `kit-1`), `shruthi` (`Shruthi`, the page's Sa: key, fine
+  tune and A4, saved as `thambura.shruthi`; the thambura plays to it and
+  moves it, a kit follows it, the strip shows it), `tala` and `session`
+  (above), `awake`, `link`, and `assetBase`, what the spec's URLs resolve
   against (the page on our site, `embed.js` on another). `buildContext`
   fills `tracks` from the spec's instruments, loading only the first kit for
   now.
 - `storage.ts`: every localStorage key goes through here. An instrument
   keeps its state under its page id (`instrumentStore(id)`:
   `thambura.thambura-1`, `thambura.kit-1`, `thambura.hands-1`); the page's
-  own keys (`player`, `presets`, `drawer`) are named. `thambura-1` reads the
+  own keys (`player`, `presets`, `drawer`, `shruthi`) are named. `thambura-1` reads the
   pre-id `thambura.drone` record once through `withFallback`, which writes
   only the new key and leaves the old one for the drawer's own migration.
 - `pageLink.ts` (`PageLink`): the page's share link in the address bar
@@ -426,7 +449,10 @@ unit-tested:
   but isn't saved over it until the listener changes something; every change
   writes the current link back. Presets (`ThamburaPreset`) are a name and a
   share link, kept apart from the settings in `deps.presets`; applying one
-  sets the sound but not the view or volume. Opening a link that changes a
+  sets the sound but not the view, volume or the page's shruthi.
+  `deps.shruthi` is the page's `Shruthi`: the thambura starts on it over
+  its own saved key or link, follows it, and sets it when its own key, fine
+  tune or A4 changes, so the Studio keyboard and the strip move together. Opening a link that changes a
   saved setup first keeps it as the "Before shared link" preset (only the
   latest). Pitch and timbre
   changes re-render the plucks in about 20 ms slices through `deps.defer`
@@ -474,14 +500,15 @@ unit-tested:
 - `thamburaIsland.tsx` is a view of the page's thambura (it's handed the
   presenter; `newThamburaPresenter` is what `buildContext` makes it with), and
   wires the page's floating controls, the stack at the
-  bottom right in `HomePage.html` (`#thambura-controls`): `#thambura-play`
-  (start/stop from anywhere on the page, bar open or not; `reflectPlaying`
-  flips its icon via `data-playing` and its label, `reflectOpen` fades the
-  pair while the bar is open), `#thambura-toggle` (opens the bar: a
-  tilted tambura icon, the whole button on a phone, in a pill with the
-  "Shruthi box" label from `sm` up), and
-  the T key (`shortcuts.ts`: not while typing in a field, not with
-  Ctrl/Cmd/Alt, not on key repeat). The link goes to the address bar
+  bottom right in `HomePage.html` (`#thambura-controls`): `#play-all`
+  (Start all from anywhere on the page, the tala and the thambura together,
+  through `playAll`, the page's session; `reflectPlaying` flips its icon via
+  `data-playing` and its label, `reflectOpen` fades the pair while the bar
+  is open), `#thambura-toggle` (opens the bar: a tilted tambura icon, the
+  whole button on a phone, in a pill with the "Thambura" label from `sm`
+  up; it goes once the thambura's panel lives in its track, #101), and the
+  T key, which plays the thambura alone (`shortcuts.ts`: not while typing
+  in a field, not with Ctrl/Cmd/Alt, not on key repeat). The link goes to the address bar
   through the page's `PageLink`: `replaceState`, no history entries, 400 ms
   after the last change, since Safari throws after 100 calls in 30 s and a
   slider drag changes the setup on every step. The
@@ -520,8 +547,8 @@ See NEXTSTEPS.md for the order.
 
 - **Shruthi box:** done as the thambura (see above). Its plucked modes are a
   sequencer on its own clock and speed, not the tala's tempo; its sruti mode
-  is the continuous voice. The mridangam and tabla dayan should tune to its
-  tonic (`tunedTonicHz`). Sound quality is issue #8: the jawari voice, fitted
+  is the continuous voice. It plays to the page's shruthi (`Shruthi`), as
+  the mridangam does and the tabla dayan should. Sound quality is issue #8: the jawari voice, fitted
   to a real recording, is the default, and the Lab, links and presets are
   how it gets tuned by ear from here, by us and by listeners.
 - **Struck instruments are kits, and the code knows nothing about any one of
@@ -529,7 +556,7 @@ See NEXTSTEPS.md for the order.
   that choke each other, a mridangam's two heads or a ghatam's one surface),
   packs (tunings, or one unpitched pack played as recorded), and strokes with
   takes per pack. `player/kitPresenter.ts` is a kit as a track: it loads
-  one, follows the thambura's Sa, plays on its own audio track (`kit-1`,
+  one, follows the page's shruthi, plays on its own audio track (`kit-1`,
   numbered by kind in the spec's order) and, given the page's clock, plays
   along with the tala (below); `player/StrokePad.tsx` draws whatever the
   manifest declares. The mridangam is data, not code. `docs/designs/mridangam.md` is the plan
@@ -783,6 +810,13 @@ Playwright's Chromium is at `~/.cache/ms-playwright/chromium-<n>/` (1243 as
 of 2026-09-26; `ls` it, the number moves with Playwright updates), and
 `playwright-core` can be required from another project's node_modules (e.g.
 `../Agni/main/web` or `/workspace/repos/projects/sdlold/web/frontend`). Launch with `--autoplay-policy=no-user-gesture-required`.
+The speed and shruthi strip is `[aria-label="Speed and shruthi"]`: the tempo
+box `input[aria-label="Tempo in beats per minute"]`, the note
+`button[aria-controls="shruthi-keys"]` (its text reads `C 3 · 1`; clicking it
+opens `#shruthi-keys`, whose stretched keys have a `title`), the arrows
+`button[aria-label="Shruthi up a semitone"]` and "Fine tune up a cent", and
+`button:has-text("Start all")`. Space presses a focused button, so click the
+page body before testing it as Start all.
 The tala's transport buttons are icons, so select them by label:
 `button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). With
 `getByRole`, pass `exact: true`: name matching is a substring match, so
@@ -800,8 +834,8 @@ plan in `textarea[aria-label="Settings JSON"]`, and presets are saved with
 `mode:<id>` in `select[aria-label="Sound"]` and presets are their ids under
 `optgroup[label="Saved"]`. Each string pans to its own place, so wrapping
 `StereoPannerNode`'s `pan` setter tells you which string a pluck was.
-It plays with the floating
-`#thambura-play`, or `page.keyboard.press("t")`. Once the bar is open, the
+It plays alone with `page.keyboard.press("t")`; the floating `#play-all`
+starts the tala too. Once the bar is open, the
 floating pair fades out and goes `inert` (the bar carries the same two
 controls), so drive the bar's own buttons then: scope to
 `[role="region"][aria-label="Thambura"]`, and hide it again with
@@ -854,8 +888,8 @@ A few probes that worked, all set up in an init script:
   Importing its `index.js` from an ESM script gives an object whose `chromium`
   is undefined, and the failure reads as "Cannot read properties of undefined".
 - Cold Start is measured by wrapping `AudioBufferSourceNode.prototype.start` in
-  an init script, clicking `#thambura-play` and waiting for the first booked
-  pluck: 375 ms on master before #62, 225 ms after. Serve the branch and the
+  an init script, pressing T (before #136, clicking the floating play
+  button) and waiting for the first booked pluck: 375 ms on master before #62, 225 ms after. Serve the branch and the
   base on two ports and alternate between them, for the reason above.
 - `pkill -f <pattern>` can match the shell running it and kill it, and
   `fuser` isn't installed. Find a server by its port instead:
