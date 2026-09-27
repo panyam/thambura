@@ -1,51 +1,76 @@
 ---
 title: "Share links and presets"
-description: "What a thambura link carries, what happens when someone opens one, and how presets and the built-in sounds are made of links."
+description: "What a Thambura link carries, what happens when someone opens one, and how presets and the built-in sounds are made of links."
 next: { title: "The share link format", url: "/thambura/reference/share-link-format/" }
 ---
 
-Every thambura setup has a link. The address bar keeps it up to date as you
-change things, and the bar's **Copy link** button copies it. It looks like
-this:
+Every page has a link that plays what's on it. The address bar keeps it up
+to date as you change things, and the thambura's **Copy link** button copies
+it. It looks like this:
 
 ```
-https://thambura.com/?s=AQgAA0AHETABwjIyPA
+https://thambura.com/?s=AgIBCwEEAQEBAFADQBEwAQENAQgAA0AHETABwjIyPAMBBwFQBENsYXA
 ```
 
-Everything after `?s=` is the setup, packed into a few bytes and written in
-URL-safe base64, so a link goes anywhere a URL can. An everyday setup comes
-to about 18 characters, and a Custom sound edited on every string still
-stays under 200.
+Everything after `?s=` is the page's setup, packed into a few bytes and
+written in URL-safe base64, so a link goes anywhere a URL can. That one is a
+page as it first opens, at 55 characters.
 
 ## What a link carries
 
-- **The sound:** the mode (Tambura, Tambura (classic), Guitar, Sruti or
-  Custom), the key and fine tune, gents or ladies, just or equal
-  temperament, A4, the swara the first string plays, the round's length, and
-  tone, pluck and sustain.
-- **For a Custom sound, the whole plan** the Lab edits, string by string,
-  including the gaps between plucks.
-- **The view** (Mini, Studio, Raagini or Lab) and whether the bar was open.
+A page can hold several instruments, so its link has a part for each one,
+named by the instrument's id on the page:
 
-Two things are left out on purpose. The volume depends on the listener's
-room and speakers rather than on the sound, so a link never changes it. Solo
-(the Lab's on/off dots) is for working on one string at a time, and a link
-that silenced three strings would mostly confuse whoever opened it.
+- **The session** (`session-1`): the tala (with its jaathi, nadai and kalai),
+  the speed, and the page's shruthi, meaning the key, fine tune and A4
+  everything plays to.
+- **The thambura** (`thambura-1`):
+  - the sound, meaning the mode (Tambura, Tambura (classic), Guitar, Sruti or
+    Custom), gents or ladies, just or equal temperament, the swara the first
+    string plays, the round's length, and tone, pluck and sustain;
+  - for a Custom sound, the whole plan the Lab edits, string by string,
+    including the gaps between plucks;
+  - the view (Mini, Studio, Raagini or Lab), and whether the bar was open.
+- **The claps** (`hands-1`): the sound group (Clap or Metronome) and their
+  volume.
+- **Each kit** (`kit-1`, `kit-2`, …): which of the page's kits it is,
+  Variety, its volume, and whether it plays along with the tala.
+
+The thambura's part is a whole link of its own, the kind every link was
+before pages had more than one instrument, so everything below about the
+thambura's sound holds inside a page link too.
+
+A few things are left out on purpose. The thambura's volume isn't in the
+link, since it depends on the listener's room and speakers rather than on
+the sound. The claps' and kits' volumes are in it, though, and a link sets
+them. Solo (the Lab's on/off dots) is for working on one string at a
+time, and a link that silenced three strings would mostly confuse whoever
+opened it. The track list's mute and solo stay out of links for the same
+reason.
 
 ## Opening a link
 
 When someone opens a page with a `?s=` link:
 
-- The link wins over what their browser had saved, apart from the volume,
-  which stays theirs.
+- Each instrument plays its part of the link, over what their browser had
+  saved (the thambura keeps the listener's own volume).
+- The session's shruthi is the one played, even though the thambura's part
+  carries a key of its own.
+- On a page with a track list (`/labs/tracks`), the parts a link has are the
+  instruments the page opens with (the claps are always there). The home
+  page always has its own set,
+  and plays what the link says for each of them.
 - If it changes the sound they had, their own setup is kept first, as a
   preset called **Before shared link**. Only the latest one is kept, so
   opening links all day doesn't pile them up.
 - A note in the thambura's bar says "Opened a shared setup."
 - Nothing is saved over their own setup until they change something
   themselves.
-- A link this version can't read (a mistyped one, say, or one from a newer
-  format) plays their own setup instead, and the note says so.
+- A part this version doesn't know (from a newer version, say) is skipped,
+  and the rest of the page still opens. A link it can't read at all (a
+  mistyped one) plays their own setup instead, and the note says so.
+- Links from before pages had parts (a thambura setup on its own, like
+  `?s=AQgAA0AHETABwjIyPA`) still open, as the thambura's part.
 
 ## Custom sounds, and built-in sounds that change
 
@@ -76,11 +101,13 @@ Two things are worth knowing here:
 
 ## Presets
 
-A preset is a name and a link, nothing more. In the Lab, **Save** writes the
+A preset is a thambura sound: a name and a thambura link, nothing more.
+It doesn't carry the tala, the speed, the shruthi or the other instruments,
+so a preset works on any page and at any pitch. In the Lab, **Save** writes the
 current sound over the preset that's playing, and **Save as…** keeps it as a
 new one. Presets are kept in the browser under `thambura.presets`, apart
 from the settings, up to 200 of them. Picking one from the Sound menu plays
-its sound, but leaves the view and the volume alone.
+its sound, but leaves the view, the volume and the page's shruthi alone.
 
 Since a preset is a link, **Copy** gives it to anyone, and the built-in
 presets are made the same way. Shimmer and Warm, in the Sound menu beside
@@ -101,8 +128,10 @@ opens without the "older version" notice.
 
 ## Making links in code
 
-The two functions behind all of this are in
-[`web/src/engine/shareLink.ts`](https://github.com/panyam/thambura/blob/master/web/src/engine/shareLink.ts):
+Everything behind this is in
+[`web/src/engine/shareLink.ts`](https://github.com/panyam/thambura/blob/master/web/src/engine/shareLink.ts).
+A thambura's own link, which is what a preset holds and what goes in a page
+link's `thambura-1` part:
 
 ```ts
 import { decodeLink, encodeLink } from "./engine/shareLink";
@@ -115,6 +144,26 @@ const link = encodeLink({ settings, custom: planFor(settings), view: "studio" })
 // decodeLink fills in what a link leaves out (the volume) from the settings
 // you pass, and returns null for anything it can't read.
 const opened = decodeLink(link, { settings: DEFAULT_THAMBURA });
+```
+
+A page link is its parts, each an instrument's own link keyed by its id.
+`encodeSession`, `encodeHands` and `encodeKit` make the other parts, and
+each has a `decode…` to go with it:
+
+```ts
+import { decodePage, encodeHands, encodePage, encodeSession } from "./engine/shareLink";
+import { DEFAULT_SETTINGS, DEFAULT_TEMPO } from "./engine/selection";
+import { DEFAULT_PITCH } from "./engine/shruthi";
+
+const page = encodePage([
+  { id: "session-1", link: encodeSession({ tala: DEFAULT_SETTINGS, tempo: DEFAULT_TEMPO, pitch: DEFAULT_PITCH }) },
+  { id: "thambura-1", link },
+  { id: "hands-1", link: encodeHands({ soundGroup: "Clap", volume: 80 }) },
+]);
+
+// The parts by id, or null for anything it can't read. An old thambura-only
+// link comes back as its thambura-1 part.
+const parts = decodePage(page);
 ```
 
 They're pure TypeScript with no DOM, so they run anywhere. They're also
