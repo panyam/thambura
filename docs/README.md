@@ -28,6 +28,12 @@ make ghpages               # tests, builds and publishes to GitHub Pages
 cd docs && go test ./...   # builds the site and checks its links (part of make test)
 ```
 
+The embed guide's live examples load `embed.js` from `embedBase` in
+`SiteMetadata.json` (thambura.com). To try them against a build production
+doesn't have yet, point them elsewhere for one run, such as the dev version:
+`DOCS_EMBED_BASE=https://dev-dot-thambura.uc.r.appspot.com/static/ make docsrun`.
+Publish only once production serves the `embed.js` the guide describes.
+
 A page is Markdown (`.md`) or HTML (`.html`, for pages that need their own
 markup) with front matter:
 

@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
+	"html"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -150,5 +153,56 @@ func TestServeAtPrefix(t *testing.T) {
 		if resp.StatusCode != http.StatusOK {
 			t.Errorf("GET %s = %d, want 200", p, resp.StatusCode)
 		}
+	}
+}
+
+// The embed guide's live examples are specs in the built page: declared
+// ones in data-thambura-spec scripts, mount() ones in data-embed-example
+// attributes. Each must parse, name islands embed.js has, and have a slot on
+// the page for every island, or the example shows nothing and nobody notices.
+func TestEmbedExamplesAreMountable(t *testing.T) {
+	out := t.TempDir()
+	if err := Build(out); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(out, "guides", "embed", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(b)
+	var specs []string
+	for _, m := range regexp.MustCompile(`(?s)<script type="application/json" data-thambura-spec>(.*?)</script>`).FindAllStringSubmatch(page, -1) {
+		specs = append(specs, m[1])
+	}
+	for _, m := range regexp.MustCompile(`data-embed-example='([^']*)'`).FindAllStringSubmatch(page, -1) {
+		specs = append(specs, html.UnescapeString(m[1]))
+	}
+	if len(specs) < 3 {
+		t.Fatalf("found %d example specs, want the tala, the thambura and both", len(specs))
+	}
+	known := map[string]bool{"tala": true, "thambura": true, "session": true}
+	for _, text := range specs {
+		var spec struct {
+			Islands []struct{ Name, Slot string }
+		}
+		if err := json.Unmarshal([]byte(text), &spec); err != nil || len(spec.Islands) == 0 {
+			t.Errorf("example spec %q doesn't read as a spec with islands: %v", text, err)
+			continue
+		}
+		for _, is := range spec.Islands {
+			if !known[is.Name] {
+				t.Errorf("example spec %q names island %q, which embed.js doesn't have", text, is.Name)
+			}
+			if !strings.Contains(page, `data-thambura-slot="`+is.Slot+`"`) {
+				t.Errorf("example spec %q wants slot %q, which isn't on the page", text, is.Slot)
+			}
+		}
+	}
+	base, err := EmbedBase()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(page, `src="`+base+`embed.js"`) || !strings.Contains(page, `data-embed-base="`+base+`"`) {
+		t.Errorf("the page doesn't load embed.js from %s", base)
 	}
 }

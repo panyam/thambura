@@ -272,3 +272,9 @@ blockquote { margin: 0 0 1rem; padding: 0.2rem 1rem; border-left: 3px solid var(
   .main { padding-top: 1.25rem; }
   .content-header h1, .hero h1 { font-size: 1.8rem; }
 }
+
+/* The embed guide's live examples: a frame around each, so it reads as the
+   host page's content. The islands inside are in their own shadow roots. */
+.embed-live { border: 1px dashed var(--border); border-radius: var(--radius); padding: 1rem; margin: 0 0 1.5rem; min-height: 4rem; }
+.embed-live-pair { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); align-items: start; }
+.embed-live[data-embed-error]::before { content: "This example didn't load: " attr(data-embed-error); color: var(--text-faint); font-size: 0.9rem; }

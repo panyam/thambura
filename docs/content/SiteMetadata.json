@@ -4,5 +4,6 @@
   "repository": "https://github.com/panyam/thambura",
   "issues": "https://github.com/panyam/thambura/issues",
   "app": "https://thambura.com/",
-  "noindex": true
+  "noindex": true,
+  "embedBase": "https://thambura.com/static/"
 }

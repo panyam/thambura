@@ -91,8 +91,8 @@ element for each island, and loads `embed.js` from our site. Each island
 mounts in a shadow root with our styles, so the host's CSS and ours stay
 apart, and everything it loads (sounds, images, the Lab's code) comes from
 our site. [`/embed/demo`](https://thambura.com/embed/demo) is a page written
-that way, and a guide to embedding is next
-([#109](https://github.com/panyam/thambura/issues/109)).
+that way, and [Embed Thambura in your page]({{ .Site.PathPrefix }}/guides/embed/)
+walks through it.
 
 Each page also keeps its whole setup in a link, one part per instrument
 plus the session. [Share links and presets]({{ .Site.PathPrefix }}/guides/share-links/)
