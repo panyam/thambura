@@ -8,6 +8,8 @@ import type { Shruthi } from "./pageContext";
 import type { PlayerPresenter } from "./presenter";
 import type { ThamburaPresenter } from "./thamburaPresenter";
 
+type ThamburaLike = Pick<ThamburaPresenter, "state" | "watch" | "start" | "stop">;
+
 /** What the session strip shows. */
 export interface SessionState {
   /** The tala's speed in bpm, or null when the page has no tala. */
@@ -24,7 +26,8 @@ export interface SessionView {
 export interface SessionDeps {
   shruthi: Shruthi;
   tala?: Pick<PlayerPresenter, "state" | "watch" | "setTempo" | "start" | "stop">;
-  thambura?: Pick<ThamburaPresenter, "state" | "watch" | "start" | "stop">;
+  /** The page's thambura now, if it has one; the track list can add and remove it. */
+  thambura?: () => ThamburaLike | undefined;
   /** The page's kits, asked which keys they'd sound stretched in. */
   kits?: () => Pick<KitPresenter, "state" | "stretchedAt">[];
   /** The page link's session part, written with the tala, speed and shruthi on every change. */
@@ -41,18 +44,32 @@ export interface SessionDeps {
 export class SessionPresenter {
   state: SessionState;
   private readonly views: SessionView[] = [];
+  private readonly watched = new WeakSet<ThamburaLike>();
   // What the session part was last written from, so a beat's state change doesn't re-encode it.
   private written: [unknown, unknown, unknown] = [null, null, null];
 
   constructor(private readonly deps: SessionDeps) {
     this.state = this.read();
     deps.tala?.watch(() => this.refresh());
-    deps.thambura?.watch(() => this.refresh());
+    this.tracksChanged();
     deps.shruthi.follow(() => this.refresh());
     this.writeLink();
   }
 
   /** Adds a view; the tala's strip and a standalone one can show the same session. */
+  /**
+   * The page's instruments changed: hears the thambura if there's a new one,
+   * and shows whether anything is playing now.
+   */
+  tracksChanged(): void {
+    const thambura = this.deps.thambura?.();
+    if (thambura && !this.watched.has(thambura)) {
+      this.watched.add(thambura);
+      thambura.watch(() => this.refresh());
+    }
+    this.refresh();
+  }
+
   attach(view: SessionView): void {
     this.views.push(view);
     view.setState(this.state);
@@ -89,10 +106,10 @@ export class SessionPresenter {
   async toggleAll(): Promise<void> {
     if (this.state.playing) {
       this.deps.tala?.stop();
-      this.deps.thambura?.stop();
+      this.deps.thambura?.()?.stop();
       return;
     }
-    await Promise.all([this.deps.tala?.start(), this.deps.thambura?.start()]);
+    await Promise.all([this.deps.tala?.start(), this.deps.thambura?.()?.start()]);
   }
 
   /**
@@ -111,7 +128,7 @@ export class SessionPresenter {
     return {
       tempo: this.deps.tala ? this.deps.tala.state.tempo : null,
       pitch: this.deps.shruthi.pitch,
-      playing: !!(this.deps.tala?.state.playing || this.deps.thambura?.state.playing),
+      playing: !!(this.deps.tala?.state.playing || this.deps.thambura?.()?.state.playing),
     };
   }
 

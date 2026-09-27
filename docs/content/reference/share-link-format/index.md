@@ -219,7 +219,7 @@ per instrument, keyed by the instrument's id on the page (`thambura-1`,
 | varint | The payload's length |
 | that many | The payload |
 
-`PAGE_KINDS` is `thambura`, then `session`. A thambura's payload is a whole
+`PAGE_KINDS` is `thambura`, `session`, `hands`, then `kit`. A thambura's payload is a whole
 format 1 link, the same bytes as above, so its bar flag and drift checksum
 work as they always have.
 
@@ -251,6 +251,23 @@ from a newer version still opens the instruments this one has. A link that
 runs out partway through a part is rejected as a whole, like a short format
 1 link.
 
+### The claps and kit parts
+
+The claps (`hands-1`) and each kit (`kit-1`, `kit-2`) have a part too
+([#101](https://github.com/panyam/thambura/issues/101)), so a link carries
+every instrument on the page. On a page with a track list, the parts a link
+has are the instruments it opens with.
+
+| Part | Bytes |
+| --- | --- |
+| hands | its own format `1`; the volume; the sound group's name as a length byte and that many bytes of UTF-8 |
+| kit | its own format `1`; which of the page's kits it is (their order in the page spec); Variety as an index into `VARIETIES`; the volume; `1` if it plays along with the tala, else `0` |
+
+The sound group is written by name because the groups come from the
+fixture file, not from a table in the code. A kit is written by position
+because the kits are whatever the server found at startup, so a link from a
+server with a different set of kits can open a different one.
+
 A page whose only part is `thambura-1` is written as that part alone, in
 format 1. Every page now writes a session part too, so nothing writes one
 alone any more, but format 1 links keep opening. A format 1 link read as a
@@ -262,7 +279,7 @@ People keep links, and presets are links, so a link made today has to open
 the same sound after any later release. The rules:
 
 - **Add to the ends of the tables, never reorder them.** `MODES`, `VIEWS`,
-  `SWARAS`, `BASES`, `FIELDS`, `HIDDEN`, `PAGE_KINDS`, `TALAS` and `GATIS` are all part of the format, since
+  `SWARAS`, `BASES`, `FIELDS`, `HIDDEN`, `PAGE_KINDS`, `TALAS`, `GATIS` and `VARIETIES` are all part of the format, since
   a link stores positions in them. A new mode, view or field goes at the
   end, and old links never mention it.
 - **Leave the ranges and steps of existing fields alone,** for the reason

@@ -135,8 +135,9 @@ stroke is heard, which is how you see what a phrase is doing.
 
 ## Views: what the page shares, and what a track shows
 
-Decided on 2026-09-27 for #101. Built so far: the session strip (the first
-of three PRs). The track list and the new-user defaults are still to come.
+Decided on 2026-09-27 for #101. Built: the session strip (#136), then the
+track list on `/labs/tracks`. The new-user defaults, and the list on `/`,
+are still to come.
 
 **Speed and shruthi belong to the page, not to an instrument.** Tempo
 already did: the tala sets the clock's `TempoMap`, and a kit plays on it.
@@ -160,11 +161,13 @@ pages, Space does the same and Shift+↑/↓ steps the shruthi. It's its own
 island too (`session`), for a page whose tala doesn't carry it.
 
 **The whole setup is one link.** A `session-1` part (see the share-link
-reference) carries the tala, speed and shruthi. Next to come are parts for
-the claps and the kit, with the parts present being the track list, so
-opening a link gives exactly the page that was shared.
+reference) carries the tala, speed and shruthi, and the claps and each kit
+have parts of their own beside the thambura's. On a page with a track list,
+the parts present are the list, so opening a link gives the page that was
+shared.
 
-**Still to build, in this order:**
+**The track list** (`trackList.ts`, `TrackListView.tsx`, on
+`/labs/tracks`), as built:
 
 - **The track list**, on a labs page first. Each instrument is a row. Collapsed, a row shows a
   status dot, its name, one or two quick controls (thambura: first string
@@ -175,13 +178,22 @@ opening a link gives exactly the page that was shared.
   with an "Open full" button for the complete panel. Add offers only what
   can be added: the kits found, and a thambura while there's none (a
   second waits on #103). Removing an instrument clears its storage, so
-  adding it back starts fresh, with a few seconds of Undo.
+  adding it back starts fresh, with a few seconds of Undo. The claps can't be
+  removed while there's a tala; mute them. On the tracks page the claps'
+  and the kit's controls are in their cards, not under the tala, but the
+  stroke lane stays under the image. The desktop layout keeps the tala in a
+  left column and the cards beside it.
+
+**Still to build:**
+
 - **New-user defaults**: the tala, the claps and one thambura, and the
   mridangam only once someone adds it. The track list is saved only when
   it's changed, so a better default still reaches anyone who never touched
   theirs. Compatibility with earlier saved state isn't a goal here: the app
   has no users to keep yet, so a storage version bump that starts everyone
   fresh is acceptable.
+- **The list on `/`**, in place of the drawer: the thambura's panel is its
+  card's "More", so the drawer and the floating Thambura button go.
 
 ## The order
 

@@ -89,3 +89,29 @@ describe("Transport.onStop", () => {
     expect(heard).toEqual(["seq", "listener"]);
   });
 });
+
+describe("Transport.remove", () => {
+  it("stops a sequencer it takes off and pulls nothing more from it", () => {
+    const clock = { now: 0 };
+    const ticker = new FakeTicker();
+    const transport = new Transport(clock, ticker);
+    const log: string[] = [];
+    const seq = (name: string) => ({
+      start: () => log.push(`${name} start`),
+      stop: () => log.push(`${name} stop`),
+      pull: () => {
+        log.push(`${name} pull`);
+        return [];
+      },
+    });
+    const a = seq("a");
+    transport.add(a, () => {});
+    transport.add(seq("b"), () => {});
+    transport.start(0);
+    log.length = 0;
+    transport.remove(a);
+    ticker.onTick?.();
+    transport.remove(a);
+    expect(log).toEqual(["a stop", "b pull"]);
+  });
+});

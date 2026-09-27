@@ -77,6 +77,34 @@ func TestSideBySideSpec(t *testing.T) {
 	}
 }
 
+// The tracks page puts the tala on top and the track list under it, with no
+// drawer: the thambura is one of the tracks, and the claps' and kit's controls are theirs.
+func TestTracksSpec(t *testing.T) {
+	srv := newServer(t)
+	_, body := get(t, srv.URL+"/labs/tracks")
+	s := pageSpec(t, body)
+	var got []string
+	for _, is := range s.Islands {
+		got = append(got, is.Name+"@"+is.Slot+":"+is.Presentation)
+	}
+	if strings.Join(got, ",") != "tala@main:page,tracks@tracks:page" || s.Layout != "tracks" {
+		t.Fatalf("spec = %v in layout %q", got, s.Layout)
+	}
+	if v, ok := s.Islands[0].Config["instrumentControls"]; !ok || v != false {
+		t.Errorf("tala config instrumentControls = %v, want false", v)
+	}
+	for _, slot := range s.Slots() {
+		if n := strings.Count(body, `data-slot="`+slot+`"`); n != 1 {
+			t.Errorf("slot %q appears %d times, want once", slot, n)
+		}
+	}
+	for _, gone := range []string{`id="thambura-controls"`, `data-slot="drawer"`} {
+		if strings.Contains(body, gone) {
+			t.Errorf("tracks page carries the drawer's %s", gone)
+		}
+	}
+}
+
 // The index lists every labs page, and nothing else links into labs.
 func TestLabsIndex(t *testing.T) {
 	srv := newServer(t)

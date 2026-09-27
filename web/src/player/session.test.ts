@@ -38,7 +38,7 @@ function setUp() {
   const session = new SessionPresenter({
     shruthi,
     tala: tala as never,
-    thambura: thambura as never,
+    thambura: () => thambura as never,
     link: { read: () => null, write: (l) => writes.push(l) },
   });
   const views: SessionState[] = [];

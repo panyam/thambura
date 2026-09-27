@@ -45,7 +45,8 @@ export class HandsPresenter {
   state: HandsState;
   private view: HandsView | null = null;
   private groups: AssetGroup[] = [];
-  private readonly wanted: string;
+  private wanted: string;
+  private readonly watchers: ((state: HandsState) => void)[] = [];
 
   constructor(private readonly deps: HandsDeps) {
     const own = loadSafely(deps.store);
@@ -67,6 +68,24 @@ export class HandsPresenter {
   attach(view: HandsView): void {
     this.view = view;
     view.setState(this.state);
+  }
+
+  /** Hears every state change, as the view does; the page link and the track list follow it. */
+  watch(f: (state: HandsState) => void): void {
+    this.watchers.push(f);
+  }
+
+  /**
+   * Plays a shared link's sound group and volume without saving them. Before
+   * the fixture loads, the group waits for it.
+   */
+  applyShared(setup: { soundGroup: string; volume: number }): void {
+    const volume = clampVolume(setup.volume);
+    this.deps.audio.setLevel(this.deps.track, volume);
+    this.update({ volume });
+    const group = this.find(setup.soundGroup);
+    if (group) void this.apply(group);
+    else this.wanted = setup.soundGroup;
   }
 
   /** Loads the fixture's sound groups and the saved one's samples, or the first group's. */
@@ -131,6 +150,7 @@ export class HandsPresenter {
   private update(patch: Partial<HandsState>): void {
     this.state = { ...this.state, ...patch };
     this.view?.setState(this.state);
+    for (const f of this.watchers) f(this.state);
   }
 }
 

@@ -15,6 +15,7 @@ import { laneFor, type Lane } from "../engine/lane";
 import { patternFor, type Pattern } from "../engine/patterns";
 import { ZERO } from "../engine/ratio";
 import { DEFAULT_THAMBURA, tunedTonicHz, type ThamburaSettings } from "../engine/shruthi";
+import type { Sequencer } from "../engine/sequencer";
 import { StrokeSequencer, type StrokeEvent } from "../engine/strokeSequencer";
 import { TalaGrid } from "../engine/talaGrid";
 import type { AudioOut, TrackId } from "./audio";
@@ -143,6 +144,9 @@ export class KitPresenter {
   private readonly lanes = new Map<number, Lane>();
   private litUntil = 0;
   private frameId: number | null = null;
+  private readonly watchers: ((state: KitState) => void)[] = [];
+  // What it joined the clock with, to leave it again (dispose).
+  private onClock: { seq: Sequencer<StrokeEvent>; unfollow: () => void } | null = null;
 
   constructor(private readonly deps: KitDeps) {
     this.rng = deps.rng ?? Math.random;
@@ -159,9 +163,9 @@ export class KitPresenter {
       packLabel: "",
       shift: 0,
       stretched: false,
-      volume: DEFAULT_KIT_VOLUME,
+      volume: typeof saved.volume === "number" ? clamp(saved.volume, 0, 100, DEFAULT_KIT_VOLUME) : DEFAULT_KIT_VOLUME,
       levels: {},
-      enabled: true,
+      enabled: saved.enabled !== false,
       pattern: null,
       lit: null,
       lane: null,
@@ -171,9 +175,41 @@ export class KitPresenter {
       hasKorvai: false,
       korvaiQueued: false,
     };
-    deps.audio.setBusVolume(deps.track, DEFAULT_KIT_VOLUME);
+    deps.audio.setBusVolume(deps.track, this.state.volume);
     if (isVariety(legacy)) this.save();
     if (deps.clock) this.playAlong(deps.clock);
+  }
+
+  /**
+   * Hears every state change, as the view does. More than one part of the
+   * page shows a kit (the tala's lane, its track), and the page link follows it.
+   */
+  watch(f: (state: KitState) => void): void {
+    this.watchers.push(f);
+  }
+
+  /**
+   * Plays a shared link's setup (engine/shareLink.ts, KitSetup) without
+   * saving it over this browser's own.
+   */
+  applyShared(setup: { variety: Variety; volume: number; enabled: boolean }): void {
+    this.deps.audio.setLevel(this.deps.track, clamp(setup.volume, 0, 100, DEFAULT_KIT_VOLUME));
+    this.update({ variety: isVariety(setup.variety) ? setup.variety : this.state.variety, volume: clamp(setup.volume, 0, 100, DEFAULT_KIT_VOLUME), enabled: setup.enabled });
+  }
+
+  /**
+   * Leaves the page: off the clock, its track gone and whatever it booked
+   * with it. For the track list's Remove; it can't be used afterwards.
+   */
+  dispose(): void {
+    if (this.onClock) {
+      this.deps.clock?.transport.remove(this.onClock.seq);
+      this.onClock.unfollow();
+      this.onClock = null;
+    }
+    if (this.frameId !== null) this.deps.frames.cancel(this.frameId);
+    this.frameId = null;
+    this.deps.audio.removeTrack(this.deps.track);
   }
 
   attach(view: KitView): void {
@@ -240,6 +276,7 @@ export class KitPresenter {
     const volume = clamp(percent, 0, 100, DEFAULT_KIT_VOLUME);
     this.deps.audio.setLevel(this.deps.track, volume);
     this.update({ volume });
+    this.save();
   }
 
   /** One zone's level, 0 to 1, for balancing the hands against each other. */
@@ -269,6 +306,7 @@ export class KitPresenter {
   setEnabled(enabled: boolean): void {
     if (!enabled) this.deps.audio.cancel(this.deps.track);
     this.update({ enabled });
+    this.save();
   }
 
   /**
@@ -305,18 +343,16 @@ export class KitPresenter {
       clock.tempo,
       () => this.timing?.resumesAt ?? ZERO,
     );
-    clock.transport.add<StrokeEvent>(
-      {
-        start: (at) => seq.start(at),
-        stop: (now) => {
-          seq.stop(now);
-          this.halt();
-        },
-        pull: (now, until) => seq.pull(now, until),
+    const onClock: Sequencer<StrokeEvent> = {
+      start: (at) => seq.start(at),
+      stop: (now) => {
+        seq.stop(now);
+        this.halt();
       },
-      (e) => this.book(e.stroke, e.time, e.gain, { index: e.index, cycle: e.cycle }),
-    );
-    clock.tala.follow((timing) => this.setTiming(timing));
+      pull: (now, until) => seq.pull(now, until),
+    };
+    clock.transport.add<StrokeEvent>(onClock, (e) => this.book(e.stroke, e.time, e.gain, { index: e.index, cycle: e.cycle }));
+    this.onClock = { seq: onClock, unfollow: clock.tala.follow((timing) => this.setTiming(timing)) };
   }
 
   /** A new cycle from the tala: a written pattern where there is one, otherwise a skeleton from its beats. */
@@ -380,7 +416,8 @@ export class KitPresenter {
 
   private save(): void {
     try {
-      this.deps.store?.save({ variety: this.state.variety });
+      const { variety, volume, enabled } = this.state;
+      this.deps.store?.save({ variety, volume, enabled });
     } catch {
       // Storage can be full or blocked; the choice still holds for this visit.
     }
@@ -456,6 +493,7 @@ export class KitPresenter {
   private update(patch: Partial<KitState>): void {
     this.state = { ...this.state, ...patch };
     this.view?.setState(this.state);
+    for (const f of this.watchers) f(this.state);
   }
 }
 

@@ -638,6 +638,27 @@ describe("ThamburaPresenter", () => {
     });
   });
 
+  describe("dispose", () => {
+    it("stops, drops its plucks and its track, and a render in flight never lands", async () => {
+      await start();
+      expect(audio.samples.size).toBeGreaterThan(0);
+      set({ key: KEY_G3 });
+      p.dispose();
+      flushDeferred();
+      expect(audio.samples.size).toBe(0);
+      expect(audio.removed).toContain("thambura-1");
+      expect(p.state.playing).toBe(false);
+    });
+
+    it("stops following the page's shruthi", () => {
+      const shruthi = new Shruthi();
+      make(undefined, undefined, undefined, "thambura-1", shruthi);
+      p.dispose();
+      shruthi.set({ key: KEY_G3 });
+      expect(p.state.settings.key).toBe(DEFAULT_THAMBURA.key);
+    });
+  });
+
   describe("the page's shruthi", () => {
     it("plays to the page's Sa over its own saved key, and moves with it", () => {
       const shruthi = new Shruthi({ key: KEY_G3, cents: 4, a4: 440 });

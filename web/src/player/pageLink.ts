@@ -75,6 +75,20 @@ export class PageLink {
     };
   }
 
+  /**
+   * Drops `id`'s part, for an instrument taken off the page, and writes the
+   * page link without it.
+   */
+  remove(id: string): void {
+    if (!this.parts.delete(id)) return;
+    this.address.write(this.encode(this.parts));
+  }
+
+  /** The ids of the instruments the link had parts for when the page was opened. */
+  openedIds(): string[] {
+    return [...this.openedParts.keys()];
+  }
+
   /** The page link as a full URL, with `id`'s part set to `link`, for Copy link and Share. */
   url(id: string, link: string): string {
     const url = new URL(this.base ?? location.href);

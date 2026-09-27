@@ -115,7 +115,10 @@ Sadhana).
   `node design/render-images.mjs` (preview layout in `design/og.html`),
   which needs `PLAYWRIGHT_CORE` and `CHROMIUM` pointed at an install.
 - **Labs** (#90, `internal/web/labs.go`): layout experiments on the live site
-  under `/labs/<slug>`, listed at `/labs/`. The `labs` slice drives both the
+  under `/labs/<slug>`, listed at `/labs/`. `/labs/tracks` (`layouts/Tracks.html`) is
+  the track list (#101): the tala in a left column from `lg` up, a card per
+  instrument beside it, and the tala's `instrumentControls: false`, so the
+  claps' and kit's controls are only in their cards. The `labs` slice drives both the
   routes and the index. Each labs page is its own goapplib page type with a
   template under `web/templates/labs/`, and they all sit on one mux wrapped
   in `noindex`, with a canonical link to `/` and no sitemap entry. Every
@@ -291,7 +294,10 @@ unit-tested:
   format 1 link. A `session-1` part (#101, `encodeSession`) carries the
   tala, speed and shruthi in 11 bytes, and its shruthi wins over the
   thambura part's key; every page writes one, so today's links are format 2
-  (about 60 characters with a thambura). `encodePage` would still write a
+  (about 60 characters with a thambura). The claps (`encodeHands`: volume
+  and the sound group's name) and each kit (`encodeKit`: which of the
+  page's kits, Variety, volume, on) have parts too; each instrument's
+  `applyShared` plays a link's setup without saving it. `encodePage` would still write a
   lone `thambura-1` as format 1, and `decodePage` reads a format 1 link as
   `thambura-1` and skips parts it can't read.
   The docs site's reference page (`docs/content/reference/share-link-format/`)
@@ -403,17 +409,36 @@ unit-tested:
 - `pageContext.ts`: what every island shares, services rather than
   instruments: `audio`, `clock` (one `Transport` on one `TempoMap`,
   `createClock`), `tracks` (the instruments playing, by id: `hands-1`,
-  `thambura-1`, `kit-1`), `shruthi` (`Shruthi`, the page's Sa: key, fine
+  `thambura-1`, `kit-1`; `onChange` hears adds and removes), `trackList`
+  (below), `shruthi` (`Shruthi`, the page's Sa: key, fine
   tune and A4, saved as `thambura.shruthi`; the thambura plays to it and
   moves it, a kit follows it, the strip shows it), `tala` and `session`
   (above), `awake`, `link`, and `assetBase`, what the spec's URLs resolve
   against (the page on our site, `embed.js` on another). `buildContext`
   fills `tracks` from the spec's instruments, loading only the first kit for
   now.
+- `trackList.ts` (`TrackList`): which instruments are on the page (#101),
+  adding and removing them, and mute and solo through the mixer. It starts
+  the page with a shared link's instruments (the parts present, the claps
+  always), else the list saved under `thambura.tracks`, else one of each
+  kind the spec offers (the first kit only). Only a page with a `tracks`
+  island saves or reads a list; `/` always starts with the spec's
+  instruments. `buildContext`'s `make` builds each instrument (its track,
+  clock, shruthi and link part) and returns a `dispose` that undoes it all:
+  `KitPresenter.dispose` leaves the clock (`Transport.remove`, the tala
+  unfollowed), `ThamburaPresenter.dispose` cancels renders in flight and
+  drops its samples, and both remove their audio track. Remove clears the
+  instrument's saved record (`clearInstrument`, which for `thambura-1` also
+  drops the pre-id `thambura.drone`), with Undo for `UNDO_MS`; adding it
+  back by hand starts fresh. The claps can't be removed. Only one thambura
+  (#103), and each kit once. `TrackListView.tsx` draws the cards and
+  `tracksIsland.tsx` mounts them; `watched.ts` makes a presenter's state a
+  signal through its `watch`, since a kit shows in the tala's lane and in
+  its card at once (the kit, claps, tala and thambura all have `watch`).
 - `storage.ts`: every localStorage key goes through here. An instrument
   keeps its state under its page id (`instrumentStore(id)`:
   `thambura.thambura-1`, `thambura.kit-1`, `thambura.hands-1`); the page's
-  own keys (`player`, `presets`, `drawer`, `shruthi`) are named. `thambura-1` reads the
+  own keys (`player`, `presets`, `drawer`, `shruthi`, `tracks`) are named. `thambura-1` reads the
   pre-id `thambura.drone` record once through `withFallback`, which writes
   only the new key and leaves the old one for the drawer's own migration.
 - `pageLink.ts` (`PageLink`): the page's share link in the address bar
@@ -832,6 +857,11 @@ opens `#shruthi-keys`, whose stretched keys have a `title`), the arrows
 `button[aria-label="Shruthi up a semitone"]` and "Fine tune up a cent", and
 `button:has-text("Start all")`. Space presses a focused button, so click the
 page body before testing it as Start all.
+On `/labs/tracks` the cards are `[aria-label="Instruments"] article`, each
+labelled by its instrument ("Claps", "Thambura", "Mridangam"), with
+`button[aria-label="Remove Mridangam"]`, "Mute Claps", "Solo Thambura",
+`select[aria-label="Add an instrument"]` (options by label), and Undo in the
+list's `[role="status"]`.
 The tala's transport buttons are icons, so select them by label:
 `button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). With
 `getByRole`, pass `exact: true`: name matching is a substring match, so

@@ -125,7 +125,7 @@ export interface ThamburaDeps {
 export interface PitchSource {
   readonly pitch: Pitch;
   set(patch: Partial<Pitch>): void;
-  follow(f: (pitch: Pitch) => void): void;
+  follow(f: (pitch: Pitch) => void): () => void;
 }
 
 // After a settings change, rendering waits until nothing has changed for this
@@ -161,6 +161,7 @@ export class ThamburaPresenter {
   state: ThamburaState;
   private view: ThamburaView | null = null;
   private readonly watchers: ((state: ThamburaState) => void)[] = [];
+  private unfollow: (() => void) | undefined;
   private readonly timing: ThamburaTiming;
   private readonly transport: Transport;
   private readonly seq: ThamburaSequencer;
@@ -233,7 +234,7 @@ export class ThamburaPresenter {
     // isn't saved over this browser's own until the listener changes something.
     deps.link?.write(this.shareLink());
     this.savePresets();
-    deps.shruthi?.follow((pitch) => {
+    this.unfollow = deps.shruthi?.follow((pitch) => {
       if (!samePitch(pitch, this.state.settings)) this.set(pitch);
     });
   }
@@ -417,6 +418,27 @@ export class ThamburaPresenter {
     this.update({ presetId: null, edited: false });
     this.set({ mode });
     this.audition();
+  }
+
+  /**
+   * Leaves the page: stops, drops its rendered plucks and its audio track.
+   * For the track list's Remove; it can't be used afterwards.
+   */
+  dispose(): void {
+    this.stop();
+    this.transport.stop();
+    for (const entry of this.pending.values()) entry.cancel();
+    this.pending.clear();
+    this.settling?.();
+    this.settling = null;
+    this.startWhenReady = false;
+    this.restartWhenReady = false;
+    for (const key of this.rendered) this.deps.audio.dropSamples(key);
+    this.rendered.clear();
+    if (this.frameId !== null) this.deps.frames.cancel(this.frameId);
+    this.frameId = null;
+    this.deps.audio.removeTrack(this.deps.id);
+    this.unfollow?.();
   }
 
   /** The current setup as a link's `s` parameter (engine/shareLink.ts). */
