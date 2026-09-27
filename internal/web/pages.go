@@ -75,7 +75,7 @@ type HomePage struct {
 const fixturesURL = "/static/Resources/TalasFixtures.json"
 
 // homeSpec is the home page's islands and the instruments it starts with:
-// the hand claps, and a kit for each kit found. Which instruments are playing after that is the
+// the hand claps, the thambura, and a kit for each kit found. Which instruments are playing after that is the
 // browser's business. Kits are build products copied in (make devkit) and
 // aren't committed, so most checkouts have none, and then the spec seeds
 // none rather than sending the browser after a kit.json that isn't there.
@@ -93,11 +93,16 @@ func talaIsland(slot string) page.Island {
 }
 
 // startingInstruments seeds the hand claps, which play the tala's calls from
-// the fixture's sound groups, and a kit instrument for each kit found. It's
-// the same on every page with a tala, since which instruments are playing
-// isn't a layout's business.
+// the fixture's sound groups, the thambura, which the page's thambura island
+// shows, and a kit instrument for each kit found. It's the same on every
+// page with a tala, since which instruments are playing isn't a layout's
+// business. The browser numbers them by kind in this order: hands-1,
+// thambura-1, kit-1 ...
 func startingInstruments(kitURLs []string) []page.Instrument {
-	instruments := []page.Instrument{{Kind: "hands", Config: map[string]any{"fixturesUrl": fixturesURL}}}
+	instruments := []page.Instrument{
+		{Kind: "hands", Config: map[string]any{"fixturesUrl": fixturesURL}},
+		{Kind: "thambura"},
+	}
 	for _, u := range kitURLs {
 		instruments = append(instruments, page.Instrument{Kind: "kit", Config: map[string]any{"url": u}})
 	}

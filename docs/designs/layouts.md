@@ -29,8 +29,9 @@ Worth stating first, because it decides what each option below would cost.
   somewhere else needs no change to the view.
 - **The islands are independent.** The page spec puts the tala in the `main`
   slot and the thambura in the `drawer` slot, and they share a page context
-  (one `AudioEngine` with buses `tala`, `drone` and `percussion`, the page's
-  clock, the instruments playing, the Sa and one `KeepAwake`). The tala plays
+  (one `AudioEngine` with a track per instrument, the page's clock, the
+  instruments playing, including the thambura, the Sa, the share link and
+  one `KeepAwake`). The tala plays
   on the page's clock; the thambura runs its own `Transport`, which is why the
   drone's speed is its own.
 - **A setup already travels.** `?s=` carries the whole thambura setup,

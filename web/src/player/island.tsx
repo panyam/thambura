@@ -8,7 +8,7 @@ import { KitPresenter } from "./kitPresenter";
 import { PlayerPresenter } from "./presenter";
 import type { Clock } from "./pageContext";
 import { PlayerView } from "./PlayerView";
-import { localStore } from "./storage";
+import { instrumentStore, localStore } from "./storage";
 
 const DEFAULT_FIXTURES_URL = "/static/Resources/TalasFixtures.json";
 
@@ -95,7 +95,7 @@ export function newHandsPresenter(audio: AudioEngine, track: string, clock: Cloc
     track,
     clock,
     fetchJson,
-    store: localStore("hands"),
+    store: instrumentStore(track),
     legacyStore: localStore("player"),
   });
 }
@@ -109,7 +109,7 @@ export function newKitPresenter(audio: AudioEngine, track: string, clock?: Clock
     audio,
     track,
     clock,
-    store: localStore("kit"),
+    store: instrumentStore(track),
     legacyStore: localStore("player"),
     fetchJson,
     frames: { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) },

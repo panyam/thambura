@@ -8,6 +8,8 @@ import type { AudioEngine } from "./audio";
 import type { HandsPresenter } from "./handsPresenter";
 import type { KeepAwake } from "./keepAwake";
 import type { KitPresenter } from "./kitPresenter";
+import type { PageLink } from "./pageLink";
+import type { ThamburaPresenter } from "./thamburaPresenter";
 import { Transport, type Ticker } from "./transport";
 
 /**
@@ -22,10 +24,12 @@ export interface PageContext {
   tracks: Tracks<Instrument>;
   tonic: Tonic;
   awake: KeepAwake;
+  /** The page's share link, which the thambura reads and writes. */
+  link: PageLink;
 }
 
-/** An instrument on the page, as a track: a kit, or the hand claps. */
-export type Instrument = KitPresenter | HandsPresenter;
+/** An instrument on the page, as a track: a kit, the hand claps, or a thambura. */
+export type Instrument = KitPresenter | HandsPresenter | ThamburaPresenter;
 
 /**
  * The tala's clock, owned by the page so a page without the tala still has

@@ -267,7 +267,7 @@ unit-tested:
   an on/off gain that mute and solo set, then a pan, into a master gain, a
   limiter and the speakers. `setLevel`/`setBusVolume`, `setPan`, `setMute`,
   `setSolo` and `removeTrack` work per track; the hand claps play on
-  `hands-1`, the thambura on `drone`, and each kit on its page id (`kit-1`). The track's pan node
+  `hands-1`, the thambura on `thambura-1`, and each kit on its page id (`kit-1`). The track's pan node
   is never set unless asked, so a probe wrapping the pan setter still sees
   only the strings. It holds a
   sample cache, which `addSamples` fills with rendered PCM as well as fetched
@@ -310,7 +310,7 @@ unit-tested:
   `hands-1`, seeded by Go as a `hands` instrument in the page spec. It loads
   the fixture's sound groups, plays each call on `clock.ticks` from the
   chosen one, cancels its track on `transport.onStop`, and keeps Sounds and
-  Volume under `thambura.hands` (taken once from `thambura.player`). The
+  Volume under its id, `thambura.hands-1` (taken once from `thambura.player`). The
   claps stay a fixture of sound groups rather than a kit: the tala decides
   which sound each tick is, and Previous/Next play one beat at once, which a
   kit's own sequencer can't. Talas are their own group, not instruments;
@@ -330,13 +330,24 @@ unit-tested:
   under a placeholder id), `tonic` (the Sa; the thambura sets it, the kit
   follows) and `awake`. `makeContext` fills `tracks` from the spec's
   instruments, loading only the first kit for now.
-- `storage.ts`: every localStorage key the instruments use goes through
-  `storageKey` / `localStore`, so the instrument work's rename to instance
-  ids is one place.
-- `thamburaPresenter.ts` (`ThamburaPresenter`): the thambura's state, its own
+- `storage.ts`: every localStorage key goes through here. An instrument
+  keeps its state under its page id (`instrumentStore(id)`:
+  `thambura.thambura-1`, `thambura.kit-1`, `thambura.hands-1`); the page's
+  own keys (`player`, `presets`, `drawer`) are named. `thambura-1` reads the
+  pre-id `thambura.drone` record once through `withFallback`, which writes
+  only the new key and leaves the old one for the drawer's own migration.
+- `pageLink.ts` (`PageLink`): the page's share link in the address bar
+  (`?s=`, `replaceState`, 400 ms after the last change). The thambura reads
+  and writes its setup through it, and a drawer layout sets `showsBar` so
+  the link carries whether the bar is open; a docked thambura leaves it
+  true. It's in the page context, since the link is the page's, not one
+  island's; #100b makes it carry every instrument.
+- `thamburaPresenter.ts` (`ThamburaPresenter`): a thambura as an instrument
+  on the page, with an `id` (`thambura-1`, seeded by Go as a `thambura`
+  instrument and made in `main.ts`, not by its island). It has its own
   `Transport` (so it starts and stops apart from the tala), the plucked
-  (tambura, guitar) and reed (sruti) voices on the `drone` bus, and the
-  view and the Custom plan, saved to localStorage. Whether the bar is open
+  (tambura, guitar) and reed (sruti) voices on the audio track named by its
+  id, and the view and the Custom plan, saved under that id. Whether the bar is open
   isn't its business (#88): `thamburaDrawer.ts` (`ThamburaDrawer`) holds
   that under its own key, `thambura.drawer`, taking a link's flag over the
   saved one and, once, the `open` the presenter used to save.
@@ -395,12 +406,14 @@ unit-tested:
   Lab only. Each string tab has an on/off dot and there's Solo (the
   presenter's `muted`, cleared on leaving the Lab and kept out of links), and
   "Copy…" gives the selected string another's sound (`copyString`) or copies
-  it to all. `ThamburaScope` draws what the drone bus plays from
-  `AudioEngine.analyser("drone")`: the level over 8 s in dB, 40 ms of wave,
+  it to all. `ThamburaScope` draws what the thambura's track plays from
+  `AudioEngine.analyser(presenter.id)`: the level over 8 s in dB, 40 ms of wave,
   and the spectrum with the bloom band shaded. Shared bits are in
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
-- `thamburaIsland.tsx` wires the page's floating controls, the stack at the
+- `thamburaIsland.tsx` is a view of the page's thambura (it's handed the
+  presenter; `newThamburaPresenter` is what `main.ts` makes it with), and
+  wires the page's floating controls, the stack at the
   bottom right in `HomePage.html` (`#thambura-controls`): `#thambura-play`
   (start/stop from anywhere on the page, bar open or not; `reflectPlaying`
   flips its icon via `data-playing` and its label, `reflectOpen` fades the
@@ -408,9 +421,10 @@ unit-tested:
   tilted tambura icon, the whole button on a phone, in a pill with the
   "Shruthi box" label from `sm` up), and
   the T key (`shortcuts.ts`: not while typing in a field, not with
-  Ctrl/Cmd/Alt, not on key repeat). It wires the link to the address bar: `replaceState`, no
-  history entries, 400 ms after the last change, since Safari throws after
-  100 calls in 30 s and a slider drag changes the setup on every step. The
+  Ctrl/Cmd/Alt, not on key repeat). The link goes to the address bar
+  through the page's `PageLink`: `replaceState`, no history entries, 400 ms
+  after the last change, since Safari throws after 100 calls in 30 s and a
+  slider drag changes the setup on every step. The
   bar's header has a Copy link button, and its Sound menu plays a preset as
   soon as it is picked; the Lab saves them (Save writes over the one playing,
   Save as… keeps both) and lists them to rename, delete, copy, or Share, which
@@ -516,7 +530,7 @@ See NEXTSTEPS.md for the order.
   accompanist closes a section. The kit asks per cycle through `StrokeSequencer`'s
   source, and keeps a lane per cycle so the lane changes when that cycle is
   heard, not when it was booked. Variety is saved per kit under
-  `thambura.kit`, taken once from `thambura.player`, where the tala kept it.
+  `thambura.kit-1`, taken once from `thambura.player`, where the tala kept it.
 - **The stroke lane** (`player/StrokeLane.tsx`) shows the cycle's aksharas
   and lights the stroke being heard. `Pattern.aksharas` says how many cells a
   cycle divides into (seven for a misra chaapu, which our tables call one

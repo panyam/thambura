@@ -475,11 +475,11 @@ func TestHomePageSeedsKits(t *testing.T) {
 	s := pageSpec(t, body)
 	var got []string
 	for _, in := range s.Instruments {
-		if in.Kind == "hands" {
+		if in.Kind == "hands" || in.Kind == "thambura" {
 			continue
 		}
 		if in.Kind != "kit" {
-			t.Fatalf("instrument kind %q, want kit or hands", in.Kind)
+			t.Fatalf("instrument kind %q, want kit, hands or thambura", in.Kind)
 		}
 		got = append(got, fmt.Sprint(in.Config["url"]))
 	}
@@ -513,6 +513,27 @@ func TestPagesSeedHands(t *testing.T) {
 		}
 		if len(s.Instruments) == 0 || s.Instruments[0].Kind != "hands" {
 			t.Errorf("%s: the hands should be the first instrument", path)
+		}
+	}
+}
+
+// Every page with a thambura island also seeds the thambura as an instrument,
+// thambura-1 in the browser, right after the hands: the island is only its
+// view (docs/designs/layouts.md).
+func TestPagesSeedThambura(t *testing.T) {
+	srv := newServer(t)
+	for _, path := range []string{"/", "/labs/side-by-side"} {
+		_, body := get(t, srv.URL+path)
+		s := pageSpec(t, body)
+		var kinds []string
+		for _, in := range s.Instruments {
+			kinds = append(kinds, in.Kind)
+		}
+		if len(kinds) < 2 || kinds[0] != "hands" || kinds[1] != "thambura" {
+			t.Errorf("%s: instruments = %v, want hands then thambura first", path, kinds)
+		}
+		if n := strings.Count(strings.Join(kinds, " "), "thambura"); n != 1 {
+			t.Errorf("%s: %d thambura instruments, want 1", path, n)
 		}
 	}
 }

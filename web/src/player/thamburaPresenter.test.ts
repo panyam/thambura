@@ -39,10 +39,11 @@ describe("ThamburaPresenter", () => {
   let p: ThamburaPresenter;
   let views: ThamburaState[];
 
-  const make = (saved?: unknown, link?: FakeLink, presets?: unknown) => {
+  const make = (saved?: unknown, link?: FakeLink, presets?: unknown, id = "thambura-1") => {
     store = new FakeStore(saved);
     presetStore = new FakeStore(presets);
     p = new ThamburaPresenter({
+      id,
       audio,
       ticker,
       frames,
@@ -98,7 +99,7 @@ describe("ThamburaPresenter", () => {
     expect(p.state.settings).toEqual(DEFAULT_THAMBURA);
     expect(p.state.playing).toBe(false);
     expect(p.state.view).toBe("studio");
-    expect(audio.busVolume.drone).toBe(DEFAULT_THAMBURA.volume);
+    expect(audio.busVolume["thambura-1"]).toBe(DEFAULT_THAMBURA.volume);
     expect(audio.samples.size).toBe(0); // nothing rendered until it plays
   });
 
@@ -123,7 +124,20 @@ describe("ThamburaPresenter", () => {
     expect(link.writes.map(barOpen)).not.toContain(true);
   });
 
-  it("plucks first, Sa, Sa, low Sa on the drone bus", async () => {
+  it("plays, damps and sets its volume on the track named by its id", async () => {
+    make(undefined, undefined, undefined, "thambura-2");
+    set({ mode: "jawari" }); // the played pattern, which damps each string before its next pluck
+    await start();
+    run(6);
+    expect(audio.played.length).toBeGreaterThan(0);
+    expect(audio.played.every((e) => e.bus === "thambura-2")).toBe(true);
+    expect(audio.damped.length).toBeGreaterThan(0);
+    expect(audio.damped.every((d) => d.track === "thambura-2")).toBe(true);
+    expect(audio.busVolume["thambura-2"]).toBe(DEFAULT_THAMBURA.volume);
+    expect(p.id).toBe("thambura-2");
+  });
+
+  it("plucks first, Sa, Sa, low Sa on its own track", async () => {
     set({ mode: "tambura" }); // the classic voice: even slots, strings ring on
     await start();
     expect(audio.unlocked).toBe(1);
@@ -131,7 +145,7 @@ describe("ThamburaPresenter", () => {
     expect(audio.samples.size).toBe(3); // Pa, Sa (shared by two strings), low Sa
     run(4.5);
     const plucks = audio.played.slice(0, 4);
-    expect(plucks.every((e) => e.bus === "drone")).toBe(true);
+    expect(plucks.every((e) => e.bus === "thambura-1")).toBe(true);
     const [first, sa1, sa2, low] = plucks.map((e) => e.url);
     expect(new Set([first, sa1, low]).size).toBe(3);
     expect(sa2).toBe(sa1);
@@ -220,8 +234,8 @@ describe("ThamburaPresenter", () => {
     const n = audio.played.length;
     p.toggle();
     expect(p.state.playing).toBe(false);
-    expect(audio.cancelled).toEqual(["drone"]);
-    expect(audio.released).toEqual([{ bus: "drone", seconds: 1.5 }]);
+    expect(audio.cancelled).toEqual(["thambura-1"]);
+    expect(audio.released).toEqual([{ bus: "thambura-1", seconds: 1.5 }]);
     expect(ticker.onTick).toBeNull();
     expect(audio.played).toHaveLength(n);
   });
@@ -365,7 +379,7 @@ describe("ThamburaPresenter", () => {
     expect(ticker.onTick).toBeNull();
     const s = p.state.settings;
     expect(audio.tones.map((t) => t.spec.frequency)).toEqual(srutiFrequencies(s));
-    expect(audio.tones.every((t) => t.bus === "drone")).toBe(true);
+    expect(audio.tones.every((t) => t.bus === "thambura-1")).toBe(true);
     p.nudgeCents(-3);
     expect(audio.tones.every((t) => t.spec.detune === -3)).toBe(true);
     set({ key: KEY_G3, firstString: "Ma1" });
@@ -390,7 +404,7 @@ describe("ThamburaPresenter", () => {
     await start();
     set({ mode: "sruti" });
     expect(ticker.onTick).toBeNull();
-    expect(audio.cancelled).toEqual(["drone"]);
+    expect(audio.cancelled).toEqual(["thambura-1"]);
     expect(audio.tones).toHaveLength(3);
     set({ mode: "tambura" });
     expect(audio.tones.every((t) => t.stopped)).toBe(true);
@@ -398,9 +412,9 @@ describe("ThamburaPresenter", () => {
     expect(p.state.playing).toBe(true);
   });
 
-  it("sends volume to the drone bus only", () => {
+  it("sends volume to its own track only", () => {
     set({ volume: 30 });
-    expect(audio.busVolume.drone).toBe(30);
+    expect(audio.busVolume["thambura-1"]).toBe(30);
     expect(audio.busVolume.tala).toBeUndefined();
   });
 
