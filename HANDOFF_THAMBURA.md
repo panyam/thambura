@@ -1,49 +1,62 @@
 # Handoff: Thambura
 
-Written 2026-09-26, after the instruments track's first four PRs (#114,
-#118, #122, #124), on top of the 2026-09-21 handoff (the mridangam parked).
-It folds forward what is still open and drops what closed. The durable notes
-are in CLAUDE.md, NEXTSTEPS.md and `docs/designs/`; this file is only what's
-in flight. Delete it once the items below close.
+Written 2026-09-27, after the instruments track's instance-id work (#127,
+#129) and a dev deploy that was clicked through and approved. It folds
+forward what is still open from the 2026-09-26 handoff and drops what
+closed. The durable notes are in CLAUDE.md, NEXTSTEPS.md and
+`docs/designs/`; this file is only what's in flight. Delete it once the
+items below close.
 
 ## Where things stand
 
-- **Every audible thing is a track on one clock** (epic #94,
-  `docs/designs/instruments.md`). The mixer has a track per instrument with
-  level, pan, mute and solo (#96). The mridangam is a kit track (`kit-1`)
-  that plays along by itself and resumes on sam after a stop (#97; the old
-  code put the drum's sam wherever the tala resumed). The claps are a hands
-  track (`hands-1`) playing the tala's calls on `clock.ticks` (#98), so the
-  tala keeps time and shows the images and makes no sound. SaRiGaMa and its
-  per-step random draw are gone (#122). Talas stay their own group; several
-  at once is later.
-- **Next in that track:** #100 (instance ids through the thambura's
-  settings, presets and links; a share-link `FORMAT` bump, old links must
-  still open), then #101 (the track list), which waits on a decision below.
-  #99, #102 and #104 are ready and independent; #103 waits on #100 and on
-  render speed (#39, #40).
-- **Other tracks, run by other sessions:** layouts (#86): the page spec and
-  labs routes are in, `/embed/demo` (#92) is left and now unblocked. Docs
-  (#95): the site skeleton is in (#105); the guides #106, #107, #109 and #110
-  are unblocked, #111 waits on the library lift (#53).
-- **The mridangam is still deliberately paused** (#77 to #82). Its patterns
-  now live in the kit track (`KitPresenter`), not the tala.
+- **The N-instruments path (epic #94).** Every audible thing is a track on
+  one clock, with an id: the claps `hands-1` (#98), the thambura
+  `thambura-1` (#100), each kit `kit-1` (#97), each on its own mixer track
+  with level, pan, mute and solo (#96). The tala only keeps time and shows
+  the images. Each instrument keeps its state under its id
+  (`thambura.<id>`), and the share link is a page link with one part per
+  instrument (format 2), still written as the old format 1 while
+  `thambura-1` is the only part, so every link in circulation opens the
+  same. `docs/designs/instruments.md` has the plan, the "Several talas at
+  once, later" note, and what's done in its table.
+- **Deployed to dev, not to thambura.com.** dev-dot-thambura.uc.r.appspot.com
+  serves 7e04be3 (master on 2026-09-27), tested by the user that day,
+  including the migration from old saved settings, a two-thambura page link,
+  labs and `/embed/demo`. thambura.com still serves a78db12; `make deploy`
+  is the next step there, and it uploads the mridangam kit with it.
+- **Other tracks:** layouts (#86) is through `/embed/demo` (#92); #131
+  (publish to unpkg) and #132 (asset packs, also labelled instruments) are
+  new from that side. Docs (#95): the site and several guides are in; #111
+  waits on the library lift (#53).
+- **The mridangam is still deliberately paused** (#77 to #82); its patterns
+  live in the kit track.
 - **Kits are not committed.** `make devkit` copies one from the
-  `thambura-data` checkout into a gitignored folder; Go looks for
-  `*/kit.json` at startup and only then seeds a kit instrument, so a plain
-  clone has no pad and no 404. A fresh box needs `thambura-data` cloned
-  beside the app (`git clone git@github.com:panyam/thambura-data.git`) before
-  `make devkit` works.
-- **panyam/thambura-data** (private) holds the sample work: `kit/` the
-  lossless master, `kit-flac/` what the app loads, `kit-aac/` a third the
-  size for when #72 settles, `tools/` the measuring and building scripts,
-  `pad.html` for listening, and a README with the measurements.
-- **thambura.com is behind master.** It serves a78db12 (checked 2026-09-26),
-  before the layouts, docs and instruments work. `/sw.js` carries the build
-  revision, which is the quickest way to ask. `make deploydev` puts a build
-  on `dev-dot-thambura.uc.r.appspot.com` first, and `make deploy` runs from
-  this container. Deploying with a kit installed uploads it, which
-  distributes the dataset publicly.
+  `thambura-data` checkout (`../mridangam-data` here) into a gitignored
+  folder; Go seeds a `kit` instrument only when one is there.
+
+## Next on the N-instruments path, in order
+
+1. **#101, the track list**, once the user decides how a track looks (see
+   below). Everything under it exists: a track per instrument, ids, per-id
+   storage, page links. It also takes the tonic wiring off the thambura
+   island (a thambura with no island doesn't retune the kit yet), and
+   probably a common interface over `KitPresenter`, `HandsPresenter` and
+   `ThamburaPresenter` (`ctx.tracks` is their union today).
+2. **#39 then #40, render speed** (Web Workers, then an IndexedDB cache of
+   rendered plucks). They make every thambura faster to start and to
+   retune, and a second thambura (#103) waits on them.
+3. **#103, a second thambura**, after those. Two things to fix with it:
+   `PageLink.showsBar` marks every thambura part with the one drawer's bar
+   flag, and only the drawer's thambura should get it; and the second
+   thambura should start fresh, as `newThamburaPresenter` already does (only
+   `thambura-1` inherits the pre-id record).
+4. **#102, drawn pads** from a `layout` in `kit.json`. Independent, but its
+   placement is easier once #101 decides where a track's panel sits.
+5. **#99 with #104:** patterns naming their instrument, done alongside the
+   first ghatam or kanjira kit, which needs recordings first.
+6. **#132, asset packs**, filed by the layouts side: whether hosts and
+   listeners can bring their own claps and images. It touches the hands
+   track's sound groups.
 
 ## Waiting on the user
 
@@ -51,7 +64,9 @@ in flight. Delete it once the items below close.
    what a track shows collapsed (suggested: name, level, mute, solo,
    start), what it shows expanded (that instrument's own panel), and where
    the arrangement is remembered. The suggestion was to try it on a labs
-   page (#90) before `/`. Parked on 2026-09-26 to think over.
+   page (#90) before `/`. Parked on 2026-09-26 to think over; still open.
+0. **Whether to `make deploy`** what dev serves. It was tested and approved
+   on dev on 2026-09-27, and it puts the mridangam kit on the live site.
 1. **The wording and date of Evan Laforge's permission** for karya's
    patterns. `web/patterns/CREDITS.md` has a placeholder asking for it.
 2. **Phone checks** on the live site, which headless Chromium can't do:
@@ -79,7 +94,8 @@ in flight. Delete it once the items below close.
 
 ## Open issues
 
-- **Instruments (#94):** #99, #100, #101, #102, #103, #104, above.
+- **Instruments (#94):** #99, #101, #102, #103, #104 and #132, in the order
+  above.
 - **Filed by other sessions since the last handoff:** #113 (pluck patterns
   beyond Pa Sa Sa Sa), #116 (the Lab as a string editor beside any skin),
   #121 (a bug: a built-in sound's hidden values change old Custom links
@@ -112,9 +128,8 @@ in flight. Delete it once the items below close.
 ## Environment
 
 - This session worked from `thambura/main` in worktrees and removed each
-  when its PR merged, and the two left over from the last handoff. Only
-  `thambura/checkpoint-tracks` (this checkpoint's PR) is left; remove it once
-  that lands.
+  when its PR merged. Only `thambura/checkpoint-n` (this checkpoint's PR) is
+  left; remove it once that lands. No servers are left running.
 - **No servers left running from this session.** Other sessions hold 8001 and
   8002; 8080 and 8091 are something else. Serve a worktree on a free port and
   **check it is free afterwards**: `fuser` is not installed, so `fuser -k`

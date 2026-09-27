@@ -11,10 +11,13 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [x] Redeploy after the thambura work (#18-#34): thambura.com serves the
       same bundle as master at 3514e1b (checked 2026-09-19).
 - [x] Listen to the thambura on a real machine (it's been tuned by ear since).
-- [ ] Deploy. thambura.com serves a78db12 (checked 2026-09-26); master has the
-      page spec and labs routes (#86), the docs site (#95) and the instruments
-      track so far (#114, #118, #122, #124) on top. Deploying with a kit
-      installed uploads it, which publishes the dataset.
+- [ ] Deploy. thambura.com serves a78db12 (checked 2026-09-26). The dev
+      version (dev-dot-thambura.uc.r.appspot.com) serves 7e04be3, master on
+      2026-09-27, with the page spec and labs routes (#86), embedding (#92),
+      the docs site (#95) and the instruments track (#114 to #129) on top,
+      and was clicked through and approved that day. `make deploy` puts it on
+      thambura.com. That deploy included the mridangam kit, which publishes
+      the dataset.
 - [ ] Listen to the tala on a real machine, and check it stays in step with
       the images. Headless Chromium has no audio device.
 - [ ] Record iTablaPro's tanpura, or any real tanpura, and run it through
@@ -92,10 +95,12 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [ ] **Several instruments at once** (`docs/designs/instruments.md`, epic #94).
       Done: a mixer track per instrument (#96), the kit as a track that
       resumes on sam (#97), the claps as a track so the tala only keeps time
-      (#98), SaRiGaMa dropped (#122). Next: instance ids (#100), then the
-      track list (#101), waiting on how a track looks collapsed and expanded.
-      Also #99 (patterns per instrument, with the first new kit), #102 (drawn
-      pads), #103 (a second thambura), #104 (ghatam and kanjira kits).
+      (#98), SaRiGaMa dropped (#122), the thambura as an instrument with an
+      id and share links that carry every instrument (#100). Next: the track
+      list (#101), waiting on how a track looks collapsed and expanded; render
+      speed (#39, #40), which a second thambura (#103) waits on; #102 (drawn
+      pads); #99 with the first new kit (#104); #132 (asset packs, from the
+      layouts side).
 - [ ] **Several talas at once**, later: talas stay their own group, not
       instruments (`docs/designs/instruments.md`, "Several talas at once").
 - [ ] Output-latency calibration setting (Bluetooth headphones add
