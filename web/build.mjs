@@ -63,7 +63,24 @@ const build_id = (() => {
 
 // Everything the service worker precaches: the page, the CSS and fixtures,
 // and every script the app build wrote (scripts/shell.mjs).
-const SHELL_EXTRAS = ["/", "/static/app.js", "/static/css/tailwind.css", "/static/Resources/TalasFixtures.json"];
+const SHELL_EXTRAS = ["/", "/static/app.js", "/static/pluckWorker.js", "/static/css/tailwind.css", "/static/Resources/TalasFixtures.json"];
+
+// The pluck worker renders the thambura off the main thread
+// (src/player/pluckRenderer.ts). It's its own classic script, like the
+// service worker: no chunks to share with a page, and when another site
+// embeds us, a blob worker on that site's origin loads it with
+// importScripts, which only a classic worker has. It keeps its name, since
+// the page asks for it by URL; app.yaml makes /static/*.js revalidate.
+const workerOptions = {
+  entryPoints: { pluckWorker: "src/pluckWorker.ts" },
+  outdir,
+  bundle: true,
+  format: "iife",
+  target: "es2022",
+  minify: true,
+  sourcemap: true,
+  logLevel: "info",
+};
 
 const swOptions = (metafile) => ({
   entryPoints: { sw: "src/sw.ts" },
@@ -103,8 +120,10 @@ if (process.argv.includes("--watch")) {
   await ctx.watch();
   const swCtx = await context(swOptions(first.metafile));
   await swCtx.watch();
+  await (await context(workerOptions)).watch();
 } else {
   const app = await build(options);
   writeManifest(app.metafile);
+  await build(workerOptions);
   await build(swOptions(app.metafile));
 }

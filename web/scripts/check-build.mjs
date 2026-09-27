@@ -13,6 +13,8 @@
 // - embed.js, which runs on other sites, carries none of our page chrome
 //   (the service worker, the install button), and shares its chunks with
 //   app.js rather than a second copy of Solid and the player.
+// - The pluck worker is a classic script of its own, precached, with no page
+//   code in it (a worker has no DOM).
 import { execFileSync } from "child_process";
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "fs";
 import { tmpdir } from "os";
@@ -42,7 +44,13 @@ try {
     if (app.includes(marker)) fail(`${view} is in app.js; it should load on first use`);
     if (!chunks.some((c) => readFileSync(join(out, "chunks", c), "utf8").includes(marker))) fail(`no chunk holds ${view}`);
   }
-  for (const url of ["/static/app.js", ...chunks.map((c) => `/static/chunks/${c}`)]) {
+  const worker = existsSync(join(out, "pluckWorker.js")) ? readFileSync(join(out, "pluckWorker.js"), "utf8") : null;
+  if (worker === null) fail("the build wrote no pluckWorker.js");
+  else {
+    if (/^\s*(import|export)\b|\bimport\s*\(|\bimport\s*["{*]/m.test(worker)) fail("pluckWorker.js imports modules; it must be a classic script for importScripts");
+    if (worker.includes("createRoot") || worker.includes("document.")) fail("pluckWorker.js carries page code, which a worker can't run");
+  }
+  for (const url of ["/static/app.js", "/static/pluckWorker.js", ...chunks.map((c) => `/static/chunks/${c}`)]) {
     if (!sw.includes(`"${url}"`)) fail(`the service worker doesn't precache ${url}`);
   }
 

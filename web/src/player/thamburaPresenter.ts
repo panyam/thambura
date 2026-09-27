@@ -9,12 +9,13 @@ import {
   type Pitch,
   type ThamburaSettings,
 } from "../engine/shruthi";
-import { PluckRender, reedSpectrum } from "../engine/tambura";
+import { reedSpectrum } from "../engine/tambura";
 import { BUILT_IN_PRESETS } from "../engine/presets";
 import { decodeLink, encodeLink } from "../engine/shareLink";
 import { normalizePlan, patternOf, planFor, type ThamburaPlan } from "../engine/thamburaPlan";
 import { ThamburaSequencer, type DampEvent, type PluckEvent, type ThamburaTiming } from "../engine/thamburaSequencer";
 import type { AudioOut, PlayOptions, ToneHandle, TrackId } from "./audio";
+import { SlicedRenderer, type Defer, type PluckRenderer } from "./pluckRenderer";
 import type { FrameLoop } from "./presenter";
 import { Transport, type Ticker } from "./transport";
 
@@ -100,10 +101,13 @@ export interface ThamburaDeps {
   ticker: Ticker;
   frames: FrameLoop;
   /**
-   * Runs `cb` after `ms`, outside the current call. Plucks are rendered
-   * there, a slice at a time, so a slider or knob doesn't stutter.
+   * Runs `cb` after `ms`, outside the current call, and returns a cancel.
+   * A render waits there for a change to settle, and without `renderer` the
+   * plucks are rendered there a slice at a time.
    */
-  defer(cb: () => void, ms: number): void;
+  defer: Defer;
+  /** Renders the plucks; by default on the main thread, in slices on `defer`. */
+  renderer?: PluckRenderer;
   store?: ThamburaStore;
   /** Where presets are kept, apart from the settings so neither can spoil the other. */
   presets?: ThamburaStore;
@@ -124,13 +128,10 @@ export interface PitchSource {
   follow(f: (pitch: Pitch) => void): void;
 }
 
-// Work per deferred render call, in harmonic-samples (see PluckRender.step):
-// about 8 ms on a fast desktop since #38, and so still inside the transport's
-// 75 ms margin on a phone, which is 2-4x slower.
-const RENDER_BUDGET = 6_000_000;
-// After a settings change, rendering waits this long so a knob turned through
-// several keys renders once. Later slices, and the first render on Start, don't wait.
-const RENDER_SETTLE_MS = 60;
+// After a settings change, rendering waits until nothing has changed for this
+// long, so a knob turned through several keys renders only the one it stops
+// on. Start doesn't wait.
+const RENDER_SETTLE_MS = 100;
 /** How long a damped string takes to fall silent, in seconds: a finger, not a click. */
 export const DAMP_FADE = 0.2;
 // How long the strings take to fade after Stop, in seconds.
@@ -171,10 +172,11 @@ export class ThamburaPresenter {
   private stringKeys: string[] = [];
   private readonly rendered = new Set<string>();
   private stale = true;
-  private renderQueued = false;
-  // The pluck being rendered across deferred calls, and whether the transport
-  // should start once every string has its samples.
-  private job: { key: string; render: PluckRender } | null = null;
+  private readonly renderer: PluckRenderer;
+  // Renders in flight, by sample key, and the wait for a change to settle.
+  private readonly pending = new Map<string, { cancel: () => void }>();
+  private settling: (() => void) | null = null;
+  // Whether the transport should start once every string has its samples.
   private startWhenReady = false;
   // Plucks waiting to be heard, in time order, and when each string goes dark.
   private cues: { time: number; string: number }[] = [];
@@ -182,6 +184,7 @@ export class ThamburaPresenter {
   private frameId: number | null = null;
 
   constructor(private readonly deps: ThamburaDeps) {
+    this.renderer = deps.renderer ?? new SlicedRenderer(deps.defer);
     const saved = (loadSafely(deps.store) ?? {}) as Record<string, unknown>;
     let settings = normalizeThambura(saved.settings, DEFAULT_THAMBURA);
     let custom = normalizePlan(saved.custom, planFor({ ...settings, mode: "jawari" }));
@@ -429,7 +432,7 @@ export class ThamburaPresenter {
     } else if (this.stale) {
       // Rendering takes a moment; the first pluck waits for it.
       this.startWhenReady = true;
-      this.queueRender();
+      this.renderNow();
     } else {
       this.startPlucking();
     }
@@ -467,67 +470,94 @@ export class ThamburaPresenter {
     srutiFrequencies(s).forEach((frequency, i) => this.tones[i]?.set({ frequency, detune: s.cents, spectrum }));
   }
 
-  /** Marks the plucks stale; while plucking, starts re-rendering them soon. */
+  /**
+   * Marks the plucks stale and cancels renders the change made useless;
+   * while plucking, starts re-rendering once the changes settle.
+   */
   private invalidate(): void {
     this.stale = true;
-    if (this.state.playing && isPlucked(this.state.settings.mode)) this.queueRender(RENDER_SETTLE_MS);
+    this.cancelUnneeded(this.keys());
+    if (this.state.playing && isPlucked(this.state.settings.mode)) this.renderSoon();
   }
 
-  /**
-   * Renders a slice of a pluck per deferred call. A whole 9 s tambura pluck
-   * takes about 100 ms, which would stall the main thread past the
-   * transport's 75 ms margin and make the tala late. The strings keep their
-   * old samples until every new one is ready.
-   */
-  private queueRender(delayMs = 0): void {
-    if (this.renderQueued) return;
-    this.renderQueued = true;
-    this.deps.defer(() => {
-      this.renderQueued = false;
-      if (this.stale && this.renderStep()) {
-        this.queueRender();
-      } else if (this.startWhenReady) {
-        this.startWhenReady = false;
-        this.restartWhenReady = false;
-        this.startPlucking();
-      } else if (this.restartWhenReady) {
-        this.restartWhenReady = false;
-        this.restartRound();
-      }
-    }, delayMs);
+  /** Renders once nothing has changed for RENDER_SETTLE_MS; each call restarts the wait. */
+  private renderSoon(): void {
+    this.settling?.();
+    this.settling = this.deps.defer(() => {
+      this.settling = null;
+      this.renderMissing();
+    }, RENDER_SETTLE_MS);
   }
 
-  /**
-   * Renders a slice of one sample the current settings need and returns true,
-   * or, when none are missing, switches the strings over to them, drops
-   * samples no string uses, and returns false.
-   */
-  private renderStep(): boolean {
-    const s = this.state.settings;
-    const { audio } = this.deps;
-    const plan = this.plan();
-    const keys = sampleKeys(s, plan);
-    const missing = keys.findIndex((k) => !this.rendered.has(k));
-    if (missing >= 0) {
-      if (this.job?.key !== keys[missing]) {
-        const hz = stringFrequencies(s)[missing];
-        this.job = { key: keys[missing], render: new PluckRender(hz, audio.sampleRate, plan.strings[missing].voice, missing + 1) };
-      }
-      if (this.job.render.step(RENDER_BUDGET)) {
-        audio.addSamples(this.job.key, this.job.render.result());
-        this.rendered.add(this.job.key);
-        this.job = null;
-      }
-      return true;
+  private renderNow(): void {
+    this.settling?.();
+    this.settling = null;
+    this.renderMissing();
+  }
+
+  private keys(): string[] {
+    return sampleKeys(this.state.settings, this.plan());
+  }
+
+  private cancelUnneeded(keys: string[]): void {
+    for (const [key, job] of this.pending) {
+      if (keys.includes(key)) continue;
+      job.cancel();
+      this.pending.delete(key);
     }
+  }
+
+  /**
+   * Asks for every pluck the strings need that isn't rendered or on its
+   * way, all at once. The strings keep their old samples until every new
+   * one has arrived.
+   */
+  private renderMissing(): void {
+    const s = this.state.settings;
+    const plan = this.plan();
+    const keys = this.keys();
+    const hz = stringFrequencies(s);
+    this.cancelUnneeded(keys);
+    keys.forEach((key, i) => {
+      if (this.rendered.has(key) || this.pending.has(key)) return;
+      const job = { hz: hz[i], sampleRate: this.deps.audio.sampleRate, voice: plan.strings[i].voice, seed: i + 1 };
+      const entry = { cancel: () => {} };
+      this.pending.set(key, entry);
+      entry.cancel = this.renderer.render(job, (samples) => {
+        if (this.pending.get(key) !== entry) return;
+        this.pending.delete(key);
+        this.deps.audio.addSamples(key, samples);
+        this.rendered.add(key);
+        this.switchIfReady();
+      });
+    });
+    this.switchIfReady();
+  }
+
+  /**
+   * Once every string's sample is in, switches the strings over to them,
+   * drops samples no string uses, and starts or restarts the round if one
+   * was waiting for them.
+   */
+  private switchIfReady(): void {
+    if (!this.stale) return;
+    const keys = this.keys();
+    if (!keys.every((k) => this.rendered.has(k))) return;
     for (const key of this.rendered) {
       if (keys.includes(key)) continue;
-      audio.dropSamples(key);
+      this.deps.audio.dropSamples(key);
       this.rendered.delete(key);
     }
     this.stringKeys = keys;
     this.stale = false;
-    return false;
+    if (this.startWhenReady) {
+      this.startWhenReady = false;
+      this.restartWhenReady = false;
+      this.startPlucking();
+    } else if (this.restartWhenReady) {
+      this.restartWhenReady = false;
+      this.restartRound();
+    }
   }
 
   /**
@@ -539,7 +569,7 @@ export class ThamburaPresenter {
     if (!this.state.playing || !isPlucked(this.state.settings.mode)) return;
     if (this.stale) {
       this.restartWhenReady = true;
-      this.queueRender(RENDER_SETTLE_MS);
+      this.renderSoon();
     } else {
       this.restartRound();
     }
