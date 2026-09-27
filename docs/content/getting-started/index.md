@@ -19,14 +19,16 @@ layout, while instruments can be added and removed in the browser.
 
 The home page has two islands:
 
-- **tala**, the tala keeper. It counts a tala's beats at a tempo, with the
-  nadai's ticks inside each beat, and shows an image for each beat. Under
-  the image is the **session strip**, with the page's speed, its shruthi
+- **tala**, the tala keeper, across the top of the page. It counts a
+  tala's beats at a tempo, with the nadai's ticks inside each beat, and
+  shows an image for each beat. Beside the image on a wide screen (under it
+  on a phone) is the **session strip**, with the page's speed, its shruthi
   (the Sa everything plays to) and a Start all button.
-- **tracks**, the track list: a card for each instrument on the page, with
-  its own controls, mute and solo, and Add and Remove. The thambura's card
-  opens its full panel under "More", with four views over the same sound
-  (Mini, Studio, a Raagini replica and a Lab for editing the sound string by
+- **tracks**, the track list under the tala: a full-width row for each
+  instrument on the page, with its main controls, level, mute and solo, and
+  a toggle that opens its full panel. Add and Remove change which are
+  playing. The thambura's panel has four views over the same sound (Mini,
+  Studio, a Raagini replica and a Lab for editing the sound string by
   string).
 
 and three kinds of instrument:
@@ -45,7 +47,7 @@ and three kinds of instrument:
 Each instrument has an id on the page (`hands-1`, `thambura-1`, `kit-1`)
 and its own audio track, and they all share one clock, so the claps and the
 drum land on the same beats and the drum follows the thambura's Sa.
-The home page shows them as a track list, a card per instrument, where you
+The home page shows them as a track list, a row per instrument, where you
 can add, remove, mute and solo them.
 
 Under all of it sits the **engine**, plain TypeScript with no DOM, audio or
@@ -68,7 +70,7 @@ on a server with the mridangam kit installed, is:
   "layout": "tracks",
   "islands": [
     { "name": "tala", "slot": "main", "presentation": "page",
-      "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json", "instrumentControls": false } },
+      "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json", "instrumentControls": false, "wide": true } },
     { "name": "tracks", "slot": "tracks", "presentation": "page" }
   ],
   "instruments": [
