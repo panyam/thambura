@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_THAMBURA, KEY_G3, srutiFrequencies, type ThamburaSettings } from "../engine/shruthi";
+import { DEFAULT_THAMBURA, KEY_G3, srutiFrequencies, stringFrequencies, type ThamburaSettings } from "../engine/shruthi";
 import { BUILT_IN_PRESETS } from "../engine/presets";
 import { barOpen, decodeLink, encodeLink } from "../engine/shareLink";
 import { planFor } from "../engine/thamburaPlan";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
+import type { PluckJob, PluckRenderer } from "./pluckRenderer";
 import { BEFORE_LINK_PRESET, ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
 
 class FakeLink {
@@ -53,6 +54,9 @@ describe("ThamburaPresenter", () => {
       defer: (cb, ms) => {
         deferred.push(cb);
         delays.push(ms);
+        return () => {
+          deferred = deferred.filter((d) => d !== cb);
+        };
       },
       rng: () => 0,
     });
@@ -210,12 +214,14 @@ describe("ThamburaPresenter", () => {
     await start();
     const before = new Set(audio.samples.keys());
     set({ key: KEY_G3 });
+    deferred.shift()!(); // the wait for the change to settle
+    expect(audio.samples.size).toBe(3);
     deferred.shift()!();
     expect(audio.samples.size).toBe(4); // three old, one new
     run(1.5);
     expect(audio.played.every((e) => before.has(e.url))).toBe(true);
-    // Two more renders, then one call to switch over.
-    expect(flushDeferred()).toBe(3);
+    // Two more renders; the last one switches over in the same call.
+    expect(flushDeferred()).toBe(2);
     expect(audio.samples.size).toBe(3);
   });
 
@@ -761,4 +767,154 @@ describe("ThamburaPresenter", () => {
     expect(views.at(-1)?.view).toBe("mini");
   });
 
+});
+
+/** A renderer whose jobs finish only when a test says so. */
+class HeldRenderer implements PluckRenderer {
+  jobs: { job: PluckJob; done: (s: Float32Array) => void; cancelled: boolean }[] = [];
+  render(job: PluckJob, done: (s: Float32Array) => void) {
+    const entry = { job, done, cancelled: false };
+    this.jobs.push(entry);
+    return () => {
+      entry.cancelled = true;
+    };
+  }
+  get live() {
+    return this.jobs.filter((j) => !j.cancelled);
+  }
+  finish(entry: HeldRenderer["jobs"][number]) {
+    entry.done(new Float32Array(8));
+  }
+  finishAll() {
+    for (const j of this.live) this.finish(j);
+  }
+}
+
+describe("ThamburaPresenter with a renderer off the main thread", () => {
+  let audio: FakeAudio;
+  let ticker: FakeTicker;
+  let renderer: HeldRenderer;
+  let deferred: (() => void)[];
+  let waits: number;
+  let p: ThamburaPresenter;
+
+  const flushDeferred = () => {
+    while (deferred.length > 0) deferred.shift()!();
+  };
+
+  beforeEach(() => {
+    audio = new FakeAudio();
+    ticker = new FakeTicker();
+    renderer = new HeldRenderer();
+    deferred = [];
+    waits = 0;
+    p = new ThamburaPresenter({
+      id: "thambura-1",
+      audio,
+      ticker,
+      frames: new FakeFrames(),
+      renderer,
+      defer: (cb) => {
+        deferred.push(cb);
+        waits++;
+        return () => {
+          deferred = deferred.filter((d) => d !== cb);
+        };
+      },
+      rng: () => 0,
+    });
+  });
+
+  const playing = async () => {
+    await p.toggle();
+    renderer.finishAll();
+    renderer.jobs = [];
+  };
+
+  it("asks for every string's pluck at once on Start, and plucks only when all have arrived", async () => {
+    await p.toggle();
+    // The two Sa strings share a pluck, so three renders, not four.
+    expect(renderer.jobs).toHaveLength(3);
+    expect(renderer.jobs.map((j) => j.job.seed)).toEqual([1, 2, 4]);
+    renderer.finish(renderer.jobs[0]);
+    renderer.finish(renderer.jobs[1]);
+    expect(ticker.onTick).toBeNull();
+    renderer.finish(renderer.jobs[2]);
+    expect(ticker.onTick).not.toBeNull();
+    expect(audio.samples.size).toBe(3);
+  });
+
+  it("keeps the old samples playing until every new one has arrived", async () => {
+    await playing();
+    const before = new Set(audio.samples.keys());
+    p.set({ key: KEY_G3 });
+    flushDeferred();
+    expect(renderer.live).toHaveLength(3);
+    renderer.finish(renderer.live[0]);
+    renderer.finish(renderer.live[1]);
+    const n = audio.played.length;
+    for (let t = 0; t <= 3; t += 0.025) {
+      audio.now = t;
+      ticker.onTick?.();
+    }
+    expect(audio.played.slice(n).every((e) => before.has(e.url))).toBe(true);
+    renderer.finish(renderer.live[2]);
+    expect([...audio.samples.keys()].some((k) => before.has(k))).toBe(false);
+  });
+
+  it("cancels renders a change has made stale at once, without waiting to settle, and ignores their late results", async () => {
+    await playing();
+    p.set({ key: 5 });
+    flushDeferred();
+    const stale = [...renderer.jobs];
+    expect(stale).toHaveLength(3);
+    p.set({ key: 6 });
+    expect(stale.every((j) => j.cancelled)).toBe(true);
+    const keys = new Set(audio.samples.keys());
+    stale[0].done(new Float32Array(8)); // a worker that had already finished
+    expect(new Set(audio.samples.keys())).toEqual(keys);
+    flushDeferred();
+    renderer.finishAll();
+    expect(audio.samples.size).toBe(3);
+    expect(p.state.settings.key).toBe(6);
+  });
+
+  it("keeps a render going when the change still needs its pluck", async () => {
+    await playing();
+    p.set({ mode: "guitar" });
+    flushDeferred();
+    const first = [...renderer.jobs];
+    // An edit to the first string only: the Sa strings' renders carry on.
+    const plan = p.state.plan;
+    const strings = [...plan.strings] as typeof plan.strings;
+    strings[0] = { ...strings[0], voice: { ...strings[0].voice, ringSeconds: 3 } };
+    p.setCustom({ ...plan, strings });
+    flushDeferred();
+    expect(first.map((j) => j.cancelled)).toEqual([true, false, false]);
+    expect(renderer.live.map((j) => j.job.seed)).toEqual([2, 4, 1]);
+  });
+
+  it("renders only where a knob stops, however many keys it passes through", async () => {
+    await playing();
+    waits = 0;
+    for (let key = 4; key <= 9; key++) {
+      p.set({ key });
+      // Each turn restarts the wait, so only the last one is still waiting.
+      expect(deferred).toHaveLength(1);
+    }
+    expect(waits).toBe(6);
+    expect(renderer.jobs).toHaveLength(0);
+    flushDeferred();
+    expect(renderer.jobs).toHaveLength(3);
+    const hz = stringFrequencies({ ...DEFAULT_THAMBURA, key: 9 });
+    expect(renderer.jobs.map((j) => j.job.hz)).toEqual([hz[0], hz[1], hz[3]]);
+  });
+
+  it("starts the renders at once on Start, even if a change was still settling", async () => {
+    p.set({ key: 5 });
+    expect(renderer.jobs).toHaveLength(0);
+    await p.toggle();
+    expect(renderer.jobs).toHaveLength(3);
+    expect(deferred).toHaveLength(0);
+  });
 });

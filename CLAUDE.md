@@ -49,10 +49,14 @@ The build has two entries: `app.js` for our pages and `embed.js` for other
 sites (#92, below). They share chunks, `bundle.json` has an entry for each,
 and both keep fixed names, since other sites link to `embed.js`.
 
+The pluck worker (`static/pluckWorker.js`, #39) is a third build, a classic
+script like `sw.js`, so it shares no chunks; the service worker precaches it.
+
 `pnpm buildcheck` (in `make test`) builds into a temp folder and checks all
 of this: the views are in chunks, the worker precaches every script, stale
-chunks are gone, `bundle.json` matches what each entry imports, and
-`embed.js` carries none of our page chrome and shares chunks with `app.js`.
+chunks are gone, `bundle.json` matches what each entry imports,
+`embed.js` carries none of our page chrome and shares chunks with `app.js`,
+and the pluck worker is a classic script with no page code in it.
 
 `web/` has three pnpm scripts no make target and no CI runs, so they only run
 when you type them: `pnpm bench` (times the pluck renderer, see `tambura.ts`
@@ -429,9 +433,20 @@ unit-tested:
   sets the sound but not the view or volume. Opening a link that changes a
   saved setup first keeps it as the "Before shared link" preset (only the
   latest). Pitch and timbre
-  changes re-render the plucks in about 20 ms slices through `deps.defer`
-  (60 ms settle after a change, none between slices), and Start waits for them,
-  about 0.35 s from cold. Fine tune is only `detune`. In both tambura modes the
+  changes re-render the plucks once nothing has changed for 100 ms (each
+  change restarts the wait, so a knob turned through six keys renders only
+  the last), and Start renders at once and waits for them. The presenter
+  asks a `PluckRenderer` (`pluckRenderer.ts`) for every missing sample key
+  at once and swaps the strings over when all have arrived; a change cancels
+  at once any render whose key it no longer needs, and keeps the ones it
+  still does. On the page that's `WorkerPoolRenderer`: up to four workers
+  (`static/pluckWorker.js`, over `pluckWorkerCore.ts`), started on the first
+  render, each slicing its job so a cancel lands within about 4 ms. When
+  another site embeds us, the worker is a blob that `importScripts` ours,
+  since a browser won't start a worker from another origin. If a worker
+  can't start or fails, everything goes to `SlicedRenderer`, the old
+  main-thread path (slices on `deps.defer`), which the presenter tests use
+  too. Fine tune is only `detune`. In both tambura modes the
   second Sa string plays 1.5 cents sharp, so the pair beats slowly. Damp
   events fade a string over 0.2 s through `audio.damp`, which marks the note
   released so the re-pluck's choke leaves it alone. Sruti mode

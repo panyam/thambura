@@ -8,6 +8,7 @@ import { ThamburaBar } from "./ThamburaBar";
 import { linkShowsBar, ThamburaDrawer } from "./thamburaDrawer";
 import { ThamburaDocked } from "./ThamburaPanel";
 import type { PageLink } from "./pageLink";
+import { browserPluckRenderer } from "./pluckRenderer";
 import { instrumentStore, localStore, withFallback } from "./storage";
 import { ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
@@ -144,6 +145,10 @@ function reflectPlaying(play: HTMLElement | null, s: ThamburaState): void {
  */
 export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink): ThamburaPresenter {
   const own = instrumentStore(id);
+  const defer = (cb: () => void, ms: number) => {
+    const t = setTimeout(cb, ms);
+    return () => clearTimeout(t);
+  };
   return new ThamburaPresenter({
     id,
     audio,
@@ -152,7 +157,8 @@ export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageL
       request: (cb) => requestAnimationFrame(cb),
       cancel: (frame) => cancelAnimationFrame(frame),
     },
-    defer: (cb, ms) => setTimeout(cb, ms),
+    defer,
+    renderer: browserPluckRenderer(defer),
     store: id === "thambura-1" ? withFallback(own, localStore("drone")) : own,
     presets: localStore("presets"),
     link: link.part(id),

@@ -10,6 +10,8 @@
 /web/static/chunks/
 /web/bundle.json
 /web/static/sw.js
+/web/static/pluckWorker.js
+/web/static/pluckWorker.js.map
 /web/static/css/tailwind.css
 
 # The docs site (make docs): the built pages and its bundled script
