@@ -1,8 +1,7 @@
 import { EventBus, LifecycleController, type LCMComponent } from "@panyam/tsappkit";
-import { hostSpec } from "./page/embedSpec";
+import { hostSpec, type HostSpec } from "./page/embedSpec";
 import { mountIslands } from "./page/mount";
 import { shadowSlot } from "./page/shadow";
-import type { PageSpec } from "./page/spec";
 import { withDefaultInstruments } from "./player/embedDefaults";
 import { buildContext, islandRegistry } from "./player/islands";
 import { PageLink } from "./player/pageLink";
@@ -47,12 +46,16 @@ export interface MountOptions {
 
 /**
  * Mounts `spec`'s islands in their slots (`data-thambura-slot`), each in its
- * own shadow root, and starts them. Returns the mounted islands; a slot that
- * isn't there or an island this entry doesn't have is logged and skipped.
- * Each call builds its own audio, clock and instruments.
+ * own shadow root, and starts them. The spec is read the way a spec script
+ * is, so a host can leave out the layout, the instruments and an island's
+ * config; one that can't be read at all throws. Returns the mounted islands;
+ * a slot that isn't there or an island this entry doesn't have is logged and
+ * skipped. Each call builds its own audio, clock and instruments.
  */
-export async function mount(hostSpec: PageSpec, opts: MountOptions = {}): Promise<LCMComponent[]> {
-  const spec = withDefaultInstruments(hostSpec);
+export async function mount(given: HostSpec, opts: MountOptions = {}): Promise<LCMComponent[]> {
+  const read = hostSpec(given);
+  if (!read) throw new Error("thambura embed: mount() was given something that isn't a spec");
+  const spec = withDefaultInstruments(read);
   const root = opts.root ?? document;
   const theme = opts.theme ?? "auto";
   const dark = theme === "dark" || (theme === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
