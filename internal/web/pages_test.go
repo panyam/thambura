@@ -67,7 +67,7 @@ func TestHomePageRenders(t *testing.T) {
 		`src="/static/app.js"`,
 		`href="/static/css/tailwind.css"`,
 		`id="thambura-toggle"`,
-		`id="thambura-play"`,
+		`id="play-all"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("home page missing %q", want)

@@ -70,8 +70,9 @@ export function islandRegistry(opts: IslandsOptions = {}): Registry<PageContext,
         controls: {
           root: el.querySelector<HTMLElement>("#thambura-controls"),
           toggle: el.querySelector<HTMLElement>("#thambura-toggle"),
-          play: el.querySelector<HTMLElement>("#thambura-play"),
+          play: el.querySelector<HTMLElement>("#play-all"),
         },
+        playAll: ctx.session,
         onPlaying,
       });
     },

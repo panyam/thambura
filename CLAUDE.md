@@ -488,14 +488,15 @@ unit-tested:
 - `thamburaIsland.tsx` is a view of the page's thambura (it's handed the
   presenter; `newThamburaPresenter` is what `main.ts` makes it with), and
   wires the page's floating controls, the stack at the
-  bottom right in `HomePage.html` (`#thambura-controls`): `#thambura-play`
-  (start/stop from anywhere on the page, bar open or not; `reflectPlaying`
-  flips its icon via `data-playing` and its label, `reflectOpen` fades the
-  pair while the bar is open), `#thambura-toggle` (opens the bar: a
-  tilted tambura icon, the whole button on a phone, in a pill with the
-  "Shruthi box" label from `sm` up), and
-  the T key (`shortcuts.ts`: not while typing in a field, not with
-  Ctrl/Cmd/Alt, not on key repeat). The link goes to the address bar
+  bottom right in `HomePage.html` (`#thambura-controls`): `#play-all`
+  (Start all from anywhere on the page, the tala and the thambura together,
+  through `playAll`, the page's session; `reflectPlaying` flips its icon via
+  `data-playing` and its label, `reflectOpen` fades the pair while the bar
+  is open), `#thambura-toggle` (opens the bar: a tilted tambura icon, the
+  whole button on a phone, in a pill with the "Thambura" label from `sm`
+  up; it goes once the thambura's panel lives in its track, #101), and the
+  T key, which plays the thambura alone (`shortcuts.ts`: not while typing
+  in a field, not with Ctrl/Cmd/Alt, not on key repeat). The link goes to the address bar
   through the page's `PageLink`: `replaceState`, no history entries, 400 ms
   after the last change, since Safari throws after 100 calls in 30 s and a
   slider drag changes the setup on every step. The
@@ -818,8 +819,8 @@ plan in `textarea[aria-label="Settings JSON"]`, and presets are saved with
 `mode:<id>` in `select[aria-label="Sound"]` and presets are their ids under
 `optgroup[label="Saved"]`. Each string pans to its own place, so wrapping
 `StereoPannerNode`'s `pan` setter tells you which string a pluck was.
-It plays with the floating
-`#thambura-play`, or `page.keyboard.press("t")`. Once the bar is open, the
+It plays alone with `page.keyboard.press("t")`; the floating `#play-all`
+starts the tala too. Once the bar is open, the
 floating pair fades out and goes `inert` (the bar carries the same two
 controls), so drive the bar's own buttons then: scope to
 `[role="region"][aria-label="Thambura"]`, and hide it again with
@@ -861,8 +862,8 @@ A few probes that worked, all set up in an init script:
   Importing its `index.js` from an ESM script gives an object whose `chromium`
   is undefined, and the failure reads as "Cannot read properties of undefined".
 - Cold Start is measured by wrapping `AudioBufferSourceNode.prototype.start` in
-  an init script, clicking `#thambura-play` and waiting for the first booked
-  pluck: 375 ms on master before #62, 225 ms after. Serve the branch and the
+  an init script, pressing T (before #136, clicking the floating play
+  button) and waiting for the first booked pluck: 375 ms on master before #62, 225 ms after. Serve the branch and the
   base on two ports and alternate between them, for the reason above.
 - `pkill -f <pattern>` can match the shell running it and kill it, and
   `fuser` isn't installed. Find a server by its port instead:
