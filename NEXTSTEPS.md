@@ -76,12 +76,20 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [x] **Musical timeline refactor.** A shared `TempoMap`; the tala emits
       steps and ticks at exact fractional positions.
 - [ ] **Where the thambura sits** (#54, `docs/designs/layouts.md`): the overlay suits a
-      practice session, not a singer or a teacher. Docked and side-by-side
-      layouts, purpose modes, separate pages. Planning only.
+      practice session, not a singer or a teacher. The groundwork is in
+      (epic #86: the drawer owns `open`, pages come from a page spec, labs
+      routes), and the first experiment is live at `/labs/side-by-side`,
+      which stacks on a phone. Left: judge that on a phone, then pick a
+      default layout or a Layout menu (options C and D).
 - [ ] **This repo as a library** (#53, `docs/designs/library.md`): entry points shaped like
       `notations` (engine, runtime, Solid components, assets, styles), so the
       pieces can be imported elsewhere, including into the notation app for
-      practice. Planning only.
+      practice. The first two blockers are gone: `embed.js` (#92) mounts the
+      islands on any page, in shadow roots, with assets resolved against
+      itself. Next: serving it from unpkg as a versioned package (#131), the
+      lift of `internal/page` and `web/src/page` into goapplib and tsappkit
+      (panyam/goapplib#28, then #27; waiting apps turnforge/lilbattle#199 and
+      panyam/notation#304), and asset packs (#132).
 - [x] **Mridangam, steps 1 to 4** (`docs/designs/mridangam.md`): strokes tuned to the
       thambura with a pad, patterns written in the notations DSL and compiled
       at build time, written patterns for Adi, Short Rupakam and the Misra and

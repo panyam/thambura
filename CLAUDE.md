@@ -137,7 +137,7 @@ Sadhana).
 
 ## Frontend (web/src)
 
-Two things that have bitten:
+Things that have bitten:
 
 - **Pass presenter methods wrapped, not bare.** `onChange={a.setVariety}` in
   JSX loses `this`, so the method throws on `this.state`. Write
@@ -146,6 +146,18 @@ Two things that have bitten:
 - **The web tsconfig has no `@types/node`**, so a vitest test can't use
   `node:child_process` or `process`. Checks that need them belong in the
   Makefile instead: `pnpm patterns:check` runs there, not in vitest.
+  vitest does pick up `web/scripts/**/*.test.mjs` (plain ESM, no types), so
+  a build helper's pure logic is tested there (`scripts/shell.test.mjs`) and
+  only its file-system half goes in `pnpm buildcheck`.
+- **No formatter is configured.** The code runs long lines (up to about 270
+  columns in the JSX). `npx prettier` falls back to 80 columns and rewraps
+  whole files, burying the change in the diff; don't run it.
+- **Measure a performance change before trusting it.** Splitting the bundle
+  (#91) made a first visit *slower* until the shared chunks were preloaded,
+  because the browser found them one after another. A throttled Playwright
+  load (CDP `Network.emulateNetworkConditions`, and
+  `Emulation.setCPUThrottlingRate`) against master on another port showed it;
+  the byte count alone said the opposite.
 
 The design docs are in `docs/designs/`; `docs/` itself is the developer
 docs site (see Docs site below). `docs/designs/architecture.md` explains how the sounds are made and timed, timed vs
@@ -285,8 +297,8 @@ unit-tested:
 
 **player/** is the browser side:
 
-- `audio.ts` (`AudioEngine`): one AudioContext, created in `main.ts` and
-  shared by every island. Every note plays on a track (`TrackId`, a string;
+- `audio.ts` (`AudioEngine`): one AudioContext, created in `buildContext`
+  (`islands.ts`) and shared by every island. Every note plays on a track (`TrackId`, a string;
   `Bus` is the old name for it), made the first time its id is used: a level,
   an on/off gain that mute and solo set, then a pan, into a master gain, a
   limiter and the speakers. `setLevel`/`setBusVolume`, `setPan`, `setMute`,
@@ -460,7 +472,7 @@ unit-tested:
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
 - `thamburaIsland.tsx` is a view of the page's thambura (it's handed the
-  presenter; `newThamburaPresenter` is what `main.ts` makes it with), and
+  presenter; `newThamburaPresenter` is what `buildContext` makes it with), and
   wires the page's floating controls, the stack at the
   bottom right in `HomePage.html` (`#thambura-controls`): `#thambura-play`
   (start/stop from anywhere on the page, bar open or not; `reflectPlaying`
@@ -738,6 +750,9 @@ edits. So:
 
 Follow the `start_pr` description format. For before/after evidence:
 
+- **Screenshots only when something on screen changes.** A change meant to
+  look identical (a refactor, state moving between owners) gets a table from
+  a browser check run on master and the branch instead.
 - **Screenshots** go on the orphan `pr-assets` branch under `<pr-branch>/`, not
   in the PR branch. Link them as
   `https://github.com/panyam/thambura/blob/pr-assets/<path>?raw=true`. When
@@ -792,6 +807,17 @@ controls), so drive the bar's own buttons then: scope to
 `[role="region"][aria-label="Thambura"]`, and hide it again with
 `button[aria-label="Hide thambura"]`. The theme toggle cycles system, light,
 dark, so dark takes two clicks (or launch the page with `colorScheme: "dark"`).
+
+Checking an embed (#92) needs a second origin that really is one. Serve the
+host page from a plain static server on another loopback port (`python3 -m
+http.server 8033 --bind 127.0.0.1`) and have it load `embed.js` from
+`http://localhost:<port>`. A page Playwright fulfils with `page.route`, or
+any public-looking host name, is blocked by Chrome's Private Network Access
+rules from loading `localhost` at all, which reads as a CORS error but tests
+nothing. The stand-in host has no `/favicon.ico`, so two 404s in its console
+are expected. Playwright locators reach into open shadow roots, so the embed's
+buttons are found with the usual selectors; `page.evaluate` needs
+`el.shadowRoot.querySelector` instead.
 
 A few probes that worked, all set up in an init script:
 

@@ -206,10 +206,11 @@ notation app itself for practice. That has its own note:
 
 Cheapest first, and each is useful alone:
 
-1. The playground route (labs, above), because it makes every later option
-   easier to try.
-2. Move `open` out of the thambura presenter into a layout owner (option B's
-   groundwork), which is small and leaves the presenter owning only what the
-   instrument does.
+1. Done: the playground route (labs, above, #90), because it makes every
+   later option easier to try.
+2. Done: move `open` out of the thambura presenter into a layout owner
+   (option B's groundwork, #88).
 3. A Layout menu with Tala focus and Side by side (option C), then see which
-   people use before designing modes (option D).
+   people use before designing modes (option D). Side by side exists as
+   `/labs/side-by-side` to judge first, on a phone especially, where it
+   stacks the thambura about 1,280 px down the page.

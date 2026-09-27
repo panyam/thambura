@@ -24,10 +24,27 @@ items below close.
   including the migration from old saved settings, a two-thambura page link,
   labs and `/embed/demo`. thambura.com still serves a78db12; `make deploy`
   is the next step there, and it uploads the mridangam kit with it.
-- **Other tracks:** layouts (#86) is through `/embed/demo` (#92); #131
-  (publish to unpkg) and #132 (asset packs, also labelled instruments) are
-  new from that side. Docs (#95): the site and several guides are in; #111
-  waits on the library lift (#53).
+- **Other tracks:** layouts (#86) is through `/embed/demo` (#92), and all
+  six of its steps are ticked; #131 (publish to unpkg) and #132 (asset
+  packs, also labelled instruments) are new from that side, as sub-issues
+  of #86. #130 (the drawer forgetting it was open, from #127/#129) is fixed
+  in #133. Docs (#95): the site and several guides are in; #111 waits on
+  the library lift (#53).
+- **The lift into goapplib and tsappkit is unblocked** now that #92 is in,
+  and was planned as one release per library, Go first. goapplib#28:
+  `internal/page`, `web/templates/page/Islands.html` and the labs/noindex
+  helpers, tagged `v0.2.0` (thambura is on `v0.1.1`), then a thambura PR
+  bumps `go.mod`, runs `make templates` and deletes `internal/page`.
+  goapplib#27: `web/src/page` (`mountIslands`, `readSpec`, `hostSpec`,
+  `shadowSlot`, `IslandPage`) into tsappkit `0.1.0`, with the one breaking
+  change agreed: an entry point that takes a registry in place of
+  `loadAfterPageLoaded(name, Class, className)`. Two snags before starting:
+  the goapplib checkout under `newstack/` has a `.git` pointing at a Mac path
+  (`/Users/dzshrh/...`), so use a fresh clone, and npm publish credentials
+  in this container haven't been checked. `make liftcheck` keeps both
+  folders free of thambura imports until then. goapplib#29 (an esbuild
+  preset: splitting, the single-Solid alias and the preload manifest as a
+  pair) is a maybe, for when a second esbuild app wants it.
 - **The mridangam is still deliberately paused** (#77 to #82); its patterns
   live in the kit track.
 - **Kits are not committed.** `make devkit` copies one from the
@@ -65,6 +82,8 @@ items below close.
    start), what it shows expanded (that instrument's own panel), and where
    the arrangement is remembered. The suggestion was to try it on a labs
    page (#90) before `/`. Parked on 2026-09-26 to think over; still open.
+0. **When to start the lift** (above), and whether #131's npm package and
+   tsappkit's publish can use the same credentials.
 0. **Whether to `make deploy`** what dev serves. It was tested and approved
    on dev on 2026-09-27, and it puts the mridangam kit on the live site.
 1. **The wording and date of Evan Laforge's permission** for karya's
