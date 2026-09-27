@@ -11,13 +11,12 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [x] Redeploy after the thambura work (#18-#34): thambura.com serves the
       same bundle as master at 3514e1b (checked 2026-09-19).
 - [x] Listen to the thambura on a real machine (it's been tuned by ear since).
-- [ ] Deploy. thambura.com serves a78db12 (checked 2026-09-26). The dev
-      version (dev-dot-thambura.uc.r.appspot.com) serves 7e04be3, master on
-      2026-09-27, with the page spec and labs routes (#86), embedding (#92),
-      the docs site (#95) and the instruments track (#114 to #129) on top,
-      and was clicked through and approved that day. `make deploy` puts it on
-      thambura.com. That deploy included the mridangam kit, which publishes
-      the dataset.
+- [x] Deploy the layouts, docs and instruments work. thambura.com serves
+      3c4e21a (checked 2026-09-27): the session strip, the track list on `/`
+      with no drawer, pluck workers and cache, and the mridangam kit, which
+      is now public.
+- [ ] Deploy #148 (the tala across the top, `/about`) and #149 (instrument
+      rows). Dev serves #149's build; thambura.com doesn't have either yet.
 - [ ] Listen to the tala on a real machine, and check it stays in step with
       the images. Headless Chromium has no audio device.
 - [ ] Record iTablaPro's tanpura, or any real tanpura, and run it through
@@ -73,16 +72,15 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       express (inharmonicity, two-stage decay, a real buzz, body resonance,
       sympathetic ringing), and a physical string-bridge model as a spike.
 - [ ] Thambura extras outside sound quality: raga presets that set the first
-      string, a mic tuner, links for the tala's settings, and lock-screen
-      controls (MediaSession).
+      string, a mic tuner, and lock-screen controls (MediaSession). (Links
+      carry the tala's settings since #136.)
 - [x] **Musical timeline refactor.** A shared `TempoMap`; the tala emits
       steps and ticks at exact fractional positions.
-- [ ] **Where the thambura sits** (#54, `docs/designs/layouts.md`): the overlay suits a
-      practice session, not a singer or a teacher. The groundwork is in
-      (epic #86: the drawer owns `open`, pages come from a page spec, labs
-      routes), and the first experiment is live at `/labs/side-by-side`,
-      which stacks on a phone. Left: judge that on a phone, then pick a
-      default layout or a Layout menu (options C and D).
+- [x] **Where the thambura sits** (#54, `docs/designs/layouts.md`): settled
+      by the track list (#101). `/` is the tala across the top and a row per
+      instrument under it, the thambura's panel opening in its row; the
+      drawer is gone (#142, #148, #149). `/labs/side-by-side` and embeds
+      still dock it in a slot of its own.
 - [ ] **This repo as a library** (#53, `docs/designs/library.md`): entry points shaped like
       `notations` (engine, runtime, Solid components, assets, styles), so the
       pieces can be imported elsewhere, including into the notation app for
@@ -106,11 +104,12 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       Done: a mixer track per instrument (#96), the kit as a track that
       resumes on sam (#97), the claps as a track so the tala only keeps time
       (#98), SaRiGaMa dropped (#122), the thambura as an instrument with an
-      id and share links that carry every instrument (#100). Next: the track
-      list (#101), waiting on how a track looks collapsed and expanded; render
-      a second thambura (#103), now that render speed (#39, #40) allows it; #102 (drawn
-      pads); #99 with the first new kit (#104); #132 (asset packs, from the
-      layouts side).
+      id and share links that carry every instrument (#100), and the track
+      list (#101: the page's speed and shruthi strip #136, the list #139, on
+      `/` #142, rows #149). Next: a second thambura (#103, ready now render
+      speed allows it); #102 (drawn pads); #99 with the first new kit (#104);
+      #132 (asset packs, from the layouts side). A better name than "Claps"
+      for the hands track is parked.
 - [ ] **Several talas at once**, later: talas stay their own group, not
       instruments (`docs/designs/instruments.md`, "Several talas at once").
 - [ ] Output-latency calibration setting (Bluetooth headphones add

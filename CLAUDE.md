@@ -33,8 +33,10 @@ things keep that from making a first visit slower or a deploy break a page:
   browser finds them one after another, and a first visit measured slower
   than an unsplit bundle. The manifest is outside `static/` because App
   Engine serves that folder itself and the Go app can't read it. After a
-  `pnpm watch` rebuild the server's copy is stale until it restarts, which
-  only costs the preload.
+  `pnpm watch` or `pnpm build` the server's copy is stale until it
+  restarts: the page preloads chunk names the rebuild deleted, and the
+  console shows a 404 per chunk. Restart the server after rebuilding before
+  counting console errors in a browser check.
 - The service worker precaches every script the build wrote (the list comes
   from esbuild's metafile, `scripts/shell.mjs`), so the lazy views open
   offline after one visit and an old worker always holds an `app.js` and the
@@ -163,6 +165,12 @@ Things that have bitten:
   vitest does pick up `web/scripts/**/*.test.mjs` (plain ESM, no types), so
   a build helper's pure logic is tested there (`scripts/shell.test.mjs`) and
   only its file-system half goes in `pnpm buildcheck`.
+- **Key a `For` by something stable.** `<For each={rows}>` matches items by
+  object, and a presenter that returns fresh objects on every change (the
+  track list does) makes Solid tear down and remake every row on each
+  update, losing whatever state the row held: an open panel closed on every
+  mute or solo until #149 keyed the rows by id (`each={rows.map((r) =>
+  r.id)}`, looking the row up inside).
 - **No formatter is configured.** The code runs long lines (up to about 270
   columns in the JSX). `npx prettier` falls back to 80 columns and rewraps
   whole files, burying the change in the diff; don't run it.
@@ -788,6 +796,10 @@ One-time setup, run by an owner of the project from a machine with `gcloud`:
    DNS resolves, which can take a few hours, and HTTPS on the custom domain
    fails until then.
 
+Last production deploy: 3c4e21a on 2026-09-27 (the track list on `/`,
+#142). Master has moved on since (#148's top panel and `/about`, #149's
+instrument rows); dev serves the #149 build.
+
 To check which build is live, compare the served bundle with a fresh one:
 `(cd web && pnpm build)`, then
 `curl -s --compressed https://thambura.com/static/app.js | cmp - web/static/app.js`.
@@ -922,7 +934,19 @@ rules from loading `localhost` at all, which reads as a CORS error but tests
 nothing. The stand-in host has no `/favicon.ico`, so two 404s in its console
 are expected. Playwright locators reach into open shadow roots, so the embed's
 buttons are found with the usual selectors; `page.evaluate` needs
-`el.shadowRoot.querySelector` instead.
+`el.shadowRoot.querySelector` instead. A host spec with a `tracks` island
+(and the tala's `instrumentControls: false`) is how #149 checked that the
+home page's layout is buildable from the public API; name the kits in the
+spec's instruments, since `embed.js` only adds the thambura and the claps.
+
+Two things that misread in a screenshot or a style check:
+
+- The page scrolls inside `<main class="overflow-auto">`, not the body, so
+  `page.screenshot({ fullPage: true })` captures only the viewport. Scroll
+  the part you want into view (`locator.scrollIntoViewIfNeeded()`) first.
+- Rows fade with a CSS transition when another is soloed, so reading
+  `getComputedStyle(el).opacity` right after the click gives the starting
+  value. Wait out the transition (about 300 ms) before reading.
 
 A few probes that worked, all set up in an init script:
 
