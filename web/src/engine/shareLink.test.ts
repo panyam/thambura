@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mulberry32 } from "./tambura";
 import { BUILT_IN_PRESETS } from "./presets";
-import { barOpen, decodeLink, encodeLink, withBarOpen, type SharedSetup } from "./shareLink";
+import { barOpen, decodeLink, decodePage, encodeLink, encodePage, withBarOpen, type SharedSetup } from "./shareLink";
 import { DEFAULT_THAMBURA, KEYS, SWARAS, type ThamburaSettings } from "./shruthi";
 import { FIELD_SPECS, planFor, readField, setGap, writeField, type ThamburaPlan } from "./thamburaPlan";
 
@@ -280,5 +280,71 @@ describe("format 1 links keep opening the same", () => {
       [1, 50, 0, 26],
     ]);
     d.custom!.gaps.forEach((g, i) => expect(g).toBeCloseTo([0.3, 0.205, 0.205, 0.29][i], 4));
+  });
+});
+
+describe("page links: every instrument on the page in one link", () => {
+  const one = encodeLink(setup({ key: 3 }));
+  const two = encodeLink(setup({ key: 9, mode: "tambura" }, jawari, { view: "lab" }));
+
+  it("writes a page with only thambura-1 as that thambura's own link, byte for byte", () => {
+    expect(encodePage([{ id: "thambura-1", link: one }])).toBe(one);
+  });
+
+  it("reads an old single-thambura link as thambura-1", () => {
+    expect(decodePage(one)).toEqual(new Map([["thambura-1", one]]));
+  });
+
+  it("carries several thamburas, each part exactly as it was", () => {
+    const page = encodePage([
+      { id: "thambura-1", link: one },
+      { id: "thambura-2", link: two },
+    ]);
+    expect(page).not.toBe(one);
+    expect(decodePage(page)).toEqual(
+      new Map([
+        ["thambura-1", one],
+        ["thambura-2", two],
+      ]),
+    );
+    // Each part still decodes to its sound, bar flag and all.
+    expect(decodeLink(decodePage(page)!.get("thambura-2")!, current)!.settings.key).toBe(9);
+  });
+
+  it("uses the container when the only thambura isn't thambura-1", () => {
+    const page = encodePage([{ id: "thambura-2", link: two }]);
+    expect(page).not.toBe(two);
+    expect(decodePage(page)).toEqual(new Map([["thambura-2", two]]));
+  });
+
+  it("skips a part of a kind it doesn't know and reads the rest", () => {
+    const page = encodePage([
+      { id: "thambura-1", link: one },
+      { id: "gong-1", link: "AQID" },
+    ]);
+    expect(decodePage(page)).toEqual(new Map([["thambura-1", one]]));
+    // A part a newer version wrote, for a kind this version has never heard of.
+    const bytes = Uint8Array.from(atob(page.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+    const future = new Uint8Array([...bytes, 200, 1, 2, 7, 7]);
+    const futureLink = btoa(String.fromCharCode(...future)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    expect(decodePage(futureLink)).toEqual(new Map([["thambura-1", one]]));
+  });
+
+  it("refuses what isn't a page link", () => {
+    expect(decodePage("not a link!")).toBeNull();
+    expect(decodePage("")).toBeNull();
+    const page = encodePage([
+      { id: "thambura-1", link: one },
+      { id: "thambura-2", link: two },
+    ]);
+    expect(decodePage(page.slice(0, 6))).toBeNull(); // cut short inside a part
+  });
+
+  it("drops a thambura part that isn't a thambura link, rather than the whole page", () => {
+    const page = encodePage([
+      { id: "thambura-1", link: one },
+      { id: "thambura-2", link: "Zm9v" },
+    ]);
+    expect(decodePage(page)).toEqual(new Map([["thambura-1", one]]));
   });
 });
