@@ -133,17 +133,55 @@ are playing.
 A layout also gives the sequencer something to show: the spot lights when its
 stroke is heard, which is how you see what a phrase is doing.
 
-## The open question: views
+## Views: what the page shares, and what a track shows
 
-The order below assumed each instrument brings the panel it has today, the
-thambura's floating bar and the mridangam's section. That is the part most
-likely to change. With several instruments, what a track shows when it is
-collapsed, which of an instrument's views a track is set to, and how the page
-remembers that arrangement are all decisions nobody has made, and they decide
-what a track is in the UI rather than in the audio graph.
+Decided on 2026-09-27 for #101. Built so far: the session strip (the first
+of three PRs). The track list and the new-user defaults are still to come.
 
-Worth settling before the mixer is built, since the mixer is easy once a
-track has a shape.
+**Speed and shruthi belong to the page, not to an instrument.** Tempo
+already did: the tala sets the clock's `TempoMap`, and a kit plays on it.
+The shruthi was the thambura's until now, handed to the kit in Hz. It's
+now a page service (`Shruthi` in `pageContext.ts`) holding the key, fine
+tune and A4. The thambura plays to it and moves it when its own key
+changes. A kit follows it. The session strip shows it and changes it. So a
+change anywhere is heard everywhere, and a page with no thambura still
+tunes its drum. Different shruthis for different instruments aren't
+planned. A thambura preset keeps the page's shruthi, since a preset is a
+sound, not a pitch.
+
+**The session strip** (`SessionStrip.tsx`, driven by `session.ts`) sits
+under the beat image. It holds the speed, with − and + around a slider, and
+the shruthi as iTanpura shows it: the note in a display between semitone
+arrows, and a fine tune between ♭ and ♯. Tapping the note opens all 15
+keys, each with its kattai name, and a dot where a kit on the page would
+sound stretched. The strip also has Start all, which starts the tala and
+the thambura together, or stops everything if anything is playing. On our
+pages, Space does the same and Shift+↑/↓ steps the shruthi. It's its own
+island too (`session`), for a page whose tala doesn't carry it.
+
+**The whole setup is one link.** A `session-1` part (see the share-link
+reference) carries the tala, speed and shruthi. Next to come are parts for
+the claps and the kit, with the parts present being the track list, so
+opening a link gives exactly the page that was shared.
+
+**Still to build, in this order:**
+
+- **The track list**, on a labs page first. Each instrument is a row. Collapsed, a row shows a
+  status dot, its name, one or two quick controls (thambura: first string
+  and sound; mridangam: Variety and Korvai; claps: sound group), start/stop,
+  level, mute and solo. Expanded, it shows that instrument's own panel.
+  Pan goes in the expanded view. Phones get a single column. From `lg` up
+  the tracks sit in a grid of 2-3 cards, each showing its main controls,
+  with an "Open full" button for the complete panel. Add offers only what
+  can be added: the kits found, and a thambura while there's none (a
+  second waits on #103). Removing an instrument clears its storage, so
+  adding it back starts fresh, with a few seconds of Undo.
+- **New-user defaults**: the tala, the claps and one thambura, and the
+  mridangam only once someone adds it. The track list is saved only when
+  it's changed, so a better default still reaches anyone who never touched
+  theirs. Compatibility with earlier saved state isn't a goal here: the app
+  has no users to keep yet, so a storage version bump that starts everyone
+  fresh is acceptable.
 
 ## The order
 

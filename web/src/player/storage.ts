@@ -18,6 +18,8 @@ const KEYS = {
   presets: "thambura.presets",
   /** Whether the thambura's bar is open (thamburaDrawer.ts). */
   drawer: "thambura.drawer",
+  /** The page's Sa, which every pitched instrument plays to (pageContext.ts, Shruthi). */
+  shruthi: "thambura.shruthi",
 } as const;
 
 export type StoreName = keyof typeof KEYS;

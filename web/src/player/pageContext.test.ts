@@ -1,22 +1,49 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_THAMBURA, tunedTonicHz } from "../engine/shruthi";
-import { createClock, Tonic, Tracks } from "./pageContext";
+import { DEFAULT_THAMBURA, KEY_C3, KEY_G3, KEYS, tunedTonicHz, type Pitch } from "../engine/shruthi";
+import { createClock, Shruthi, Tracks } from "./pageContext";
 import { FakeAudio, FakeTicker } from "./testFakes";
 
-describe("Tonic", () => {
-  it("starts on the default thambura's Sa and tells followers of every change", () => {
-    const t = new Tonic();
-    expect(t.hz).toBe(tunedTonicHz(DEFAULT_THAMBURA));
-    const heard: number[] = [];
-    t.follow((hz) => heard.push(hz));
-    t.set(220);
-    t.set(220);
-    t.set(-1);
-    t.set(Number.NaN);
-    t.set(196);
-    // A follower hears the current Sa at once, then each real change.
-    expect(heard).toEqual([tunedTonicHz(DEFAULT_THAMBURA), 220, 196]);
-    expect(t.hz).toBe(196);
+describe("Shruthi", () => {
+  class MemStore {
+    saved: unknown[] = [];
+    load() {
+      return null;
+    }
+    save(v: unknown) {
+      this.saved.push(v);
+    }
+  }
+
+  it("tells followers the Sa now and on every change, and saves only changes", () => {
+    const store = new MemStore();
+    const s = new Shruthi({ key: KEY_C3, cents: 0, a4: 440 }, store);
+    expect(s.hz).toBe(tunedTonicHz(DEFAULT_THAMBURA));
+    const heard: Pitch[] = [];
+    s.follow((p) => heard.push(p));
+    s.set({ key: KEY_G3 });
+    s.set({ key: KEY_G3 });
+    s.nudgeCents(5);
+    expect(heard.map((p) => [p.key, p.cents])).toEqual([
+      [KEY_C3, 0],
+      [KEY_G3, 0],
+      [KEY_G3, 5],
+    ]);
+    expect(store.saved).toEqual([
+      { key: KEY_G3, cents: 0, a4: 440 },
+      { key: KEY_G3, cents: 5, a4: 440 },
+    ]);
+    expect(s.hz).toBeCloseTo(tunedTonicHz({ key: KEY_G3, cents: 5, a4: 440 }), 9);
+  });
+
+  it("stops at the ends of the keys and the fine tune, and clamps a bad value", () => {
+    const s = new Shruthi({ key: 0, cents: -50, a4: 440 });
+    s.stepKey(-1);
+    s.nudgeCents(-1);
+    expect(s.pitch).toEqual({ key: 0, cents: -50, a4: 440 });
+    s.set({ key: KEYS.length + 3, cents: 99 });
+    expect(s.pitch).toEqual({ key: KEYS.length - 1, cents: 50, a4: 440 });
+    s.stepKey(1);
+    expect(s.pitch.key).toBe(KEYS.length - 1);
   });
 });
 

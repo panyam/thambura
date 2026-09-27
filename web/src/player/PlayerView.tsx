@@ -4,8 +4,6 @@ import { MOTION_OPTIONS, REST, type BeatMotion, type BeatPose } from "../engine/
 import {
   GATI_OPTIONS,
   KALAI_OPTIONS,
-  MAX_TEMPO,
-  MIN_TEMPO,
   TALA_OPTIONS,
   usesJaathi,
   usesNadai,
@@ -16,6 +14,9 @@ import type { KitState } from "./kitPresenter";
 import { StrokeLane } from "./StrokeLane";
 import { StrokePad, type KitActions } from "./StrokePad";
 import type { PlayerPresenter, PlayerState } from "./presenter";
+import { SessionStrip, type SessionActions } from "./SessionStrip";
+import type { SessionState } from "./session";
+import { Stepper } from "./Stepper";
 
 export type PlayerActions = Pick<
   PlayerPresenter,
@@ -23,15 +24,14 @@ export type PlayerActions = Pick<
   | "next"
   | "prev"
   | "restart"
-  | "setTempo"
   | "setSettings"
   | "setImageGroup"
   | "setMotion"
 >;
 
 /**
- * The tala player: beat image, transport, tempo and volume, and the tala
- * settings. Renders PlayerState and sends every change to the presenter.
+ * The tala player: beat image, the speed and shruthi strip, transport,
+ * volume, and the tala settings. Renders PlayerState and sends every change to the presenter.
  */
 export function PlayerView(props: {
   state: Accessor<PlayerState>;
@@ -44,6 +44,8 @@ export function PlayerView(props: {
    * them the tala is silent, and those two controls aren't shown.
    */
   hands?: { state: Accessor<HandsState>; actions: HandsActions };
+  /** The page's speed and shruthi, as a strip under the beat image. */
+  session?: { state: Accessor<SessionState>; actions: SessionActions };
 }) {
   const s = props.state;
   const a = props.actions;
@@ -92,6 +94,8 @@ export function PlayerView(props: {
           </Show>
         </p>
       </section>
+
+      <Show when={props.session}>{(session) => <SessionStrip state={session().state} actions={session().actions} />}</Show>
 
       {/* What the instrument plays this cycle, under the image it goes with.
           Only while it is switched on, since it is showing what you hear. */}
@@ -162,44 +166,6 @@ export function PlayerView(props: {
       </section>
 
       <section class="grid w-full max-w-md gap-4">
-        <div>
-          <div class="mb-1 flex items-center justify-between">
-            <label for="tempo" class="text-sm font-medium">Tempo</label>
-            <span class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <input
-                type="number"
-                aria-label="Tempo in beats per minute"
-                min={MIN_TEMPO}
-                max={MAX_TEMPO}
-                value={s().tempo}
-                onChange={(e) => {
-                  a.setTempo(e.currentTarget.valueAsNumber);
-                  e.currentTarget.value = String(s().tempo); // show the clamped value
-                }}
-                class="w-20 rounded-md border-gray-300 bg-white py-1 text-right text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-              />
-              bpm
-            </span>
-          </div>
-          <Stepper
-            label="tempo"
-            unit="1 bpm"
-            onDown={() => a.setTempo(s().tempo - TEMPO_STEP)}
-            onUp={() => a.setTempo(s().tempo + TEMPO_STEP)}
-            atMin={s().tempo <= MIN_TEMPO}
-            atMax={s().tempo >= MAX_TEMPO}
-          >
-            <input
-              id="tempo"
-              type="range"
-              min={MIN_TEMPO}
-              max={MAX_TEMPO}
-              value={s().tempo}
-              onInput={(e) => a.setTempo(e.currentTarget.valueAsNumber)}
-              class="w-full accent-amber-600"
-            />
-          </Stepper>
-        </div>
         <Show when={props.hands}>
           {(hands) => (
             <div>
@@ -287,7 +253,6 @@ export function PlayerView(props: {
 const SELECT =
   "w-full rounded-md border-gray-300 bg-white py-1.5 text-sm text-gray-900 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
 
-const TEMPO_STEP = 1;
 const VOLUME_STEP = 5;
 
 /** A round icon button; `label` is its accessible name and tooltip. */
@@ -305,39 +270,6 @@ function IconButton(props: { label: string; onClick: () => void; disabled?: bool
         {props.children}
       </svg>
     </button>
-  );
-}
-
-/** A slider with − and + buttons either side for single-step adjustment. */
-function Stepper(props: {
-  label: string;
-  unit: string;
-  onDown: () => void;
-  onUp: () => void;
-  atMin: boolean;
-  atMax: boolean;
-  children: JSX.Element;
-}) {
-  const step = (dir: "Decrease" | "Increase", onClick: () => void, disabled: boolean, d: string) => (
-    <button
-      type="button"
-      onClick={() => onClick()}
-      disabled={disabled}
-      aria-label={`${dir} ${props.label} by ${props.unit}`}
-      title={`${dir} ${props.label} by ${props.unit}`}
-      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-    >
-      <svg viewBox="0 0 24 24" class="h-4 w-4" aria-hidden="true">
-        <path d={d} fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
-      </svg>
-    </button>
-  );
-  return (
-    <div class="flex items-center gap-3">
-      {step("Decrease", props.onDown, props.atMin, "M5 12h14")}
-      <div class="flex-1">{props.children}</div>
-      {step("Increase", props.onUp, props.atMax, "M5 12h14M12 5v14")}
-    </div>
   );
 }
 

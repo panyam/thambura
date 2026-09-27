@@ -1,4 +1,6 @@
-import { DEFAULT_THAMBURA, normalizeThambura, type ThamburaSettings } from "./shruthi";
+import type { Gati } from "./carnatic";
+import { clampTempo, normalizeSettings, type TalaId, type TalaSettings } from "./selection";
+import { DEFAULT_THAMBURA, normalizePitch, normalizeThambura, type Pitch, type ThamburaSettings } from "./shruthi";
 import { ATTACK_LEVEL, type PluckVoice } from "./tambura";
 import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanField, type ThamburaPlan } from "./thamburaPlan";
 
@@ -46,13 +48,32 @@ import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanF
  *   thambura link, rather than refusing the whole page.
  *
  * A page whose only part is thambura-1 is written as that part alone, in
- * format 1, so everyday links are unchanged and older versions still open
- * them.
+ * format 1, so older versions still open it.
+ *
+ * A session part (session-1) is what the whole page shares rather than one
+ * instrument: the tala, its speed and the shruthi. Its payload:
+ *
+ *   0      its own format (1)
+ *   1-4    tala (TALAS), jaathi, nadai (GATIS), kalai
+ *   5-6    tempo in bpm
+ *   7-8    key, cents + 64
+ *   9-10   A4 in tenths of a Hz
+ *
+ * A thambura part still carries its own key and cents, as a format 1 link
+ * must; where a page link has both, the session's shruthi is the one played.
  */
 const FORMAT = 1;
 const PAGE_FORMAT = 2;
 // Instrument kinds a page link carries a part for. Append, never reorder.
-const PAGE_KINDS = ["thambura"] as const;
+const PAGE_KINDS = ["thambura", "session"] as const;
+const SESSION_FORMAT = 1;
+// Append, never reorder.
+const TALAS: TalaId[] = [
+  "sapta_eka", "sapta_rupaka", "sapta_matya", "sapta_jhumpa", "sapta_thriputa", "sapta_ata", "sapta_dhruva",
+  "chaapu_thisram", "chaapu_khandam", "chaapu_misram", "chaapu_vilomam", "chaapu_sankeernam",
+  "custom_adi", "custom_rupakam",
+];
+const GATIS: Gati[] = ["thisram", "chatusram", "khandam", "misram", "vilomam", "sankeernam"];
 const MODES = ["jawari", "tambura", "guitar", "custom", "sruti"] as const;
 const VIEWS = ["mini", "studio", "raagini", "lab"] as const;
 const SWARAS = ["Sa", "Ri1", "Ri2", "Ri3", "Ga3", "Ma1", "Ma2", "Pa", "Da1", "Da2", "Da3", "Ni3"] as const;
@@ -436,6 +457,48 @@ class Reader {
   }
 }
 
+/** What a page's session part carries: the tala, its speed and the shruthi. */
+export interface SessionSetup {
+  tala: TalaSettings;
+  tempo: number;
+  pitch: Pitch;
+}
+
+/** A session part's payload, for PageLink's `session-1`. */
+export function encodeSession(x: SessionSetup): string {
+  const w = new Writer();
+  w.byte(SESSION_FORMAT);
+  w.byte(Math.max(0, TALAS.indexOf(x.tala.tala)));
+  w.byte(Math.max(0, GATIS.indexOf(x.tala.jaathi)));
+  w.byte(Math.max(0, GATIS.indexOf(x.tala.nadai)));
+  w.byte(x.tala.kalai);
+  w.u16(clampTempo(x.tempo));
+  w.byte(x.pitch.key);
+  w.byte(x.pitch.cents + 64);
+  w.u16(Math.round(x.pitch.a4 * 10));
+  return base64url(w.bytes());
+}
+
+/** A session part's setup, clamped to valid values, or null if it isn't one this version can read. */
+export function decodeSession(part: string): SessionSetup | null {
+  let bytes: Uint8Array;
+  try {
+    bytes = fromBase64url(part);
+  } catch {
+    return null;
+  }
+  const r = new Reader(bytes);
+  try {
+    if (r.byte() !== SESSION_FORMAT) return null;
+    const tala = normalizeSettings({ tala: TALAS[r.byte()], jaathi: GATIS[r.byte()], nadai: GATIS[r.byte()], kalai: r.byte() });
+    const tempo = clampTempo(r.u16());
+    const pitch = normalizePitch({ key: r.byte(), cents: r.byte() - 64, a4: r.u16() / 10 });
+    return r.done ? { tala, tempo, pitch } : null;
+  } catch {
+    return null;
+  }
+}
+
 /** One instrument's part of a page link: its id on the page and its own link. */
 export interface PagePart {
   id: string;
@@ -495,6 +558,7 @@ export function decodePage(link: string): Map<string, string> | null {
       if (!kind) continue;
       const part = base64url(payload);
       if (kind === "thambura" && !decodeLink(part, { settings: DEFAULT_THAMBURA })) continue;
+      if (kind === "session" && !decodeSession(part)) continue;
       parts.set(`${kind}-${n}`, part);
     }
   } catch {

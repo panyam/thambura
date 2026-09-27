@@ -8,14 +8,15 @@ import { KitPresenter } from "./kitPresenter";
 import { PlayerPresenter } from "./presenter";
 import type { Clock } from "./pageContext";
 import { PlayerView } from "./PlayerView";
+import type { SessionPresenter, SessionState } from "./session";
 import { instrumentStore, localStore } from "./storage";
 
 const DEFAULT_FIXTURES_URL = "/static/Resources/TalasFixtures.json";
 
 export interface PlayerIslandDeps {
+  /** The page's tala (PageContext.tala), which this island shows. */
+  presenter: PlayerPresenter;
   audio: AudioEngine;
-  /** The page's clock; the tala plays on it and sets its tempo. */
-  clock: Clock;
   /** The tala's sound and image groups, from the page spec's config. */
   fixturesUrl?: string;
   /**
@@ -30,22 +31,20 @@ export interface PlayerIslandDeps {
    * page's clock by themselves.
    */
   hands?: HandsPresenter;
+  /** The page's speed and shruthi, shown as a strip under the beat image. */
+  session?: SessionPresenter;
   /** Hears whenever the tala starts or stops. */
   onPlaying?: (playing: boolean) => void;
 }
 
 /**
- * Wires the real browser pieces (the page's AudioEngine and clock, animation
- * frames, fetch) into a presenter and mounts its view on `el`.
+ * The tala on the page's audio and clock, with the real browser pieces
+ * (animation frames, fetch, image preloading) and its saved choices.
  */
-export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: PlayerIslandDeps): SolidIsland {
-  const { audio, onPlaying } = deps;
-  // A page with no kit still gets an idle one, so the view has something to show (nothing).
-  const drum = deps.kit ?? newKitPresenter(audio, "kit-0");
-
-  const presenter = new PlayerPresenter({
+export function newPlayerPresenter(audio: AudioEngine, clock: Clock): PlayerPresenter {
+  return new PlayerPresenter({
     audio,
-    clock: deps.clock,
+    clock,
     frames: {
       request: (cb) => requestAnimationFrame(cb),
       cancel: (id) => cancelAnimationFrame(id),
@@ -54,6 +53,20 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: Pl
     preloadImages,
     store: localStore("player"),
   });
+}
+
+/** Mounts the page's tala on `el`, with its fixture of images loading. */
+export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: PlayerIslandDeps): SolidIsland {
+  const { audio, onPlaying, presenter } = deps;
+  // A page with no kit still gets an idle one, so the view has something to show (nothing).
+  const drum = deps.kit ?? newKitPresenter(audio, "kit-0");
+  const session = deps.session;
+  let sessionView: { state: () => SessionState; actions: SessionPresenter } | undefined;
+  if (session) {
+    const [sessionState, setSessionState] = signalView(session.state);
+    session.attach({ setState: setSessionState });
+    sessionView = { state: sessionState, actions: session };
+  }
   const [drumState, setDrumState] = signalView(drum.state);
   drum.attach({ setState: setDrumState });
   const hands = deps.hands;
@@ -80,7 +93,7 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: Pl
   return new SolidIsland(
     "player",
     el,
-    () => <PlayerView state={state} pose={pose} actions={presenter} kit={{ state: drumState, actions: drum }} hands={handsView} />,
+    () => <PlayerView state={state} pose={pose} actions={presenter} kit={{ state: drumState, actions: drum }} hands={handsView} session={sessionView} />,
     eventBus,
   );
 }

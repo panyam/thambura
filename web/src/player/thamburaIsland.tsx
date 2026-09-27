@@ -1,7 +1,6 @@
 import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
 import { createSignal } from "solid-js";
-import type { ThamburaSettings } from "../engine/shruthi";
 import type { AudioEngine } from "./audio";
 import { isThamburaShortcut } from "./shortcuts";
 import { ThamburaBar } from "./ThamburaBar";
@@ -9,7 +8,7 @@ import { linkShowsBar, ThamburaDrawer } from "./thamburaDrawer";
 import { ThamburaDocked } from "./ThamburaPanel";
 import type { PageLink } from "./pageLink";
 import { instrumentStore, localStore, withFallback } from "./storage";
-import { ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
+import { ThamburaPresenter, type PitchSource, type ThamburaState } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
 /**
@@ -31,8 +30,6 @@ export interface ThamburaIslandOptions {
   controls?: { root: HTMLElement | null; toggle: HTMLElement | null; play: HTMLElement | null };
   /** Hears whenever it starts or stops. */
   onPlaying?: (playing: boolean) => void;
-  /** Hears every settings change, so the mridangam can tune to the same Sa. */
-  onSettings?: (settings: ThamburaSettings) => void;
   /**
    * Whether the T key anywhere on the page starts and stops it. Off when the
    * thambura is on someone else's page (embed.ts): the page isn't ours to
@@ -49,7 +46,7 @@ export function createThamburaIsland(
   link: PageLink,
   opts: ThamburaIslandOptions,
 ): SolidIsland {
-  const { onPlaying, onSettings } = opts;
+  const { onPlaying } = opts;
   const controls = opts.controls ?? { root: null, toggle: null, play: null };
   const { toggle, play } = controls;
   // Only a drawer has an open state; a docked thambura is always showing.
@@ -65,7 +62,6 @@ export function createThamburaIsland(
       setState(s);
       reflectPlaying(play, s);
       onPlaying?.(s.playing);
-      onSettings?.(s.settings);
     },
   });
   if (drawer) {
@@ -139,10 +135,11 @@ function reflectPlaying(play: HTMLElement | null, s: ThamburaState): void {
 
 /**
  * A thambura on the page's audio, as the instrument with this `id`
- * (`thambura-1`), reading and writing the page's share link. The first
+ * (`thambura-1`), reading and writing the page's share link, and playing to
+ * the page's shruthi when given it. The first
  * thambura takes the setup it saved before instance ids, once.
  */
-export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink): ThamburaPresenter {
+export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink, shruthi?: PitchSource): ThamburaPresenter {
   const own = instrumentStore(id);
   return new ThamburaPresenter({
     id,
@@ -156,5 +153,6 @@ export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageL
     store: id === "thambura-1" ? withFallback(own, localStore("drone")) : own,
     presets: localStore("presets"),
     link: link.part(id),
+    shruthi,
   });
 }
