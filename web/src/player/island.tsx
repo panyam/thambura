@@ -31,8 +31,8 @@ export interface PlayerIslandDeps {
   onTracksChange?: (f: () => void) => void;
   /**
    * Whether the instruments' own controls (the claps' Sounds and Volume, the
-   * kit's pad) sit with the tala. A page with a track list shows them in the
-   * instruments' tracks instead; the stroke lane stays under the image.
+   * kit's stroke lane and pad) sit with the tala. A page with a track list
+   * shows them in the instruments' rows instead.
    */
   instrumentControls?: boolean;
   /** Lays the tala out across a page-wide panel (PlayerView's `wide`). */

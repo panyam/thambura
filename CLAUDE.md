@@ -79,11 +79,11 @@ Sadhana).
 - **The home page** (#101) is the tala and the track list
   (`layouts/Tracks.html`): the tala across the top (its `wide` config puts
   the beat and transport on the left and the strip and selects on the
-  right from `lg` up), the cards under it, one column on a phone, and the floating
-  `#play-all` (Start all) at the bottom right. The tala's
-  `instrumentControls: false` keeps the claps' and kit's controls in their
-  cards. There's no drawer any more: the thambura's panel is its card's
-  "More".
+  right from `lg` up), a full-width row per instrument under it, and the
+  floating `#play-all` (Start all) at the bottom right. The tala's
+  `instrumentControls: false` keeps the claps' controls and the kit's lane
+  and pad in their rows. There's no drawer any more: the thambura's panel
+  opens under its row's toggle.
 - `internal/web/pages.go`: `NewApp` loads templates through templar's
   `SourceLoader` (`web/templates/templar.yaml` maps `@goapplib/` to the vendored
   copy in `templar_modules/`, which is committed). `HomePage` embeds
@@ -447,10 +447,16 @@ unit-tested:
   instrument's saved record (`clearInstrument`, which for `thambura-1` also
   drops the pre-id `thambura.drone`), with Undo for `UNDO_MS`; adding it
   back by hand starts fresh. The claps can't be removed. Only one thambura
-  (#103), and each kit once. `TrackListView.tsx` draws the cards and
-  `tracksIsland.tsx` mounts them; `watched.ts` makes a presenter's state a
-  signal through its `watch`, since a kit shows in the tala's lane and in
-  its card at once (the kit, claps, tala and thambura all have `watch`).
+  (#103), and each kit once. `TrackListView.tsx` draws a full-width row per
+  instrument: name, main controls (the thambura's round length among them),
+  level, mute and solo icons, and a toggle that opens its panel (the
+  thambura's, or the kit's pad) and Remove, which lives only there. The
+  kit's stroke lane sits under its row while it plays. Rows are keyed by id,
+  since the list makes new row objects on every change and a row remade
+  would close; while any row is soloed the rest fade. `tracksIsland.tsx`
+  mounts them; `watched.ts` makes a presenter's state a signal through its
+  `watch`, since a kit can show in the tala's lane and in its row at once
+  (the kit, claps, tala and thambura all have `watch`).
 - `storage.ts`: every localStorage key goes through here. An instrument
   keeps its state under its page id (`instrumentStore(id)`:
   `thambura.thambura-1`, `thambura.kit-1`, `thambura.hands-1`); the page's
@@ -528,9 +534,9 @@ unit-tested:
   the octave Sa's otherwise fuse into one note and bury the swara.
 - `ThamburaPanel.tsx` is the thambura's controls wherever a page puts
   them: `ThamburaDocked` in a slot of its own (the `thambura` island, on
-  `/labs/side-by-side` and in embeds), or under the thambura's card's "More"
+  `/labs/side-by-side` and in embeds), or under the thambura's row's toggle
   on `/`, where `compact` leaves out the start/stop button and the Sound
-  menu the card already has. The panel's header holds the one start/stop button
+  menu the row already has. The panel's header holds the one start/stop button
   every view shares (the views have none of their own, except the Raagini's
   power switch, part of the replica), the Sound menu (the mode,
   from `THAMBURA_MODES`, the presets that ship (`BUILT_IN_PRESETS`) and the
@@ -874,9 +880,12 @@ opens `#shruthi-keys`, whose stretched keys have a `title`), the arrows
 `button[aria-label="Shruthi up a semitone"]` and "Fine tune up a cent", and
 `button:has-text("Start all")`. Space presses a focused button, so click the
 page body before testing it as Start all.
-On `/` the cards are `[aria-label="Instruments"] article`, each
+On `/` the rows are `[aria-label="Instruments"] article`, each
 labelled by its instrument ("Claps", "Thambura", "Mridangam"), with
-`button[aria-label="Remove Mridangam"]`, "Mute Claps", "Solo Thambura",
+`button[aria-label="Show more of Mridangam"]` (then "Show less of…"), which
+opens `button[aria-label="Remove mridangam"]`, mute and solo as
+`button[aria-label^="Mute Claps"]` and `button[aria-label^="Solo Thambura"]`
+(their labels go on to say what they do), `input[aria-label="Thambura round length"]`,
 `select[aria-label="Add an instrument"]` (options by label), and Undo in the
 list's `[role="status"]`. A new browser starts with the claps and the
 thambura only; add the mridangam with `selectOption({ label: "Mridangam" })`.
@@ -884,10 +893,10 @@ The tala's transport buttons are icons, so select them by label:
 `button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). With
 `getByRole`, pass `exact: true`: name matching is a substring match, so
 "Start" also finds Restart. The
-thambura's full panel opens with its card's `button:has-text("More")`,
-scoped to `article[aria-label="Thambura"]`; its views are
+thambura's full panel opens with `button[aria-label="Show more of Thambura"]`;
+its views are
 `button[role="radio"]:has-text("Raagini")` and so on, its mode is
-`select[aria-label="Sound"]` (on the card; the panel under More leaves its
+`select[aria-label="Sound"]` (on the row; the panel under it leaves its
 own out),
 `button[aria-label="Copy link"]` copies the
 page's `?s=` link (give the context the clipboard permissions to read it back;
@@ -899,7 +908,7 @@ plan in `textarea[aria-label="Settings JSON"]`, and presets are saved with
 `mode:<id>` in `select[aria-label="Sound"]` and presets are their ids under
 `optgroup[label="Saved"]`. Each string pans to its own place, so wrapping
 `StereoPannerNode`'s `pan` setter tells you which string a pluck was.
-It plays alone with `page.keyboard.press("t")` or its card's
+It plays alone with `page.keyboard.press("t")` or its row's
 `button[aria-label="Start thambura"]`; the floating `#play-all` starts the
 tala too. The theme toggle cycles system, light,
 dark, so dark takes two clicks (or launch the page with `colorScheme: "dark"`).

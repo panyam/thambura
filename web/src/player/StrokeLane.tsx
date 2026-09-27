@@ -23,6 +23,8 @@ export function StrokeLane(props: {
   hasKorvai: Accessor<boolean>;
   korvaiQueued: Accessor<boolean>;
   askForKorvai: () => void;
+  /** Takes the width it's given (a kit's row) rather than the tala's column. */
+  full?: boolean;
 }) {
   const cells = () => {
     const lane = props.lane();
@@ -41,7 +43,7 @@ export function StrokeLane(props: {
   return (
     <Show when={props.lane()} keyed>
       {(lane) => (
-        <section class="w-full max-w-md" aria-label="Mridangam pattern">
+        <section class={props.full ? "w-full" : "w-full max-w-md"} aria-label="Mridangam pattern">
           <div class="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
             <span>
               {lane.name}
