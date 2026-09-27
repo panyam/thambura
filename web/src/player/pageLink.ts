@@ -17,7 +17,11 @@ export interface AddressBar {
 
 /** One instrument's part of the page link, as that instrument sees it. */
 export interface LinkPart {
-  /** Its part of the link the page was opened with (or its latest), or null. */
+  /**
+   * Its latest part: the one the page was opened with until it writes, then
+   * its own. Null if it has neither. For the part as the page was opened,
+   * before anything wrote, see PageLink.opened.
+   */
   read(): string | null;
   /** Its setup now; the page link is written again with every part. */
   write(link: string): void;
@@ -37,6 +41,7 @@ export interface LinkPart {
 export class PageLink {
   showsBar: () => boolean = () => true;
   private readonly parts: Map<string, string>;
+  private readonly openedParts: ReadonlyMap<string, string>;
 
   /** `base` is the page URL links are made on; the current page if not given. */
   constructor(
@@ -44,7 +49,19 @@ export class PageLink {
     private readonly base?: string,
   ) {
     const opened = address.read();
-    this.parts = (opened && decodePage(opened)) || new Map();
+    this.openedParts = (opened && decodePage(opened)) || new Map();
+    this.parts = new Map(this.openedParts);
+  }
+
+  /**
+   * `id`'s part of the link the page was opened with, as it was then, or
+   * null. Unlike `part(id).read()` it doesn't change when the instrument
+   * writes. A layout needs it for what only the opened link knows: the
+   * thambura writes its part as soon as it's made, before its drawer mounts,
+   * and that write can't carry the bar's open bit (#130).
+   */
+  opened(id: string): string | null {
+    return this.openedParts.get(id) ?? null;
   }
 
   /** The part for the instrument with this id. */
