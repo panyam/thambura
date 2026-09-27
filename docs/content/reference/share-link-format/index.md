@@ -4,9 +4,10 @@ description: "The bytes behind a thambura ?s= link, how each value is stored, an
 prev: { title: "Share links and presets", url: "/thambura/guides/share-links/" }
 ---
 
-This page describes format 1, one thambura's setup, which is still what an
-everyday link is, and format 2, a page link that carries every instrument
-on the page as its own part. It's for anyone
+This page describes format 1, one thambura's setup, and format 2, a page
+link that carries every instrument on the page as its own part, plus a
+session part for what the page shares: the tala, its speed and the shruthi.
+A page with a tala always writes format 2. It's for anyone
 changing
 [`web/src/engine/shareLink.ts`](https://github.com/panyam/thambura/blob/master/web/src/engine/shareLink.ts),
 or reading links outside the app. For what a link means to the person
@@ -218,9 +219,31 @@ per instrument, keyed by the instrument's id on the page (`thambura-1`,
 | varint | The payload's length |
 | that many | The payload |
 
-`PAGE_KINDS` is only `thambura` so far. A thambura's payload is a whole
+`PAGE_KINDS` is `thambura`, then `session`. A thambura's payload is a whole
 format 1 link, the same bytes as above, so its bar flag and drift checksum
 work as they always have.
+
+### The session part
+
+`session-1` is what the whole page shares rather than one instrument
+([#101](https://github.com/panyam/thambura/issues/101)). Its payload is
+eleven bytes:
+
+| Byte | Holds |
+| --- | --- |
+| 0 | Its own format, `1` |
+| 1 | The tala, as an index into `TALAS` |
+| 2, 3 | Jaathi and nadai, as indexes into `GATIS` |
+| 4 | Kalai |
+| 5-6 | The tempo in bpm |
+| 7 | The key, 0 (A2) to 14 (B3) |
+| 8 | The fine tune in cents, plus 64 |
+| 9-10 | A4 in tenths of a Hz |
+
+The thambura's part still carries its own key, fine tune and A4, since a
+format 1 link must. When a page link has both, the session's shruthi is the
+one played. A page link without a session part, and a format 1 link, take
+the shruthi from `thambura-1`'s part, as they always did.
 
 A reader skips a part of a kind it doesn't know, and a thambura part that
 isn't a readable thambura link, and keeps the rest of the page, so a link
@@ -229,9 +252,9 @@ runs out partway through a part is rejected as a whole, like a short format
 1 link.
 
 A page whose only part is `thambura-1` is written as that part alone, in
-format 1. Everyday links are the same bytes they were before page links, and
-older versions of the app still open them. A format 1 link read as a page is
-`thambura-1`'s part.
+format 1. Every page now writes a session part too, so nothing writes one
+alone any more, but format 1 links keep opening. A format 1 link read as a
+page is `thambura-1`'s part.
 
 ## Changing the format
 
@@ -239,7 +262,7 @@ People keep links, and presets are links, so a link made today has to open
 the same sound after any later release. The rules:
 
 - **Add to the ends of the tables, never reorder them.** `MODES`, `VIEWS`,
-  `SWARAS`, `BASES`, `FIELDS`, `HIDDEN` and `PAGE_KINDS` are all part of the format, since
+  `SWARAS`, `BASES`, `FIELDS`, `HIDDEN`, `PAGE_KINDS`, `TALAS` and `GATIS` are all part of the format, since
   a link stores positions in them. A new mode, view or field goes at the
   end, and old links never mention it.
 - **Leave the ranges and steps of existing fields alone,** for the reason

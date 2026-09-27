@@ -5,6 +5,7 @@ import { isIOS, isInstalled, wireInstall } from "./player/install";
 import { buildContext, islandRegistry } from "./player/islands";
 import type { PageContext } from "./player/pageContext";
 import { addressBar, PageLink } from "./player/pageLink";
+import { wireSessionKeys } from "./player/session";
 
 /**
  * Bundle entry (esbuild -> static/app.js). The page is server-rendered by
@@ -27,7 +28,9 @@ class HomePage extends IslandPage<PageContext> {
   }
 
   protected makeContext(spec: PageSpec): PageContext {
-    return buildContext(spec, location.href, new PageLink(addressBar()));
+    const ctx = buildContext(spec, location.href, new PageLink(addressBar()));
+    wireSessionKeys(document, ctx.session);
+    return ctx;
   }
 
   protected override initializeSpecificComponents(): LCMComponent[] {

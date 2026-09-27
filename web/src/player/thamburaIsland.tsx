@@ -1,7 +1,6 @@
 import type { EventBus } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
 import { createSignal } from "solid-js";
-import type { ThamburaSettings } from "../engine/shruthi";
 import type { AudioEngine } from "./audio";
 import { isThamburaShortcut } from "./shortcuts";
 import { ThamburaBar } from "./ThamburaBar";
@@ -10,15 +9,16 @@ import { ThamburaDocked } from "./ThamburaPanel";
 import type { PageLink } from "./pageLink";
 import { browserPluckRenderer } from "./pluckRenderer";
 import { instrumentStore, localStore, withFallback } from "./storage";
-import { ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
+import { ThamburaPresenter, type PitchSource } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
 /**
  * Mounts a view of `presenter`, the page's thambura, on `el`, in a drawer or
  * docked (`presentation`). The page makes the presenter; this is only where
- * it's shown. In a drawer it also wires the page's floating thambura
- * controls: `play` starts and stops it from anywhere on the page, as does
- * the T key, and `toggle` opens and closes the bar. The bar's open state is
+ * it's shown. In a drawer it also wires the page's floating controls:
+ * `play` is Start all (`playAll`, the page's session) from anywhere on the
+ * page, and `toggle` opens and closes the bar. The T key starts and stops
+ * the thambura alone. The bar's open state is
  * the drawer's; the presenter never sees it, so the drawer tells the page's
  * link (`link.showsBar`), which adds it on the way to the address bar.
  * `onPlaying` hears whenever it starts or stops.
@@ -30,10 +30,13 @@ export interface ThamburaIslandOptions {
   presentation: ThamburaPresentation;
   /** The page's floating play and toggle buttons, for the drawer. A docked thambura has none. */
   controls?: { root: HTMLElement | null; toggle: HTMLElement | null; play: HTMLElement | null };
+  /**
+   * What the floating play button starts: everything on the page (session.ts,
+   * Start all). Without it the button plays the thambura alone.
+   */
+  playAll?: { state: { playing: boolean }; toggleAll(): Promise<void>; attach(view: { setState(s: { playing: boolean }): void }): void };
   /** Hears whenever it starts or stops. */
   onPlaying?: (playing: boolean) => void;
-  /** Hears every settings change, so the mridangam can tune to the same Sa. */
-  onSettings?: (settings: ThamburaSettings) => void;
   /**
    * Whether the T key anywhere on the page starts and stops it. Off when the
    * thambura is on someone else's page (embed.ts): the page isn't ours to
@@ -50,7 +53,7 @@ export function createThamburaIsland(
   link: PageLink,
   opts: ThamburaIslandOptions,
 ): SolidIsland {
-  const { onPlaying, onSettings } = opts;
+  const { onPlaying } = opts;
   const controls = opts.controls ?? { root: null, toggle: null, play: null };
   const { toggle, play } = controls;
   // Only a drawer has an open state; a docked thambura is always showing.
@@ -64,9 +67,8 @@ export function createThamburaIsland(
   presenter.attach({
     setState(s) {
       setState(s);
-      reflectPlaying(play, s);
+      if (!opts.playAll) reflectPlaying(play, s.playing, false);
       onPlaying?.(s.playing);
-      onSettings?.(s.settings);
     },
   });
   if (drawer) {
@@ -78,7 +80,9 @@ export function createThamburaIsland(
     reflectOpen(controls, drawer.open);
     toggle?.addEventListener("click", () => drawer.toggle());
   }
-  play?.addEventListener("click", () => void presenter.toggle());
+  const playAll = opts.playAll;
+  if (playAll) playAll.attach({ setState: (s) => reflectPlaying(play, s.playing, true) });
+  play?.addEventListener("click", () => void (playAll ? playAll.toggleAll() : presenter.toggle()));
   if (opts.pageKeys !== false) document.addEventListener("keydown", (e) => {
     if (!isThamburaShortcut(e as KeyboardEvent & { target: HTMLElement | null })) return;
     e.preventDefault();
@@ -124,26 +128,32 @@ function reflectOpen(controls: { root: HTMLElement | null; toggle: HTMLElement |
   const toggle = controls.toggle;
   if (toggle) {
     toggle.setAttribute("aria-expanded", String(open));
-    toggle.setAttribute("aria-label", open ? "Hide the shruthi box" : "Shruthi box");
-    toggle.title = open ? "Hide the shruthi box" : "Show the shruthi box";
+    toggle.setAttribute("aria-label", open ? "Hide the thambura" : "Thambura");
+    toggle.title = open ? "Hide the thambura" : "Show the thambura";
   }
 }
 
-/** Shows on the floating play button whether the thambura is playing. */
-function reflectPlaying(play: HTMLElement | null, s: ThamburaState): void {
+/** Shows on the floating play button whether what it starts (everything, or the thambura) is playing. */
+function reflectPlaying(play: HTMLElement | null, playing: boolean, all: boolean): void {
   if (!play) return;
-  play.dataset.playing = String(s.playing);
-  play.setAttribute("aria-pressed", String(s.playing));
-  play.setAttribute("aria-label", s.playing ? "Stop thambura" : "Start thambura");
-  play.title = s.playing ? "Stop the thambura (T)" : "Start the thambura (T)";
+  play.dataset.playing = String(playing);
+  play.setAttribute("aria-pressed", String(playing));
+  if (all) {
+    play.setAttribute("aria-label", playing ? "Stop all" : "Start all");
+    play.title = playing ? "Stop everything (Space)" : "Start the tala and the thambura (Space)";
+  } else {
+    play.setAttribute("aria-label", playing ? "Stop thambura" : "Start thambura");
+    play.title = playing ? "Stop the thambura (T)" : "Start the thambura (T)";
+  }
 }
 
 /**
  * A thambura on the page's audio, as the instrument with this `id`
- * (`thambura-1`), reading and writing the page's share link. The first
+ * (`thambura-1`), reading and writing the page's share link, and playing to
+ * the page's shruthi when given it. The first
  * thambura takes the setup it saved before instance ids, once.
  */
-export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink): ThamburaPresenter {
+export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink, shruthi?: PitchSource): ThamburaPresenter {
   const own = instrumentStore(id);
   const defer = (cb: () => void, ms: number) => {
     const t = setTimeout(cb, ms);
@@ -162,5 +172,6 @@ export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageL
     store: id === "thambura-1" ? withFallback(own, localStore("drone")) : own,
     presets: localStore("presets"),
     link: link.part(id),
+    shruthi,
   });
 }

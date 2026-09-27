@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { mulberry32 } from "./tambura";
 import { BUILT_IN_PRESETS } from "./presets";
-import { barOpen, decodeLink, decodePage, encodeLink, encodePage, withBarOpen, type SharedSetup } from "./shareLink";
+import {
+  barOpen,
+  decodeLink,
+  decodePage,
+  decodeSession,
+  encodeLink,
+  encodePage,
+  encodeSession,
+  withBarOpen,
+  type SessionSetup,
+  type SharedSetup,
+} from "./shareLink";
+import { DEFAULT_SETTINGS, TALA_OPTIONS } from "./selection";
 import { DEFAULT_THAMBURA, KEYS, SWARAS, type ThamburaSettings } from "./shruthi";
 import { FIELD_SPECS, planFor, readField, setGap, writeField, type ThamburaPlan } from "./thamburaPlan";
 
@@ -346,5 +358,57 @@ describe("page links: every instrument on the page in one link", () => {
       { id: "thambura-2", link: "Zm9v" },
     ]);
     expect(decodePage(page)).toEqual(new Map([["thambura-1", one]]));
+  });
+});
+
+describe("session part", () => {
+  const session = (rest: Partial<SessionSetup> = {}): SessionSetup => ({
+    tala: { tala: "chaapu_misram", jaathi: "khandam", nadai: "thisram", kalai: 2 },
+    tempo: 132,
+    pitch: { key: 4, cents: -12, a4: 441.5 },
+    ...rest,
+  });
+
+  it("carries the tala, the speed and the shruthi in 11 bytes", () => {
+    const part = encodeSession(session());
+    expect(decodeSession(part)).toEqual(session());
+    expect(part.length).toBe(15);
+  });
+
+  it("round-trips every tala on the menu", () => {
+    for (const o of TALA_OPTIONS.flatMap((g) => g.options)) {
+      const s = session({ tala: { ...DEFAULT_SETTINGS, tala: o.value } });
+      expect(decodeSession(encodeSession(s))?.tala.tala).toBe(o.value);
+    }
+  });
+
+  it("clamps what it reads and refuses what isn't one", () => {
+    const wild = encodeSession(session({ tempo: 900, pitch: { key: 3, cents: 50, a4: 440 } }));
+    expect(decodeSession(wild)?.tempo).toBe(300);
+    expect(decodeSession("")).toBeNull();
+    expect(decodeSession("not a link!")).toBeNull();
+    // A thambura link isn't a session part, and a session part with bytes left over isn't either.
+    expect(decodeSession(encodeLink(setup()))).toBeNull();
+    expect(decodeSession(encodeSession(session()) + "AA")).toBeNull();
+  });
+
+  it("travels in a page link beside the thambura, and a bad one is skipped", () => {
+    const thambura = encodeLink(setup({ key: 7 }));
+    const part = encodeSession(session());
+    const page = encodePage([
+      { id: "thambura-1", link: thambura },
+      { id: "session-1", link: part },
+    ]);
+    expect(decodePage(page)).toEqual(
+      new Map([
+        ["thambura-1", thambura],
+        ["session-1", part],
+      ]),
+    );
+    const bad = encodePage([
+      { id: "thambura-1", link: thambura },
+      { id: "session-1", link: thambura },
+    ]);
+    expect(decodePage(bad)).toEqual(new Map([["thambura-1", thambura]]));
   });
 });

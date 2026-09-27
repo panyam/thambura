@@ -222,6 +222,15 @@ export class KitPresenter {
     void this.loadSamples();
   }
 
+  /**
+   * Whether the kit would sound stretched at `hz`: its nearest recorded
+   * tuning is more than SHIFT_WARN_CENTS away. False with no kit loaded.
+   */
+  stretchedAt(hz: number): boolean {
+    const pack = this.kit && nearestPack(this.kit, hz);
+    return !!pack && Math.abs(shiftCents(pack, hz)) > SHIFT_WARN_CENTS;
+  }
+
   /** Follows the thambura's settings, so the drum is tuned like the drone. */
   setThambura(settings: ThamburaSettings): void {
     this.setTonic(tunedTonicHz(settings));

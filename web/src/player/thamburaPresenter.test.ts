@@ -3,6 +3,7 @@ import { DEFAULT_THAMBURA, KEY_G3, srutiFrequencies, stringFrequencies, type Tha
 import { BUILT_IN_PRESETS } from "../engine/presets";
 import { barOpen, decodeLink, encodeLink } from "../engine/shareLink";
 import { planFor } from "../engine/thamburaPlan";
+import { Shruthi } from "./pageContext";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 import type { PluckJob, PluckRenderer } from "./pluckRenderer";
 import { BEFORE_LINK_PRESET, ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
@@ -40,7 +41,7 @@ describe("ThamburaPresenter", () => {
   let p: ThamburaPresenter;
   let views: ThamburaState[];
 
-  const make = (saved?: unknown, link?: FakeLink, presets?: unknown, id = "thambura-1") => {
+  const make = (saved?: unknown, link?: FakeLink, presets?: unknown, id = "thambura-1", shruthi?: Shruthi) => {
     store = new FakeStore(saved);
     presetStore = new FakeStore(presets);
     p = new ThamburaPresenter({
@@ -51,6 +52,7 @@ describe("ThamburaPresenter", () => {
       store,
       presets: presetStore,
       link,
+      shruthi,
       defer: (cb, ms) => {
         deferred.push(cb);
         delays.push(ms);
@@ -633,6 +635,38 @@ describe("ThamburaPresenter", () => {
       p.setCustom({ ...plan, gaps: [0.4, 0.2, 0.2, 0.2] });
       expect(p.state.playing).toBe(false);
       expect(audio.played).toEqual([]);
+    });
+  });
+
+  describe("the page's shruthi", () => {
+    it("plays to the page's Sa over its own saved key, and moves with it", () => {
+      const shruthi = new Shruthi({ key: KEY_G3, cents: 4, a4: 440 });
+      make({ settings: { ...DEFAULT_THAMBURA, key: 2 } }, undefined, undefined, "thambura-1", shruthi);
+      expect([p.state.settings.key, p.state.settings.cents]).toEqual([KEY_G3, 4]);
+      shruthi.stepKey(1);
+      expect(p.state.settings.key).toBe(KEY_G3 + 1);
+    });
+
+    it("moves the page's Sa when its own key, fine tune or A4 changes, and not otherwise", () => {
+      const shruthi = new Shruthi();
+      const heard: number[] = [];
+      make(undefined, undefined, undefined, "thambura-1", shruthi);
+      shruthi.follow((pitch) => heard.push(pitch.key));
+      set({ key: KEY_G3 });
+      set({ tone: 80 });
+      p.nudgeCents(2);
+      expect(heard).toEqual([DEFAULT_THAMBURA.key, KEY_G3, KEY_G3]);
+      expect(shruthi.pitch).toEqual({ key: KEY_G3, cents: 2, a4: 440 });
+    });
+
+    it("keeps the page's Sa when a preset is played", () => {
+      const shruthi = new Shruthi({ key: KEY_G3, cents: 0, a4: 440 });
+      const inD = encodeLink({ settings: { ...DEFAULT_THAMBURA, key: 5, mode: "guitar" }, custom: planFor(DEFAULT_THAMBURA), view: "studio" });
+      make(undefined, undefined, [{ id: "d", name: "In D", link: inD }], "thambura-1", shruthi);
+      p.applyPreset("d");
+      expect(p.state.settings.mode).toBe("guitar");
+      expect(p.state.settings.key).toBe(KEY_G3);
+      expect(shruthi.pitch.key).toBe(KEY_G3);
     });
   });
 
