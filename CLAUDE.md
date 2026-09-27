@@ -76,6 +76,13 @@ Sadhana).
 
 ## Server (Go)
 
+- **The home page** (#101) is the tala and the track list
+  (`layouts/Tracks.html`): the tala in a left column from `lg` up and a card
+  per instrument beside it, one column on a phone, and the floating
+  `#play-all` (Start all) at the bottom right. The tala's
+  `instrumentControls: false` keeps the claps' and kit's controls in their
+  cards. There's no drawer any more: the thambura's panel is its card's
+  "More".
 - `internal/web/pages.go`: `NewApp` loads templates through templar's
   `SourceLoader` (`web/templates/templar.yaml` maps `@goapplib/` to the vendored
   copy in `templar_modules/`, which is committed). `HomePage` embeds
@@ -96,7 +103,7 @@ Sadhana).
   #92.
 - Templates come in three layers. `web/templates/BasePage.html` extends
   goapplib's BasePage: our logo, no login actions, no HTMX, no header drawer.
-  A layout (`web/templates/layouts/Drawer.html`) includes it, defines
+  A layout (`web/templates/layouts/Tracks.html` for `/`) includes it, defines
   `BodySection` with the slots and `PageScripts` with the spec, and asks the
   page for `PageContent`. `HomePage.html` is only that content (the About
   text) plus the include. Go templates reject a second definition, so none of
@@ -115,10 +122,8 @@ Sadhana).
   `node design/render-images.mjs` (preview layout in `design/og.html`),
   which needs `PLAYWRIGHT_CORE` and `CHROMIUM` pointed at an install.
 - **Labs** (#90, `internal/web/labs.go`): layout experiments on the live site
-  under `/labs/<slug>`, listed at `/labs/`. `/labs/tracks` (`layouts/Tracks.html`) is
-  the track list (#101): the tala in a left column from `lg` up, a card per
-  instrument beside it, and the tala's `instrumentControls: false`, so the
-  claps' and kit's controls are only in their cards. The `labs` slice drives both the
+  under `/labs/<slug>`, listed at `/labs/`. (The track list was tried as
+  `/labs/tracks` before it became `/` in #101.) The `labs` slice drives both the
   routes and the index. Each labs page is its own goapplib page type with a
   template under `web/templates/labs/`, and they all sit on one mux wrapped
   in `noindex`, with a canonical link to `/` and no sitemap entry. Every
@@ -285,7 +290,8 @@ unit-tested:
   whether the bar is open, and for Custom mode the plan) packed into the
   `?s=` query parameter as base64url bytes. The presenter never sets the
   bar's flag; `barOpen` and `withBarOpen` read and flip that one bit and
-  leave every other byte alone, so the drawer can add it on the way out. A Custom plan is stored as edits
+  leave every other byte alone. Nothing sets it since the drawer went (#101),
+  but old links carry it and it stays in the format. A Custom plan is stored as edits
   to the closest built-in plan (or field by field, whichever is shorter),
   with a checksum of that plan so a link made before a built-in sound
   changed can say so. Slider values take a byte or two; anything off a
@@ -442,19 +448,19 @@ unit-tested:
 - `storage.ts`: every localStorage key goes through here. An instrument
   keeps its state under its page id (`instrumentStore(id)`:
   `thambura.thambura-1`, `thambura.kit-1`, `thambura.hands-1`); the page's
-  own keys (`player`, `presets`, `drawer`, `shruthi`, `tracks`) are named. `thambura-1` reads the
+  own keys (`player`, `presets`, `shruthi`, `tracks`) are named. `thambura-1` reads the
   pre-id `thambura.drone` record once through `withFallback`, which writes
-  only the new key and leaves the old one for the drawer's own migration.
+  only the new key. (`thambura.drawer`, the drawer's open state, is no longer
+  read or written.)
 - `pageLink.ts` (`PageLink`): the page's share link in the address bar
   (`?s=`, `replaceState`, 400 ms after the last change), made of one part
   per instrument. An instrument gets its own with `part(id)`: it reads its
   part of the link the page was opened with, and each write rewrites the
   page link from every part, keeping the parts it was opened with until
-  their instruments write. A drawer layout sets `showsBar` so the thambura
-  parts carry whether the bar is open; a docked thambura leaves it true.
-  The drawer reads the bar's bit from `opened(id)`, the part as the page was
-  opened, since the thambura has already written its own part (bit clear)
-  by the time its island mounts (#130).
+  their instruments write, each part as its instrument wrote it. `opened(id)`
+  and `openedIds()` are the link as the page was opened, which the track
+  list reads for which instruments to start with, after the instruments have
+  written their own parts. `remove(id)` drops a part when its instrument goes.
   `url(id, setup)` is Copy link's URL: the page link with that part swapped
   in. It's in the page context, since the link is the page's, not one
   island's.
@@ -463,10 +469,7 @@ unit-tested:
   instrument and made in `buildContext`, not by its island). It has its own
   `Transport` (so it starts and stops apart from the tala), the plucked
   (tambura, guitar) and reed (sruti) voices on the audio track named by its
-  id, and the view and the Custom plan, saved under that id. Whether the bar is open
-  isn't its business (#88): `thamburaDrawer.ts` (`ThamburaDrawer`) holds
-  that under its own key, `thambura.drawer`, taking a link's flag over the
-  saved one and, once, the `open` the presenter used to save.
+  id, and the view and the Custom plan, saved under that id.
   Everything plucked goes through the settings' plan (`planFor`): its voices
   key and render the samples, and `pluckOptions` turns a pluck into
   level, pan and detune. `setCustom` / `loadCustom` edit the Custom plan and
@@ -517,15 +520,11 @@ unit-tested:
   released so the re-pluck's choke leaves it alone. Sruti mode
   mixes its three tones swara-first (0.40 / 0.25 / 0.08, panned apart), since
   the octave Sa's otherwise fuse into one note and bury the swara.
-- `ThamburaPanel.tsx` is the thambura's controls wherever a layout puts
-  them: `ThamburaBar.tsx` slides it up from the bottom in a drawer, and
-  `ThamburaDocked` puts it in a page slot with no hide button (the
-  `thambura` island's `panel` presentation, as on `/labs/side-by-side`). A
-  docked thambura has no drawer and no floating controls, T still plays it,
-  and its links always set the bar's bit (`linkShowsBar`), since it's
-  always in view.
-- `ThamburaBar.tsx` is the bar that slides up from the bottom when the
-  floating `#thambura-toggle` is clicked. The panel's header holds the one start/stop button
+- `ThamburaPanel.tsx` is the thambura's controls wherever a page puts
+  them: `ThamburaDocked` in a slot of its own (the `thambura` island, on
+  `/labs/side-by-side` and in embeds), or under the thambura's card's "More"
+  on `/`, where `compact` leaves out the start/stop button and the Sound
+  menu the card already has. The panel's header holds the one start/stop button
   every view shares (the views have none of their own, except the Raagini's
   power switch, part of the replica), the Sound menu (the mode,
   from `THAMBURA_MODES`, the presets that ship (`BUILT_IN_PRESETS`) and the
@@ -542,8 +541,7 @@ unit-tested:
   Save as… buttons. "All strings" writes an edit to all four at once. Its sliders commit on
   release, since most changes re-render, and their descriptions sit in
   tooltips unless "Show descriptions" is on. Its groups flow into 1-4 CSS
-  columns (`break-inside-avoid`), and the bar widens to `max-w-6xl` in the
-  Lab only. Each string tab has an on/off dot and there's Solo (the
+  columns (`break-inside-avoid`). Each string tab has an on/off dot and there's Solo (the
   presenter's `muted`, cleared on leaving the Lab and kept out of links), and
   "Copy…" gives the selected string another's sound (`copyString`) or copies
   it to all. `ThamburaScope` draws what the thambura's track plays from
@@ -551,22 +549,17 @@ unit-tested:
   and the spectrum with the bloom band shaded. Shared bits are in
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
-- `thamburaIsland.tsx` is a view of the page's thambura (it's handed the
-  presenter; `newThamburaPresenter` is what `buildContext` makes it with), and
-  wires the page's floating controls, the stack at the
-  bottom right in `HomePage.html` (`#thambura-controls`): `#play-all`
-  (Start all from anywhere on the page, the tala and the thambura together,
-  through `playAll`, the page's session; `reflectPlaying` flips its icon via
-  `data-playing` and its label, `reflectOpen` fades the pair while the bar
-  is open), `#thambura-toggle` (opens the bar: a tilted tambura icon, the
-  whole button on a phone, in a pill with the "Thambura" label from `sm`
-  up; it goes once the thambura's panel lives in its track, #101), and the
-  T key, which plays the thambura alone (`shortcuts.ts`: not while typing
-  in a field, not with Ctrl/Cmd/Alt, not on key repeat). The link goes to the address bar
+- `thamburaIsland.tsx` is the thambura docked in a slot (it's handed the
+  presenter; `newThamburaPresenter` is what `buildContext` makes it with).
+  The page's floating `#play-all` is Start all (`wireFloatingPlay` in
+  `session.ts`), and the T key plays the thambura alone on every page of
+  ours (`pageShortcut`: not while typing in a field, not with Ctrl/Cmd/Alt,
+  not on key repeat). A thambura playing holds the wake lock through
+  `buildContext`'s `make`, whether or not an island shows it. The link goes to the address bar
   through the page's `PageLink`: `replaceState`, no history entries, 400 ms
   after the last change, since Safari throws after 100 calls in 30 s and a
   slider drag changes the setup on every step. The
-  bar's header has a Copy link button, and its Sound menu plays a preset as
+  panel's header has a Copy link button, and its Sound menu plays a preset as
   soon as it is picked; the Lab saves them (Save writes over the one playing,
   Save as… keeps both) and lists them to rename, delete, copy, or Share, which
   opens the `.github/ISSUE_TEMPLATE/share-a-preset.yml` form filled in, so
@@ -871,18 +864,21 @@ opens `#shruthi-keys`, whose stretched keys have a `title`), the arrows
 `button[aria-label="Shruthi up a semitone"]` and "Fine tune up a cent", and
 `button:has-text("Start all")`. Space presses a focused button, so click the
 page body before testing it as Start all.
-On `/labs/tracks` the cards are `[aria-label="Instruments"] article`, each
+On `/` the cards are `[aria-label="Instruments"] article`, each
 labelled by its instrument ("Claps", "Thambura", "Mridangam"), with
 `button[aria-label="Remove Mridangam"]`, "Mute Claps", "Solo Thambura",
 `select[aria-label="Add an instrument"]` (options by label), and Undo in the
-list's `[role="status"]`.
+list's `[role="status"]`. A new browser starts with the claps and the
+thambura only; add the mridangam with `selectOption({ label: "Mridangam" })`.
 The tala's transport buttons are icons, so select them by label:
 `button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). With
 `getByRole`, pass `exact: true`: name matching is a substring match, so
 "Start" also finds Restart. The
-thambura opens with the floating `#thambura-toggle`, its views are
+thambura's full panel opens with its card's `button:has-text("More")`,
+scoped to `article[aria-label="Thambura"]`; its views are
 `button[role="radio"]:has-text("Raagini")` and so on, its mode is
-`select[aria-label="Sound"]`,
+`select[aria-label="Sound"]` (on the card; the panel under More leaves its
+own out),
 `button[aria-label="Copy link"]` copies the
 page's `?s=` link (give the context the clipboard permissions to read it back;
 a fresh context opening that URL is the second listener), the Lab's controls are ranges labelled by field
@@ -893,12 +889,9 @@ plan in `textarea[aria-label="Settings JSON"]`, and presets are saved with
 `mode:<id>` in `select[aria-label="Sound"]` and presets are their ids under
 `optgroup[label="Saved"]`. Each string pans to its own place, so wrapping
 `StereoPannerNode`'s `pan` setter tells you which string a pluck was.
-It plays alone with `page.keyboard.press("t")`; the floating `#play-all`
-starts the tala too. Once the bar is open, the
-floating pair fades out and goes `inert` (the bar carries the same two
-controls), so drive the bar's own buttons then: scope to
-`[role="region"][aria-label="Thambura"]`, and hide it again with
-`button[aria-label="Hide thambura"]`. The theme toggle cycles system, light,
+It plays alone with `page.keyboard.press("t")` or its card's
+`button[aria-label="Start thambura"]`; the floating `#play-all` starts the
+tala too. The theme toggle cycles system, light,
 dark, so dark takes two clicks (or launch the page with `colorScheme: "dark"`).
 
 Checking an embed (#92) needs a second origin that really is one. Serve the
@@ -928,9 +921,7 @@ A few probes that worked, all set up in an init script:
 - To make a share link to open, write it with the engine rather than by
   hand: a throwaway vitest file that calls `encodeLink` / `encodePage` and
   ends in `expect(link).toBe("")` prints the link in the failure diff.
-  Delete the file afterwards. A thambura part read back from a `PageLink`
-  carries the bar flag, so compare it with `withBarOpen(link, true)`, not
-  the link you encoded.
+  Delete the file afterwards.
 - To check that saved choices survive a change (a storage key moving, as in
   #97 and #98), serve the base and then the branch **on the same port**, one
   after the other, and drive both through `launchPersistentContext` with one

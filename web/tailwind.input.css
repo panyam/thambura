@@ -12,9 +12,3 @@ html.dark {
 #header-actions-menu-btn {
   display: none;
 }
-
-/* Room below the page content for the open thambura bar, whose island sets
-   the variable to the bar's height (0 when hidden). */
-main {
-  padding-bottom: var(--thambura-bar-height, 0px);
-}

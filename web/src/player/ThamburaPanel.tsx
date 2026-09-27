@@ -29,19 +29,19 @@ function ViewLoading(props: { name: string }) {
 const MODE = "mode:";
 
 export interface ThamburaPanelProps extends ThamburaViewProps {
-  /** The hide button, for a panel in a drawer. A docked panel has none. */
-  onHide?: () => void;
-  /** Classes for the view area: the drawer caps its height and scrolls, a docked panel doesn't. */
-  bodyClass?: string;
+  /**
+   * Leaves the start/stop button and the Sound menu out of the header, for
+   * a panel under the thambura's card, which has both (TrackListView.tsx).
+   */
+  compact?: boolean;
 }
 
 /**
  * The thambura's controls, wherever the layout puts them: a header with the
  * start/stop button, the Sound menu (built-in sounds and saved presets, which
  * play as soon as they're picked), the switch between the views, Copy link
- * (with `shareUrl`) and, in a drawer, Hide; then any notice, then the view.
- * ThamburaBar slides it up from the bottom of the window; ThamburaDocked puts
- * it in a slot on the page.
+ * (with `shareUrl`); then any notice, then the view. ThamburaDocked puts it
+ * in a slot on the page, and a thambura's card opens it under "More".
  */
 export function ThamburaPanel(props: ThamburaPanelProps) {
   const st = () => props.state();
@@ -59,9 +59,12 @@ export function ThamburaPanel(props: ThamburaPanelProps) {
   return (
     <>
       <div class="flex items-start gap-3 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
-        <PlayButton playing={st().playing} onClick={() => void a.toggle()} class="h-8 w-8" />
-        {/* Wraps on the narrowest phones so the hide button stays in reach. */}
+        <Show when={!props.compact}>
+          <PlayButton playing={st().playing} onClick={() => void a.toggle()} class="h-8 w-8" />
+        </Show>
+        {/* Wraps on the narrowest phones so Copy link stays in reach. */}
         <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-2">
+          <Show when={!props.compact}>
           <span class="hidden text-sm font-semibold sm:inline">Thambura</span>
           <select
             aria-label="Sound"
@@ -110,6 +113,7 @@ export function ThamburaPanel(props: ThamburaPanelProps) {
               </optgroup>
             </Show>
           </select>
+          </Show>
           <Segmented label="Thambura view" size="sm" value={st().view} options={THAMBURA_VIEWS.map((v) => ({ value: v.id, label: v.label }))} onChange={(v) => a.setView(v)} />
         </div>
         <Show when={props.shareUrl}>
@@ -123,18 +127,6 @@ export function ThamburaPanel(props: ThamburaPanelProps) {
             <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path d="M11.5 3.6a3.5 3.5 0 0 1 4.9 4.9l-2.1 2.1a3.5 3.5 0 0 1-4.95 0 .75.75 0 1 1 1.06-1.06 2 2 0 0 0 2.83 0l2.1-2.1a2 2 0 0 0-2.83-2.83l-.7.7a.75.75 0 1 1-1.06-1.06z" />
               <path d="M8.5 16.4a3.5 3.5 0 0 1-4.9-4.9l2.1-2.1a3.5 3.5 0 0 1 4.95 0 .75.75 0 1 1-1.06 1.06 2 2 0 0 0-2.83 0l-2.1 2.1a2 2 0 0 0 2.83 2.83l.7-.7a.75.75 0 1 1 1.06 1.06z" />
-            </svg>
-          </button>
-        </Show>
-        <Show when={props.onHide}>
-          <button
-            type="button"
-            aria-label="Hide thambura"
-            onClick={() => props.onHide?.()}
-            class="shrink-0 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:hover:bg-gray-800 dark:hover:text-white"
-          >
-            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M5.2 7.2a.75.75 0 0 1 1.06 0L10 10.94l3.74-3.74a.75.75 0 1 1 1.06 1.06l-4.27 4.27a.75.75 0 0 1-1.06 0L5.2 8.26a.75.75 0 0 1 0-1.06z" clip-rule="evenodd" />
             </svg>
           </button>
         </Show>
@@ -152,7 +144,7 @@ export function ThamburaPanel(props: ThamburaPanelProps) {
           </Show>
         </div>
       </Show>
-      <div class={props.bodyClass ?? "p-3 sm:p-4"}>
+      <div class="p-3 sm:p-4">
         <Switch>
           <Match when={st().view === "mini"}>
             <ThamburaMini state={props.state} actions={a} />
@@ -180,7 +172,7 @@ export function ThamburaPanel(props: ThamburaPanelProps) {
  * The panel docked in a page slot rather than a drawer: always showing, no
  * hide button, and as tall as its view.
  */
-export function ThamburaDocked(props: ThamburaViewProps) {
+export function ThamburaDocked(props: ThamburaPanelProps) {
   return (
     <div role="region" aria-label="Thambura" class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900 print:hidden">
       <ThamburaPanel {...props} />

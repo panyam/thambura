@@ -135,9 +135,9 @@ stroke is heard, which is how you see what a phrase is doing.
 
 ## Views: what the page shares, and what a track shows
 
-Decided on 2026-09-27 for #101. Built: the session strip (#136), then the
-track list on `/labs/tracks`. The new-user defaults, and the list on `/`,
-are still to come.
+Decided on 2026-09-27 for #101, and built in three PRs: the session strip
+(#136), the track list, tried on `/labs/tracks` (#139), then the list on `/`
+in place of the drawer, with the new-user defaults.
 
 **Speed and shruthi belong to the page, not to an instrument.** Tempo
 already did: the tala sets the clock's `TempoMap`, and a kit plays on it.
@@ -184,16 +184,15 @@ shared.
   stroke lane stays under the image. The desktop layout keeps the tala in a
   left column and the cards beside it.
 
-**Still to build:**
-
-- **New-user defaults**: the tala, the claps and one thambura, and the
-  mridangam only once someone adds it. The track list is saved only when
-  it's changed, so a better default still reaches anyone who never touched
-  theirs. Compatibility with earlier saved state isn't a goal here: the app
-  has no users to keep yet, so a storage version bump that starts everyone
-  fresh is acceptable.
-- **The list on `/`**, in place of the drawer: the thambura's panel is its
-  card's "More", so the drawer and the floating Thambura button go.
+**On `/`**, the list replaced the drawer and the floating Thambura button:
+the thambura's panel is its card's "More", whose header leaves out the play
+button and Sound menu the card already has. The floating play button stays
+as Start all, and T plays the thambura alone on every page. A new visitor
+starts with the claps and a thambura, and adds the mridangam from the list;
+the list is saved only once they change it, so a better default still
+reaches anyone who never did. A page without the list (`/labs/side-by-side`,
+embeds) starts with every instrument the spec offers, the first kit
+included, since it has no way to add one.
 
 ## The order
 

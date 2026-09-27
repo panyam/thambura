@@ -54,22 +54,40 @@ function setUp(opts: { store?: Mem | null; opened?: Record<string, string>; reco
 }
 
 describe("TrackList", () => {
-  it("starts with one of each kind the page offers, and only the first kit", () => {
-    const { list, tracks } = setUp();
+  it("starts a new listener with the claps and a thambura, and a drum when they add one", () => {
+    const { list, tracks, store } = setUp();
+    expect(tracks.ids()).toEqual(["hands-1", "thambura-1"]);
+    expect(list.state.addable).toEqual([
+      { kind: "kit", kit: 0 },
+      { kind: "kit", kit: 1 },
+    ]);
+    expect(list.state.rows.map((r) => r.removable)).toEqual([false, true]);
+    // Not saved until they change it, so a later default still reaches them.
+    expect(store?.value).toBeNull();
+  });
+
+  it("starts a page without the list with the first kit too, since it can't add one", () => {
+    const { tracks } = setUp({ store: null });
     expect(tracks.ids()).toEqual(["hands-1", "thambura-1", "kit-1"]);
-    expect(list.state.addable).toEqual([{ kind: "kit", kit: 1 }]);
-    expect(list.state.rows.map((r) => r.removable)).toEqual([false, true, true]);
   });
 
   it("starts with what a shared link had, with the claps always", () => {
     const { tracks, list } = setUp({ opened: { "kit-1": "kit1", "session-1": "x" } });
     expect(tracks.ids()).toEqual(["hands-1", "kit-1"]);
+    // In the page's order, not the order the link's parts were written in.
+    expect(setUp({ opened: { "kit-2": "kit0", "thambura-1": "t", "hands-1": "h", "kit-1": "kit1" } }).tracks.ids()).toEqual([
+      "hands-1",
+      "thambura-1",
+      "kit-1",
+      "kit-2",
+    ]);
     expect(list.state.rows.find((r) => r.id === "kit-1")?.kit).toBe(1);
     expect(list.state.addable).toEqual([{ kind: "thambura" }, { kind: "kit", kit: 0 }]);
   });
 
   it("remembers what's on the page and what's muted, where the page shows a list", () => {
     const first = setUp();
+    first.list.add({ kind: "kit", kit: 0 });
     first.list.remove("thambura-1");
     first.list.add({ kind: "kit", kit: 1 });
     first.list.setMuted("kit-2", true);
@@ -91,6 +109,7 @@ describe("TrackList", () => {
 
   it("clears what a removed instrument saved, and Undo puts it back", () => {
     const { list, log, records, timers, tracks, removedParts } = setUp({ records: { "thambura-1": { settings: { key: 9 } } } });
+    list.add({ kind: "kit", kit: 0 });
     list.remove("thambura-1");
     expect(tracks.ids()).toEqual(["hands-1", "kit-1"]);
     expect(records.has("thambura-1")).toBe(false);
@@ -104,6 +123,7 @@ describe("TrackList", () => {
 
   it("starts fresh once Undo has passed, or when added back by hand", () => {
     const a = setUp({ records: { "thambura-1": { settings: { key: 9 } } } });
+    a.list.add({ kind: "kit", kit: 0 });
     a.list.remove("thambura-1");
     a.timers[0]();
     expect(a.list.state.removed).toBeNull();
@@ -113,6 +133,7 @@ describe("TrackList", () => {
     expect(a.log.at(-1)).toBe("make thambura-1 null");
 
     const b = setUp({ records: { "kit-1": { variety: "lots" } } });
+    b.list.add({ kind: "kit", kit: 0 });
     b.list.remove("kit-1");
     b.list.add({ kind: "kit", kit: 0 });
     expect(b.list.state.removed).toBeNull();
@@ -122,6 +143,7 @@ describe("TrackList", () => {
 
   it("won't remove the claps, add a second thambura, or add a kit twice", () => {
     const { list, tracks } = setUp();
+    list.add({ kind: "kit", kit: 0 });
     list.remove("hands-1");
     list.add({ kind: "thambura" });
     list.add({ kind: "kit", kit: 0 });
@@ -130,6 +152,7 @@ describe("TrackList", () => {
 
   it("numbers a new kit with the lowest free id", () => {
     const { list, tracks } = setUp();
+    list.add({ kind: "kit", kit: 0 });
     list.add({ kind: "kit", kit: 1 });
     list.remove("kit-1");
     list.add({ kind: "kit", kit: 0 });

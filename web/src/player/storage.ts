@@ -10,14 +10,11 @@ const KEYS = {
   player: "thambura.player",
   /**
    * The one thambura's settings, view and Custom plan before instance ids.
-   * `thambura-1` reads it once (see `withFallback`), and the drawer reads its
-   * old `open` flag; nothing writes it any more.
+   * `thambura-1` reads it once (see `withFallback`); nothing writes it any more.
    */
   drone: "thambura.drone",
   /** The thambura's saved presets. A preset is a sound, so any thambura can play it. */
   presets: "thambura.presets",
-  /** Whether the thambura's bar is open (thamburaDrawer.ts). */
-  drawer: "thambura.drawer",
   /** Which instruments are on a page that shows the track list (trackList.ts), and which are muted. */
   tracks: "thambura.tracks",
   /** The page's Sa, which every pitched instrument plays to (pageContext.ts, Shruthi). */

@@ -84,7 +84,9 @@ export const UNDO_MS = 6000;
  * The instruments on the page (#101): which are there, adding and removing
  * them, and mute and solo, which are the mixer's (audio.ts). It decides what
  * the page starts with: a shared link's instruments, else the list this
- * browser saved, else one of each kind the spec offers (the first kit only).
+ * browser saved, else the claps and a thambura (and, on a page that shows
+ * no list, the first kit too). The list is saved only when it changes, so a
+ * better default still reaches anyone who never changed theirs.
  * Removing an instrument clears its saved record, so adding it back starts
  * fresh, but Undo puts the record back for a few seconds.
  */
@@ -191,7 +193,10 @@ export class TrackList<T> {
     const out: Placed[] = [];
     if (this.catalogHas("hands")) out.push({ id: "hands-1", kind: "hands" });
     if (this.catalogHas("thambura")) out.push({ id: "thambura-1", kind: "thambura" });
-    if (this.catalogHas("kit")) out.push({ id: "kit-1", kind: "kit", kit: 0 });
+    // A new listener starts with the tala's claps and a thambura, and adds a
+    // drum when they want one. A page without the list can't add one, so it
+    // starts with the first kit, as pages always have.
+    if (this.catalogHas("kit") && !this.deps.store) out.push({ id: "kit-1", kind: "kit", kit: 0 });
     return out;
   }
 
@@ -211,7 +216,10 @@ export class TrackList<T> {
       }
     }
     if (out.length > 0 && this.catalogHas("hands") && !out.some((p) => p.kind === "hands")) out.unshift({ id: "hands-1", kind: "hands" });
-    return out.filter((p) => this.entry(p));
+    // A link lists its parts in the order the instruments wrote them, which
+    // isn't the order they were added; claps, thambura, then kits reads best.
+    const rank = (p: Placed) => KINDS.indexOf(p.kind) * 1000 + Number(p.id.split("-")[1]);
+    return out.filter((p) => this.entry(p)).sort((a, b) => rank(a) - rank(b));
   }
 
   private put(placed: Placed): void {

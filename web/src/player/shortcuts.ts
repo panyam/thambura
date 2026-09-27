@@ -20,8 +20,8 @@ export function isThamburaShortcut(e: KeyPress): boolean {
   return !typing(e);
 }
 
-/** What a page-wide key does: Space starts or stops everything, Shift+↑/↓ steps the shruthi. */
-export type PageShortcut = "toggleAll" | "shruthiUp" | "shruthiDown";
+/** What a page-wide key does: Space starts or stops everything, T the thambura, Shift+↑/↓ steps the shruthi. */
+export type PageShortcut = "toggleAll" | "thambura" | "shruthiUp" | "shruthiDown";
 
 /**
  * The page-wide shortcut a keypress is, if any. Never while typing in a
@@ -35,6 +35,7 @@ export function pageShortcut(e: KeyPress): PageShortcut | null {
     const tag = e.target?.tagName?.toUpperCase();
     return tag === "BUTTON" || tag === "A" ? null : "toggleAll";
   }
+  if (isThamburaShortcut(e)) return "thambura";
   if (e.shiftKey && e.key === "ArrowUp") return "shruthiUp";
   if (e.shiftKey && e.key === "ArrowDown") return "shruthiDown";
   return null;

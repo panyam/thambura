@@ -43,8 +43,8 @@ and three kinds of instrument:
 Each instrument has an id on the page (`hands-1`, `thambura-1`, `kit-1`)
 and its own audio track, and they all share one clock, so the claps and the
 drum land on the same beats and the drum follows the thambura's Sa.
-[`/labs/tracks`](https://thambura.com/labs/tracks) is a trial layout where
-you can add, remove, mute and solo them.
+The home page shows them as a track list, a card per instrument, where you
+can add, remove, mute and solo them.
 
 Under all of it sits the **engine**, plain TypeScript with no DOM, audio or
 timers: the tala tables, exact fractions for every musical position, the
@@ -63,11 +63,11 @@ on a server with the mridangam kit installed, is:
 
 ```json
 {
-  "layout": "drawer",
+  "layout": "tracks",
   "islands": [
     { "name": "tala", "slot": "main", "presentation": "page",
-      "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json" } },
-    { "name": "thambura", "slot": "drawer", "presentation": "drawer" }
+      "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json", "instrumentControls": false } },
+    { "name": "tracks", "slot": "tracks", "presentation": "page" }
   ],
   "instruments": [
     { "kind": "hands", "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json" } },
@@ -76,6 +76,10 @@ on a server with the mridangam kit installed, is:
   ]
 }
 ```
+
+The instruments are what the page can have. Which of them are on it is the
+track list's business in the browser: a new visitor starts with the claps and
+the thambura and adds the mridangam from the list.
 
 A missing config is an empty one. An island the registry doesn't know, or a
 slot that isn't on the page, is logged and skipped, so one bad entry doesn't

@@ -127,6 +127,7 @@ function TrackCard(props: TrackListViewProps & { row: TrackRow }) {
                   <ThamburaQuick t={t()} />
                   <Show when={more()}>
                     <ThamburaDocked
+                      compact
                       state={t().state}
                       actions={t().actions}
                       shareUrl={props.shareUrl && ((link) => props.shareUrl!(row().id, link))}
@@ -205,7 +206,12 @@ function KitQuick(props: { k: Extract<TrackInstrument, { kind: "kit" }> }) {
     <Show when={s().status === "ready"} fallback={<p class="text-sm text-gray-500 dark:text-gray-400">Loading…</p>}>
       <div class="flex flex-col gap-2">
         <div class="flex flex-wrap items-center gap-2">
-          <PlayButton playing={s().enabled} onClick={() => a.setEnabled(!s().enabled)} />
+          <PlayButton
+            playing={s().enabled}
+            onClick={() => a.setEnabled(!s().enabled)}
+            name={s().instrument || "kit"}
+            hint="playing along with the tala"
+          />
           <span class="text-xs text-gray-500 dark:text-gray-400">{s().enabled ? "Plays with the tala" : "Off"}</span>
           <select aria-label="Variety" class={SMALL_SELECT} onChange={(e) => a.setVariety(e.currentTarget.value as Variety)}>
             <For each={VARIETY_OPTIONS}>{(o) => <option value={o.value} selected={o.value === s().variety}>{o.label}</option>}</For>

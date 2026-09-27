@@ -61,8 +61,9 @@ type Social struct {
 	ImageHeight int
 }
 
-// HomePage is the practice page: the tala in the main slot and the thambura
-// in a drawer, laid out by layouts/Drawer.html and mounted from Spec.
+// HomePage is the practice page: the tala in the main slot and a card per
+// instrument in the tracks slot (#101), laid out by layouts/Tracks.html and
+// mounted from Spec.
 type HomePage struct {
 	SitePage
 	// Spec says which islands the page mounts, and each one's config; the
@@ -74,15 +75,18 @@ type HomePage struct {
 // sound groups.
 const fixturesURL = "/static/Resources/TalasFixtures.json"
 
-// homeSpec is the home page's islands and the instruments it starts with:
-// the hand claps, the thambura, and a kit for each kit found. Which instruments are playing after that is the
-// browser's business. Kits are build products copied in (make devkit) and
+// homeSpec is the home page's islands and the instruments it can have: the
+// hand claps, the thambura, and a kit for each kit found. Which of them are
+// on the page is the track list's business, in the browser (trackList.ts).
+// The claps' and kit's controls are in their cards, so the tala leaves them out. Kits are build products copied in (make devkit) and
 // aren't committed, so most checkouts have none, and then the spec seeds
 // none rather than sending the browser after a kit.json that isn't there.
 func homeSpec(kitURLs []string) page.Spec {
+	tala := talaIsland("main")
+	tala.Config["instrumentControls"] = false
 	return page.Spec{
-		Layout:      "drawer",
-		Islands:     []page.Island{talaIsland("main"), {Name: "thambura", Slot: "drawer", Presentation: "drawer"}},
+		Layout:      "tracks",
+		Islands:     []page.Island{tala, {Name: "tracks", Slot: "tracks", Presentation: "page"}},
 		Instruments: startingInstruments(kitURLs),
 	}
 }

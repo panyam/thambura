@@ -1,11 +1,11 @@
-{{# include "./layouts/Drawer.html" #}}
+{{# include "./layouts/Tracks.html" #}}
 
-{{/* The home page's own content, under the tala in the Drawer layout. */}}
+{{/* The home page's own content, under the tala and the tracks. */}}
 {{ define "PageContent" }}
     <!-- What the app is, in words: for people scrolling past the player, and
          for search engines, since the player itself is drawn by JavaScript.
-         The bottom padding clears the floating thambura bar. -->
-    <section aria-labelledby="about-heading" class="mx-auto w-full max-w-3xl px-4 pb-32">
+         The bottom padding clears the floating play button. -->
+    <section aria-labelledby="about-heading" class="mx-auto w-full max-w-3xl px-4 pb-24">
         <div class="border-t border-gray-200 pt-8 text-sm leading-relaxed text-gray-600 dark:border-gray-700 dark:text-gray-400">
             <h1 id="about-heading" class="text-base font-semibold text-gray-900 dark:text-gray-100">
                 An online thambura and tala keeper for Carnatic practice
