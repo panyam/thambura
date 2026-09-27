@@ -27,12 +27,15 @@ const outdir = at > 0 ? process.argv[at + 1] : "static";
 const mat = process.argv.indexOf("--manifest");
 const manifest = mat > 0 ? process.argv[mat + 1] : "bundle.json";
 
-// app.js keeps its name (the templates, the service worker and the live-build
-// check in CLAUDE.md all name it). Code loaded on first use, such as the Lab
+// The entries keep their names: the templates, the service worker and the
+// live-build check in CLAUDE.md name app.js, and other sites link to
+// embed.js, so its URL is a promise to them. Code loaded on first use, such as the Lab
 // and Raagini views, goes into content-hashed chunks, which app.yaml lets
 // browsers keep for a long time since a name never changes its content.
 const options = {
-  entryPoints: { app: "src/main.ts" },
+  // app.js runs our pages; embed.js runs the same islands on other sites
+  // (src/embed.ts). They share chunks, so neither carries its own Solid.
+  entryPoints: { app: "src/main.ts", embed: "src/embed.ts" },
   outdir,
   bundle: true,
   splitting: true,
@@ -80,8 +83,8 @@ const swOptions = (metafile) => ({
 
 function writeManifest(metafile) {
   const rel = relative(process.cwd(), resolve(outdir));
-  const app = { script: "/static/app.js", preload: preloadFor(metafile, "app", { outdir: rel, base: "/static" }) };
-  writeFileSync(manifest, JSON.stringify({ app }, null, 2) + "\n");
+  const entry = (name) => ({ script: `/static/${name}.js`, preload: preloadFor(metafile, name, { outdir: rel, base: "/static" }) });
+  writeFileSync(manifest, JSON.stringify({ app: entry("app"), embed: entry("embed") }, null, 2) + "\n");
 }
 
 // esbuild never deletes, so chunks from earlier builds would pile up and be

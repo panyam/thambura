@@ -45,9 +45,14 @@ things keep that from making a first visit slower or a deploy break a page:
   removed. The build empties `static/chunks/` first, since esbuild never
   deletes.
 
+The build has two entries: `app.js` for our pages and `embed.js` for other
+sites (#92, below). They share chunks, `bundle.json` has an entry for each,
+and both keep fixed names, since other sites link to `embed.js`.
+
 `pnpm buildcheck` (in `make test`) builds into a temp folder and checks all
 of this: the views are in chunks, the worker precaches every script, stale
-chunks are gone, and `bundle.json` matches what `app.js` imports.
+chunks are gone, `bundle.json` matches what each entry imports, and
+`embed.js` carries none of our page chrome and shares chunks with `app.js`.
 
 `web/` has three pnpm scripts no make target and no CI runs, so they only run
 when you type them: `pnpm bench` (times the pluck renderer, see `tambura.ts`
@@ -112,6 +117,14 @@ Sadhana).
   layout state would be its own, and none has any yet. `/labs/side-by-side`
   (`layouts/SideBySide.html`) puts the tala and a docked thambura in two
   columns from `lg` up and stacks them below that.
+- **Embedding** (#92, `internal/web/embed.go`): `/embed/demo` is a page
+  written the way another site would write one, with no BasePage, header,
+  `app.js` or `tailwind.css`: a `data-thambura-spec` script, a
+  `data-thambura-slot` element per island, and `/static/embed.js`. It's
+  noindexed and preloads `embed.js`'s chunks from `bundle.json`. Go's
+  `/static/` handler and all three `/static` handlers in `app.yaml` send
+  `Access-Control-Allow-Origin: *`, since a module script, its chunks and
+  `fetch()` of fixtures and sounds from another origin need it.
 - `/legacy/` serves the 2016 app from `web/legacy/`, copied from the
   `pre-sadhana-port` tag with its `/static/` paths moved under
   `/legacy/static/` (see `web/legacy/README.md`). Nothing links to it from
@@ -172,7 +185,8 @@ unit-tested:
   rest of a long beat (a Misra Chaapu at 10 bpm is one 21 s beat). On stop it
   rewinds the cursor to the first step not yet heard.
 - `assets.ts` parses sound/image groups from `TalasFixtures.json`, each a map
-  from a beat's name to a file. (The 2016 app's SaRiGaMa groups, a random
+  from a beat's name to a file, resolved against the fixtures' own URL, so
+  its `/static/...` paths stay on our origin when another site embeds us. (The 2016 app's SaRiGaMa groups, a random
   tick and a random swara image per beat, were dropped with their per-step
   random draw.) The player opens on the first sound and
   image group in the fixture, so group order there sets the defaults (Right
@@ -325,18 +339,35 @@ unit-tested:
 - `PlayerView.tsx`: renders `PlayerState` and calls the presenter's intents.
   Its Sounds menu and Volume slider are the hands track's, and the lane,
   Variety and Korvai the kit's; both come in as props.
-  `island.tsx` wires the real browser dependencies in. `main.ts` is the
-  page's island registry (`tala`, `thambura`) and its `makeContext`; the
-  generic `web/src/page/islandPage.ts` (a tsappkit `BasePage`, which also
-  wires the theme toggle) reads the page spec and mounts each island in its
-  slot through `mountIslands`, which logs and skips an unknown island, a
-  missing slot or a factory that throws.
+  `island.tsx` wires the real browser dependencies in. `islands.ts` holds
+  the island registry (`tala`, `thambura`) and `buildContext`, which both
+  entries use: `main.ts` for our pages, through the generic
+  `web/src/page/islandPage.ts` (a tsappkit `BasePage`, which also wires the
+  theme toggle), and `embed.ts` for other sites. Both mount through
+  `mountIslands`, which logs and skips an unknown island, a missing slot or
+  a factory that throws, and builds the context only when there's an island.
+- `embed.ts` (`/static/embed.js`) is the tala and the thambura on someone
+  else's page. It finds a host's `data-thambura-spec` script
+  (`page/embedSpec.ts`), mounts each island in a shadow root holding our
+  stylesheet (`page/shadow.ts`), so the host's CSS and ours stay apart, and
+  runs their lifecycle through tsappkit's `LifecycleController`, since there's
+  no page class. It also exports `mount(spec, opts)`. Everything resolves
+  against its own `import.meta.url`: fixtures, sounds, kits, the lazy views.
+  `embedDefaults.ts` seeds the instruments a host's islands need (the
+  thambura, and the hand claps for a tala), since only our Go pages seed
+  them. Its `PageLink` writes to no address bar and makes Copy link URLs on
+  the app, the thambura doesn't take the T key from the host's page
+  (`pageKeys: false`), and an embed always docks it.
+  Dark mode inside a shadow can't see the host's `.dark`, so it follows
+  `prefers-color-scheme` or the spec script's `data-theme`.
 - `pageContext.ts`: what every island shares, services rather than
   instruments: `audio`, `clock` (one `Transport` on one `TempoMap`,
   `createClock`), `tracks` (the instruments playing, by id; today the kit,
   under a placeholder id), `tonic` (the Sa; the thambura sets it, the kit
-  follows) and `awake`. `makeContext` fills `tracks` from the spec's
-  instruments, loading only the first kit for now.
+  follows), `awake`, `link`, and `assetBase`, what the spec's URLs resolve
+  against (the page on our site, `embed.js` on another). `buildContext`
+  fills `tracks` from the spec's instruments, loading only the first kit for
+  now.
 - `storage.ts`: every localStorage key goes through here. An instrument
   keeps its state under its page id (`instrumentStore(id)`:
   `thambura.thambura-1`, `thambura.kit-1`, `thambura.hands-1`); the page's
@@ -355,7 +386,7 @@ unit-tested:
   island's.
 - `thamburaPresenter.ts` (`ThamburaPresenter`): a thambura as an instrument
   on the page, with an `id` (`thambura-1`, seeded by Go as a `thambura`
-  instrument and made in `main.ts`, not by its island). It has its own
+  instrument and made in `buildContext`, not by its island). It has its own
   `Transport` (so it starts and stops apart from the tala), the plucked
   (tambura, guitar) and reed (sruti) voices on the audio track named by its
   id, and the view and the Custom plan, saved under that id. Whether the bar is open

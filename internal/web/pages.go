@@ -214,7 +214,8 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	app.Context.Bundle = loadBundle(webDir)
 	goal.Register[*HomePage](app, mux, "/{$}")
 	registerLabs(app, mux)
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(static))))
+	registerEmbed(app, mux)
+	mux.Handle("/static/", crossOrigin(http.StripPrefix("/static/", http.FileServer(http.Dir(static)))))
 	mux.Handle("/legacy/", noindex(http.StripPrefix("/legacy/", http.FileServer(http.Dir(filepath.Join(webDir, "legacy"))))))
 	// The service worker has to come from the root to cover the whole site,
 	// and browsers revalidate it on every update check, so it isn't cached.
@@ -267,6 +268,17 @@ func SiteHandler(h http.Handler) http.Handler {
 }
 
 // noindex asks search engines to leave a response out of their index.
+// crossOrigin lets other sites read what h serves. /static is public, and a
+// page embedding the islands (embed.go) loads embed.js, its chunks, the
+// fixtures and the sounds from us, which a module script or fetch() from
+// another origin can only do with this header. app.yaml sends it on a deploy.
+func crossOrigin(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		h.ServeHTTP(w, r)
+	})
+}
+
 func noindex(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Robots-Tag", "noindex")

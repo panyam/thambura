@@ -7,18 +7,27 @@ handlers:
 # content, so a new build means new names. Without the first rule, a browser
 # holding an app.js from before a deploy for App Engine's default ten minutes
 # would ask for chunks the deploy removed. These must come before /static.
+# All three allow cross-origin reads: other sites load embed.js, its chunks,
+# the stylesheet, fixtures and sounds from here (web/src/embed.ts), and the Go
+# server sends the same header when it serves /static locally.
 - url: /static/([^/]+\.js)$
   static_files: web/static/\1
   upload: web/static/[^/]+\.js$
   secure: always
   expiration: "0s"
+  http_headers:
+    Access-Control-Allow-Origin: "*"
 - url: /static/chunks
   static_dir: web/static/chunks
   secure: always
   expiration: "365d"
+  http_headers:
+    Access-Control-Allow-Origin: "*"
 - url: /static
   static_dir: web/static
   secure: always
+  http_headers:
+    Access-Control-Allow-Origin: "*"
 # The 2016 app (web/legacy). static_dir serves no index, so /legacy/ needs its own line.
 # noindex keeps it out of search results next to the app (the Go server sends
 # the same header when it serves /legacy locally).

@@ -59,17 +59,14 @@ wants a working drone in a div takes `./mount`. One already on Solid takes
 
 Most of it is small, and each item is a real blocker for embedding:
 
-1. **Asset paths.** `TalasFixtures.json` names its sounds and images as
-   `/static/Resources/...`. A host app can't be expected to serve that path.
-   The fixtures should carry paths relative to a base the caller passes
-   (`assetBase`, defaulting to today's `/static`), or the loader should resolve
-   them against the fixtures URL it was given. The fixtures URL itself is
-   already injectable, which is the harder half done.
-2. **CSS.** The components carry Tailwind utility classes, which only work if
-   the host's Tailwind scans our files. Two ways out, and `notations` points at
-   the first: ship built CSS (a Tailwind build scoped to these components), or
-   move the components onto CSS custom properties and ship a small stylesheet.
-   Shipping built CSS costs less and leaves the app's build alone.
+1. **Asset paths.** Done in #92. `TalasFixtures.json` still names its sounds
+   and images as `/static/Resources/...`, and the loader resolves them against
+   the fixtures URL it was given, so on another site they stay on ours. Kits
+   already resolved against their `kit.json`.
+2. **CSS.** Done in #92, a third way: each island mounts in a shadow root
+   holding our built `tailwind.css`, so the host's Tailwind never needs to
+   scan our files and neither side's rules reach the other. The cost is dark
+   mode, which can't see the host's `.dark` class from inside a shadow.
 3. **One copy of Solid.** `build.mjs` already aliases `solid-js` to a single
    copy because two copies silently break reactivity. `./mount` sidesteps this
    by bundling its own; `./solid` makes it a peer dependency and leaves
@@ -82,7 +79,11 @@ Most of it is small, and each item is a real blocker for embedding:
 5. **App-only pieces stay in the app.** `KeepAwake`, the install button, the
    service worker, the goapplib page shells and the `?s=` address-bar wiring
    are this site's concerns. The presenters already take storage and link
-   interfaces as dependencies, so a host can supply its own or none.
+   interfaces as dependencies, so a host can supply its own or none. `embed.js`
+   (#92) is the script-tag version of this today: it leaves out the install
+   button and the worker, and its thambura leaves the host's address bar alone.
+   `/embed/demo` shows what a host writes, and `make test`'s build check keeps
+   the page chrome out of it.
 
 ## What embedding in the notation app could look like
 

@@ -14,12 +14,21 @@ import (
 	"strings"
 	"testing"
 
+	goal "github.com/panyam/goapplib"
+
 	"github.com/panyam/thambura/internal/page"
 )
 
 // newServer serves the real web/ folder, so the test covers the templar
 // config, the vendored goapplib templates and our overrides together.
 func newServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv, _ := newServerWithApp(t)
+	return srv
+}
+
+// newServerWithApp also returns the app, for tests that set its context.
+func newServerWithApp(t *testing.T) (*httptest.Server, *goal.App[*App]) {
 	t.Helper()
 	webDir := filepath.Join("..", "..", "web")
 	app, err := NewApp(filepath.Join(webDir, "templates"))
@@ -30,7 +39,7 @@ func newServer(t *testing.T) *httptest.Server {
 	Register(app, mux, webDir)
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
-	return srv
+	return srv, app
 }
 
 func get(t *testing.T, url string) (int, string) {
