@@ -66,14 +66,14 @@ func TestHomePageRenders(t *testing.T) {
 		`id="theme-toggle-button"`,
 		`src="/static/app.js"`,
 		`href="/static/css/tailwind.css"`,
-		`id="thambura-toggle"`,
+		`data-slot="tracks"`,
 		`id="play-all"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("home page missing %q", want)
 		}
 	}
-	for _, unwanted := range []string{"/login", "htmx.org", "header-actions-drawer"} {
+	for _, unwanted := range []string{"/login", "htmx.org", "header-actions-drawer", `id="thambura-toggle"`, `data-slot="drawer"`} {
 		if strings.Contains(body, unwanted) {
 			t.Errorf("home page should not contain %q", unwanted)
 		}
@@ -438,8 +438,9 @@ func pageSpec(t *testing.T, body string) page.Spec {
 	return s
 }
 
-// The home page mounts the tala in the main slot and the thambura in the
-// drawer, and every slot its spec names is on the page.
+// The home page mounts the tala in the main slot and the track list beside
+// it, with the claps' and kit's controls in their cards rather than under the
+// tala, and every slot its spec names is on the page.
 func TestHomePageSpec(t *testing.T) {
 	srv := newServer(t)
 	_, body := get(t, srv.URL+"/")
@@ -448,8 +449,11 @@ func TestHomePageSpec(t *testing.T) {
 	for _, is := range s.Islands {
 		names = append(names, is.Name+"@"+is.Slot)
 	}
-	if got := strings.Join(names, ","); got != "tala@main,thambura@drawer" || s.Layout != "drawer" {
+	if got := strings.Join(names, ","); got != "tala@main,tracks@tracks" || s.Layout != "tracks" {
 		t.Fatalf("spec = %s in layout %q", got, s.Layout)
+	}
+	if v, ok := s.Islands[0].Config["instrumentControls"]; !ok || v != false {
+		t.Errorf("tala config instrumentControls = %v, want false", v)
 	}
 	for _, slot := range s.Slots() {
 		if n := strings.Count(body, `data-slot="`+slot+`"`); n != 1 {

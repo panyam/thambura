@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { barOpen, decodePage, encodeLink, encodePage, withBarOpen } from "../engine/shareLink";
+import { decodePage, encodeLink, encodePage } from "../engine/shareLink";
 import { DEFAULT_THAMBURA } from "../engine/shruthi";
 import { planFor } from "../engine/thamburaPlan";
 import { PageLink } from "./pageLink";
@@ -30,8 +30,8 @@ describe("PageLink", () => {
   it("writes one thambura as a plain thambura link, as before", () => {
     const { written, address } = bar(null);
     new PageLink(address).part("thambura-1").write(ONE);
-    // Format 1, only the bar's bit set: what the page wrote before page links.
-    expect(written).toEqual([withBarOpen(ONE, true)]);
+    // Format 1: what the page wrote before page links.
+    expect(written).toEqual([ONE]);
   });
 
   it("writes every instrument's latest part, whichever one changed", () => {
@@ -42,26 +42,15 @@ describe("PageLink", () => {
     page.part("thambura-1").write(link(5));
     const last = decodePage(written.at(-1)!)!;
     expect([...last.keys()]).toEqual(["thambura-1", "thambura-2"]);
-    expect(last.get("thambura-2")).toBe(withBarOpen(TWO, true));
-    expect(barOpen(last.get("thambura-1")!)).toBe(true);
+    expect(last.get("thambura-2")).toBe(TWO);
+    expect(last.get("thambura-1")).toBe(link(5));
   });
 
   it("carries the parts it was opened with until their instruments write", () => {
     const { written, address } = bar(encodePage([{ id: "thambura-1", link: ONE }, { id: "thambura-2", link: TWO }]));
     const page = new PageLink(address);
     page.part("thambura-1").write(link(5));
-    expect(decodePage(written.at(-1)!)!.get("thambura-2")).toBe(withBarOpen(TWO, true));
-  });
-
-  it("marks the thambura parts with whether the bar is showing", () => {
-    const { written, address } = bar(null);
-    const page = new PageLink(address);
-    let open = false;
-    page.showsBar = () => open;
-    page.part("thambura-1").write(ONE);
-    open = true;
-    page.part("thambura-1").write(ONE);
-    expect(written.map((l) => barOpen(l))).toEqual([false, true]);
+    expect(decodePage(written.at(-1)!)!.get("thambura-2")).toBe(TWO);
   });
 
   it("makes a URL for a setup, as the page link with that thambura's part swapped in", () => {
@@ -71,9 +60,8 @@ describe("PageLink", () => {
     const url = new URL(page.url("thambura-1", ONE));
     expect(url.searchParams.get("x")).toBe("1");
     const parts = decodePage(url.searchParams.get("s")!)!;
-    // Every thambura part says whether the bar is showing (here, the default: yes).
-    expect(parts.get("thambura-1")).toBe(withBarOpen(ONE, true));
-    expect(parts.get("thambura-2")).toBe(withBarOpen(TWO, true));
+    expect(parts.get("thambura-1")).toBe(ONE);
+    expect(parts.get("thambura-2")).toBe(TWO);
   });
 
   it("remembers each part the page was opened with, after its instrument writes a new one", () => {
@@ -83,14 +71,5 @@ describe("PageLink", () => {
     expect(page.opened("thambura-1")).toBe(ONE);
     expect(page.opened("thambura-2")).toBeNull();
     expect(new PageLink(bar(null).address).opened("thambura-1")).toBeNull();
-  });
-
-  // #130: the thambura writes its part as soon as it's made, with the bar's
-  // bit clear, before the drawer mounts and asks whether the link said open.
-  it("keeps the bar's bit a page was opened with for the drawer, though the thambura writes first", () => {
-    const page = new PageLink(bar(withBarOpen(ONE, true)).address);
-    page.part("thambura-1").write(ONE);
-    expect(barOpen(page.part("thambura-1").read()!)).toBe(false);
-    expect(barOpen(page.opened("thambura-1")!)).toBe(true);
   });
 });

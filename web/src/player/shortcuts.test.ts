@@ -39,7 +39,15 @@ describe("the page's shortcuts", () => {
     expect(pageShortcut(press({ key: "ArrowUp", shiftKey: true }))).toBe("shruthiUp");
     expect(pageShortcut(press({ key: "ArrowDown", shiftKey: true, repeat: true }))).toBe("shruthiDown");
     expect(pageShortcut(press({ key: "ArrowUp" }))).toBeNull();
-    expect(pageShortcut(press())).toBeNull();
+    expect(pageShortcut(press({ key: "r" }))).toBeNull();
+  });
+
+  it("include T for the thambura alone, on the same terms as before", () => {
+    expect(pageShortcut(press())).toBe("thambura");
+    expect(pageShortcut(press({ key: "T", shiftKey: true }))).toBe("thambura");
+    expect(pageShortcut(press({ repeat: true }))).toBeNull();
+    expect(pageShortcut(press({ metaKey: true }))).toBeNull();
+    expect(pageShortcut(press({ target: { tagName: "INPUT" } }))).toBeNull();
   });
 
   it("leave typing, the browser's modifiers, a held Space and a focused button alone", () => {

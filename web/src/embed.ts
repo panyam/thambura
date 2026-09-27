@@ -59,7 +59,7 @@ export async function mount(hostSpec: PageSpec, opts: MountOptions = {}): Promis
   const bus = new EventBus();
   const components = mountIslands(
     spec,
-    islandRegistry({ embed: true }),
+    islandRegistry(),
     (slot) => {
       const el = root.querySelector<HTMLElement>(`[${SLOT_ATTR}="${slot}"]`);
       return el ? shadowSlot(el, STYLESHEET, dark) : null;

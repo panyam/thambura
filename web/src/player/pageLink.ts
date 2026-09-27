@@ -1,4 +1,4 @@
-import { decodePage, encodePage, withBarOpen } from "../engine/shareLink";
+import { decodePage, encodePage } from "../engine/shareLink";
 
 /** The query parameter that carries a shared setup (engine/shareLink.ts). */
 export const LINK_PARAM = "s";
@@ -33,13 +33,8 @@ export interface LinkPart {
  * own part; the parts the page was opened with carry on until their
  * instrument writes. A page with only thambura-1 writes a plain thambura
  * link, as it always has.
- *
- * The layout adds whether the thambura's bar is showing, which no
- * instrument knows: `showsBar` is true (a docked thambura is always in view)
- * until a drawer replaces it with its own open state.
  */
 export class PageLink {
-  showsBar: () => boolean = () => true;
   private readonly parts: Map<string, string>;
   private readonly openedParts: ReadonlyMap<string, string>;
 
@@ -56,9 +51,9 @@ export class PageLink {
   /**
    * `id`'s part of the link the page was opened with, as it was then, or
    * null. Unlike `part(id).read()` it doesn't change when the instrument
-   * writes. A layout needs it for what only the opened link knows: the
-   * thambura writes its part as soon as it's made, before its drawer mounts,
-   * and that write can't carry the bar's open bit (#130).
+   * writes. The page needs it for what the opened link said, such as which
+   * instruments it had (the track list, and each instrument's shared setup),
+   * after the instruments have written their own.
    */
   opened(id: string): string | null {
     return this.openedParts.get(id) ?? null;
@@ -97,10 +92,7 @@ export class PageLink {
   }
 
   private encode(parts: Map<string, string>): string {
-    const open = this.showsBar();
-    return encodePage(
-      [...parts].map(([id, link]) => ({ id, link: id.startsWith("thambura-") ? withBarOpen(link, open) : link })),
-    );
+    return encodePage([...parts].map(([id, link]) => ({ id, link })));
   }
 }
 

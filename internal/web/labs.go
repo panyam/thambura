@@ -29,11 +29,6 @@ var labs = []Lab{
 		Title: "Side by side",
 		Blurb: "The tala and the thambura next to each other on a wide screen, and one under the other on a phone, rather than the thambura in a drawer.",
 	},
-	{
-		Slug:  "tracks",
-		Title: "Tracks",
-		Blurb: "Every instrument on the page as a card you can add, remove, mute and solo: one column on a phone, a grid on a wide screen.",
-	},
 }
 
 func labBySlug(slug string) Lab {
@@ -51,7 +46,6 @@ func registerLabs(app *goal.App[*App], mux *http.ServeMux) {
 	lm := http.NewServeMux()
 	goal.Register[*LabsIndexPage](app, lm, "/labs/{$}", goal.WithTemplate("labs/LabsIndex"))
 	goal.Register[*SideBySidePage](app, lm, "/labs/side-by-side", goal.WithTemplate("labs/SideBySide"))
-	goal.Register[*TracksPage](app, lm, "/labs/tracks", goal.WithTemplate("labs/Tracks"))
 	mux.Handle("/labs/", noindex(lm))
 }
 
@@ -99,33 +93,6 @@ func (p *SideBySidePage) Load(r *http.Request, w http.ResponseWriter, app *goal.
 	p.Spec = page.Spec{
 		Layout:      "side-by-side",
 		Islands:     []page.Island{talaIsland("main"), {Name: "thambura", Slot: "side", Presentation: "panel"}},
-		Instruments: startingInstruments(app.Context.KitURLs),
-	}
-	if err := p.Spec.Validate(); err != nil {
-		return err, false
-	}
-	return nil, false
-}
-
-// TracksPage is the track list (#101): the tala on top, then a card per
-// instrument, which the track list adds and removes in the browser. The
-// claps' and the kit's controls move into their cards, so the tala doesn't
-// show them.
-type TracksPage struct {
-	SitePage
-	Lab  Lab
-	Spec page.Spec
-}
-
-// Load implements the goapplib View.
-func (p *TracksPage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*App]) (error, bool) {
-	p.Lab = labBySlug("tracks")
-	labPage(&p.SitePage, app, p.Lab.Title, p.Lab.Blurb)
-	tala := talaIsland("main")
-	tala.Config["instrumentControls"] = false
-	p.Spec = page.Spec{
-		Layout:      "tracks",
-		Islands:     []page.Island{tala, {Name: "tracks", Slot: "tracks", Presentation: "page"}},
 		Instruments: startingInstruments(app.Context.KitURLs),
 	}
 	if err := p.Spec.Validate(); err != nil {

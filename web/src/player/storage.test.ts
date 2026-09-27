@@ -7,7 +7,8 @@ describe("storageKey", () => {
     expect(storageKey("player")).toBe("thambura.player");
     expect(storageKey("drone")).toBe("thambura.drone");
     expect(storageKey("presets")).toBe("thambura.presets");
-    expect(storageKey("drawer")).toBe("thambura.drawer");
+    expect(storageKey("shruthi")).toBe("thambura.shruthi");
+    expect(storageKey("tracks")).toBe("thambura.tracks");
   });
 
   it("keeps each instrument under its own id", () => {

@@ -23,22 +23,12 @@ import { workerTicker } from "./transport";
 // our pages and, resolved against embed.js, on anyone else's.
 const FIXTURES = "/static/Resources/TalasFixtures.json";
 
-/** How the islands are wired: on our own pages, or embedded in someone else's. */
-export interface IslandsOptions {
-  /**
-   * Set for an embed (embed.ts). The thambura then always docks, since the
-   * drawer's floating controls belong to our page chrome, and doesn't take
-   * the T key from the host's page.
-   */
-  embed?: boolean;
-}
-
 /**
  * The islands a Thambura page can mount, by the names the page spec uses.
  * Both entries use it: app.js (main.ts) for our pages and embed.js
  * (embed.ts) for other sites.
  */
-export function islandRegistry(opts: IslandsOptions = {}): Registry<PageContext, HTMLElement, LCMComponent, EventBus> {
+export function islandRegistry(): Registry<PageContext, HTMLElement, LCMComponent, EventBus> {
   return {
     tala: (el, island, ctx, bus) => {
       if (!ctx.tala) throw new Error("the page made no tala for its tala island");
@@ -59,28 +49,12 @@ export function islandRegistry(opts: IslandsOptions = {}): Registry<PageContext,
     session: (el, _island, ctx, bus) => createSessionIsland(el, bus, ctx.session),
     // The instruments on the page, as cards with Add and Remove (#101).
     tracks: (el, _island, ctx, bus) => createTracksIsland(el, bus, ctx),
-    // In a drawer (layouts/Drawer.html) the slot holds the bar's mount and
-    // the floating controls; docked (layouts/SideBySide.html, and every
-    // embed) the thambura mounts straight into its slot.
-    thambura: (el, island, ctx, bus) => {
+    // Docked in a slot of its own (layouts/SideBySide.html, and embeds). A
+    // page with a track list shows the thambura in its card instead.
+    thambura: (el, _island, ctx, bus) => {
       const thambura = thamburaOf(ctx.tracks.get("thambura-1"));
       if (!thambura) throw new Error("the page has no thambura-1 for its thambura island");
-      const onPlaying = (on: boolean) => ctx.awake.set("thambura", on);
-      if (opts.embed || island.presentation !== "drawer") {
-        return createThamburaIsland(el, bus, thambura, ctx.audio, ctx.link, { presentation: "panel", onPlaying, pageKeys: !opts.embed });
-      }
-      const mount = el.querySelector<HTMLElement>("#thambura");
-      if (!mount) throw new Error("the drawer slot has no #thambura");
-      return createThamburaIsland(mount, bus, thambura, ctx.audio, ctx.link, {
-        presentation: "drawer",
-        controls: {
-          root: el.querySelector<HTMLElement>("#thambura-controls"),
-          toggle: el.querySelector<HTMLElement>("#thambura-toggle"),
-          play: el.querySelector<HTMLElement>("#play-all"),
-        },
-        playAll: ctx.session,
-        onPlaying,
-      });
+      return createThamburaIsland(el, bus, thambura, ctx.audio, ctx.link);
     },
   };
 }
@@ -102,6 +76,7 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
     localStore("shruthi"),
   );
   const resolve = (url: string) => new URL(url, assetBase).href;
+  const awake = new KeepAwake({ wakeLock: (navigator as { wakeLock?: WakeLockLike }).wakeLock, doc: document });
 
   // Each instrument as the track list makes it: on its audio track, the
   // clock and the shruthi, with its part of the page link, and how to take
@@ -110,7 +85,17 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
     if (p.kind === "thambura") {
       // The thambura plays to the page's shruthi, moves it, and keeps its own link part.
       const thambura = newThamburaPresenter(audio, p.id, link, shruthi);
-      return { instrument: thambura, dispose: () => thambura.dispose() };
+      // A thambura playing keeps the screen on, wherever the page shows it.
+      let live = true;
+      thambura.watch((st) => live && awake.set(p.id, st.playing));
+      return {
+        instrument: thambura,
+        dispose: () => {
+          thambura.dispose();
+          awake.set(p.id, false);
+          live = false;
+        },
+      };
     }
     if (p.kind === "hands") {
       // The claps: the tala calls each sound on the clock, and they play it.
@@ -187,7 +172,7 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
     shruthi,
     tala,
     session,
-    awake: new KeepAwake({ wakeLock: (navigator as { wakeLock?: WakeLockLike }).wakeLock, doc: document }),
+    awake,
     link,
     assetBase,
   };

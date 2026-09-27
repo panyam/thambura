@@ -47,17 +47,23 @@ page's spec is roughly:
 
 ```json
 {
-  "layout": "drawer",
+  "layout": "tracks",
   "islands": [
     { "name": "tala", "slot": "main", "presentation": "page",
-      "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json" } },
-    { "name": "thambura", "slot": "drawer", "presentation": "drawer", "config": {} }
+      "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json", "instrumentControls": false } },
+    { "name": "tracks", "slot": "tracks", "presentation": "page", "config": {} }
   ],
   "instruments": [
+    { "kind": "hands", "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json" } },
+    { "kind": "thambura", "config": {} },
     { "kind": "kit", "config": { "url": "/static/Resources/Kits/compmusic/kit.json" } }
   ]
 }
 ```
+
+The instruments are what the page can have. Which of them are on it is the
+track list's business in the browser: a new visitor starts with the claps and
+the thambura and adds the mridangam from the list.
 
 An island the registry doesn't know, or a slot that isn't on the page, is
 logged and skipped, so one bad entry doesn't stop the rest of the page.

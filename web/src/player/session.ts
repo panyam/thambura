@@ -102,6 +102,17 @@ export class SessionPresenter {
     this.deps.shruthi.nudgeCents(delta);
   }
 
+  /** Starts or stops the thambura alone, as the T key does. */
+  toggleThambura(): Promise<void> {
+    const thambura = this.deps.thambura?.();
+    if (!thambura) return Promise.resolve();
+    if (thambura.state.playing) {
+      thambura.stop();
+      return Promise.resolve();
+    }
+    return thambura.start();
+  }
+
   /** Stops everything if anything is playing, otherwise starts the tala and the thambura together. */
   async toggleAll(): Promise<void> {
     if (this.state.playing) {
@@ -174,8 +185,8 @@ export function startingPitch(opened: { session: string | null; thambura: string
 
 /**
  * Takes the page-wide keys (shortcuts.ts, pageShortcut) for the session:
- * Space for Start all, Shift+↑/↓ for the shruthi. Only on our own pages; an
- * embed leaves the host's keys alone.
+ * Space for Start all, T for the thambura alone, Shift+↑/↓ for the shruthi.
+ * Only on our own pages; an embed leaves the host's keys alone.
  */
 export function wireSessionKeys(doc: Pick<Document, "addEventListener">, session: SessionPresenter): void {
   doc.addEventListener("keydown", (e) => {
@@ -183,8 +194,26 @@ export function wireSessionKeys(doc: Pick<Document, "addEventListener">, session
     if (!action) return;
     e.preventDefault();
     if (action === "toggleAll") void session.toggleAll();
+    else if (action === "thambura") void session.toggleThambura();
     else session.stepKey(action === "shruthiUp" ? 1 : -1);
   });
+}
+
+/**
+ * The page's floating play button (`#play-all`, HomePage.html): Start all
+ * from anywhere on the page, showing whether anything is playing.
+ */
+export function wireFloatingPlay(button: HTMLElement | null, session: SessionPresenter): void {
+  if (!button) return;
+  session.attach({
+    setState: (s) => {
+      button.dataset.playing = String(s.playing);
+      button.setAttribute("aria-pressed", String(s.playing));
+      button.setAttribute("aria-label", s.playing ? "Stop all" : "Start all");
+      button.title = s.playing ? "Stop everything (Space)" : "Start the tala and the thambura (Space)";
+    },
+  });
+  button.addEventListener("click", () => void session.toggleAll());
 }
 
 function capitalize(s: string): string {
