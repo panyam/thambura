@@ -80,7 +80,10 @@ Sadhana).
 - **Page spec** (#89): `internal/page` describes what a page starts with, its
   islands (views: a name, a `data-slot`, a presentation and config) and the
   instruments it seeds (a kind and config). `homeSpec` in `pages.go` builds
-  the home page's, with a `kit` instrument per kit found. The partial
+  the home page's: the islands, then the instruments `startingInstruments`
+  seeds on every page with a tala, `hands`, `thambura` and a `kit` per kit
+  found, which the browser numbers by kind (`hands-1`, `thambura-1`,
+  `kit-1`). The partial
   `web/templates/page/Islands.html` writes it as
   `<script type="application/json" id="page-spec">`, and all island config
   travels there, never in `data-*` attributes. `internal/page` and
@@ -362,8 +365,8 @@ unit-tested:
   `prefers-color-scheme` or the spec script's `data-theme`.
 - `pageContext.ts`: what every island shares, services rather than
   instruments: `audio`, `clock` (one `Transport` on one `TempoMap`,
-  `createClock`), `tracks` (the instruments playing, by id; today the kit,
-  under a placeholder id), `tonic` (the Sa; the thambura sets it, the kit
+  `createClock`), `tracks` (the instruments playing, by id: `hands-1`,
+  `thambura-1`, `kit-1`), `tonic` (the Sa; the thambura sets it, the kit
   follows), `awake`, `link`, and `assetBase`, what the spec's URLs resolve
   against (the page on our site, `embed.js` on another). `buildContext`
   fills `tracks` from the spec's instruments, loading only the first kit for
@@ -631,6 +634,14 @@ somewhere else instead (`layagnana` has an App Engine app, serving the 2016
 site at `layagnana.appspot.com`), `DEV_VERSION` renames the version, and
 `make devlogs` tails whichever it was.
 
+Saved settings live in localStorage, which is per origin, so the dev
+version doesn't see anyone's thambura.com setup. To try a migration there,
+seed the old keys from the DevTools console (for instance `thambura.drone`
+and `thambura.player` as the pre-#100 app wrote them), reload without
+`?s=`, and check the setup comes back and the new per-instrument keys
+appear after the first change. A link from thambura.com is the other way
+in: it opens on dev the same as on the live site.
+
 Traffic only moves with `PROMOTE=1`, and `checkpromote` refuses that in the
 project serving thambura.com, before the tests run: `make deploy` is the way to
 put a build there. `web.Staging()` keeps a test copy out of search, through
@@ -792,6 +803,12 @@ A few probes that worked, all set up in an init script:
   with each `when`. Kit samples are under `/Kits/`, claps under `/Sounds/`.
   That's how #97 and #98 compared stroke and clap times on master and the
   branch.
+- To make a share link to open, write it with the engine rather than by
+  hand: a throwaway vitest file that calls `encodeLink` / `encodePage` and
+  ends in `expect(link).toBe("")` prints the link in the failure diff.
+  Delete the file afterwards. A thambura part read back from a `PageLink`
+  carries the bar flag, so compare it with `withBarOpen(link, true)`, not
+  the link you encoded.
 - To check that saved choices survive a change (a storage key moving, as in
   #97 and #98), serve the base and then the branch **on the same port**, one
   after the other, and drive both through `launchPersistentContext` with one
