@@ -254,7 +254,11 @@ unit-tested:
   harmonic; both keep the samples bit-identical, which is what the fingerprints
   are for. Treat that as the rule for this file: the jawari voice was fitted to
   a recording, so a speed-up that moves the samples is a sound change wearing a
-  performance change's clothes, and the fingerprints are there to catch it. A
+  performance change's clothes, and the fingerprints are there to catch it.
+  Such a change also bumps `RENDER_VERSION`, since browsers keep rendered
+  plucks under it between visits (#40); a test digests the fingerprints per
+  version and fails until the bump and its new row are in. A change to a
+  voice's values needs no bump, since the cache's key holds them. A
   harmonic's angle is worked out in `harmonic()` and nowhere else, because
   `(2 * PI * k * freq) / rate` and `((2 * PI * freq) / rate) * k` differ in
   their last bits; four harmonics are added to the buffer one at a time,
@@ -497,7 +501,17 @@ unit-tested:
   since a browser won't start a worker from another origin. If a worker
   can't start or fails, everything goes to `SlicedRenderer`, the old
   main-thread path (slices on `deps.defer`), which the presenter tests use
-  too. Fine tune is only `detune`. In both tambura modes the
+  too. Over the pool sits `CachedRenderer` (`pluckCache.ts`, #40): it looks
+  each pluck up in IndexedDB (`thambura-plucks`) first, renders only the
+  misses, and writes them back a second after they're playing. Its key
+  (`pluckKey`) holds the engine version, sample rate, seed, pitch and every
+  voice value exactly, unlike the presenter's rounded one. `LruPluckStore`
+  keeps it under 60 MB, least recently used out, writes one at a time (a
+  setting's three plucks arrive together), and drops other versions' entries
+  on opening. Any IndexedDB failure is a miss. A returning visitor's Start
+  renders nothing: 66 to 23 ms to the first pluck. After a deploy that bumps
+  the version, the first visit still runs the old build from the service
+  worker's cache, and the one after re-renders. Fine tune is only `detune`. In both tambura modes the
   second Sa string plays 1.5 cents sharp, so the pair beats slowly. Damp
   events fade a string over 0.2 s through `audio.damp`, which marks the note
   released so the re-pluck's choke leaves it alone. Sruti mode

@@ -15,7 +15,7 @@ import {
   tunedTonicHz,
   type ThamburaSettings,
 } from "./shruthi";
-import { PluckRender, pluckVoice, renderPluck, reedSpectrum } from "./tambura";
+import { PluckRender, pluckVoice, RENDER_VERSION, renderPluck, reedSpectrum } from "./tambura";
 import {
   EVEN_PATTERN,
   PLAYED_PATTERN,
@@ -272,28 +272,49 @@ describe("tambura and guitar plucks", () => {
     return [x.length, h];
   };
 
-  it("renders the classic tambura and the guitar exactly as before the jawari voice", () => {
-    // Fingerprints of the renders at 691cd8b, before the jawari voice was added.
-    expect(fingerprint(renderPluck(130.81, 16000, tambura, 3))).toEqual([144000, -736842932]);
-    expect(fingerprint(renderPluck(130.81, 16000, guitar, 3))).toEqual([92800, -8523484]);
-  });
-
-  it("renders the jawari voice exactly as it did before the renderer was made faster", () => {
-    // Fingerprints of the four strings at d81cb09, before #38. The default
+  // What the renders below must give. A change that moves any of them moves
+  // the samples returning visitors have cached (#40), so it comes with a bump
+  // of RENDER_VERSION in tambura.ts and a new row in FINGERPRINTS_AT.
+  const FINGERPRINTS = {
+    // At 691cd8b, before the jawari voice was added.
+    classic: [144000, -736842932],
+    guitar: [92800, -8523484],
+    // The jawari voice's four strings at d81cb09, before #38. The default
     // voice had none, so a speed-up could have moved it without a test
     // failing; these are what the recording was fitted against.
-    const s = { ...DEFAULT_THAMBURA, mode: "jawari" as const };
-    const strings = [0, 1, 2, 3].map((i) => fingerprint(renderPluck(130.81, 16000, pluckVoice(s, i), i + 1)));
-    expect(strings).toEqual([
+    jawari: [
       [144000, -82164138],
       [144000, -608566479],
       [144000, -150805121],
       [144000, 890266931],
-    ]);
+    ],
     // The same voice away from the defaults: a ladies' timbre, brighter, a
     // softer pluck and a longer ring, so the bloom and attack differ too.
+    ladies: [144000, 672615482],
+  };
+  // A digest of FINGERPRINTS for each RENDER_VERSION.
+  const FINGERPRINTS_AT: Record<number, number> = { 1: 774475786 };
+
+  it("keeps RENDER_VERSION in step with the fingerprints", () => {
+    const text = JSON.stringify(FINGERPRINTS);
+    let h = 0;
+    for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) % 1_000_000_007;
+    // If this fails, a fingerprint changed: bump RENDER_VERSION and add
+    // { [RENDER_VERSION]: <the digest this reports> } to FINGERPRINTS_AT.
+    expect(h, `digest for RENDER_VERSION ${RENDER_VERSION}`).toBe(FINGERPRINTS_AT[RENDER_VERSION]);
+  });
+
+  it("renders the classic tambura and the guitar exactly as before the jawari voice", () => {
+    expect(fingerprint(renderPluck(130.81, 16000, tambura, 3))).toEqual(FINGERPRINTS.classic);
+    expect(fingerprint(renderPluck(130.81, 16000, guitar, 3))).toEqual(FINGERPRINTS.guitar);
+  });
+
+  it("renders the jawari voice exactly as it did before the renderer was made faster", () => {
+    const s = { ...DEFAULT_THAMBURA, mode: "jawari" as const };
+    const strings = [0, 1, 2, 3].map((i) => fingerprint(renderPluck(130.81, 16000, pluckVoice(s, i), i + 1)));
+    expect(strings).toEqual(FINGERPRINTS.jawari);
     const ladies = pluckVoice({ ...s, voice: "ladies", tone: 80, pluck: 20, sustain: 90 });
-    expect(fingerprint(renderPluck(98.1, 16000, ladies, 7))).toEqual([144000, 672615482]);
+    expect(fingerprint(renderPluck(98.1, 16000, ladies, 7))).toEqual(FINGERPRINTS.ladies);
   });
 });
 
