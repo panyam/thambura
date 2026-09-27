@@ -321,7 +321,10 @@ unit-tested:
   lone `thambura-1` as format 1, and `decodePage` reads a format 1 link as
   `thambura-1` and skips parts it can't read.
   The docs site's reference page (`docs/content/reference/share-link-format/`)
-  describes both.
+  describes both. `shareLink.test.ts`'s "format 1 links keep opening the
+  same" holds links as they were sent, with what they decode to; the
+  round-trip tests can't see a reordered table, since both halves use it,
+  and these can.
 - `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa in a `PluckPattern`:
   `EVEN_PATTERN` (four slots and a rest) or, for the jawari mode,
   `PLAYED_PATTERN` (the recorded player's uneven gaps, plus a `DampEvent`
@@ -725,6 +728,29 @@ load `embed.js` from `embedBase` (thambura.com), or `DOCS_EMBED_BASE` for one
 run, and `docs/components/embedExamples.ts` mounts the `mount()` ones. So
 publish it only once production has the `embed.js` it describes.
 
+Working on the docs:
+
+- **Publish from master, after production.** `make ghpages` publishes
+  whatever tree it runs in, so run it in a worktree detached at
+  `origin/master` after the PR merges. Hold it while a page describes app
+  behaviour thambura.com doesn't serve yet (the embed guide, a new layout).
+  What's live is the `gh-pages` commit's message, `Docs from <git
+  describe>`, which the GitHub API shows.
+- **Run what a page shows rather than typing it.** Code samples and example
+  links went through a throwaway vitest file (see the share-link probe
+  below), and the home page's spec example through a throwaway Go test that
+  prints `homeSpec`. Delete both afterwards.
+- **To try the embed examples before a deploy**, serve a worktree's app on
+  one port and `DOCS_EMBED_BASE=http://localhost:<port>/static/ make
+  docsrun` on another: two loopback ports are two origins, as a real host
+  is.
+- **`docsrun`'s watcher missed an edit** to an HTML page once, and kept
+  serving the old one. If a change doesn't show, `curl` the page for it and
+  restart docsrun.
+- **The repo is public** (since 2026-09-26) because GitHub Pages from a
+  private repo needs a paid plan. The history was scanned for keys and
+  tokens first.
+
 ## Deploying
 
 `make deploy` runs the tests, a minified frontend build and a Go build, then
@@ -799,6 +825,11 @@ One-time setup, run by an owner of the project from a machine with `gcloud`:
 Last production deploy: 3c4e21a on 2026-09-27 (the track list on `/`,
 #142). Master has moved on since (#148's top panel and `/about`, #149's
 instrument rows); dev serves the #149 build.
+
+A `make deploydev` lands as the `dev` version with no traffic, which is easy
+to mistake for a production deploy. `gcloud app versions list --project
+thambura --service default --format="table(version.id,traffic_split)"`
+shows which version thambura.com serves.
 
 To check which build is live, compare the served bundle with a fresh one:
 `(cd web && pnpm build)`, then

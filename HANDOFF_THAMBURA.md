@@ -30,6 +30,15 @@ what's in flight. Delete it once the items below close.
   and everything since a78db12, the mridangam kit included, so the dataset
   is public). Master is ahead by #148 and #149; dev serves #149's build,
   which is master's.
+- **Docs (#95)** are on GitHub Pages at https://panyam.github.io/thambura/,
+  published from 9201ab2 (#147), before #151, so the live pages still
+  describe the track list as cards. Republish (`make ghpages` from `origin/master`)
+  once #148 and #149 are on thambura.com. Writing the guides found #121,
+  #143 (fixed in #145) and #144, plus smaller embed rough edges in a comment
+  on #86 (the "(T)" tooltip, no unmount, the theme fixed at mount, a context
+  per spec). The embed guide's "no kit is published" is out of date: the
+  compmusic kit is on thambura.com with the CORS header, so a live kit
+  example can go in.
 - **The lift into goapplib and tsappkit** is unchanged from the last
   handoff and still unstarted: goapplib#28 (`internal/page`, the Islands
   partial, labs/noindex helpers, tag `v0.2.0`) then goapplib#27
@@ -62,6 +71,9 @@ what's in flight. Delete it once the items below close.
 0. **Whether the embed guide should point at the published kit.** It still
    says no kit is published on thambura.com, which stopped being true with
    the 3c4e21a deploy.
+0. **Whether links should set the thambura's volume** like the claps' and
+   kits' (the share-links guide describes the difference as it is; raised
+   in #141).
 0. **Whether to close #54** (where the thambura sits): the track list
    settled it, and NEXTSTEPS now says so.
 1. **When to start the lift** (above), and whether #131's npm package and
