@@ -7,6 +7,7 @@ import { ThamburaBar } from "./ThamburaBar";
 import { linkShowsBar, ThamburaDrawer } from "./thamburaDrawer";
 import { ThamburaDocked } from "./ThamburaPanel";
 import type { PageLink } from "./pageLink";
+import { CachedRenderer, pluckStore } from "./pluckCache";
 import { browserPluckRenderer } from "./pluckRenderer";
 import { instrumentStore, localStore, withFallback } from "./storage";
 import { ThamburaPresenter, type PitchSource } from "./thamburaPresenter";
@@ -168,7 +169,7 @@ export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageL
       cancel: (frame) => cancelAnimationFrame(frame),
     },
     defer,
-    renderer: browserPluckRenderer(defer),
+    renderer: new CachedRenderer(browserPluckRenderer(defer), pluckStore()),
     store: id === "thambura-1" ? withFallback(own, localStore("drone")) : own,
     presets: localStore("presets"),
     link: link.part(id),

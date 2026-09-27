@@ -95,6 +95,15 @@ const COMP_STEP = 16;
 // Harmonics rendered in one pass over the buffer; see PluckRender.renderLanes.
 const LANES = 4;
 
+/**
+ * Which version of the renderer made a pluck. Browsers keep rendered plucks
+ * between visits under it (player/pluckCache.ts), so bump it with any change
+ * that moves the samples for the same arguments; the fingerprint tests in
+ * thambura.test.ts fail until it is. A change to a voice's values needs no
+ * bump, since they are part of the cache's key.
+ */
+export const RENDER_VERSION = 1;
+
 /** What one harmonic's envelope and rotation are built from. */
 interface Harmonic {
   k: number;

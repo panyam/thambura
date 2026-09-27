@@ -56,8 +56,9 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       #38's four-harmonics change gave 1.46x on its own, not the 3x estimated
       from a loop that left out the envelope, and the envelope is now most of
       what's left. Rendering now runs in Web Workers, the strings in
-      parallel (#39), off the main thread entirely. Next: an IndexedDB cache
-      between visits (#40). WebAssembly (#41) now looks like a
+      parallel (#39), off the main thread entirely, and a returning visitor's
+      plucks come from IndexedDB with no render at all (#40); a settings page
+      for the cache's size is #138. WebAssembly (#41) now looks like a
       poor trade and an AudioWorklet (#42) is still open; the comment on #36
       has the measurements behind both.
 - [ ] **Hand images for Guru, Plutham and Kakapadam** (#22): the kriyas to
@@ -107,7 +108,7 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       (#98), SaRiGaMa dropped (#122), the thambura as an instrument with an
       id and share links that carry every instrument (#100). Next: the track
       list (#101), waiting on how a track looks collapsed and expanded; render
-      speed (#39, #40), which a second thambura (#103) waits on; #102 (drawn
+      a second thambura (#103), now that render speed (#39, #40) allows it; #102 (drawn
       pads); #99 with the first new kit (#104); #132 (asset packs, from the
       layouts side).
 - [ ] **Several talas at once**, later: talas stay their own group, not
