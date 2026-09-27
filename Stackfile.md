@@ -19,6 +19,13 @@ tsappkit's `BasePage` wires the toggle, and tsappkit-solid's `SolidIsland` and
 `signalView` mount the player. This follows the goapplib + Solid pattern
 diffpp uses.
 
+Built here to be lifted into the stack (#86): `internal/page` and the page
+spec partial into goapplib (panyam/goapplib#28, planned as `v0.2.0`),
+`web/src/page` into tsappkit (panyam/goapplib#27, `0.1.0`), and maybe the
+esbuild splitting and preload setup as a shared preset (panyam/goapplib#29).
+`make liftcheck` keeps the first two free of thambura imports. Update the
+table above when they land.
+
 ## Third-Party Dependencies
 
 | Package | Version | Purpose |
