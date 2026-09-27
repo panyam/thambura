@@ -384,6 +384,9 @@ unit-tested:
   page link from every part, keeping the parts it was opened with until
   their instruments write. A drawer layout sets `showsBar` so the thambura
   parts carry whether the bar is open; a docked thambura leaves it true.
+  The drawer reads the bar's bit from `opened(id)`, the part as the page was
+  opened, since the thambura has already written its own part (bit clear)
+  by the time its island mounts (#130).
   `url(id, setup)` is Copy link's URL: the page link with that part swapped
   in. It's in the page context, since the link is the page's, not one
   island's.

@@ -54,7 +54,7 @@ export function createThamburaIsland(
   const { toggle, play } = controls;
   // Only a drawer has an open state; a docked thambura is always showing.
   const drawer =
-    opts.presentation === "drawer" ? new ThamburaDrawer({ store: localStore("drawer"), legacy: localStore("drone"), link: link.part(presenter.id).read() }) : null;
+    opts.presentation === "drawer" ? new ThamburaDrawer({ store: localStore("drawer"), legacy: localStore("drone"), link: link.opened(presenter.id) }) : null;
   link.showsBar = () => linkShowsBar(opts.presentation, drawer);
   // The presenter wrote the link before this layout was mounted; write it again with the bar's flag.
   link.part(presenter.id).write(presenter.shareLink());

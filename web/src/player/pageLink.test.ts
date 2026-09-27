@@ -75,4 +75,22 @@ describe("PageLink", () => {
     expect(parts.get("thambura-1")).toBe(withBarOpen(ONE, true));
     expect(parts.get("thambura-2")).toBe(withBarOpen(TWO, true));
   });
+
+  it("remembers each part the page was opened with, after its instrument writes a new one", () => {
+    const page = new PageLink(bar(encodePage([{ id: "thambura-1", link: ONE }])).address);
+    page.part("thambura-1").write(TWO);
+    expect(page.part("thambura-1").read()).toBe(TWO);
+    expect(page.opened("thambura-1")).toBe(ONE);
+    expect(page.opened("thambura-2")).toBeNull();
+    expect(new PageLink(bar(null).address).opened("thambura-1")).toBeNull();
+  });
+
+  // #130: the thambura writes its part as soon as it's made, with the bar's
+  // bit clear, before the drawer mounts and asks whether the link said open.
+  it("keeps the bar's bit a page was opened with for the drawer, though the thambura writes first", () => {
+    const page = new PageLink(bar(withBarOpen(ONE, true)).address);
+    page.part("thambura-1").write(ONE);
+    expect(barOpen(page.part("thambura-1").read()!)).toBe(false);
+    expect(barOpen(page.opened("thambura-1")!)).toBe(true);
+  });
 });
