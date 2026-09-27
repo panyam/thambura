@@ -7,6 +7,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -41,6 +42,31 @@ const PathPrefix = "/thambura"
 // second copy in the repo.
 var favicons = []string{"favicon.ico", "favicon.svg"}
 
+// EmbedBase is where the embed guide's live examples load embed.js from:
+// the folder it's in, ending in a slash. It's SiteMetadata.json's embedBase
+// (thambura.com), or DOCS_EMBED_BASE to try the examples against another
+// server, such as a `make deploydev` version, before production has the
+// build they need.
+func EmbedBase() (string, error) {
+	if base := os.Getenv("DOCS_EMBED_BASE"); base != "" {
+		return strings.TrimSuffix(base, "/") + "/", nil
+	}
+	b, err := os.ReadFile(filepath.Join("content", "SiteMetadata.json"))
+	if err != nil {
+		return "", err
+	}
+	var meta struct {
+		EmbedBase string `json:"embedBase"`
+	}
+	if err := json.Unmarshal(b, &meta); err != nil {
+		return "", err
+	}
+	if meta.EmbedBase == "" {
+		return "", fmt.Errorf("SiteMetadata.json has no embedBase")
+	}
+	return strings.TrimSuffix(meta.EmbedBase, "/") + "/", nil
+}
+
 // NewSite returns the docs site, writing to outDir. It is read from the docs
 // folder, so run it from there.
 func NewSite(outDir string) *s3.Site {
@@ -54,6 +80,7 @@ func NewSite(outDir string) *s3.Site {
 			Name:   "BasePage.html",
 			Params: map[any]any{"BodyTemplateName": "Content"},
 		},
+		CommonFuncMap: map[string]any{"embedBase": EmbedBase},
 		// The site's data files are read by templates (json "..."), not pages.
 		IgnoreFileFunc: func(path string) bool {
 			return filepath.Ext(path) == ".json"
@@ -77,14 +104,8 @@ func Build(outDir string) error {
 	if err := os.CopyFS(filepath.Join(outDir, "static"), os.DirFS("static")); err != nil {
 		return err
 	}
-	for _, f := range favicons {
-		b, err := os.ReadFile(filepath.Join("..", "web", "static", f))
-		if err != nil {
-			return err
-		}
-		if err := os.WriteFile(filepath.Join(outDir, f), b, 0o644); err != nil {
-			return err
-		}
+	if err := copyFavicons(outDir); err != nil {
+		return err
 	}
 	if Domain != "" {
 		if err := os.WriteFile(filepath.Join(outDir, "CNAME"), []byte(Domain+"\n"), 0o644); err != nil {
@@ -104,6 +125,21 @@ func serveAt(prefix string, h http.Handler) http.Handler {
 	mux.Handle(prefix+"/", http.StripPrefix(prefix, h))
 	mux.Handle("/", http.RedirectHandler(prefix+"/", http.StatusFound))
 	return mux
+}
+
+// copyFavicons puts the app's favicons at the site's root, for Build and for
+// docsrun, which serves the pages s3gen writes without Build's extras.
+func copyFavicons(outDir string) error {
+	for _, f := range favicons {
+		b, err := os.ReadFile(filepath.Join("..", "web", "static", f))
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(outDir, f), b, 0o644); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // templateErrors fails a build that s3gen finished without complaint. When a
@@ -144,6 +180,9 @@ func main() {
 	}
 	site := NewSite(*out)
 	site.Rebuild(nil)
+	if err := copyFavicons(*out); err != nil {
+		log.Fatal(err)
+	}
 	site.Watch()
 	log.Printf("Serving the docs on %s%s/", *addr, PathPrefix)
 	log.Fatal(http.ListenAndServe(*addr, serveAt(PathPrefix, site)))

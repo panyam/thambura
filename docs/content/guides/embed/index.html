@@ -1,0 +1,171 @@
+---
+title: "Embed Thambura in your page"
+description: "Put the tala keeper and the thambura on a page of your own, with a spec, a slot for each island and one script."
+---
+<div data-embed-base="{{ embedBase }}" hidden></div>
+
+<p>The tala keeper and the thambura can go on any page, not only ours. Your page
+says which islands it wants and where, and one script from thambura.com does the
+rest. The islands keep their own styles, load their sounds from our site, and
+leave the rest of your page alone.</p>
+
+<p>This page is a host itself: the examples below are live, loaded the same way
+your page would load them. Press Start on any of them.</p>
+
+<h2 id="quickest">The quickest embed</h2>
+
+<p>Three things go on your page: a spec saying which islands you want, an
+element for each one to go in, and <code>embed.js</code>.</p>
+
+<pre><code>&lt;script type="application/json" data-thambura-spec&gt;
+{"islands": [{"name": "tala", "slot": "docs-tala"}]}
+&lt;/script&gt;
+&lt;div data-thambura-slot="docs-tala"&gt;&lt;/div&gt;
+&lt;script type="module" src="https://thambura.com/static/embed.js"&gt;&lt;/script&gt;</code></pre>
+
+<p>Which gives you this:</p>
+
+<div class="embed-live" id="example-declared">
+<script type="application/json" data-thambura-spec>
+{"islands": [{"name": "tala", "slot": "docs-tala"}]}
+</script>
+<div data-thambura-slot="docs-tala"></div>
+</div>
+<script type="module" src="{{ embedBase }}embed.js"></script>
+
+<p><code>embed.js</code> finds every <code>data-thambura-spec</code> script on the
+page once it has loaded, and mounts each one's islands in the elements whose
+<code>data-thambura-slot</code> matches. A page can have more than one spec, and
+each is a separate embed with its own sound and its own clock.</p>
+
+<h2 id="spec">The spec</h2>
+
+<p>A spec is JSON, the same format our own pages are built from (see
+<a href="{{ .Site.PathPrefix }}/getting-started/#how-a-page-is-put-together">Getting started</a>),
+except that you needn't name a layout.</p>
+
+<pre><code>{
+  "islands": [
+    {"name": "tala", "slot": "practice"},
+    {"name": "thambura", "slot": "drone"}
+  ],
+  "instruments": []
+}</code></pre>
+
+<h3 id="islands">Islands</h3>
+
+<p>Each island has a <code>name</code>, the <code>slot</code> it goes in, and an
+optional <code>config</code>.</p>
+
+<table>
+<thead><tr><th>Name</th><th>What it is</th><th>Config</th></tr></thead>
+<tbody>
+<tr><td><code>tala</code></td><td>The tala keeper: the talas, speed, beat images, the claps' sound and volume, and the speed and shruthi strip.</td><td><code>instrumentControls: false</code> leaves out the claps' controls, for a page that shows them elsewhere.</td></tr>
+<tr><td><code>thambura</code></td><td>The thambura's controls, docked in the slot: the Sound menu, the four views, Start and Copy link.</td><td>None.</td></tr>
+<tr><td><code>session</code></td><td>The speed and shruthi strip on its own, for a page with a thambura and no tala, which carries its own.</td><td>None.</td></tr>
+</tbody>
+</table>
+
+<p>An island this version doesn't have, or a slot that isn't on the page, is
+logged to the console and skipped, and the rest of the spec still mounts.</p>
+
+<h3 id="instruments">Instruments</h3>
+
+<p>Islands are what you see. Instruments are what plays, and
+<code>embed.js</code> adds the ones your islands need: the thambura for a
+<code>thambura</code> island, and the claps for a <code>tala</code> (the tala
+itself makes no sound; it says when each beat falls, and the claps play it).
+You only name instruments to add something, such as a kit:</p>
+
+<pre><code>{"kind": "kit", "config": {"url": "/static/Resources/Kits/compmusic/kit.json"}}</code></pre>
+
+<p>A kit plays along with the tala and follows the thambura's Sa. No kit is
+published on thambura.com yet
+(<a href="https://github.com/panyam/thambura/issues/104">#104</a>), so there's no
+live example of one here.</p>
+
+<h2 id="mount">Mounting from code</h2>
+
+<p>If your page builds its spec in code, import <code>mount</code> instead of
+writing a spec script:</p>
+
+<pre><code>const { mount } = await import("https://thambura.com/static/embed.js");
+
+await mount(
+  { islands: [{ name: "thambura", slot: "drone" }] },
+  { root: document.querySelector("#my-drone"), theme: "dark" },
+);</code></pre>
+
+<ul>
+<li><code>root</code> is where to look for the slots. It defaults to the whole
+document; passing the element that holds them keeps two embeds' slots apart.</li>
+<li><code>theme</code> is <code>"light"</code>, <code>"dark"</code> or
+<code>"auto"</code> (the default), which follows the visitor's system setting. A
+spec script takes it as <code>data-theme</code>.</li>
+</ul>
+
+<p>This one is mounted that way, in these docs' own light or dark:</p>
+
+<div class="embed-live" id="example-thambura" data-embed-example='{"islands": [{"name": "thambura", "slot": "drone"}]}'>
+<div data-thambura-slot="drone"></div>
+</div>
+
+<h2 id="both">The tala and the thambura together</h2>
+
+<p>Islands in one spec share a clock and a shruthi, so the tala's speed and
+the thambura's Sa are one setting, shown in the tala's strip:</p>
+
+<pre><code>{"islands": [
+  {"name": "tala", "slot": "practice"},
+  {"name": "thambura", "slot": "drone"}
+]}</code></pre>
+
+<div class="embed-live embed-live-pair" id="example-both" data-embed-example='{"islands": [{"name": "tala", "slot": "practice"}, {"name": "thambura", "slot": "drone"}]}'>
+<div data-thambura-slot="practice"></div>
+<div data-thambura-slot="drone"></div>
+</div>
+
+<h2 id="on-your-page">What it does on your page</h2>
+
+<ul>
+<li><strong>Styles stay apart.</strong> Each island is in a shadow root with our
+stylesheet, so your CSS doesn't reach inside it and ours doesn't leak out. Size
+and place the slot elements as you like; the islands fill their width.</li>
+<li><strong>Everything loads from our site.</strong> Sounds, images, the
+thambura's rendering worker and the views that load on first use (the Lab, the
+Raagini) all come from next to <code>embed.js</code>. Our <code>/static</code>
+allows that from any origin.</li>
+<li><strong>Links open the app.</strong> Your address bar is yours, so an embed
+never writes to it. Copy link gives a link to the same setup on thambura.com.</li>
+<li><strong>No page-wide keys.</strong> The T key and Space belong to your page,
+so an embed doesn't take them.</li>
+<li><strong>Nothing installed.</strong> No service worker and no install
+button; those come with our pages only.</li>
+</ul>
+
+<h2 id="today">What to know today</h2>
+
+<p>Embedding is new, and a few things will change as other sites use it:</p>
+
+<ul>
+<li><strong>Settings are saved in your site's storage.</strong> An embed keeps
+the listener's choices (the shruthi, the thambura's sound, their presets) in
+your page's <code>localStorage</code>, under names starting with
+<code>thambura.</code>. Two embeds on one page share them, so the one changed
+last is what both open with next time
+(<a href="https://github.com/panyam/thambura/issues/144">#144</a>).</li>
+<li><strong>Each spec is separate.</strong> Every spec on a page, declared or
+passed to <code>mount()</code>, gets its own audio and clock, so two specs'
+Start buttons don't know about each other. Put islands that belong together in
+one spec.</li>
+<li><strong>The theme is chosen once.</strong> <code>"auto"</code> reads the
+visitor's setting when the embed mounts, and there's no call yet to switch it
+when your page's own dark mode changes.</li>
+<li><strong>There's no unmount yet.</strong> Once mounted, an embed stays until
+the page goes, so a single-page app that moves away from it should expect it
+to keep playing.</li>
+</ul>
+
+<p>These are tracked on <a href="https://github.com/panyam/thambura/issues/86">#86</a>.
+If you're embedding Thambura and hit something else,
+<a href="https://github.com/panyam/thambura/issues/new">open an issue</a>.</p>

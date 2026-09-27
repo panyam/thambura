@@ -700,6 +700,10 @@ bundles `docs/components` with web's tsc and esbuild, then writes the site to
 into the page and carries on, so the build checks the output for it. `make
 ghpages` publishes, by force-pushing the build as the one commit on
 `gh-pages`. Every page is `noindex` until `SiteMetadata.json` says otherwise.
+The embed guide (`docs/content/guides/embed/`) is a live host: its examples
+load `embed.js` from `embedBase` (thambura.com), or `DOCS_EMBED_BASE` for one
+run, and `docs/components/embedExamples.ts` mounts the `mount()` ones. So
+publish it only once production has the `embed.js` it describes.
 
 ## Deploying
 

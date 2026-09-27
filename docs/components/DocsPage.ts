@@ -1,12 +1,12 @@
 /**
  * The docs pages' script: the theme toggle, cycling light, dark and system
- * through tsappkit's ThemeManager, the same way and under the same
- * localStorage key as the app's, so a choice made in one holds in the other.
- * The page already set the theme before its first paint (BasePage.html).
+ * through tsappkit's ThemeManager, the same way as the app's. The page
+ * already set the theme before its first paint (BasePage.html).
  *
- * Live examples (#109) will be mounted from here.
+ * It also mounts the embed guide's live examples (embedExamples.ts).
  */
 import { ThemeManager } from "@panyam/tsappkit";
+import { mountExamples } from "./embedExamples";
 
 function wireThemeToggle(button: HTMLButtonElement) {
   const show = () => {
@@ -25,3 +25,5 @@ function wireThemeToggle(button: HTMLButtonElement) {
 
 const toggle = document.getElementById("theme-toggle");
 if (toggle instanceof HTMLButtonElement) wireThemeToggle(toggle);
+
+void mountExamples(document);
