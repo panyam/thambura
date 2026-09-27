@@ -11,39 +11,55 @@ browser, and a setup is shared as a link.
 
 ## The pieces
 
-A page is made of **islands**, each a self-contained UI mounted into a slot
-the page's layout provides. The home page has two:
+A page is made of **islands** and **instruments**. An island is a view,
+something you see and press, mounted into a slot the page's layout
+provides. An instrument is something that plays. The two are kept apart
+because they come and go differently: a page's islands are fixed by its
+layout, while instruments can be added and removed in the browser.
+
+The home page has two islands:
 
 - **tala**, the tala keeper. It counts a tala's beats at a tempo, with the
-  nadai's ticks inside each beat, and shows an image for each beat.
-- **thambura**, the drone, in a bar that slides up from the bottom of the
-  page. It plucks the four strings in a round, or holds a sruti box's
-  reed tone, at the listener's Sa. It has four views over the same sound
-  (Mini, Studio, a Raagini replica and a Lab for editing the sound string
-  by string).
+  nadai's ticks inside each beat, and shows an image for each beat. Under
+  the image is the **session strip**, with the page's speed, its shruthi
+  (the Sa everything plays to) and a Start all button.
+- **thambura**, the drone's controls, in a bar that slides up from the
+  bottom of the page. It has four views over the same sound (Mini, Studio,
+  a Raagini replica and a Lab for editing the sound string by string).
 
-The islands share one audio engine and one clock, so the percussion lands
-on the tala's beats and follows the thambura's Sa.
+and three kinds of instrument:
 
-**Instruments** are the other half. A struck instrument such as the
-mridangam is a **kit**: a `kit.json` manifest naming its strokes and the
-recorded takes of each, which the code plays without knowing anything about
-that particular drum. What it plays comes from **patterns**, written in the
-[notations](https://github.com/panyam/notations) language and matched to a
-tala by the shape of its cycle.
+- **the claps**, which play the tala's beats. The tala itself makes no
+  sound; it says when each beat falls, and the claps play it.
+- **the thambura**, which plucks its four strings in a round, or holds a
+  sruti box's reed tone, at the page's shruthi.
+- **a kit** for each struck instrument installed, such as the mridangam. A
+  kit is a `kit.json` manifest naming its strokes and the recorded takes of
+  each, which the code plays without knowing anything about that particular
+  drum. What it plays comes from **patterns**, written in the
+  [notations](https://github.com/panyam/notations) language and matched to
+  a tala by the shape of its cycle.
 
-Under both sits the **engine**, plain TypeScript with no DOM, audio or
+Each instrument has an id on the page (`hands-1`, `thambura-1`, `kit-1`)
+and its own audio track, and they all share one clock, so the claps and the
+drum land on the same beats and the drum follows the thambura's Sa.
+[`/labs/tracks`](https://thambura.com/labs/tracks) is a trial layout where
+you can add, remove, mute and solo them.
+
+Under all of it sits the **engine**, plain TypeScript with no DOM, audio or
 timers: the tala tables, exact fractions for every musical position, the
 tempo map that turns counts into seconds, and the sequencers that say what
-sounds when. It is what the planned libraries will be lifted from (#53).
+sounds when. It's what the planned libraries will be lifted from
+([#53](https://github.com/panyam/thambura/issues/53)).
 
 ## How a page is put together
 
-The server describes each page with a **page spec**: a layout, the islands to
-mount (a name, a slot, how it is presented, and its config) and the
-instruments to start with. It writes the spec into the page as JSON, and the
-browser mounts each island from a registry of factories by name. The home
-page's spec is roughly:
+The server describes each page with a **page spec**: a layout, the islands
+to mount (a name, a slot, how it's presented, and its config) and the
+instruments to start with (a kind and its config). It writes the spec into
+the page as JSON, and the browser mounts each island from a registry of
+factories by name and numbers the instruments by kind. The home page's spec,
+on a server with the mridangam kit installed, is:
 
 ```json
 {
@@ -51,19 +67,32 @@ page's spec is roughly:
   "islands": [
     { "name": "tala", "slot": "main", "presentation": "page",
       "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json" } },
-    { "name": "thambura", "slot": "drawer", "presentation": "drawer", "config": {} }
+    { "name": "thambura", "slot": "drawer", "presentation": "drawer" }
   ],
   "instruments": [
+    { "kind": "hands", "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json" } },
+    { "kind": "thambura" },
     { "kind": "kit", "config": { "url": "/static/Resources/Kits/compmusic/kit.json" } }
   ]
 }
 ```
 
-An island the registry doesn't know, or a slot that isn't on the page, is
-logged and skipped, so one bad entry doesn't stop the rest of the page.
+A missing config is an empty one. An island the registry doesn't know, or a
+slot that isn't on the page, is logged and skipped, so one bad entry doesn't
+stop the rest of the page.
 
-The spec is how other pages will reuse the islands. That work is under way
-(#89, #92), and the embedding guide will follow once it settles.
+The same spec is how the islands go on **someone else's page**. A host
+writes a spec in a `data-thambura-spec` script, a `data-thambura-slot`
+element for each island, and loads `embed.js` from our site. Each island
+mounts in a shadow root with our styles, so the host's CSS and ours stay
+apart, and everything it loads (sounds, images, the Lab's code) comes from
+our site. [`/embed/demo`](https://thambura.com/embed/demo) is a page written
+that way, and a guide to embedding is next
+([#109](https://github.com/panyam/thambura/issues/109)).
+
+Each page also keeps its whole setup in a link, one part per instrument
+plus the session. [Share links and presets]({{ .Site.PathPrefix }}/guides/share-links/)
+covers what's in one.
 
 ## Run it locally
 
