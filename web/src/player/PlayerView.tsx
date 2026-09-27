@@ -135,8 +135,9 @@ export function PlayerView(props: {
         </section>
 
         {/* What the instrument plays this cycle, under the image it goes with.
-            Only while it is switched on, since it is showing what you hear. */}
-        <Show when={props.kit && props.kit.state().enabled && props.kit.state().status === "ready"}>
+            Only while it is switched on, since it is showing what you hear,
+            and not where the kit's own row shows it (instrumentControls). */}
+        <Show when={props.instrumentControls !== false && props.kit && props.kit.state().enabled && props.kit.state().status === "ready"}>
           <StrokeLane
             lane={() => props.kit!.state().lane}
             strokeIndex={() => props.kit!.state().strokeIndex}
