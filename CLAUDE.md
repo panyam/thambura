@@ -77,8 +77,9 @@ Sadhana).
 ## Server (Go)
 
 - **The home page** (#101) is the tala and the track list
-  (`layouts/Tracks.html`): the tala in a left column from `lg` up and a card
-  per instrument beside it, one column on a phone, and the floating
+  (`layouts/Tracks.html`): the tala across the top (its `wide` config puts
+  the beat and transport on the left and the strip and selects on the
+  right from `lg` up), the cards under it, one column on a phone, and the floating
   `#play-all` (Start all) at the bottom right. The tala's
   `instrumentControls: false` keeps the claps' and kit's controls in their
   cards. There's no drawer any more: the thambura's panel is its card's
@@ -105,8 +106,8 @@ Sadhana).
   goapplib's BasePage: our logo, no login actions, no HTMX, no header drawer.
   A layout (`web/templates/layouts/Tracks.html` for `/`) includes it, defines
   `BodySection` with the slots and `PageScripts` with the spec, and asks the
-  page for `PageContent`. `HomePage.html` is only that content (the About
-  text) plus the include. Go templates reject a second definition, so none of
+  page for `PageContent`. `HomePage.html` is only that content (a one-line
+  heading linking to `/about`) plus the include. Go templates reject a second definition, so none of
   these can give another's blocks defaults.
 - Search and link previews: pages render a `SitePage` (goapplib's
   `BasePage` plus our `Header`, `Social` and `StructuredData`), and
@@ -116,8 +117,9 @@ Sadhana).
   serves `/robots.txt`, `/sitemap.xml`, `/favicon.ico` and `/sw.js` (the
   service worker has to come from the root to cover the site, and goes out
   with `Cache-Control: no-cache`). `HomePage.html`
-  has a visible About section under the player, the page's only `<h1>` and
-  the only text a crawler that doesn't run JavaScript sees. The PNGs
+  keeps one short line under the player, the page's only `<h1>` and the only
+  text a crawler that doesn't run JavaScript sees; the full description is
+  `/about` (`AboutPage.html`, in the sitemap, linked from the header). The PNGs
   (`web/static/og.png`, `web/static/icons/`, `favicon.ico`) come from
   `node design/render-images.mjs` (preview layout in `design/og.html`),
   which needs `PLAYWRIGHT_CORE` and `CHROMIUM` pointed at an install.
@@ -392,6 +394,10 @@ unit-tested:
   kit's own sequencer can't. Talas are their own group, not instruments;
   several at once is later (`docs/designs/instruments.md`).
 - `PlayerView.tsx`: renders `PlayerState` and calls the presenter's intents.
+  In order: the image, the transport right under it, the kit's lane, the
+  session strip, the tala's selects, then Animation and Images (how the
+  beat looks matters less than what it is). `wide` (the island's config)
+  splits it into the beat on the left and the rest on the right from `lg`.
   Its Sounds menu and Volume slider are the hands track's, the lane,
   Variety and Korvai the kit's, and the speed the session strip's; all come
   in as props. `Stepper.tsx` is the slider between − and + both use.
@@ -573,7 +579,7 @@ unit-tested:
   `tsconfig.sw.json` checks it; `pnpm typecheck` runs both.
 - `install.ts` keeps the `beforeinstallprompt` event and shows the header's
   `#install-app` button, since browsers only hint at installing. iOS never
-  fires it, so `#install-hint` in the About text points at Share -> Add to
+  fires it, so `#install-hint` (in the home page's line and on `/about`) points at Share -> Add to
   Home Screen instead. Both stay hidden in an installed app.
   `web/static/manifest.json` carries the icons and the two screenshots the
   install dialog shows (regenerate them the way `design/render-images.mjs`

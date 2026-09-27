@@ -30,8 +30,10 @@ export type PlayerActions = Pick<
 >;
 
 /**
- * The tala player: beat image, the speed and shruthi strip, transport,
- * volume, and the tala settings. Renders PlayerState and sends every change to the presenter.
+ * The tala player: the beat image with the transport right under it, then
+ * the speed and shruthi strip, the tala settings, and how the beat looks
+ * (Animation, Images). Renders PlayerState and sends every change to the
+ * presenter.
  */
 export function PlayerView(props: {
   state: Accessor<PlayerState>;
@@ -48,6 +50,12 @@ export function PlayerView(props: {
   hands?: { state: Accessor<HandsState>; actions: HandsActions };
   /** The page's speed and shruthi, as a strip under the beat image. */
   session?: { state: Accessor<SessionState>; actions: SessionActions };
+  /**
+   * A page-wide panel (the home page's top): the beat and its transport on
+   * the left, everything that sets it on the right, from `lg` up. Otherwise
+   * one column, for a narrow slot or a phone.
+   */
+  wide?: boolean;
 }) {
   const s = props.state;
   const a = props.actions;
@@ -55,199 +63,209 @@ export function PlayerView(props: {
   const pose = () => props.pose?.() ?? REST;
 
   return (
-    <div class="flex flex-col items-center gap-6">
+    <div class={props.wide ? "grid w-full gap-6 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start lg:gap-10" : "flex flex-col items-center gap-6"}>
       <Show when={s().status === "error"}>
         <p role="alert" class="w-full rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200">
           {s().error}
         </p>
       </Show>
 
-      <section class="flex flex-col items-center gap-3">
-        {/* The beat images are drawn for a white background, so the frame stays white in dark mode.
-            The image moves with the beat (engine/motion.ts), unless the viewer asks for reduced motion. */}
-        <div class="relative flex h-64 w-64 items-center justify-center overflow-hidden rounded-xl border-2 border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600">
-          <Show when={s().motion === "lift"}>
-            <div
-              aria-hidden="true"
-              class="absolute bottom-3 left-1/2 h-3 w-28 rounded-[50%] bg-[radial-gradient(closest-side,rgba(17,24,39,0.28),transparent)] motion-reduce:!transform-none motion-reduce:!opacity-100"
-              style={{ transform: `translateX(-50%) scale(${1 - 0.35 * pose().lift})`, opacity: 1 - 0.6 * pose().lift }}
-            />
-          </Show>
-          <Show when={s().image}>
-            {(src) => (
-              <img
-                src={src()}
-                alt=""
-                class="relative max-h-full max-w-full object-contain will-change-transform motion-reduce:!transform-none motion-reduce:!opacity-100"
-                style={{
-                  transform: `translateY(${(-16 * pose().lift).toFixed(2)}px) scale(${pose().scale})`,
-                  opacity: pose().opacity,
-                }}
+      {/* The beat, and the buttons that move it, together: the image, the
+          transport right under it, and what the kit plays this cycle. */}
+      <div class="flex flex-col items-center gap-4">
+        <section class="flex flex-col items-center gap-3">
+          {/* The beat images are drawn for a white background, so the frame stays white in dark mode.
+              The image moves with the beat (engine/motion.ts), unless the viewer asks for reduced motion. */}
+          <div class="relative flex h-64 w-64 items-center justify-center overflow-hidden rounded-xl border-2 border-gray-300 bg-white p-5 shadow-sm dark:border-gray-600">
+            <Show when={s().motion === "lift"}>
+              <div
+                aria-hidden="true"
+                class="absolute bottom-3 left-1/2 h-3 w-28 rounded-[50%] bg-[radial-gradient(closest-side,rgba(17,24,39,0.28),transparent)] motion-reduce:!transform-none motion-reduce:!opacity-100"
+                style={{ transform: `translateX(-50%) scale(${1 - 0.35 * pose().lift})`, opacity: 1 - 0.6 * pose().lift }}
               />
-            )}
-          </Show>
-        </div>
-        <p class="text-sm tabular-nums text-gray-500 dark:text-gray-400" aria-live="off">
-          <Show when={s().beatCount > 0} fallback={<>&nbsp;</>}>
-            Beat {s().position.beat + 1} of {s().beatCount}
-            <Show when={s().settings.kalai > 1}>
-              {" "}· repeat {s().position.repeat + 1} of {s().settings.kalai}
             </Show>
-          </Show>
-        </p>
-      </section>
+            <Show when={s().image}>
+              {(src) => (
+                <img
+                  src={src()}
+                  alt=""
+                  class="relative max-h-full max-w-full object-contain will-change-transform motion-reduce:!transform-none motion-reduce:!opacity-100"
+                  style={{
+                    transform: `translateY(${(-16 * pose().lift).toFixed(2)}px) scale(${pose().scale})`,
+                    opacity: pose().opacity,
+                  }}
+                />
+              )}
+            </Show>
+          </div>
+          <p class="text-sm tabular-nums text-gray-500 dark:text-gray-400" aria-live="off">
+            <Show when={s().beatCount > 0} fallback={<>&nbsp;</>}>
+              Beat {s().position.beat + 1} of {s().beatCount}
+              <Show when={s().settings.kalai > 1}>
+                {" "}· repeat {s().position.repeat + 1} of {s().settings.kalai}
+              </Show>
+            </Show>
+          </p>
+        </section>
 
-      <Show when={props.session}>{(session) => <SessionStrip state={session().state} actions={session().actions} />}</Show>
+        <section class="flex items-center justify-center gap-3" aria-label="Transport">
+          <IconButton label="Restart" onClick={() => a.restart()} disabled={s().status !== "ready"}>
+            <path d="M6 5h2v14H6zM19 5v14l-10-7z" />
+          </IconButton>
+          <IconButton label="Previous beat" onClick={() => a.prev()} disabled={s().status !== "ready" || s().playing}>
+            <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </IconButton>
+          <button
+            type="button"
+            onClick={() => void a.toggle()}
+            disabled={s().status !== "ready"}
+            aria-label={s().playing ? "Stop" : "Start"}
+            title={s().playing ? "Stop" : "Start"}
+            class="flex h-14 w-14 items-center justify-center rounded-full bg-amber-600 text-white shadow-sm hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-gray-900"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7" aria-hidden="true">
+              <Show when={s().playing} fallback={<path d="M8 5v14l11-7z" />}>
+                <rect x="6" y="6" width="12" height="12" rx="1.5" />
+              </Show>
+            </svg>
+          </button>
+          <IconButton label="Next beat" onClick={() => a.next()} disabled={s().status !== "ready" || s().playing}>
+            <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </IconButton>
+        </section>
 
-      {/* What the instrument plays this cycle, under the image it goes with.
-          Only while it is switched on, since it is showing what you hear. */}
-      <Show when={props.kit && props.kit.state().enabled && props.kit.state().status === "ready"}>
-        <StrokeLane
-          lane={() => props.kit!.state().lane}
-          strokeIndex={() => props.kit!.state().strokeIndex}
-          kit={props.kit!.state}
-          variety={() => props.kit!.state().variety}
-          setVariety={(variety) => props.kit!.actions.setVariety(variety)}
-          hasVariations={() => props.kit!.state().hasVariations}
-          hasKorvai={() => props.kit!.state().hasKorvai}
-          korvaiQueued={() => props.kit!.state().korvaiQueued}
-          askForKorvai={() => props.kit!.actions.askForKorvai()}
-        />
-      </Show>
+        {/* What the instrument plays this cycle, under the image it goes with.
+            Only while it is switched on, since it is showing what you hear. */}
+        <Show when={props.kit && props.kit.state().enabled && props.kit.state().status === "ready"}>
+          <StrokeLane
+            lane={() => props.kit!.state().lane}
+            strokeIndex={() => props.kit!.state().strokeIndex}
+            kit={props.kit!.state}
+            variety={() => props.kit!.state().variety}
+            setVariety={(variety) => props.kit!.actions.setVariety(variety)}
+            hasVariations={() => props.kit!.state().hasVariations}
+            hasKorvai={() => props.kit!.state().hasKorvai}
+            korvaiQueued={() => props.kit!.state().korvaiQueued}
+            askForKorvai={() => props.kit!.actions.askForKorvai()}
+          />
+        </Show>
+      </div>
 
-      {/* How the beat looks and sounds, next to the image it changes: a row of
-          three, stacked on a phone so the choices' names fit. */}
-      <section class="grid w-full max-w-md grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-3" aria-label="Display">
-        <Field label="Animation" id="motion">
-          <select id="motion" class={SELECT} onChange={(e) => a.setMotion(e.currentTarget.value as BeatMotion)}>
-            <For each={MOTION_OPTIONS}>{(o) => <option value={o.id} selected={o.id === s().motion}>{o.label}</option>}</For>
-          </select>
-        </Field>
-        <Field label="Images" id="images">
-          <select id="images" class={SELECT} onChange={(e) => void a.setImageGroup(e.currentTarget.value)}>
-            <For each={s().imageGroups}>{(g) => <option value={g} selected={g === s().imageGroup}>{g}</option>}</For>
-          </select>
-        </Field>
-        <Show when={props.instrumentControls !== false && props.hands}>
-          {(hands) => (
-            <Field label="Sounds" id="sounds">
-              <select id="sounds" class={SELECT} onChange={(e) => void hands().actions.setSoundGroup(e.currentTarget.value)}>
-                <For each={hands().state().soundGroups}>
-                  {(g) => <option value={g} selected={g === hands().state().soundGroup}>{g}</option>}
+      {/* Everything that sets the beat, beside it on a wide page: the speed
+          and shruthi, the tala, then how the beat looks. */}
+      <div class={props.wide ? "grid w-full items-start justify-items-start gap-6 xl:grid-cols-2" : "flex w-full flex-col items-center gap-6"}>
+        <Show when={props.session}>{(session) => <SessionStrip state={session().state} actions={session().actions} />}</Show>
+
+        <div class={`flex w-full flex-col gap-6 ${props.wide ? "items-start" : "items-center"}`}>
+          <section class="grid w-full max-w-md grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2" aria-label="Tala settings">
+            <Field label="Tala" id="tala">
+              <select
+                id="tala"
+                class={SELECT}
+                onChange={(e) => a.setSettings({ tala: e.currentTarget.value as TalaId })}
+              >
+                <For each={TALA_OPTIONS}>
+                  {(group) => (
+                    <optgroup label={group.label}>
+                      <For each={group.options}>
+                        {(o) => <option value={o.value} selected={o.value === tala()}>{o.label}</option>}
+                      </For>
+                    </optgroup>
+                  )}
                 </For>
               </select>
             </Field>
-          )}
-        </Show>
-      </section>
-
-      <section class="flex items-center justify-center gap-3" aria-label="Transport">
-        <IconButton label="Restart" onClick={() => a.restart()} disabled={s().status !== "ready"}>
-          <path d="M6 5h2v14H6zM19 5v14l-10-7z" />
-        </IconButton>
-        <IconButton label="Previous beat" onClick={() => a.prev()} disabled={s().status !== "ready" || s().playing}>
-          <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-        </IconButton>
-        <button
-          type="button"
-          onClick={() => void a.toggle()}
-          disabled={s().status !== "ready"}
-          aria-label={s().playing ? "Stop" : "Start"}
-          title={s().playing ? "Stop" : "Start"}
-          class="flex h-14 w-14 items-center justify-center rounded-full bg-amber-600 text-white shadow-sm hover:bg-amber-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:focus-visible:ring-offset-gray-900"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7" aria-hidden="true">
-            <Show when={s().playing} fallback={<path d="M8 5v14l11-7z" />}>
-              <rect x="6" y="6" width="12" height="12" rx="1.5" />
-            </Show>
-          </svg>
-        </button>
-        <IconButton label="Next beat" onClick={() => a.next()} disabled={s().status !== "ready" || s().playing}>
-          <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-        </IconButton>
-      </section>
-
-      <section class="grid w-full max-w-md gap-4">
-        <Show when={props.instrumentControls !== false && props.hands}>
-          {(hands) => (
-            <div>
-              <div class="mb-1 flex items-center justify-between">
-                <label for="volume" class="text-sm font-medium">Volume</label>
-                <span class="text-sm tabular-nums text-gray-500 dark:text-gray-400">{hands().state().volume}%</span>
-              </div>
-              <Stepper
-                label="volume"
-                unit={`${VOLUME_STEP}%`}
-                onDown={() => hands().actions.setVolume(hands().state().volume - VOLUME_STEP)}
-                onUp={() => hands().actions.setVolume(hands().state().volume + VOLUME_STEP)}
-                atMin={hands().state().volume <= 0}
-                atMax={hands().state().volume >= 100}
+            <Field label="Kalai" id="kalai">
+              <select
+                id="kalai"
+                class={SELECT}
+                onChange={(e) => a.setSettings({ kalai: Number(e.currentTarget.value) })}
               >
-                <input
-                  id="volume"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={hands().state().volume}
-                  onInput={(e) => hands().actions.setVolume(e.currentTarget.valueAsNumber)}
-                  class="w-full accent-amber-600"
-                />
-              </Stepper>
-            </div>
-          )}
-        </Show>
-      </section>
+                <For each={KALAI_OPTIONS}>
+                  {(o) => <option value={o.value} selected={o.value === s().settings.kalai}>{o.label}</option>}
+                </For>
+              </select>
+            </Field>
+            <Field label="Jaathi" id="jaathi" hint={usesJaathi(tala()) ? undefined : "Only sapta talas have a laghu"}>
+              <GatiSelect
+                id="jaathi"
+                value={s().settings.jaathi}
+                disabled={!usesJaathi(tala())}
+                onChange={(jaathi) => a.setSettings({ jaathi })}
+              />
+            </Field>
+            <Field label="Gathi / Nadai" id="nadai" hint={usesNadai(tala()) ? undefined : "A chaapu sets its own gathi"}>
+              <GatiSelect
+                id="nadai"
+                value={s().settings.nadai}
+                disabled={!usesNadai(tala())}
+                onChange={(nadai) => a.setSettings({ nadai })}
+              />
+            </Field>
+          </section>
 
-      <section class="grid w-full max-w-md grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2" aria-label="Tala settings">
-        <Field label="Tala" id="tala">
-          <select
-            id="tala"
-            class={SELECT}
-            onChange={(e) => a.setSettings({ tala: e.currentTarget.value as TalaId })}
-          >
-            <For each={TALA_OPTIONS}>
-              {(group) => (
-                <optgroup label={group.label}>
-                  <For each={group.options}>
-                    {(o) => <option value={o.value} selected={o.value === tala()}>{o.label}</option>}
-                  </For>
-                </optgroup>
+          {/* How the beat looks and sounds: after the tala's own settings, which
+              matter more. A row of three, stacked on a phone so the names fit. */}
+          <section class="grid w-full max-w-md grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-3" aria-label="Display">
+            <Field label="Animation" id="motion">
+              <select id="motion" class={SELECT} onChange={(e) => a.setMotion(e.currentTarget.value as BeatMotion)}>
+                <For each={MOTION_OPTIONS}>{(o) => <option value={o.id} selected={o.id === s().motion}>{o.label}</option>}</For>
+              </select>
+            </Field>
+            <Field label="Images" id="images">
+              <select id="images" class={SELECT} onChange={(e) => void a.setImageGroup(e.currentTarget.value)}>
+                <For each={s().imageGroups}>{(g) => <option value={g} selected={g === s().imageGroup}>{g}</option>}</For>
+              </select>
+            </Field>
+            <Show when={props.instrumentControls !== false && props.hands}>
+              {(hands) => (
+                <Field label="Sounds" id="sounds">
+                  <select id="sounds" class={SELECT} onChange={(e) => void hands().actions.setSoundGroup(e.currentTarget.value)}>
+                    <For each={hands().state().soundGroups}>
+                      {(g) => <option value={g} selected={g === hands().state().soundGroup}>{g}</option>}
+                    </For>
+                  </select>
+                </Field>
               )}
-            </For>
-          </select>
-        </Field>
-        <Field label="Kalai" id="kalai">
-          <select
-            id="kalai"
-            class={SELECT}
-            onChange={(e) => a.setSettings({ kalai: Number(e.currentTarget.value) })}
-          >
-            <For each={KALAI_OPTIONS}>
-              {(o) => <option value={o.value} selected={o.value === s().settings.kalai}>{o.label}</option>}
-            </For>
-          </select>
-        </Field>
-        <Field label="Jaathi" id="jaathi" hint={usesJaathi(tala()) ? undefined : "Only sapta talas have a laghu"}>
-          <GatiSelect
-            id="jaathi"
-            value={s().settings.jaathi}
-            disabled={!usesJaathi(tala())}
-            onChange={(jaathi) => a.setSettings({ jaathi })}
-          />
-        </Field>
-        <Field label="Gathi / Nadai" id="nadai" hint={usesNadai(tala()) ? undefined : "A chaapu sets its own gathi"}>
-          <GatiSelect
-            id="nadai"
-            value={s().settings.nadai}
-            disabled={!usesNadai(tala())}
-            onChange={(nadai) => a.setSettings({ nadai })}
-          />
-        </Field>
-      </section>
+            </Show>
+          </section>
 
-      <Show when={props.instrumentControls !== false && props.kit} keyed>
-        {(k) => <StrokePad state={k.state} actions={k.actions} />}
-      </Show>
+          <section class="grid w-full max-w-md gap-4">
+            <Show when={props.instrumentControls !== false && props.hands}>
+              {(hands) => (
+                <div>
+                  <div class="mb-1 flex items-center justify-between">
+                    <label for="volume" class="text-sm font-medium">Volume</label>
+                    <span class="text-sm tabular-nums text-gray-500 dark:text-gray-400">{hands().state().volume}%</span>
+                  </div>
+                  <Stepper
+                    label="volume"
+                    unit={`${VOLUME_STEP}%`}
+                    onDown={() => hands().actions.setVolume(hands().state().volume - VOLUME_STEP)}
+                    onUp={() => hands().actions.setVolume(hands().state().volume + VOLUME_STEP)}
+                    atMin={hands().state().volume <= 0}
+                    atMax={hands().state().volume >= 100}
+                  >
+                    <input
+                      id="volume"
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={hands().state().volume}
+                      onInput={(e) => hands().actions.setVolume(e.currentTarget.valueAsNumber)}
+                      class="w-full accent-amber-600"
+                    />
+                  </Stepper>
+                </div>
+              )}
+            </Show>
+          </section>
+        </div>
+
+        <Show when={props.instrumentControls !== false && props.kit} keyed>
+          {(k) => <StrokePad state={k.state} actions={k.actions} />}
+        </Show>
+      </div>
     </div>
   );
 }

@@ -39,6 +39,7 @@ export function islandRegistry(): Registry<PageContext, HTMLElement, LCMComponen
         kit: () => ctx.tracks.list().find((t): t is KitPresenter => t instanceof KitPresenter),
         onTracksChange: (f) => ctx.tracks.onChange(f),
         instrumentControls: island.config.instrumentControls !== false,
+        wide: island.config.wide === true,
         hands: handsOf(ctx.tracks.get("hands-1")),
         session: ctx.session,
         onPlaying: (on) => ctx.awake.set("tala", on),

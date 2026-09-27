@@ -26,14 +26,13 @@ defaults for them), and render "BasePage".
 </a>
 {{ end }}
 
-{{/* goapplib renders these just before its theme toggle. The thambura's own
-     buttons float over the page instead (HomePage.html), where they are easy
-     to find and to reach on a phone. The thambura island
-     binds the play button (start/stop from anywhere on the page, also T) and
-     the bar's toggle. The header carries only the install button, which
-     player/install.ts shows when the browser offers to install the app and
-     hides once it is installed; goapplib's theme toggle follows this block. */}}
+{{/* goapplib renders these just before its theme toggle: the About link,
+     and the install button, which player/install.ts shows when the browser
+     offers to install the app and hides once it is installed. Start all
+     floats over the home page instead (layouts/Tracks.html), where it's easy
+     to reach on a phone. */}}
 {{ define "SiteHeaderActions" }}
+<a href="/about" class="rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">About</a>
 <button id="install-app" type="button" hidden
         class="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

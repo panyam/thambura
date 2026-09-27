@@ -98,6 +98,7 @@ func TestHomePageMetadata(t *testing.T) {
 		`id="install-hint"`,
 		`<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">`,
 		`<h1 id="about-heading"`,
+		`href="/about"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("home page missing %q", want)
@@ -126,6 +127,40 @@ func TestHomePageMetadata(t *testing.T) {
 	}
 }
 
+// The About page carries the words that used to sit under the player: its
+// own heading and description, canonical at /about, and the install hint.
+func TestAboutPage(t *testing.T) {
+	srv := newServer(t)
+	code, body := get(t, srv.URL+"/about")
+	if code != http.StatusOK {
+		t.Fatalf("GET /about = %d\n%s", code, body)
+	}
+	for _, want := range []string{
+		`<link rel="canonical" href="https://thambura.com/about">`,
+		`<meta name="description" content="` + aboutDescription + `">`,
+		"An online thambura and tala keeper for Carnatic practice",
+		"Tala keeper",
+		"Thambura drone",
+		`id="install-hint"`,
+		`href="/"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("/about missing %q", want)
+		}
+	}
+	if n := strings.Count(body, "<h1"); n != 1 {
+		t.Errorf("/about has %d h1s, want one", n)
+	}
+	if n := len(aboutDescription); n > 170 {
+		t.Errorf("description is %d characters; results cut it off past about 160", n)
+	}
+	// The home page keeps only its heading; the long text lives here.
+	_, home := get(t, srv.URL+"/")
+	if strings.Contains(home, "Thambura drone") {
+		t.Error("the home page still carries the About text")
+	}
+}
+
 // The files crawlers and browsers ask for at the root, and the manifest's icons.
 func TestRootFiles(t *testing.T) {
 	srv := newServer(t)
@@ -134,7 +169,8 @@ func TestRootFiles(t *testing.T) {
 		t.Errorf("robots.txt = %q", resp.body)
 	}
 	resp = fetch(t, srv.URL+"/sitemap.xml")
-	if !strings.Contains(resp.body, "<loc>https://thambura.com/</loc>") || !strings.HasPrefix(resp.contentType, "application/xml") {
+	if !strings.Contains(resp.body, "<loc>https://thambura.com/</loc>") || !strings.Contains(resp.body, "<loc>https://thambura.com/about</loc>") ||
+		!strings.HasPrefix(resp.contentType, "application/xml") {
 		t.Errorf("sitemap.xml (%s) = %q", resp.contentType, resp.body)
 	}
 	resp = fetch(t, srv.URL+"/favicon.ico")
@@ -454,6 +490,9 @@ func TestHomePageSpec(t *testing.T) {
 	}
 	if v, ok := s.Islands[0].Config["instrumentControls"]; !ok || v != false {
 		t.Errorf("tala config instrumentControls = %v, want false", v)
+	}
+	if v := s.Islands[0].Config["wide"]; v != true {
+		t.Errorf("tala config wide = %v, want true", v)
 	}
 	for _, slot := range s.Slots() {
 		if n := strings.Count(body, `data-slot="`+slot+`"`); n != 1 {
