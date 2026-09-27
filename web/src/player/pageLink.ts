@@ -1,4 +1,4 @@
-import { withBarOpen } from "../engine/shareLink";
+import { decodePage, encodePage, withBarOpen } from "../engine/shareLink";
 
 /** The query parameter that carries a shared setup (engine/shareLink.ts). */
 export const LINK_PARAM = "s";
@@ -15,29 +15,61 @@ export interface AddressBar {
   write(link: string): void;
 }
 
+/** One instrument's part of the page link, as that instrument sees it. */
+export interface LinkPart {
+  /** Its part of the link the page was opened with (or its latest), or null. */
+  read(): string | null;
+  /** Its setup now; the page link is written again with every part. */
+  write(link: string): void;
+}
+
 /**
- * The page's share link. Instruments write their setup through it, and the
- * layout adds whether the thambura's bar is showing, which the instrument
- * doesn't know: `showsBar` is true (a docked thambura is always in view)
- * until a drawer layout replaces it with its own open state.
- * TODO(#100b): carry every instrument on the page, not only the thambura.
+ * The page's share link, made of one part per instrument (a page link,
+ * engine/shareLink.ts, format 2). Each instrument reads and writes only its
+ * own part; the parts the page was opened with carry on until their
+ * instrument writes. A page with only thambura-1 writes a plain thambura
+ * link, as it always has.
+ *
+ * The layout adds whether the thambura's bar is showing, which no
+ * instrument knows: `showsBar` is true (a docked thambura is always in view)
+ * until a drawer replaces it with its own open state.
  */
 export class PageLink {
   showsBar: () => boolean = () => true;
+  private readonly parts: Map<string, string>;
 
-  constructor(private readonly address: AddressBar) {}
-
-  read(): string | null {
-    return this.address.read();
+  /** `base` is the page URL links are made on; the current page if not given. */
+  constructor(
+    private readonly address: AddressBar,
+    private readonly base?: string,
+  ) {
+    const opened = address.read();
+    this.parts = (opened && decodePage(opened)) || new Map();
   }
 
-  write(link: string): void {
-    this.address.write(withBarOpen(link, this.showsBar()));
+  /** The part for the instrument with this id. */
+  part(id: string): LinkPart {
+    return {
+      read: () => this.parts.get(id) ?? null,
+      write: (link) => {
+        this.parts.set(id, link);
+        this.address.write(this.encode(this.parts));
+      },
+    };
   }
 
-  /** The link as a full URL on this page, for Copy link and Share. */
-  url(link: string): string {
-    return linkUrl(withBarOpen(link, this.showsBar()));
+  /** The page link as a full URL, with `id`'s part set to `link`, for Copy link and Share. */
+  url(id: string, link: string): string {
+    const url = new URL(this.base ?? location.href);
+    url.searchParams.set(LINK_PARAM, this.encode(new Map([...this.parts, [id, link]])));
+    return url.toString();
+  }
+
+  private encode(parts: Map<string, string>): string {
+    const open = this.showsBar();
+    return encodePage(
+      [...parts].map(([id, link]) => ({ id, link: id.startsWith("thambura-") ? withBarOpen(link, open) : link })),
+    );
   }
 }
 
@@ -52,15 +84,10 @@ export function addressBar(): AddressBar {
     write: (link) => {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        const url = linkUrl(link);
-        if (url !== location.href) history.replaceState(history.state, "", url);
+        const url = new URL(location.href);
+        url.searchParams.set(LINK_PARAM, link);
+        if (url.toString() !== location.href) history.replaceState(history.state, "", url.toString());
       }, LINK_SETTLE_MS);
     },
   };
-}
-
-function linkUrl(link: string): string {
-  const url = new URL(location.href);
-  url.searchParams.set(LINK_PARAM, link);
-  return url.toString();
 }

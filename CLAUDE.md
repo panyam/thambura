@@ -252,7 +252,14 @@ unit-tested:
   slider's step, and voice values the Lab hides, travel as exact floats.
   Links run 18-32 characters for everyday setups and stay under 200 for a
   plan edited everywhere. The orders at the top of the file are the format:
-  append, never reorder, and bump `FORMAT` for anything else.
+  append, never reorder, and bump `FORMAT` for anything else. Format 2 is a
+  page link (#100): one part per instrument, keyed by its page id, each a
+  kind, a number, a length and a payload; a thambura's payload is a whole
+  format 1 link. `encodePage` writes a page with only `thambura-1` as that
+  part alone, in format 1, so everyday links are unchanged; `decodePage`
+  reads a format 1 link as `thambura-1` and skips parts it can't read.
+  The docs site's reference page (`docs/content/reference/share-link-format/`)
+  describes both.
 - `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa in a `PluckPattern`:
   `EVEN_PATTERN` (four slots and a rest) or, for the jawari mode,
   `PLAYED_PATTERN` (the recorded player's uneven gaps, plus a `DampEvent`
@@ -337,11 +344,15 @@ unit-tested:
   pre-id `thambura.drone` record once through `withFallback`, which writes
   only the new key and leaves the old one for the drawer's own migration.
 - `pageLink.ts` (`PageLink`): the page's share link in the address bar
-  (`?s=`, `replaceState`, 400 ms after the last change). The thambura reads
-  and writes its setup through it, and a drawer layout sets `showsBar` so
-  the link carries whether the bar is open; a docked thambura leaves it
-  true. It's in the page context, since the link is the page's, not one
-  island's; #100b makes it carry every instrument.
+  (`?s=`, `replaceState`, 400 ms after the last change), made of one part
+  per instrument. An instrument gets its own with `part(id)`: it reads its
+  part of the link the page was opened with, and each write rewrites the
+  page link from every part, keeping the parts it was opened with until
+  their instruments write. A drawer layout sets `showsBar` so the thambura
+  parts carry whether the bar is open; a docked thambura leaves it true.
+  `url(id, setup)` is Copy link's URL: the page link with that part swapped
+  in. It's in the page context, since the link is the page's, not one
+  island's.
 - `thamburaPresenter.ts` (`ThamburaPresenter`): a thambura as an instrument
   on the page, with an `id` (`thambura-1`, seeded by Go as a `thambura`
   instrument and made in `main.ts`, not by its island). It has its own

@@ -48,10 +48,10 @@ export function createThamburaIsland(
   const { toggle, play } = controls;
   // Only a drawer has an open state; a docked thambura is always showing.
   const drawer =
-    opts.presentation === "drawer" ? new ThamburaDrawer({ store: localStore("drawer"), legacy: localStore("drone"), link: link.read() }) : null;
+    opts.presentation === "drawer" ? new ThamburaDrawer({ store: localStore("drawer"), legacy: localStore("drone"), link: link.part(presenter.id).read() }) : null;
   link.showsBar = () => linkShowsBar(opts.presentation, drawer);
   // The presenter wrote the link before this layout was mounted; write it again with the bar's flag.
-  link.write(presenter.shareLink());
+  link.part(presenter.id).write(presenter.shareLink());
   const [open, setOpen] = createSignal(drawer?.open ?? true);
   const [state, setState] = signalView(presenter.state);
   presenter.attach({
@@ -66,7 +66,7 @@ export function createThamburaIsland(
     drawer.onChange((o) => {
       setOpen(o);
       reflectOpen(controls, o);
-      link.write(presenter.shareLink());
+      link.part(presenter.id).write(presenter.shareLink());
     });
     reflectOpen(controls, drawer.open);
     toggle?.addEventListener("click", () => drawer.toggle());
@@ -80,7 +80,7 @@ export function createThamburaIsland(
 
   // Leave room at the bottom of the page for the open bar.
   const onHeight = (px: number) => document.documentElement.style.setProperty("--thambura-bar-height", `${px}px`);
-  const shareUrl = (setup: string) => link.url(setup);
+  const shareUrl = (setup: string) => link.url(presenter.id, setup);
   const analyser = () => audio.analyser(presenter.id);
 
   return new SolidIsland(
@@ -149,6 +149,6 @@ export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageL
     defer: (cb, ms) => setTimeout(cb, ms),
     store: id === "thambura-1" ? withFallback(own, localStore("drone")) : own,
     presets: localStore("presets"),
-    link: { read: () => link.read(), write: (setup) => link.write(setup) },
+    link: link.part(id),
   });
 }

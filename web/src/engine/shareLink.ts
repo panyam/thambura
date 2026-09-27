@@ -33,8 +33,26 @@ import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanF
  * strings) is stored exactly, as a 64-bit float.
  * Volume is left out: it depends on the listener's room. The orders below are
  * part of the format; add to their ends, never reorder.
+ *
+ * Format 2 is a page link: every instrument on the page, each as its own
+ * part (#100). Bytes, then base64url without padding:
+ *
+ *   0      format (2)
+ *   then per part: its kind (PAGE_KINDS index + 1), its number on the page
+ *          (thambura-2 is 2), the payload's length as a varint, the payload
+ *   A thambura's payload is a whole format 1 link, so its bar flag and
+ *   drift checksum travel as they always have. A part of a kind this
+ *   version doesn't know is skipped, and so is a thambura part that isn't a
+ *   thambura link, rather than refusing the whole page.
+ *
+ * A page whose only part is thambura-1 is written as that part alone, in
+ * format 1, so everyday links are unchanged and older versions still open
+ * them.
  */
 const FORMAT = 1;
+const PAGE_FORMAT = 2;
+// Instrument kinds a page link carries a part for. Append, never reorder.
+const PAGE_KINDS = ["thambura"] as const;
 const MODES = ["jawari", "tambura", "guitar", "custom", "sruti"] as const;
 const VIEWS = ["mini", "studio", "raagini", "lab"] as const;
 const SWARAS = ["Sa", "Ri1", "Ri2", "Ri3", "Ga3", "Ma1", "Ma2", "Pa", "Da1", "Da2", "Da3", "Ni3"] as const;
@@ -400,6 +418,13 @@ class Reader {
     if (!Number.isFinite(v)) throw new Error("bad number");
     return v;
   }
+  /** The next `n` bytes. */
+  take(n: number): Uint8Array {
+    if (this.i + n > this.b.length) throw new Error("short link");
+    const out = this.b.slice(this.i, this.i + n);
+    this.i += n;
+    return out;
+  }
   varint(): number {
     let v = 0;
     for (let shift = 0; shift < 28; shift += 7) {
@@ -409,6 +434,73 @@ class Reader {
     }
     throw new Error("bad varint");
   }
+}
+
+/** One instrument's part of a page link: its id on the page and its own link. */
+export interface PagePart {
+  id: string;
+  link: string;
+}
+
+/**
+ * Every instrument's part in one link (format 2 above), or, when the only
+ * part is thambura-1, that part's own link unchanged. Parts whose kind this
+ * version can't write are left out.
+ */
+export function encodePage(parts: PagePart[]): string {
+  if (parts.length === 1 && parts[0].id === "thambura-1") return parts[0].link;
+  const w = new Writer();
+  w.byte(PAGE_FORMAT);
+  for (const part of parts) {
+    const m = /^([a-z]+)-(\d+)$/.exec(part.id);
+    const kind = m ? PAGE_KINDS.indexOf(m[1] as (typeof PAGE_KINDS)[number]) : -1;
+    if (!m || kind < 0 || Number(m[2]) > 255) continue;
+    let payload: Uint8Array;
+    try {
+      payload = fromBase64url(part.link);
+    } catch {
+      continue;
+    }
+    w.byte(kind + 1);
+    w.byte(Number(m[2]));
+    w.varint(payload.length);
+    w.raw(payload);
+  }
+  return base64url(w.bytes());
+}
+
+/**
+ * The parts of a page link by instrument id, or null if it isn't a link this
+ * app can read. A format 1 link is thambura-1's part.
+ */
+export function decodePage(link: string): Map<string, string> | null {
+  let bytes: Uint8Array;
+  try {
+    bytes = fromBase64url(link);
+  } catch {
+    return null;
+  }
+  if (bytes[0] === FORMAT) {
+    return decodeLink(link, { settings: DEFAULT_THAMBURA }) ? new Map([["thambura-1", link]]) : null;
+  }
+  if (bytes[0] !== PAGE_FORMAT) return null;
+  const r = new Reader(bytes);
+  const parts = new Map<string, string>();
+  try {
+    r.byte();
+    while (!r.done) {
+      const kind = PAGE_KINDS[r.byte() - 1];
+      const n = r.byte();
+      const payload = r.take(r.varint());
+      if (!kind) continue;
+      const part = base64url(payload);
+      if (kind === "thambura" && !decodeLink(part, { settings: DEFAULT_THAMBURA })) continue;
+      parts.set(`${kind}-${n}`, part);
+    }
+  } catch {
+    return null;
+  }
+  return parts;
 }
 
 /**

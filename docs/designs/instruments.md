@@ -93,7 +93,7 @@ the same grid, with the sound moved out of the timer.
 | `AudioOut` | ~~`setBusVolume(bus, percent)`~~ | `setLevel`, `setPan`, `setMute`, `setSolo`, `removeTrack` per track (done, #96) |
 | Tala sounds | ~~the player schedules them from fixture groups~~ | a hands track playing the tala's calls (done, #98) |
 | Beat grid | ~~inside `PlayerPresenter`~~ | `TalaGrid` on `clock.tala`, read by any track (done, #97) |
-| Thambura | one presenter, one localStorage key, one `?s=` link | an instrument on the page with an id, `thambura-1`, its own track and key (done, #100a); links carrying several instruments are #100b |
+| Thambura | one presenter, one localStorage key, one `?s=` link | an instrument on the page with an id, `thambura-1`, its own track and key, and a part of the page link (done, #100) |
 | Views | a page with a player and a floating bar | a track list, each track with its own panel |
 
 The thambura row is the expensive one, as far as we can tell. Its settings, its presets and its

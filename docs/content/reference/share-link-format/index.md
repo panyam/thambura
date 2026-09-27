@@ -4,7 +4,9 @@ description: "The bytes behind a thambura ?s= link, how each value is stored, an
 prev: { title: "Share links and presets", url: "/thambura/guides/share-links/" }
 ---
 
-This is format 1, the format every link made so far uses. It's for anyone
+This page describes format 1, one thambura's setup, which is still what an
+everyday link is, and format 2, a page link that carries every instrument
+on the page as its own part. It's for anyone
 changing
 [`web/src/engine/shareLink.ts`](https://github.com/panyam/thambura/blob/master/web/src/engine/shareLink.ts),
 or reading links outside the app. For what a link means to the person
@@ -15,9 +17,10 @@ so if the two ever disagree, the page is wrong.
 ## Overview
 
 A link's `s` parameter is a string of bytes written as base64url without
-padding. The first byte is the format number, and nothing is read from a
-link whose first byte isn't `1`. The next twelve bytes hold the settings
-every link has. A Custom link then carries its plan.
+padding. The first byte is the format number. A `1` is one thambura's
+setup: the next twelve bytes hold the settings every link has, and a Custom
+link then carries its plan. A `2` is a page link, made of parts (see
+"Page links" below), and anything else isn't read.
 
 A reader must use up every byte. A link with bytes left over, or one that
 runs out early, is rejected as a whole, so the listener's own setup plays
@@ -202,13 +205,41 @@ ARwDBEAHETABLDIyPADY5g8BDwcCDxEED2MFDwMGDwAHDxQJB1wJCDQKD2QLDxYMDzUNDzQODxgPDzcY
 
 The levels, pans and gaps aren't edited, so they're the jawari plan's.
 
+## Page links (format 2)
+
+A page can hold more than one instrument, so its link is made of parts, one
+per instrument, keyed by the instrument's id on the page (`thambura-1`,
+`thambura-2`). After the format byte `2`, each part is:
+
+| Bytes | Holds |
+| --- | --- |
+| 1 | The kind, as an index into `PAGE_KINDS` plus one |
+| 1 | The instrument's number on the page: `thambura-2` is 2 |
+| varint | The payload's length |
+| that many | The payload |
+
+`PAGE_KINDS` is only `thambura` so far. A thambura's payload is a whole
+format 1 link, the same bytes as above, so its bar flag and drift checksum
+work as they always have.
+
+A reader skips a part of a kind it doesn't know, and a thambura part that
+isn't a readable thambura link, and keeps the rest of the page, so a link
+from a newer version still opens the instruments this one has. A link that
+runs out partway through a part is rejected as a whole, like a short format
+1 link.
+
+A page whose only part is `thambura-1` is written as that part alone, in
+format 1. Everyday links are the same bytes they were before page links, and
+older versions of the app still open them. A format 1 link read as a page is
+`thambura-1`'s part.
+
 ## Changing the format
 
 People keep links, and presets are links, so a link made today has to open
 the same sound after any later release. The rules:
 
 - **Add to the ends of the tables, never reorder them.** `MODES`, `VIEWS`,
-  `SWARAS`, `BASES`, `FIELDS` and `HIDDEN` are all part of the format, since
+  `SWARAS`, `BASES`, `FIELDS`, `HIDDEN` and `PAGE_KINDS` are all part of the format, since
   a link stores positions in them. A new mode, view or field goes at the
   end, and old links never mention it.
 - **Leave the ranges and steps of existing fields alone,** for the reason
@@ -224,6 +255,7 @@ sent, with what they decode to ("format 1 links keep opening the same"). If
 a change breaks one, the change broke the format. Shimmer, above, is one of
 them.
 
-Instance ids ([#100](https://github.com/panyam/thambura/issues/100)) are the
-next format change, since a link will then carry one or more instruments.
-That will be format 2, and this page will describe both.
+Page links came in with instance ids
+([#100](https://github.com/panyam/thambura/issues/100)). A new kind of
+instrument in a link is a new entry at the end of `PAGE_KINDS` and needs no
+new format: older versions skip its parts.
