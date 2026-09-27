@@ -65,7 +65,7 @@ When someone opens a page with a `?s=` link:
 - If it changes the sound they had, their own setup is kept first, as a
   preset called **Before shared link**. Only the latest one is kept, so
   opening links all day doesn't pile them up.
-- A note in the thambura's bar says "Opened a shared setup."
+- A note in the thambura's panel says "Opened a shared setup."
 - Nothing is saved over their own setup until they change something
   themselves.
 - A part this version doesn't know (from a newer version, say) is skipped,

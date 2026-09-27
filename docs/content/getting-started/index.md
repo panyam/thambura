@@ -23,9 +23,11 @@ The home page has two islands:
   nadai's ticks inside each beat, and shows an image for each beat. Under
   the image is the **session strip**, with the page's speed, its shruthi
   (the Sa everything plays to) and a Start all button.
-- **thambura**, the drone's controls, in a bar that slides up from the
-  bottom of the page. It has four views over the same sound (Mini, Studio,
-  a Raagini replica and a Lab for editing the sound string by string).
+- **tracks**, the track list: a card for each instrument on the page, with
+  its own controls, mute and solo, and Add and Remove. The thambura's card
+  opens its full panel under "More", with four views over the same sound
+  (Mini, Studio, a Raagini replica and a Lab for editing the sound string by
+  string).
 
 and three kinds of instrument:
 
