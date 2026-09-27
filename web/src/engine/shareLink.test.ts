@@ -5,7 +5,11 @@ import {
   barOpen,
   decodeLink,
   decodePage,
+  decodeHands,
+  decodeKit,
   decodeSession,
+  encodeHands,
+  encodeKit,
   encodeLink,
   encodePage,
   encodeSession,
@@ -410,5 +414,35 @@ describe("session part", () => {
       { id: "session-1", link: thambura },
     ]);
     expect(decodePage(bad)).toEqual(new Map([["thambura-1", thambura]]));
+  });
+});
+
+describe("hands and kit parts", () => {
+  it("carry the claps' sound group and volume, whatever the group is called", () => {
+    for (const soundGroup of ["Clap", "Metronome", "தாளம்", ""]) {
+      expect(decodeHands(encodeHands({ soundGroup, volume: 35 }))).toEqual({ soundGroup, volume: 35 });
+    }
+  });
+
+  it("carry which kit, its Variety, volume and whether it plays along", () => {
+    const kit = { kit: 2, variety: "lots" as const, volume: 64, enabled: false };
+    expect(decodeKit(encodeKit(kit))).toEqual(kit);
+  });
+
+  it("refuse each other's payloads and anything short or long", () => {
+    const hands = encodeHands({ soundGroup: "Clap", volume: 50 });
+    const kit = encodeKit({ kit: 0, variety: "some", volume: 70, enabled: true });
+    expect(decodeKit(hands)).toBeNull();
+    expect(decodeHands(kit.slice(0, 3))).toBeNull();
+    expect(decodeKit(kit + "AA")).toBeNull();
+  });
+
+  it("travel in a page link, one part per instrument", () => {
+    const parts = [
+      { id: "hands-1", link: encodeHands({ soundGroup: "Clap", volume: 50 }) },
+      { id: "kit-1", link: encodeKit({ kit: 0, variety: "some", volume: 70, enabled: true }) },
+      { id: "kit-2", link: encodeKit({ kit: 1, variety: "off", volume: 40, enabled: true }) },
+    ];
+    expect([...decodePage(encodePage(parts))!]).toEqual(parts.map((p) => [p.id, p.link]));
   });
 });

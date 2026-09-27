@@ -39,6 +39,8 @@ export function PlayerView(props: {
   actions: PlayerActions;
   /** A struck instrument, when the page has a kit for one. */
   kit?: { state: Accessor<KitState>; actions: KitActions };
+  /** Whether the claps' Sounds and Volume and the kit's pad show here; off where their tracks show them. */
+  instrumentControls?: boolean;
   /**
    * The hand claps, whose Sounds menu and Volume sit with the tala. Without
    * them the tala is silent, and those two controls aren't shown.
@@ -126,7 +128,7 @@ export function PlayerView(props: {
             <For each={s().imageGroups}>{(g) => <option value={g} selected={g === s().imageGroup}>{g}</option>}</For>
           </select>
         </Field>
-        <Show when={props.hands}>
+        <Show when={props.instrumentControls !== false && props.hands}>
           {(hands) => (
             <Field label="Sounds" id="sounds">
               <select id="sounds" class={SELECT} onChange={(e) => void hands().actions.setSoundGroup(e.currentTarget.value)}>
@@ -166,7 +168,7 @@ export function PlayerView(props: {
       </section>
 
       <section class="grid w-full max-w-md gap-4">
-        <Show when={props.hands}>
+        <Show when={props.instrumentControls !== false && props.hands}>
           {(hands) => (
             <div>
               <div class="mb-1 flex items-center justify-between">
@@ -243,7 +245,7 @@ export function PlayerView(props: {
         </Field>
       </section>
 
-      <Show when={props.kit} keyed>
+      <Show when={props.instrumentControls !== false && props.kit} keyed>
         {(k) => <StrokePad state={k.state} actions={k.actions} />}
       </Show>
     </div>

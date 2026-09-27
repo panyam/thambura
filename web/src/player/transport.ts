@@ -46,6 +46,17 @@ export class Transport {
   }
 
   /**
+   * Takes a sequencer off the transport, for an instrument leaving the page.
+   * It's stopped first if the transport is running, so it books nothing more.
+   */
+  remove<E>(seq: Sequencer<E>): void {
+    const i = this.tracks.findIndex((t) => t.seq === seq);
+    if (i < 0) return;
+    if (this.running) this.tracks[i].seq.stop(this.clock.now);
+    this.tracks.splice(i, 1);
+  }
+
+  /**
    * Hears every stop of a running transport, after the sequencers have
    * stopped. For a voice that books sounds without a sequencer of its own,
    * such as the hands track, to take back what hasn't sounded.

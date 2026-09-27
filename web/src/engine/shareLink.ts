@@ -1,3 +1,4 @@
+import type { Variety } from "./arrangement";
 import type { Gati } from "./carnatic";
 import { clampTempo, normalizeSettings, type TalaId, type TalaSettings } from "./selection";
 import { DEFAULT_THAMBURA, normalizePitch, normalizeThambura, type Pitch, type ThamburaSettings } from "./shruthi";
@@ -61,11 +62,23 @@ import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanF
  *
  * A thambura part still carries its own key and cents, as a format 1 link
  * must; where a page link has both, the session's shruthi is the one played.
+ *
+ * A hands part (hands-1): its own format (1), the volume, then the sound
+ * group's name as a length and UTF-8 bytes, since the groups are named in
+ * the fixture rather than listed here.
+ *
+ * A kit part (kit-1): its own format (1), which of the page's kits it is
+ * (their order in the page spec), Variety (VARIETIES), the volume, and 1 if
+ * it plays along with the tala.
  */
 const FORMAT = 1;
 const PAGE_FORMAT = 2;
 // Instrument kinds a page link carries a part for. Append, never reorder.
-const PAGE_KINDS = ["thambura", "session"] as const;
+const PAGE_KINDS = ["thambura", "session", "hands", "kit"] as const;
+const HANDS_FORMAT = 1;
+const KIT_FORMAT = 1;
+// Append, never reorder.
+const VARIETIES: Variety[] = ["off", "some", "lots"];
 const SESSION_FORMAT = 1;
 // Append, never reorder.
 const TALAS: TalaId[] = [
@@ -499,6 +512,75 @@ export function decodeSession(part: string): SessionSetup | null {
   }
 }
 
+/** What a hands part carries. */
+export interface HandsSetup {
+  soundGroup: string;
+  volume: number;
+}
+
+export function encodeHands(x: HandsSetup): string {
+  const w = new Writer();
+  w.byte(HANDS_FORMAT);
+  w.byte(x.volume);
+  const name = new TextEncoder().encode(x.soundGroup).slice(0, 255);
+  w.byte(name.length);
+  w.raw(name);
+  return base64url(w.bytes());
+}
+
+export function decodeHands(part: string): HandsSetup | null {
+  return readPart(part, HANDS_FORMAT, (r) => {
+    const volume = Math.min(100, r.byte());
+    const soundGroup = new TextDecoder().decode(r.take(r.byte()));
+    return { soundGroup, volume };
+  });
+}
+
+/** What a kit part carries. `kit` is which of the page's kits, in the spec's order. */
+export interface KitSetup {
+  kit: number;
+  variety: Variety;
+  volume: number;
+  enabled: boolean;
+}
+
+export function encodeKit(x: KitSetup): string {
+  const w = new Writer();
+  w.byte(KIT_FORMAT);
+  w.byte(x.kit);
+  w.byte(Math.max(0, VARIETIES.indexOf(x.variety)));
+  w.byte(x.volume);
+  w.byte(x.enabled ? 1 : 0);
+  return base64url(w.bytes());
+}
+
+export function decodeKit(part: string): KitSetup | null {
+  return readPart(part, KIT_FORMAT, (r) => ({
+    kit: r.byte(),
+    variety: VARIETIES[r.byte()] ?? "some",
+    volume: Math.min(100, r.byte()),
+    enabled: r.byte() !== 0,
+  }));
+}
+
+/** A part's payload read by `read`, or null if it isn't one of `format`, runs short or has bytes left over. */
+function readPart<T>(part: string, format: number, read: (r: Reader) => T): T | null {
+  let bytes: Uint8Array;
+  try {
+    bytes = fromBase64url(part);
+  } catch {
+    return null;
+  }
+  const r = new Reader(bytes);
+  try {
+    if (r.byte() !== format) return null;
+    const value = read(r);
+    return r.done ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 /** One instrument's part of a page link: its id on the page and its own link. */
 export interface PagePart {
   id: string;
@@ -559,6 +641,8 @@ export function decodePage(link: string): Map<string, string> | null {
       const part = base64url(payload);
       if (kind === "thambura" && !decodeLink(part, { settings: DEFAULT_THAMBURA })) continue;
       if (kind === "session" && !decodeSession(part)) continue;
+      if (kind === "hands" && !decodeHands(part)) continue;
+      if (kind === "kit" && !decodeKit(part)) continue;
       parts.set(`${kind}-${n}`, part);
     }
   } catch {

@@ -11,6 +11,7 @@ import type { KitPresenter } from "./kitPresenter";
 import type { PageLink } from "./pageLink";
 import type { PlayerPresenter } from "./presenter";
 import type { SessionPresenter } from "./session";
+import type { TrackList } from "./trackList";
 import type { Store } from "./storage";
 import type { ThamburaPresenter } from "./thamburaPresenter";
 import { Transport, type Ticker } from "./transport";
@@ -25,6 +26,8 @@ export interface PageContext {
   audio: AudioEngine;
   clock: Clock;
   tracks: Tracks<Instrument>;
+  /** Which instruments are on the page, adding and removing them, and mute and solo. */
+  trackList: TrackList<Instrument>;
   shruthi: Shruthi;
   /**
    * The tala, when the page has one: it keeps time on `clock` and shows the
@@ -124,9 +127,14 @@ export class Latest<T> {
     for (const f of this.followers) f(value);
   }
 
-  follow(f: (value: T) => void): void {
+  /** Returns a function that stops following, for an instrument leaving the page. */
+  follow(f: (value: T) => void): () => void {
     this.followers.push(f);
     if (this.current !== undefined) f(this.current);
+    return () => {
+      const i = this.followers.indexOf(f);
+      if (i >= 0) this.followers.splice(i, 1);
+    };
   }
 }
 
@@ -137,11 +145,28 @@ export class Latest<T> {
  */
 export class Tracks<T> {
   private readonly byId = new Map<string, T>();
+  private readonly listeners: (() => void)[] = [];
 
   /** Adds a track. Ids are unique; adding one twice is a bug, so it throws. */
   add(id: string, track: T): void {
     if (this.byId.has(id)) throw new Error(`track "${id}" is already on the page`);
     this.byId.set(id, track);
+    for (const f of this.listeners) f();
+  }
+
+  /** Takes a track off the page. Its instrument is the caller's to dispose of. */
+  remove(id: string): void {
+    if (!this.byId.delete(id)) return;
+    for (const f of this.listeners) f();
+  }
+
+  /** Hears every add and remove, for a view that shows the instruments on the page. */
+  onChange(f: () => void): void {
+    this.listeners.push(f);
+  }
+
+  ids(): string[] {
+    return [...this.byId.keys()];
   }
 
   get(id: string): T | undefined {
@@ -203,9 +228,13 @@ export class Shruthi {
     this.set({ cents: Math.max(-MAX_CENTS, Math.min(MAX_CENTS, this.current.cents + delta)) });
   }
 
-  /** Calls `f` with the current Sa now, then on every change. */
-  follow(f: (pitch: Pitch) => void): void {
+  /** Calls `f` with the current Sa now, then on every change. Returns a function that stops. */
+  follow(f: (pitch: Pitch) => void): () => void {
     this.followers.push(f);
     f(this.current);
+    return () => {
+      const i = this.followers.indexOf(f);
+      if (i >= 0) this.followers.splice(i, 1);
+    };
   }
 }

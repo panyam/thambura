@@ -18,6 +18,8 @@ const KEYS = {
   presets: "thambura.presets",
   /** Whether the thambura's bar is open (thamburaDrawer.ts). */
   drawer: "thambura.drawer",
+  /** Which instruments are on a page that shows the track list (trackList.ts), and which are muted. */
+  tracks: "thambura.tracks",
   /** The page's Sa, which every pitched instrument plays to (pageContext.ts, Shruthi). */
   shruthi: "thambura.shruthi",
 } as const;
@@ -37,6 +39,16 @@ export interface Store {
 /** Where the instrument with this id on the page keeps its state. */
 export function instrumentKey(id: string): string {
   return `thambura.${id}`;
+}
+
+/**
+ * Forgets what the instrument with this id saved, for the track list's
+ * Remove. The first thambura's pre-id record goes too, or a thambura added
+ * back would take it up again (`withFallback`).
+ */
+export function clearInstrument(id: string): void {
+  localStorage.removeItem(instrumentKey(id));
+  if (id === "thambura-1") localStorage.removeItem(KEYS.drone);
 }
 
 export function localStore(name: StoreName): Store {

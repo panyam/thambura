@@ -8,6 +8,7 @@ import { KitPresenter } from "./kitPresenter";
 import { PlayerPresenter } from "./presenter";
 import type { Clock } from "./pageContext";
 import { PlayerView } from "./PlayerView";
+import { watched } from "./watched";
 import type { SessionPresenter, SessionState } from "./session";
 import { instrumentStore, localStore } from "./storage";
 
@@ -20,11 +21,20 @@ export interface PlayerIslandDeps {
   /** The tala's sound and image groups, from the page spec's config. */
   fixturesUrl?: string;
   /**
-   * A struck instrument from the page's tracks, for the view only: its panel
-   * and stroke lane sit with the tala. It plays along on the page's clock by
-   * itself; the tala doesn't know it's there.
+   * The struck instrument on the page now, if any, for the view only: its
+   * stroke lane (and its pad, see `instrumentControls`) sit with the tala. It
+   * plays along on the page's clock by itself; the tala doesn't know it's
+   * there. `onTracksChange` says when to ask again, as the track list adds
+   * and removes one.
    */
-  kit?: KitPresenter;
+  kit?: () => KitPresenter | undefined;
+  onTracksChange?: (f: () => void) => void;
+  /**
+   * Whether the instruments' own controls (the claps' Sounds and Volume, the
+   * kit's pad) sit with the tala. A page with a track list shows them in the
+   * instruments' tracks instead; the stroke lane stays under the image.
+   */
+  instrumentControls?: boolean;
   /**
    * The hand claps from the page's tracks, for the view only: their Sounds
    * menu and Volume sit with the tala. They play the tala's calls from the
@@ -58,8 +68,6 @@ export function newPlayerPresenter(audio: AudioEngine, clock: Clock): PlayerPres
 /** Mounts the page's tala on `el`, with its fixture of images loading. */
 export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: PlayerIslandDeps): SolidIsland {
   const { audio, onPlaying, presenter } = deps;
-  // A page with no kit still gets an idle one, so the view has something to show (nothing).
-  const drum = deps.kit ?? newKitPresenter(audio, "kit-0");
   const session = deps.session;
   let sessionView: { state: () => SessionState; actions: SessionPresenter } | undefined;
   if (session) {
@@ -67,15 +75,19 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: Pl
     session.attach({ setState: setSessionState });
     sessionView = { state: sessionState, actions: session };
   }
-  const [drumState, setDrumState] = signalView(drum.state);
-  drum.attach({ setState: setDrumState });
+  // The kit follows the page's tracks: the track list can add or remove it.
+  let shown: KitPresenter | undefined;
+  const [kitView, setKitView] = createSignal<{ state: () => KitPresenter["state"]; actions: KitPresenter } | undefined>();
+  const followKit = () => {
+    const kit = deps.kit?.();
+    if (kit === shown) return;
+    shown = kit;
+    setKitView(kit ? { state: watched(kit), actions: kit } : undefined);
+  };
+  followKit();
+  deps.onTracksChange?.(followKit);
   const hands = deps.hands;
-  let handsView: { state: () => HandsPresenter["state"]; actions: HandsPresenter } | undefined;
-  if (hands) {
-    const [handsState, setHandsState] = signalView(hands.state);
-    hands.attach({ setState: setHandsState });
-    handsView = { state: handsState, actions: hands };
-  }
+  const handsView = hands ? { state: watched(hands), actions: hands } : undefined;
 
   const [state, setState] = signalView(presenter.state);
   const [pose, setPose] = createSignal(REST);
@@ -93,7 +105,7 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: Pl
   return new SolidIsland(
     "player",
     el,
-    () => <PlayerView state={state} pose={pose} actions={presenter} kit={{ state: drumState, actions: drum }} hands={handsView} session={sessionView} />,
+    () => <PlayerView state={state} pose={pose} actions={presenter} kit={kitView()} instrumentControls={deps.instrumentControls !== false} hands={handsView} session={sessionView} />,
     eventBus,
   );
 }

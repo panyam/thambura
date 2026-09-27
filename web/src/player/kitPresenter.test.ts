@@ -405,6 +405,23 @@ describe("KitPresenter on the tala's clock", () => {
     expect(kit.state.korvaiQueued).toBe(false);
   });
 
+  it("leaves the clock when disposed: no more strokes, and the claps carry on", async () => {
+    await tala.start();
+    advance(0.05);
+    for (let t = 0.1; t <= 2; t += 0.025) advance(t);
+    expect(strokes().length).toBeGreaterThan(0);
+    const before = strokes().length;
+    const clapsBefore = claps().length;
+    kit.dispose();
+    for (let t = 2.025; t <= 5; t += 0.025) advance(t);
+    expect(strokes().length).toBe(before);
+    expect(claps().length).toBeGreaterThan(clapsBefore);
+    expect(audio.removed).toContain("kit-1");
+    // The tala's next cycle is no longer the kit's business.
+    tala.setSettings({ tala: "chaapu_misram" });
+    expect(kit.state.pattern).toBe("Adi sarvalaghu, chatusram");
+  });
+
   it("takes back its own strokes when the tala stops, and nothing else's", async () => {
     await tala.start();
     advance(0.05);
