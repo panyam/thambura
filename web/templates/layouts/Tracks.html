@@ -1,9 +1,9 @@
 <!-- thambura/web/templates/layouts/Tracks.html -->
 <!--
-The home page's layout (#101): the tala (slot "main") and the track list
-(slot "tracks"), a card per instrument. On a phone the tracks follow the
-tala in one column; from lg up the tala keeps a column on the left and the
-cards fill the rest. The floating play button is Start all, in reach
+The home page's layout (#101): the tala (slot "main") across the top, the
+beat on its left and its settings on its right from lg up, and the track
+list (slot "tracks") under it, a card per instrument. On a phone everything
+is one column. The floating play button is Start all, in reach
 wherever the page is scrolled (session.ts, wireFloatingPlay). Which island
 goes in each slot comes from the page spec (internal/page), written by
 PageScripts.
@@ -16,7 +16,7 @@ render "BasePage".
 
 {{ define "BodySection" }}
 <main class="flex-1 overflow-auto">
-    <div class="mx-auto grid w-full max-w-screen-2xl gap-6 px-4 py-6 sm:py-10 lg:grid-cols-[28rem_minmax(0,1fr)] lg:items-start">
+    <div class="mx-auto flex w-full max-w-screen-2xl flex-col gap-8 px-4 py-6 sm:py-10">
         <div data-slot="main" class="min-w-0">
             <noscript>Thambura needs JavaScript to play.</noscript>
         </div>

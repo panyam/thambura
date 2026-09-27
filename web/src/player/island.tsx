@@ -35,6 +35,8 @@ export interface PlayerIslandDeps {
    * instruments' tracks instead; the stroke lane stays under the image.
    */
   instrumentControls?: boolean;
+  /** Lays the tala out across a page-wide panel (PlayerView's `wide`). */
+  wide?: boolean;
   /**
    * The hand claps from the page's tracks, for the view only: their Sounds
    * menu and Volume sit with the tala. They play the tala's calls from the
@@ -105,7 +107,7 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: Pl
   return new SolidIsland(
     "player",
     el,
-    () => <PlayerView state={state} pose={pose} actions={presenter} kit={kitView()} instrumentControls={deps.instrumentControls !== false} hands={handsView} session={sessionView} />,
+    () => <PlayerView state={state} pose={pose} actions={presenter} kit={kitView()} instrumentControls={deps.instrumentControls !== false} wide={deps.wide === true} hands={handsView} session={sessionView} />,
     eventBus,
   );
 }

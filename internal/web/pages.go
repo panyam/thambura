@@ -84,6 +84,7 @@ const fixturesURL = "/static/Resources/TalasFixtures.json"
 func homeSpec(kitURLs []string) page.Spec {
 	tala := talaIsland("main")
 	tala.Config["instrumentControls"] = false
+	tala.Config["wide"] = true
 	return page.Spec{
 		Layout:      "tracks",
 		Islands:     []page.Island{tala, {Name: "tracks", Slot: "tracks", Presentation: "page"}},
@@ -163,6 +164,41 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 	return nil, false
 }
 
+// AboutPage is what the app is, in words (/about): the text that used to sit
+// under the player on /, which now keeps only its heading and a link here.
+type AboutPage struct {
+	SitePage
+	// Spec mounts no islands; the page only needs the header's scripts.
+	Spec page.Spec
+}
+
+// The About page's search and preview text.
+const (
+	aboutTitle       = "About " + brand.Name + ": an online thambura and tala keeper"
+	aboutDescription = "What " + brand.Name + " does: a Carnatic tala keeper for sapta and chaapu talas with hand images, " +
+		"and a thambura (tanpura) drone in any shruthi, free in your browser."
+)
+
+// Load implements the goapplib View.
+func (p *AboutPage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*App]) (error, bool) {
+	p.Title = "About · " + brand.Name
+	p.MetaTitle = aboutTitle
+	p.MetaDescription = aboutDescription
+	p.CanonicalUrl = brand.URL + "/about"
+	p.DisableSplashScreen = true
+	p.Header.AppName = brand.Name
+	p.Social = Social{
+		Description: aboutDescription,
+		Image:       brand.URL + "/static/og.png",
+		ImageAlt:    "Thambura: a hand keeping tala beside the words online shruthi box and Carnatic tala keeper",
+		ImageWidth:  1200,
+		ImageHeight: 630,
+	}
+	p.Preload = app.Context.Bundle.App.Preload
+	p.Spec = page.Spec{Layout: "about"}
+	return nil, false
+}
+
 // webApplicationLD describes the site to search engines as a free web app.
 func webApplicationLD() template.JS {
 	ld, err := json.Marshal(map[string]any{
@@ -217,6 +253,7 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	app.Context.KitURLs = findKits(static)
 	app.Context.Bundle = loadBundle(webDir)
 	goal.Register[*HomePage](app, mux, "/{$}")
+	goal.Register[*AboutPage](app, mux, "/about", goal.WithTemplate("AboutPage"))
 	registerLabs(app, mux)
 	registerEmbed(app, mux)
 	mux.Handle("/static/", crossOrigin(http.StripPrefix("/static/", http.FileServer(http.Dir(static)))))
@@ -243,8 +280,9 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 		fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>%s/</loc></url>
+  <url><loc>%s/about</loc></url>
 </urlset>
-`, brand.URL)
+`, brand.URL, brand.URL)
 	})
 }
 

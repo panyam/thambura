@@ -1,0 +1,53 @@
+{{# include "./BasePage.html" #}}
+{{# include "./page/Islands.html" #}}
+
+{{/* What the app is, in words (/about): the text that used to sit under the
+     player on /. No islands; the page script is here for the header's theme
+     toggle and install button, and the install hint below. */}}
+{{ define "BodySection" }}
+<main class="flex-1 overflow-auto">
+    <div class="mx-auto w-full max-w-3xl px-4 py-10">
+        <div class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                An online thambura and tala keeper for Carnatic practice
+            </h1>
+            <p class="mt-2">
+                {{ brand }} keeps the tala and plays the drone while you practise. It is free,
+                runs in your browser, and needs no account. Install it (the button in the header)
+                and it gets its own icon and works without a network.
+                <span id="install-hint" hidden>On an iPhone or iPad, tap Share, then "Add to Home Screen".</span>
+            </p>
+            <div class="mt-6 grid gap-6 sm:grid-cols-2">
+                <div>
+                    <h2 class="font-semibold text-gray-900 dark:text-gray-100">Tala keeper</h2>
+                    <p class="mt-1">
+                        All seven sapta talas (Eka, Rupakam, Matya, Jhumpa, Thriputa, Ata and Dhruva)
+                        in any of the five jaathis, the chaapu talas (Thisra, Khanda, Misra, Viloma and
+                        Sankeerna) and Adi. Pick the nadai and kalai, and any tempo from 10 to 300 bpm.
+                        Each beat shows its kriya on a right or left hand, the clap, the finger count or
+                        the wave, and the hand lifts and drops with the beat as it does when you keep thalam.
+                    </p>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-gray-900 dark:text-gray-100">Thambura drone</h2>
+                    <p class="mt-1">
+                        The thambura (tambura or tanpura) plucks its four strings, the first on Pa, Ma, Ni
+                        or any swarasthana, then Sa, Sa and low Sa, at any shruthi from A to B (each key
+                        also shows its kattai number, C being 1). Its main voice was fitted to a recording
+                        of a real tambura, and there is also a classic synthesized tambura, a guitar-like
+                        pluck and a shruthi box reed drone. Play it on its own or with the tala.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <p class="mt-8 text-sm"><a href="/" class="font-medium text-amber-700 underline hover:no-underline dark:text-amber-400">Open {{ brand }}</a></p>
+    </div>
+</main>
+{{ end }}
+
+{{ define "PageScripts" }}
+{{ template "PageSpecScript" .Spec }}
+<script type="module" src="/static/app.js"></script>
+{{ end }}
+
+{{ define "AboutPage" }}{{ template "BasePage" . }}{{ end }}
