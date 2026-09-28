@@ -304,7 +304,8 @@ Three patterns (Misra Chaapu, Khanda Chaapu, Short Rupakam) come from
 Laforge's transcriptions from his teachers, used with his permission.
 `web/patterns/CREDITS.md` records which piece each came from, who taught it,
 and how karya's stroke characters were mapped onto this kit. The Adi pattern
-is still the odd one out: drafted here, unverified.
+is transcribed from a practice pattern shared with permission (see
+`CREDITS.md`).
 
 **Why the CompMusic transcriptions aren't used.** The Mridangam
 Tani-avarthanam dataset (Sivaraman, around 8,800 transcribed strokes) and the
@@ -527,7 +528,7 @@ the stroke pad, and the lane. The rest is tracked rather than planned here:
 |---|---|
 | Fills, eduppu, count-in | #77 |
 | Choosing a pattern to suit the tempo | #78 |
-| More patterns, second speed, and replacing the drafted Adi one | #79 |
+| More patterns and second speed | #79 |
 | Recording arai chapu and the left-hand tha | #80 |
 | A lane that copes with a long cycle | #81 |
 | Solkattu under the strokes | #82 |
