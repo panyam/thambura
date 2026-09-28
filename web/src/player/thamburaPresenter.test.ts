@@ -515,7 +515,7 @@ describe("ThamburaPresenter", () => {
       expect(last.view).toBe("lab");
     });
 
-    it("plays a shared setup over the saved one, keeping the listener's volume", () => {
+    it("plays a shared setup over the saved one, its volume too", () => {
       const shared = encodeLink({
         settings: { ...DEFAULT_THAMBURA, key: 9, mode: "guitar", volume: 90 },
         custom: planFor({ ...DEFAULT_THAMBURA, mode: "jawari" }),
@@ -523,12 +523,18 @@ describe("ThamburaPresenter", () => {
         open: true,
       });
       make({ settings: { ...DEFAULT_THAMBURA, key: 3, volume: 20 } }, new FakeLink(shared));
-      expect(p.state.settings).toMatchObject({ key: 9, mode: "guitar", volume: 20 });
+      expect(p.state.settings).toMatchObject({ key: 9, mode: "guitar", volume: 90 });
+      expect(audio.busVolume["thambura-1"]).toBe(90);
       expect(p.state).toMatchObject({ view: "lab", notice: "Opened a shared setup." });
       // The listener's own setup stays saved until they change something.
       expect(store.saved).toBeUndefined();
       p.nudgeCents(1);
       expect((store.saved as { settings: { key: number } }).settings.key).toBe(9);
+    });
+
+    it("keeps the listener's volume for a format 1 link, which has none", () => {
+      make({ settings: { ...DEFAULT_THAMBURA, key: 3, volume: 20 } }, new FakeLink("AQgAA0AHETABwjIyPA"));
+      expect(p.state.settings).toMatchObject({ key: DEFAULT_THAMBURA.key, volume: 20 });
     });
 
     it("takes a Custom sound from a link, and leaves the listener's own alone otherwise", () => {
@@ -803,6 +809,15 @@ describe("ThamburaPresenter", () => {
       make(own, shared(10), presetStore.saved);
       expect(p.state.presets.filter((x) => x.auto)).toHaveLength(1);
       expect(p.state.presets.map((x) => x.id)).toContain(mine.id);
+    });
+
+    it("keeps nothing extra when a link differs only in volume, and a volume change isn't an edit", () => {
+      const link = new FakeLink(encodeLink({ settings: { ...DEFAULT_THAMBURA, key: 9, volume: 80 }, custom: planFor(DEFAULT_THAMBURA), view: "studio" }));
+      make({ settings: { ...DEFAULT_THAMBURA, key: 9, volume: 30 } }, link);
+      expect(p.state.presets).toEqual([]);
+      const mine = p.savePreset("mine");
+      set({ volume: 45 });
+      expect(p.state).toMatchObject({ presetId: mine.id, edited: false });
     });
 
     it("keeps nothing extra when there was no setup, or the link plays the same sound", () => {

@@ -30,6 +30,7 @@ named by the instrument's id on the page:
     string plays, the round's length, and tone, pluck and sustain;
   - for a Custom sound, the whole plan the Lab edits, string by string,
     including the gaps between plucks;
+  - its volume;
   - the view (Mini, Studio, Raagini or Lab). (Links made before the track
     list also say whether the thambura's drawer was open; nothing reads that
     any more.)
@@ -42,10 +43,11 @@ The thambura's part is a whole link of its own, the kind every link was
 before pages had more than one instrument, so everything below about the
 thambura's sound holds inside a page link too.
 
-A few things are left out on purpose. The thambura's volume isn't in the
-link, since it depends on the listener's room and speakers rather than on
-the sound. The kriyas' and kits' volumes are in it, though, and a link sets
-them. Solo (the Lab's on/off dots) is for working on one string at a
+Every instrument's volume is in the link, so it opens with the balance its
+sender heard. (Links made before
+[#153](https://github.com/panyam/thambura/issues/153) leave the thambura's
+out, and it plays at the listener's own.) A few things are left out on
+purpose. Solo (the Lab's on/off dots) is for working on one string at a
 time, and a link that silenced three strings would mostly confuse whoever
 opened it. The track list's mute and solo stay out of links for the same
 reason.
@@ -55,7 +57,7 @@ reason.
 When someone opens a page with a `?s=` link:
 
 - Each instrument plays its part of the link, over what their browser had
-  saved (the thambura keeps the listener's own volume).
+  saved, volumes included.
 - The session's shruthi is the one played, even though the thambura's part
   carries a key of its own.
 - On a page with a track list (the home page), the parts a link has are the
@@ -143,8 +145,8 @@ import { planFor } from "./engine/thamburaPlan";
 const settings = { ...DEFAULT_THAMBURA, key: 4, cycleSeconds: 3 };
 const link = encodeLink({ settings, custom: planFor(settings), view: "studio" });
 
-// decodeLink fills in what a link leaves out (the volume) from the settings
-// you pass, and returns null for anything it can't read.
+// decodeLink fills in what a link leaves out (an older link's volume) from
+// the settings you pass, and returns null for anything it can't read.
 const opened = decodeLink(link, { settings: DEFAULT_THAMBURA });
 ```
 

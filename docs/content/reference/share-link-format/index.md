@@ -4,7 +4,8 @@ description: "The bytes behind a thambura ?s= link, how each value is stored, an
 prev: { title: "Share links and presets", url: "/thambura/guides/share-links/" }
 ---
 
-This page describes format 1, one thambura's setup, and format 2, a page
+This page describes formats 1 and 3, one thambura's setup (3 is 1 plus
+the volume), and format 2, a page
 link that carries every instrument on the page as its own part, plus a
 session part for what the page shares: the tala, its speed and the shruthi.
 A page with a tala always writes format 2. It's for anyone
@@ -18,10 +19,13 @@ so if the two ever disagree, the page is wrong.
 ## Overview
 
 A link's `s` parameter is a string of bytes written as base64url without
-padding. The first byte is the format number. A `1` is one thambura's
-setup: the next twelve bytes hold the settings every link has, and a Custom
-link then carries its plan. A `2` is a page link, made of parts (see
-"Page links" below), and anything else isn't read.
+padding. The first byte is the format number. A `3` is one thambura's
+setup: the next thirteen bytes hold the settings every link has, the volume
+among them, and a Custom link then carries its plan. A `1` is the same
+without the volume, which is how links were written before
+[#153](https://github.com/panyam/thambura/issues/153) and how the built-in
+presets still are. A `2` is a page link, made of parts (see "Page links"
+below), and anything else isn't read.
 
 A reader must use up every byte. A link with bytes left over, or one that
 runs out early, is rejected as a whole, so the listener's own setup plays
@@ -31,7 +35,7 @@ instead of half of someone else's.
 
 | Byte | Holds | Stored as |
 | --- | --- | --- |
-| 0 | Format | `1` |
+| 0 | Format | `3`, or `1` |
 | 1 | Flags | bit 0 equal temperament, bit 1 ladies, bit 2 bar open, bits 3-5 the view |
 | 2 | Mode | index into `MODES` |
 | 3 | Key | index into `KEYS`, 0 to 14 |
@@ -40,9 +44,10 @@ instead of half of someone else's.
 | 6-7 | A4 | tenths of a Hz, big-endian |
 | 8-9 | The round | hundredths of a second, big-endian |
 | 10-12 | Tone, pluck, sustain | 0 to 100 each |
+| 13 | Volume, format 3 only | 0 to 100 |
 
-Volume isn't stored, and decoding takes it from the settings the caller
-passes in. Every value is clamped to the app's ranges on the way in
+A format 1 link has no volume byte, and decoding takes the volume from the
+settings the caller passes in, so the listener keeps their own. Every value is clamped to the app's ranges on the way in
 (`normalizeThambura`), so an out-of-range number plays the nearest valid
 value, and an index past the end of its table falls back to a valid entry,
 rather than failing.
@@ -59,7 +64,8 @@ The orders these indexes point into:
 
 ## A Custom plan
 
-After byte 12, a Custom link has:
+After the settings, a Custom link has the following. The byte numbers are
+format 1's; in format 3 each is one more, after the volume.
 
 | Byte | Holds |
 | --- | --- |
@@ -163,7 +169,7 @@ too.
 
 ## A worked example
 
-The built-in Shimmer preset is 86 characters and 64 bytes:
+The built-in Shimmer preset, a format 1 link, is 86 characters and 64 bytes:
 
 ```
 ARwDBEAHETABLDIyPADY5g8BDwcCDxEED2MFDwMGDwAHDxQJB1wJCDQKD2QLDxYMDzUNDzQODxgPDzcYBOEBAA
@@ -220,7 +226,7 @@ per instrument, keyed by the instrument's id on the page (`thambura-1`,
 | that many | The payload |
 
 `PAGE_KINDS` is `thambura`, `session`, `hands`, then `kit`. A thambura's payload is a whole
-format 1 link, the same bytes as above, so its bar flag and drift checksum
+thambura link, the same bytes as above, so its bar flag and drift checksum
 work as they always have.
 
 ### The session part
@@ -241,8 +247,8 @@ eleven bytes:
 | 9-10 | A4 in tenths of a Hz |
 
 The thambura's part still carries its own key, fine tune and A4, since a
-format 1 link must. When a page link has both, the session's shruthi is the
-one played. A page link without a session part, and a format 1 link, take
+thambura link must. When a page link has both, the session's shruthi is the
+one played. A page link without a session part, and a lone thambura link, take
 the shruthi from `thambura-1`'s part, as they always did.
 
 A reader skips a part of a kind it doesn't know, and a thambura part that
@@ -268,10 +274,10 @@ fixture file, not from a table in the code. A kit is written by position
 because the kits are whatever the server found at startup, so a link from a
 server with a different set of kits can open a different one.
 
-A page whose only part is `thambura-1` is written as that part alone, in
-format 1. Every page now writes a session part too, so nothing writes one
-alone any more, but format 1 links keep opening. A format 1 link read as a
-page is `thambura-1`'s part.
+A page whose only part is `thambura-1` is written as that part alone.
+Every page now writes a session part too, so nothing writes one alone any
+more, but lone thambura links keep opening. One read as a page, of either
+format, is `thambura-1`'s part.
 
 ## Changing the format
 
@@ -285,13 +291,15 @@ the same sound after any later release. The rules:
 - **Leave the ranges and steps of existing fields alone,** for the reason
   above.
 - **Anything else bumps `FORMAT`.** A new byte in the settings, a new layout,
-  a wider mask: write it as a new format, and keep reading format 1 exactly
-  as it reads now. A version of the app that doesn't know the new format
-  plays the listener's own setup and says it can't read the link, which is
-  the right failure.
+  a wider mask: write it as a new format, and keep reading the old ones
+  exactly as they read now. A version of the app that doesn't know the new
+  format plays the listener's own setup and says it can't read the link,
+  which is the right failure. The volume went in this way (format 3), so a
+  build from before it drops a new link's thambura part.
 
-`shareLink.test.ts` holds links made by format 1, written down as they were
-sent, with what they decode to ("format 1 links keep opening the same"). If
+`shareLink.test.ts` holds links made by formats 1 and 3, written down as
+they were sent, with what they decode to ("format 1 links keep opening the
+same", and the same for format 3). If
 a change breaks one, the change broke the format. Shimmer, above, is one of
 them.
 
