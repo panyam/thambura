@@ -15,8 +15,11 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       3c4e21a (checked 2026-09-27): the session strip, the track list on `/`
       with no drawer, pluck workers and cache, and the mridangam kit, which
       is now public.
-- [ ] Deploy #148 (the tala across the top, `/about`) and #149 (instrument
-      rows). Dev serves #149's build; thambura.com doesn't have either yet.
+- [x] Deploy #148 (the tala across the top, `/about`) and #149 (instrument
+      rows). thambura.com serves 6f5c85e (checked 2026-09-28), which has
+      both.
+- [ ] Deploy #156 (a second thambura) and the docs PRs after 6f5c85e.
+      Dev serves 7f50acb, #149's branch, which has neither.
 - [ ] Listen to the tala on a real machine, and check it stays in step with
       the images. Headless Chromium has no audio device.
 - [ ] Record iTablaPro's tanpura, or any real tanpura, and run it through
