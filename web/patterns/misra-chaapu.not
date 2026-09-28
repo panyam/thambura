@@ -8,7 +8,7 @@ source: >-
   karya, Solkattu/Score/MridangamSarva.hs, kir_misra_2, learned from Ganesh,
   2017-09-26 (github.com/elaforge/karya, GPL-3.0, used with permission).
   Converted by us: karya's N is thom with nam, D is thom with din, and this
-  kit plays those as tham and dheem. The mapping is ours and unverified.
+  kit plays those as tham and "thom+dhin". The mapping is ours and unverified.
 accents:
   0: 1.12
 ---

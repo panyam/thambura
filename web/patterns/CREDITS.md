@@ -22,7 +22,21 @@ privately in thambura-ext. It replaced an Adi drafted here that no mridangist
 had checked. Its source plays a slap on the left head (the left-hand tha)
 with nam on beats 1, 5 and 7; this kit has no take of the left-hand tha, so
 those play `tham` (thom with nam) until one is recorded (#80): a boom where
-the source slaps, in the same place.
+the source slaps, in the same place. The file keeps the source's own stroke
+names (`"tha+num"`, `num`), and `strokes.json` decides what each plays, with
+the stand-ins marked in the compiled data.
+
+## Stand-ins
+
+A stroke this kit has no take for plays another, marked `standIn` in the
+compiled pattern, until it's recorded (#80). The rule is the same for a
+`mrid:` word and a `sol:` letter:
+
+| Missing stroke | Plays |
+|---|---|
+| the left-hand tha (`tha`, letter `p`) | thom; with a right-hand stroke, thom with it (`"tha+num"` is tham, `"tha+dhin"` is thom with din) |
+| arai chapu (`"a cha"`, letter `u`) | chapu, softer |
+| mi, kin, tan (letters `l`, `y`, `j`) | ki or ta, softer |
 
 ## How karya's notation was converted
 
@@ -38,15 +52,15 @@ for it:
 | `t` | ta, closed right | `ta` |
 | `o` | thom, open bass | `thom` |
 | `N` | thom with nam, both heads | `tham` |
-| `D` | thom with din | `dheem` |
+| `D` | thom with din | `"thom+dhin"` |
 | `,` | kin, a light ki on meetu | `thi` |
 | `_` | a rest | `,` |
 
 Two of those are approximations, and both are noted in the pattern that uses
 them. `,` (kin) is a meetu stroke this kit has no take for, so it plays `thi`,
-which is closed rather than ringing. `D` is thom with din; the kit's `dheem`
-is a bass stroke with the right head ringing, which is close but not the same
-hand shape.
+which is closed rather than ringing. `D` is thom with din; the kit's
+`L.dheem` (`"thom+dhin"`) is a bass stroke with the right head ringing, which
+is close but not the same hand shape.
 
 karya also has strokes this kit simply lacks, notably arai chapu (`u`) and
 the left-hand tha (`p`). The kit lacks them because the CompMusic dataset

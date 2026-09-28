@@ -7,7 +7,7 @@ export const PATTERNS: Pattern[] = [
   {
     id: "adi-chatusram-2",
     name: "Adi sarvalaghu, second",
-    source: "karya, Solkattu/Score/MridangamSarva.hs, kizh3, learned from Sudhindra (github.com/elaforge/karya, GPL-3.0, used with permission). Its right hand is n d _ n through the cycle, with thom under some of them; converted here as tham for thom-with-nam and dheem for thom-with-din. Unverified.",
+    source: "karya, Solkattu/Score/MridangamSarva.hs, kizh3, learned from Sudhindra (github.com/elaforge/karya, GPL-3.0, used with permission). Its right hand is n d _ n through the cycle, with thom under some of them; converted here as tham for thom-with-nam and \"thom+dhin\" for thom-with-din. Unverified.",
     shape: "down one two three down open down open",
     counts: ratio(8, 1),
     aksharas: 8,
@@ -44,7 +44,7 @@ export const PATTERNS: Pattern[] = [
   {
     id: "adi-chatusram-1",
     name: "Adi sarvalaghu, chatusram",
-    source: "Transcribed stroke for stroke from a practice pattern shared with permission; where it came from is recorded privately (thambura-ext). The left-hand tha with nam plays tham (thom with nam) until the kit has the left-hand tha (#80).",
+    source: "Transcribed stroke for stroke from a practice pattern shared with permission; where it came from is recorded privately (thambura-ext). Written in its source's stroke names. Its left-hand tha plays thom, so \"tha+num\" is tham, marked as a stand-in until the kit has the left-hand tha (#80).",
     shape: "down one two three down open down open",
     counts: ratio(8, 1),
     aksharas: 8,
@@ -52,14 +52,14 @@ export const PATTERNS: Pattern[] = [
     role: "main",
     beats: 8,
     strokes: [
-      { at: ratio(0, 32), stroke: "L.tham", gain: 1.12 },
+      { at: ratio(0, 32), stroke: "L.tham", gain: 1.12, standIn: true },
       { at: ratio(4, 32), stroke: "R.dhin", gain: 1 },
       { at: ratio(8, 32), stroke: "R.dhin", gain: 1 },
       { at: ratio(12, 32), stroke: "R.dhin", gain: 1 },
-      { at: ratio(16, 32), stroke: "L.tham", gain: 1 },
+      { at: ratio(16, 32), stroke: "L.tham", gain: 1, standIn: true },
       { at: ratio(18, 32), stroke: "R.nam", gain: 1 },
       { at: ratio(20, 32), stroke: "R.dhin", gain: 1 },
-      { at: ratio(24, 32), stroke: "L.tham", gain: 1 },
+      { at: ratio(24, 32), stroke: "L.tham", gain: 1, standIn: true },
       { at: ratio(26, 32), stroke: "R.nam", gain: 1 },
       { at: ratio(28, 32), stroke: "R.dhin", gain: 1 },
     ],
@@ -67,7 +67,7 @@ export const PATTERNS: Pattern[] = [
   {
     id: "adi-korvai-1",
     name: "Adi korvai",
-    source: "karya, Solkattu/Score/MridangamTirmanam.hs, tir_sam_adi_kirkalam, 2022-04-23 (github.com/elaforge/karya, GPL-3.0, used with permission). Written there as tri \"D__k\" \"kookokk_\", the phrase three times with a joining D__k, and marked \"sam to sam\": it fills one cycle and resolves on the next sam. Converted here as thi for ki, thom for thom and dheem for thom-with-din. Unverified by a player.",
+    source: "karya, Solkattu/Score/MridangamTirmanam.hs, tir_sam_adi_kirkalam, 2022-04-23 (github.com/elaforge/karya, GPL-3.0, used with permission). Written there as tri \"D__k\" \"kookokk_\", the phrase three times with a joining D__k, and marked \"sam to sam\": it fills one cycle and resolves on the next sam. Converted here as thi for ki, thom for thom and \"thom+dhin\" for thom-with-din. Unverified by a player.",
     shape: "down one two three down open down open",
     counts: ratio(8, 1),
     aksharas: 8,
@@ -123,7 +123,7 @@ export const PATTERNS: Pattern[] = [
   {
     id: "misra-chaapu-2",
     name: "Misra Chaapu, second",
-    source: "karya, Solkattu/Score/MridangamSarva.hs, c_18_05_25 first line, learned from Ganesh, 2018-05-25 (github.com/elaforge/karya, GPL-3.0, used with permission). Two slots to the akshara: o k on on od _ on k od k on on od _, converted as thom, thi, tham, dheem. Unverified.",
+    source: "karya, Solkattu/Score/MridangamSarva.hs, c_18_05_25 first line, learned from Ganesh, 2018-05-25 (github.com/elaforge/karya, GPL-3.0, used with permission). Two slots to the akshara: o k on on od _ on k od k on on od _, converted as thom, thi, tham, \"thom+dhin\". Unverified.",
     shape: "down",
     counts: ratio(7, 2),
     aksharas: 7,
@@ -148,7 +148,7 @@ export const PATTERNS: Pattern[] = [
   {
     id: "misra-chaapu-1",
     name: "Misra Chaapu sarvalaghu",
-    source: "karya, Solkattu/Score/MridangamSarva.hs, kir_misra_2, learned from Ganesh, 2017-09-26 (github.com/elaforge/karya, GPL-3.0, used with permission). Converted by us: karya's N is thom with nam, D is thom with din, and this kit plays those as tham and dheem. The mapping is ours and unverified.",
+    source: "karya, Solkattu/Score/MridangamSarva.hs, kir_misra_2, learned from Ganesh, 2017-09-26 (github.com/elaforge/karya, GPL-3.0, used with permission). Converted by us: karya's N is thom with nam, D is thom with din, and this kit plays those as tham and \"thom+dhin\". The mapping is ours and unverified.",
     shape: "down",
     counts: ratio(7, 2),
     aksharas: 7,
@@ -169,7 +169,7 @@ export const PATTERNS: Pattern[] = [
   {
     id: "rupakam-chatusram-1",
     name: "Short Rupakam sarvalaghu, chatusram",
-    source: "karya, Solkattu/Score/MridangamSarva.hs, s_rupaka first line, 2026-02-05 (github.com/elaforge/karya, GPL-3.0, used with permission). \"D_oknoD_D_N_\" converted by us: D is thom with din (dheem here), N is thom with nam (tham), k is ki (thi). Unverified by a player.",
+    source: "karya, Solkattu/Score/MridangamSarva.hs, s_rupaka first line, 2026-02-05 (github.com/elaforge/karya, GPL-3.0, used with permission). \"D_oknoD_D_N_\" converted by us: D is thom with din (\"thom+dhin\" here), N is thom with nam (tham), k is ki (thi). Unverified by a player.",
     shape: "down down open",
     counts: ratio(3, 1),
     aksharas: 3,

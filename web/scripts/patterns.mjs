@@ -50,8 +50,8 @@ function atomsByRole(notation) {
 const round = (x) => Math.round(x * 1000) / 1000;
 
 /**
- * One pattern, compiled. `tables` holds `words` (a mrid: token to a stroke
- * id), `letters` and `syllables` (for a pattern's own realize: phrases), and
+ * One pattern, compiled. `tables` holds `words` (a mrid: token, lowercased,
+ * to a stroke id or a {stroke, gain, standIn} stand-in), `letters` and `syllables` (for a pattern's own realize: phrases), and
  * `table`, the instrument's phrase table from phraseTable(). Throws, naming
  * the file, on anything that would otherwise play wrong or not at all.
  */
@@ -106,9 +106,15 @@ export function compilePattern(source, file, tables) {
       const name = atom.value;
       // A Space is a rest, and takes its time without playing anything.
       if (!name) continue;
-      const stroke = tables.words[name];
-      if (!stroke) throw new Error(`${file}: no stroke for "${name}" (add it to patterns/strokes.json)`);
-      events.push({ ...place(offset), stroke, gain: accent(aksharaOf(offset)) });
+      const entry = tables.words[name.toLowerCase()];
+      if (!entry) {
+        const why = name.includes("+") ? ": it would take two strokes at once, which a pattern can't play yet" : " (add it to patterns/strokes.json)";
+        throw new Error(`${file}: no stroke for "${name}"${why}`);
+      }
+      const word = typeof entry === "string" ? { stroke: entry, gain: 1 } : entry;
+      const event = { ...place(offset), stroke: word.stroke, gain: round(accent(aksharaOf(offset)) * word.gain) };
+      if (word.standIn) event.standIn = true;
+      events.push(event);
     }
   } else {
     sol.forEach((a, i) => {
