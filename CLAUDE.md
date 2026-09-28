@@ -190,6 +190,10 @@ continuous voices, and what changed from the 2016 app. `docs/designs/layouts.md`
 and what it would take to import these pieces from another project.
 `docs/designs/solkattu.md` is a plan too: patterns written in solkattu and
 realized into strokes through a phrase table.
+`docs/designs/percussion-vocabularies.md` extends it to the ghatam (solkattu
+on a pot, a map from the mridangam's stroke letters) and the tabla (bols,
+thekas, Hindustani taals against `TalaGrid`), with the questions only a
+player can answer and the datasets' licences.
 
 **Other projects' formats live in thambura-ext** (`panyam/thambura-ext`,
 private, checked out at `../../thambura-ext/main`): anything tied to one
@@ -670,7 +674,18 @@ See NEXTSTEPS.md for the order.
   which is gitignored. Go looks for every `*/kit.json` under there at startup
   (`App.KitURLs`) and seeds a `kit` instrument in the page spec for each, so
   a checkout without a kit asks for nothing and shows no pad. Only the first
-  kit loads for now.
+  kit loads for now. The data repo is checked out at `../mridangam-data`,
+  and its `make manifest` rewrites every `kit.json` there. When the app
+  starts depending on a new manifest field, the thambura-data PR merges
+  first and `make devkit` runs before the app deploys: #166's `fallback`
+  map is optional, but a kit without it plays nothing on a tala with no
+  written pattern.
+- **Check a dataset's licence on Zenodo's API**, not a fetched page's
+  summary: `curl -s https://zenodo.org/api/records/<id>` and read
+  `metadata.license`. Summaries twice reported a licence the record doesn't
+  have. The Mridangam Stroke Dataset, our kit's source, reads `cc-by-nc-4.0`
+  on both its records (4068196 and 1265188), not the CC BY 3.0 that
+  `mridangam.md` once recorded; what to do about it is thambura-ext#1.
 - **A kit keeps a folder per pack**, `compmusic/c/cha-c-1.flac`, because App
   Engine caps a directory at 1,000 files and says so is final. A flat kit was
   232 files and a second drum would have walked into it. `KITSRC` picks which
@@ -1046,7 +1061,12 @@ A few probes that worked, all set up in an init script:
   `AudioBufferSourceNode.prototype.start` to log `bufUrl.get(this.buffer)`
   with each `when`. Kit samples are under `/Kits/`, claps under `/Sounds/`.
   That's how #97 and #98 compared stroke and clap times on master and the
-  branch.
+  branch. Pick the tala for what's under test: Adi, Short Rupakam and the
+  Misra and Khanda chaapus play written patterns, while Ata (`sapta_ata`)
+  and Adi in khandam play the generated one (#166 checked both).
+- The shell is zsh, which doesn't split an unquoted `$var` into words:
+  `for a in "8021 base" ...; do node probe.cjs $a; done` hands the script
+  one argument, "8021 base". Write the calls out, or use `${=a}`.
 - To make a share link to open, write it with the engine rather than by
   hand: a throwaway vitest file that calls `encodeLink` / `encodePage` and
   ends in `expect(link).toBe("")` prints the link in the failure diff.

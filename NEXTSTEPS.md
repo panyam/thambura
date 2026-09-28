@@ -122,7 +122,11 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       `/` #142, rows #149), and a second thambura, as iTanpura plays two
       (#103: Ma, panned right, half a round behind). Next: #102 (drawn pads); #99 with the first new kit (#104);
       #132 (asset packs, from the layouts side). The hands track
-      shows as "Kriyas" (it was "Claps").
+      shows as "Kriyas" (it was "Claps"). A kit now names its own
+      generated-fallback strokes (#166), and the ghatam and tabla are
+      designed on paper (`docs/designs/percussion-vocabularies.md`, #164):
+      the questions for a player there, and a ghatam recording session,
+      come before #104's ghatam kit.
 - [ ] **Several talas at once**, later: talas stay their own group, not
       instruments (`docs/designs/instruments.md`, "Several talas at once").
 - [ ] Output-latency calibration setting (Bluetooth headphones add
