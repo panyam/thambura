@@ -727,8 +727,10 @@ See NEXTSTEPS.md for the order.
 - **Patterns carry their provenance.** Three come from karya's
   `MridangamSarva.hs` (Evan Laforge's transcriptions from his teachers, GPL,
   used with permission, see `web/patterns/CREDITS.md` for the piece, the
-  teacher and the stroke mapping); the Adi one was drafted here and is
-  unverified. A pattern matches a tala on shape plus cycle length, since both
+  teacher and the stroke mapping); the Adi one is from Shashibhushan's
+  Mridangam Android app, used with permission, converted by thambura-ext's
+  `mridanga-laya-vinyasa/` (the app's tha+num plays `tham` until the
+  left-hand tha is recorded, #80). A pattern matches a tala on shape plus cycle length, since both
   chaapus are one clap and share a shape, and its positions are fractions of
   the cycle so a chaapu's single long beat works. CompMusic's transcriptions
   are CC BY-NC-ND, so they can't be adapted.

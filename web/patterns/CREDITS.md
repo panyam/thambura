@@ -14,8 +14,23 @@ is GPL-3.0.
 | `khanda-chaapu.not` | `s_bhajan_kanda`, the `N,ND,` variation | references [this recording](https://www.youtube.com/watch?v=ctpe5H1Snd0) |
 | `rupakam-chatusram.not` | `s_rupaka`, first line | dated 2026-02-05 |
 
-`adi-chatusram.not` is not from karya. It was drafted here from the stroke
-names and no mridangist has checked it, which is what its `source` says.
+`adi-chatusram.not` is not from karya; it's the Mridangam app's (below).
+
+## The Mridangam app (Shashibhushan)
+
+`adi-chatusram.not` is the Adi pattern from Shashibhushan's Android app
+"Mridangam (Mridanga Laya Vinyasa)"
+([org.shashiapps.mridangam](https://play.google.com/store/apps/details?id=org.shashiapps.mridangam)),
+used with his permission. It replaced an Adi pattern drafted here that no
+mridangist had checked.
+
+The app is a sequencer of strokes, so its patterns are copied stroke for
+stroke rather than transcribed by ear. The converter and its stroke table
+live in thambura-ext (`mridanga-laya-vinyasa/`), with the app's lines as
+they were written down. The app has three left-hand strokes: tha (a closed
+slap on the thoppi), thom and gumki. This kit has no take for its tha, so
+the app's tha+num plays `tham` (thom with nam) until one is recorded (#80):
+a boom where the app slaps, in the same place.
 
 ## How karya's notation was converted
 
@@ -58,7 +73,8 @@ word, different hand.
 
 ## What still needs a player
 
-Every pattern's `source` says whether a mridangist has checked it. None has.
+Every pattern's `source` says whether a mridangist has checked it. None of
+karya's has; the app's are the app author's own, played as he wrote them.
 The conversion above is the part most likely to be wrong: the stroke choices
 are defensible from the descriptions, but only an ear can say whether the
 result sounds like the pattern Evan learned.

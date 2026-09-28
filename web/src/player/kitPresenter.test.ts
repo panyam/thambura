@@ -350,15 +350,15 @@ describe("KitPresenter on the tala's clock", () => {
   });
 
   it("lays the pattern out for the lane, an akshara at a time", () => {
-    // Adi: eight aksharas, four slots each, the first holding tham then thi.
+    // Adi: eight aksharas, four slots each, opening tham, dhin, dhin.
     const lane = kit.state.lane!;
     expect(lane.name).toBe("Adi sarvalaghu, chatusram");
     expect(lane.aksharas).toBe(8);
     expect(lane.columns).toBe(4);
     expect(lane.strokes.slice(0, 3)).toEqual([
       { stroke: "L.tham", akshara: 0, column: 0 },
-      { stroke: "R.thi", akshara: 0, column: 2 },
-      { stroke: "R.nam", akshara: 1, column: 0 },
+      { stroke: "R.dhin", akshara: 1, column: 0 },
+      { stroke: "R.dhin", akshara: 2, column: 0 },
     ]);
     // The counting line comes from the tala, over the clock.
     expect(lane.counting.slice(0, 5).map((c) => c.syllable)).toEqual(["ta", "ka", "di", "mi", "ta"]);
@@ -384,12 +384,12 @@ describe("KitPresenter on the tala's clock", () => {
 
     advance(0.06);
     expect(kit.state.strokeIndex).toBe(0);
-    advance(0.56);
+    advance(1.06);
     expect(kit.state.strokeIndex).toBe(1);
 
     // Stopping drops the strokes that never sounded.
     tala.stop();
-    advance(1.1);
+    advance(2.1);
     expect(kit.state.strokeIndex).toBe(1);
   });
 
@@ -490,7 +490,7 @@ describe("KitPresenter on the tala's clock", () => {
     const first = after.filter((n) => n.bus === "kit-1")[0];
     // The drum picks up on akshara 3 with the tala, on that akshara's stroke...
     expect(first.when).toBe(after.find((n) => n.bus === "hands-1")!.when);
-    expect(stroke(first)).toBe("R.nam");
+    expect(stroke(first)).toBe("R.dhin");
     // ...and its tham lands on the tala's next sam, five counts on.
     const sam = secondsAt(5);
     expect(at(sam).map((n) => n.url)).toContain("/clap-hi.wav");

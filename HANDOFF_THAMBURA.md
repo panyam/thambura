@@ -163,8 +163,12 @@ Also from this thread:
 7. **Small decisions:** whether www.thambura.com should redirect to the
    bare domain, and whether to keep the dev container's IP (98.248.54.110)
    on the Namecheap API whitelist.
-8. **Who vets the mridangam patterns.** All but the Adi one are karya's
-   (converted by us, unverified) or generated; the Adi one is drafted.
+8. **Who vets the mridangam patterns.** karya's are converted by us and
+   unverified; Adi is now the Mridangam app's (with `tham` for its tha+num);
+   the rest are generated.
+9. **The Mridangam app's other talas**, pasted in its notation (a slot per
+   stroke or comma, with beats x nadai), for thambura-ext's converter. The
+   generated-only talas first: Jhumpa, Matya, Dhruva, Ata, Eka.
 
 ## Open issues
 
@@ -174,7 +178,7 @@ Also from this thread:
 - **Filed by other sessions:** #113 (pluck patterns beyond Pa Sa Sa Sa),
   #116 (the Lab beside any skin).
 - **Mridangam, paused:** #77 fills, eduppu and a count-in; #78 a pattern to
-  suit the tempo; #79 more patterns and replacing the drafted Adi one; #80
+  suit the tempo; #79 more patterns (the app's, per tala); #80
   arai chapu and the left-hand tha; #81 the lane on a long cycle; #82
   solkattu under the strokes.
 - **#72, the AAC kit:** decided by attack onset in real Chrome and Safari,

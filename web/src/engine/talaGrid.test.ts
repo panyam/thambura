@@ -69,7 +69,7 @@ describe("patterns", () => {
     expect(adi).toBeDefined();
     expect(adi.beats).toBe(8);
     expect(adi.nadai).toBe("chatusram");
-    expect(adi.strokes).toHaveLength(18);
+    expect(adi.strokes).toHaveLength(10);
     // Positions are fractions of the cycle, and Adi's eight aksharas carry
     // four slots each, so every stroke lands on a quarter of an akshara.
     for (const stroke of adi.strokes) {
