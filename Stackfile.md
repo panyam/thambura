@@ -7,8 +7,8 @@
 
 | Component | Module | Version | Updated |
 |-----------|--------|---------|---------|
-| goapplib | github.com/panyam/goapplib | v0.1.1 | 2026-09-18 |
-| goapplib templates | github.com/panyam/goapplib (templar source, `web/templates/templar.yaml`) | v0.1.1 | 2026-09-18 |
+| goapplib | github.com/panyam/goapplib | v0.2.0 | 2026-09-28 |
+| goapplib templates | github.com/panyam/goapplib (templar source, `web/templates/templar.yaml`) | v0.2.0 | 2026-09-28 |
 | templar | github.com/panyam/templar | v0.1.2 | 2026-09-18 |
 | goutils | github.com/panyam/goutils | v0.1.13 (indirect) | 2026-09-18 |
 | tsappkit (TS) | @panyam/tsappkit | 0.0.5 | 2026-09-18 |
@@ -23,12 +23,13 @@ diffpp uses.
 s3gen builds the developer docs site (`docs/`, #95) in its own Go module, so
 it never reaches the app's build or its App Engine upload.
 
-Built here to be lifted into the stack (#86): `internal/page` and the page
-spec partial into goapplib (panyam/goapplib#28, planned as `v0.2.0`),
-`web/src/page` into tsappkit (panyam/goapplib#27, `0.1.0`), and maybe the
-esbuild splitting and preload setup as a shared preset (panyam/goapplib#29).
-`make liftcheck` keeps the first two free of thambura imports. Update the
-table above when they land.
+Lifted into the stack (#86): the page spec's Go half is goapplib's `page`
+package and `page/Islands.html` partial (panyam/goapplib#30, `v0.2.0`), which
+`internal/web/spec.go` extends with thambura's instruments. Still here:
+`web/src/page` for tsappkit (panyam/goapplib#27, `0.1.0`), which `make
+liftcheck` keeps free of thambura imports; goapplib#28 (layout variants, labs
+and SEO helpers) waits for lilbattle; and maybe the esbuild splitting and
+preload setup as a shared preset (panyam/goapplib#29).
 
 ## Third-Party Dependencies
 

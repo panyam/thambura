@@ -17,7 +17,7 @@ import (
 	tmplr "github.com/panyam/templar"
 
 	"github.com/panyam/thambura/internal/brand"
-	"github.com/panyam/thambura/internal/page"
+	"github.com/panyam/goapplib/page"
 )
 
 // App is the goapplib app context, which every page's Load is handed.
@@ -68,7 +68,7 @@ type HomePage struct {
 	SitePage
 	// Spec says which islands the page mounts, and each one's config; the
 	// browser reads it from the page (web/src/page/).
-	Spec page.Spec
+	Spec Spec
 }
 
 // fixturesURL is the fixture with the tala's image groups and the hand claps'
@@ -81,13 +81,12 @@ const fixturesURL = "/static/Resources/TalasFixtures.json"
 // The claps' and kit's controls are in their cards, so the tala leaves them out. Kits are build products copied in (make devkit) and
 // aren't committed, so most checkouts have none, and then the spec seeds
 // none rather than sending the browser after a kit.json that isn't there.
-func homeSpec(kitURLs []string) page.Spec {
+func homeSpec(kitURLs []string) Spec {
 	tala := talaIsland("main")
 	tala.Config["instrumentControls"] = false
 	tala.Config["wide"] = true
-	return page.Spec{
-		Layout:      "tracks",
-		Islands:     []page.Island{tala, {Name: "tracks", Slot: "tracks", Presentation: "page"}},
+	return Spec{
+		Spec:        page.Spec{Layout: "tracks", Islands: []page.Island{tala, {Name: "tracks", Slot: "tracks", Presentation: "page"}}},
 		Instruments: startingInstruments(kitURLs),
 	}
 }
@@ -103,13 +102,13 @@ func talaIsland(slot string) page.Island {
 // page with a tala, since which instruments are playing isn't a layout's
 // business. The browser numbers them by kind in this order: hands-1,
 // thambura-1, kit-1 ...
-func startingInstruments(kitURLs []string) []page.Instrument {
-	instruments := []page.Instrument{
+func startingInstruments(kitURLs []string) []Instrument {
+	instruments := []Instrument{
 		{Kind: "hands", Config: map[string]any{"fixturesUrl": fixturesURL}},
 		{Kind: "thambura"},
 	}
 	for _, u := range kitURLs {
-		instruments = append(instruments, page.Instrument{Kind: "kit", Config: map[string]any{"url": u}})
+		instruments = append(instruments, Instrument{Kind: "kit", Config: map[string]any{"url": u}})
 	}
 	return instruments
 }
@@ -169,7 +168,7 @@ func (p *HomePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*A
 type AboutPage struct {
 	SitePage
 	// Spec mounts no islands; the page only needs the header's scripts.
-	Spec page.Spec
+	Spec Spec
 }
 
 // The About page's search and preview text.
@@ -195,7 +194,7 @@ func (p *AboutPage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*
 		ImageHeight: 630,
 	}
 	p.Preload = app.Context.Bundle.App.Preload
-	p.Spec = page.Spec{Layout: "about"}
+	p.Spec = Spec{Spec: page.Spec{Layout: "about"}}
 	return nil, false
 }
 

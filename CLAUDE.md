@@ -91,19 +91,21 @@ Sadhana).
   copy in `templar_modules/`, which is committed). `HomePage` embeds
   `goal.BasePage` plus a `Header` struct for goapplib's header, and a
   `page.Spec`.
-- **Page spec** (#89): `internal/page` describes what a page starts with, its
-  islands (views: a name, a `data-slot`, a presentation and config) and the
-  instruments it seeds (a kind and config). `homeSpec` in `pages.go` builds
+- **Page spec** (#89): a page's `Spec` (`internal/web/spec.go`) is
+  goapplib's `page.Spec` (a layout and its islands: views, each a name, a
+  `data-slot`, a presentation and config; lifted there in goapplib#30)
+  embedded, plus the instruments it seeds (a kind and config), which stay
+  ours. JSON flattens the embedding, so the browser reads one object.
+  `homeSpec` in `pages.go` builds
   the home page's: the islands, then the instruments `startingInstruments`
   seeds on every page with a tala, `hands`, `thambura` and a `kit` per kit
   found, which the browser numbers by kind (`hands-1`, `thambura-1`,
-  `kit-1`). The partial
-  `web/templates/page/Islands.html` writes it as
+  `kit-1`). goapplib's partial `@goapplib/page/Islands.html`
+  (`PageSpecScript`, vendored by `make templates`) writes it as
   `<script type="application/json" id="page-spec">`, and all island config
-  travels there, never in `data-*` attributes. `internal/page` and
-  `web/src/page/` import nothing else from this repo (`make liftcheck`, part of
-  `make test`), since they're meant to move into goapplib and tsappkit after
-  #92.
+  travels there, never in `data-*` attributes. `web/src/page/` imports
+  nothing else from this repo (`make liftcheck`, part of `make test`), since
+  it moves into tsappkit next (goapplib#27).
 - Templates come in three layers. `web/templates/BasePage.html` extends
   goapplib's BasePage: our logo, no login actions, no HTMX, no header drawer.
   A layout (`web/templates/layouts/Tracks.html` for `/`) includes it, defines

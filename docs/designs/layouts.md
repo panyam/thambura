@@ -191,9 +191,11 @@ to move to tsappkit (panyam/goapplib#27) and goapplib (panyam/goapplib#28),
 where lilbattle's GameViewer layouts (turnforge/lilbattle#199) and the notation
 app (panyam/notation#304) are waiting for them. The lift happens after #92,
 once per library, so #90 to #92 can still reshape the spec without a release
-each time. Until then the TypeScript lives in `web/src/page/` and the Go in
-`internal/page`, and `make liftcheck` (part of `make test`) fails if either
-imports anything else from this repo, so the lift stays a copy.
+each time. The Go half has moved: goapplib's `page` package (goapplib#30) is
+the layout and its islands, and thambura's `Spec` (`internal/web/spec.go`)
+embeds it with the instruments, which are thambura's alone. The TypeScript
+still lives in `web/src/page/`, and `make liftcheck` (part of `make test`)
+fails if it imports anything else from this repo, so its lift stays a copy.
 
 ## The repo as a library
 

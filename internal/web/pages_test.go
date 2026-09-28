@@ -16,7 +16,6 @@ import (
 
 	goal "github.com/panyam/goapplib"
 
-	"github.com/panyam/thambura/internal/page"
 )
 
 // newServer serves the real web/ folder, so the test covers the templar
@@ -457,14 +456,14 @@ func TestFindKits(t *testing.T) {
 	}
 }
 
-// pageSpec is the page spec the page carries for the browser (internal/page).
-func pageSpec(t *testing.T, body string) page.Spec {
+// pageSpec is the page spec the page carries for the browser (spec.go).
+func pageSpec(t *testing.T, body string) Spec {
 	t.Helper()
 	m := regexp.MustCompile(`(?s)<script type="application/json" id="page-spec">(.*?)</script>`).FindStringSubmatch(body)
 	if m == nil {
 		t.Fatalf("no page-spec script on the page")
 	}
-	var s page.Spec
+	var s Spec
 	if err := json.Unmarshal([]byte(m[1]), &s); err != nil {
 		t.Fatalf("page-spec doesn't parse: %v\n%s", err, m[1])
 	}

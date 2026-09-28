@@ -3,7 +3,7 @@ module github.com/panyam/thambura
 go 1.26.3
 
 require (
-	github.com/panyam/goapplib v0.1.1
+	github.com/panyam/goapplib v0.2.0
 	github.com/panyam/templar v0.1.2
 )
 
