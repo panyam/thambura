@@ -2,10 +2,12 @@
 
 Written 2026-09-28, after the render work (#39 in #137, #40 in #140) and a
 second thambura (#103 in #156), and updated the same day after the ghatam
-and tabla design (#164) and the kit-named fallback (#166 in #168, with
-thambura-data#2). It folds forward what's still open from the 2026-09-27
-handoff and drops what closed: #103, the #148/#149 deploy, #54, the embed
-guide's kit example (#154), and the stale worktrees. The durable notes are in
+and tabla design (#164), the kit-named fallback (#166 in #168, with
+thambura-data#2), the Kriyas rename (#160), the thambura's volume in links
+(#153 in #165) and the drift checksum (#121 in #170). It folds forward
+what's still open from the 2026-09-27 handoff and drops what closed: #103,
+#121, #153, the #148/#149 and #156 deploys, #54, the hands track's name,
+the embed guide's kit example (#154), and the stale worktrees. The durable notes are in
 CLAUDE.md, NEXTSTEPS.md and `docs/designs/`; this file is only what's in
 flight. Delete it once the items below close.
 
@@ -25,14 +27,18 @@ flight. Delete it once the items below close.
   second half its round behind. Both share one renderer. Sample keys now
   start with the thambura's id, which fixed a bug that only two could hit
   (one dropping a sample silenced the other's plucks).
-- **Deployed:** thambura.com serves 6f5c85e (#151, checked 2026-09-28),
-  which has the track list rows (#148, #149) and the render work. Not
-  live: #156 (a second thambura) and the docs PRs after it (#152, #154).
-  Dev serves 7f50acb (#149's branch). `make deploydev` then `make deploy`
-  when the user wants #156 out.
-- **Docs (#95)** on GitHub Pages are published from 039b8ba (#161), with
-  the live mridangam example (#154), and indexed (noindex is off). `make
-  ghpages` from `origin/master` republishes.
+- **Deployed:** thambura.com serves df1e4ba, master as of 2026-09-28
+  (checked by comparing `app.js`): a second thambura (#156), Kriyas (#160),
+  the thambura's volume in links (#165) and #167. The docs site was
+  published from the same commit. Not live yet: #168 (below) and #170
+  (format 4).
+- **Thambura links went to format 3 (#165, the volume) and then format 4
+  (#170, a drift checksum that covers the hidden values).** A build from
+  before a format drops a new link's thambura part, and the track list
+  then opens without the thambura. That's accepted; it mostly hits the
+  first load after a deploy, from the service worker's old build.
+- **The hands track is "Kriyas"** (#160), display only: the id, storage
+  and link part are still `hands-1`.
 - **The lift into goapplib and tsappkit** is half done. The Go half is
   goapplib#30 (PR goapplib#31, `v0.2.0`): a generic `page.Spec` of layout
   and islands, which thambura embeds with its own instruments, and the
@@ -59,28 +65,27 @@ flight. Delete it once the items below close.
 
 1. **#102, drawn pads** from a `layout` in `kit.json`, under the kit row's
    toggle where the pad is now.
-2. **#99 with #104:** patterns naming their instrument, with the first
+2. **#159, a generic kit builder here**, before #104 copies thambura-data's
+   scripts into a second data repo.
+3. **#99 with #104:** patterns naming their instrument, with the first
    ghatam or kanjira kit, which needs recordings first. A second copy of
    the same kit waits on this too, since two would play the same pattern.
-3. **#132, asset packs**, and **#144** (embeds save to the host's
+4. **#132, asset packs**, and **#144** (embeds save to the host's
    localStorage under our keys).
-4. **#138, a settings page for the pluck cache** (its size, Clear, usage).
+5. **#138, a settings page for the pluck cache** (its size, Clear, usage).
    Filed this session; it should count both thamburas' entries.
 
 ## Small follow-ups from #103, not filed
 
 - A pan control per thambura, as iTanpura has one per tanpura. The second's
-  0.4 is fixed and unsaved today.
+  0.4 is fixed and unsaved today. Carrying it in links means a thambura
+  link format bump, as the volume did (#165).
 - The docked `thambura` island (`/labs/side-by-side`, embeds) always shows
   `thambura-1`.
 - The T key's hint and `#play-all`'s title still say "the thambura".
 
 ## Waiting on the user
 
-0. **Whether to deploy #156** (a second thambura) to thambura.com, after
-   a look on dev. Master now has #168 too, so pull `../mridangam-data` and
-   `make devkit` first (above). Prod serves version 20260928t062322;
-   which commit that is wasn't checked this session.
 0. **The mridangam dataset's licence** (thambura-ext#1): Zenodo reads CC
    BY-NC 4.0 for the kit on thambura.com. Ship under NC with an
    attribution, ask the authors, or record our own.
@@ -88,8 +93,6 @@ flight. Delete it once the items below close.
    `percussion-vocabularies.md` (ghatam open/closed and zones, the gumki,
    the mridangam-to-ghatam letter map, a summed tabla dha, bols, the
    bayan's bend, Rupak's first beat, Ektaal's fourth vibhag).
-0. **Whether links should set the thambura's volume** like the claps' and
-   kits' (the share-links guide describes the difference as it is).
 1. **When to start the lift** (above), and whether #131's npm package and
    tsappkit's publish can share credentials.
 2. **The wording and date of Evan Laforge's permission** for karya's
@@ -119,8 +122,7 @@ flight. Delete it once the items below close.
   #159 (a generic kit builder, filed by another session).
 - **thambura-ext#1:** the mridangam dataset's licence.
 - **Filed by other sessions:** #113 (pluck patterns beyond Pa Sa Sa Sa),
-  #116 (the Lab beside any skin), #121 (a built-in sound's hidden values
-  change old Custom links without the drift notice).
+  #116 (the Lab beside any skin).
 - **Mridangam, paused:** #77 fills, eduppu and a count-in; #78 a pattern to
   suit the tempo; #79 more patterns and replacing the drafted Adi one; #80
   arai chapu and the left-hand tha; #81 the lane on a long cycle; #82
@@ -139,8 +141,8 @@ flight. Delete it once the items below close.
 
 ## Environment
 
-- Only `thambura/checkpoint-percussion` (this checkpoint's PR) is left of
-  this session's worktrees; remove it once that lands. The older
+- Only `thambura/checkpoint-volume` (this checkpoint's PR) is left of this
+  session's worktrees; remove it once that lands. The older
   `checkpoint-render`, `drawer-opened-link` and `pwa` worktrees are gone.
   No servers of this session's are running.
 - Other sessions hold 8001 and 8002; 8080 and 8091 are something else.

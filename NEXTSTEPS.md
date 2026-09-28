@@ -18,8 +18,9 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [x] Deploy #148 (the tala across the top, `/about`) and #149 (instrument
       rows). thambura.com serves 6f5c85e (checked 2026-09-28), which has
       both.
-- [ ] Deploy #156 (a second thambura) and the docs PRs after 6f5c85e.
-      Dev serves 7f50acb, #149's branch, which has neither.
+- [x] Deploy #156 (a second thambura), #160 (Kriyas), #165 (the
+      thambura's volume in links) and #167. thambura.com serves df1e4ba
+      (checked 2026-09-28), and the docs site was published from it.
 - [ ] Listen to the tala on a real machine, and check it stays in step with
       the images. Headless Chromium has no audio device.
 - [ ] Record iTablaPro's tanpura, or any real tanpura, and run it through
@@ -99,8 +100,8 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [ ] **Developer docs** (#95, https://panyam.github.io/thambura/): the
       site (#105), Getting started, share links and presets with the format
       reference (#110), and the embed guide with live examples (#109) are
-      published. Left: republish once #148 and #149 are deployed; a live kit
-      example in the embed guide, now that thambura.com serves one; #106
+      published, with a live kit example (#154), and indexed (#161).
+      Left: #106
       (kit.json) and #107 (patterns) alongside #102 and #99; #111 after the
       lift; and the move to docs.thambura.com (steps in `docs/README.md`).
 - [x] **Mridangam, steps 1 to 4** (`docs/designs/mridangam.md`): strokes tuned to the

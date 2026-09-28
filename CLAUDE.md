@@ -333,7 +333,11 @@ unit-tested:
   covers the built-in plan's hidden values, so a change to those shows the
   drift note; it's what's written now, the same length as format 3, and
   formats 1 and 3 keep their old checksum (`shareLinkDrift.test.ts` opens
-  links against a changed `planFor`). Format 2 is a
+  links against a changed `planFor`). A build from before a format change
+  drops that part of a new link, and on `/` the track list then leaves the
+  instrument off the page altogether, not just its settings (checked for
+  #165: a format 3 link on an older build opens with the Kriyas alone).
+  Format 2 is a
   page link (#100): one part per instrument, keyed by its page id, each a
   kind, a number, a length and a payload; a thambura's payload is a whole
   thambura link. A `session-1` part (#101, `encodeSession`) carries the
@@ -882,9 +886,9 @@ One-time setup, run by an owner of the project from a machine with `gcloud`:
    DNS resolves, which can take a few hours, and HTTPS on the custom domain
    fails until then.
 
-Last production deploy: 3c4e21a on 2026-09-27 (the track list on `/`,
-#142). Master has moved on since (#148's top panel and `/about`, #149's
-instrument rows); dev serves the #149 build.
+Last production deploy: df1e4ba on 2026-09-28 (a second thambura, #156;
+Kriyas, #160; the thambura's volume in links, #165; the page spec's
+`added`, #167). The docs site was published from the same commit.
 
 A `make deploydev` lands as the `dev` version with no traffic, which is easy
 to mistake for a production deploy. `gcloud app versions list --project
@@ -914,8 +918,9 @@ the wrong PR that way), and `git add -A` sweeps up someone else's half-done
 edits. So:
 
 - Don't switch branches in the shared checkout. Start each piece of work in
-  its own worktree: `git worktree add -b <branch> <dir> origin/master`, then
-  `cd <dir>/web && pnpm install`. A worktree gets its own `node_modules`,
+  its own worktree: `git worktree add -b <branch> ../<dir> origin/master`,
+  then `cd ../<dir>/web && pnpm install`. Give it a sibling path: a bare
+  `<dir>` lands inside the shared checkout (`git worktree move` fixes it). A worktree gets its own `node_modules`,
   and its own `tools/sound-analysis/.venv` if you're running the sound
   analysis; both are gitignored, so a new worktree starts without them.
 - Never undo a temporary test edit with `git checkout <file>`: it resets the
