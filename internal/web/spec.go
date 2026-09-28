@@ -20,9 +20,14 @@ type Spec struct {
 
 // Instrument is one instrument the page offers or starts with. Kind picks
 // what the browser builds; Config is handed to it as is, so it must be JSON.
+// Added puts it on the page when a new listener opens it, where the page has
+// a track list to add instruments from; without Added it's only offered
+// there (#157). A saved list or a shared link still wins, and a page without
+// a track list starts with what it always has.
 type Instrument struct {
 	Kind   string         `json:"kind"`
 	Config map[string]any `json:"config"`
+	Added  bool           `json:"added,omitempty"`
 }
 
 // Validate is page.Spec's checks (a layout, named islands in plain, unshared

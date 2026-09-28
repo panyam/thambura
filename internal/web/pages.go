@@ -97,15 +97,16 @@ func talaIsland(slot string) page.Island {
 }
 
 // startingInstruments seeds the hand claps, which play the tala's calls from
-// the fixture's sound groups, the thambura, which the page's thambura island
-// shows, and a kit instrument for each kit found. It's the same on every
+// the fixture's sound groups, the thambura, added so a new listener starts
+// with it, and a kit instrument for each kit found, which the track list
+// offers under Add (#157). It's the same on every
 // page with a tala, since which instruments are playing isn't a layout's
 // business. The browser numbers them by kind in this order: hands-1,
 // thambura-1, kit-1 ...
 func startingInstruments(kitURLs []string) []Instrument {
 	instruments := []Instrument{
 		{Kind: "hands", Config: map[string]any{"fixturesUrl": fixturesURL}},
-		{Kind: "thambura"},
+		{Kind: "thambura", Added: true},
 	}
 	for _, u := range kitURLs {
 		instruments = append(instruments, Instrument{Kind: "kit", Config: map[string]any{"url": u}})

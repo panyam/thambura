@@ -187,9 +187,10 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
 function catalogOf(spec: PageSpec): CatalogEntry[] {
   const out: CatalogEntry[] = [];
   for (const i of spec.instruments) {
-    if (i.kind === "hands" && typeof i.config.fixturesUrl === "string") out.push({ kind: "hands", config: i.config });
-    if (i.kind === "thambura") out.push({ kind: "thambura", config: i.config });
-    if (i.kind === "kit" && typeof i.config.url === "string") out.push({ kind: "kit", config: i.config });
+    const added = i.added === true ? { added: true } : {};
+    if (i.kind === "hands" && typeof i.config.fixturesUrl === "string") out.push({ kind: "hands", config: i.config, ...added });
+    if (i.kind === "thambura") out.push({ kind: "thambura", config: i.config, ...added });
+    if (i.kind === "kit" && typeof i.config.url === "string") out.push({ kind: "kit", config: i.config, ...added });
   }
   return out;
 }

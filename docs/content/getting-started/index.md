@@ -76,7 +76,7 @@ on a server with the mridangam kit installed, is:
   ],
   "instruments": [
     { "kind": "hands", "config": { "fixturesUrl": "/static/Resources/TalasFixtures.json" } },
-    { "kind": "thambura" },
+    { "kind": "thambura", "added": true },
     { "kind": "kit", "config": { "url": "/static/Resources/Kits/compmusic/kit.json" } }
   ]
 }
@@ -86,7 +86,8 @@ The instruments are what the page can have. Which of them are on it is the
 track list's business in the browser: a new visitor starts with the kriyas and
 the thambura and adds the mridangam from the list.
 
-A missing config is an empty one. An island the registry doesn't know, or a
+A missing config is an empty one. `added` marks what a new listener starts
+with; on a page with a track list the rest wait under + Add. An island the registry doesn't know, or a
 slot that isn't on the page, is logged and skipped, so one bad entry doesn't
 stop the rest of the page.
 

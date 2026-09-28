@@ -25,6 +25,25 @@ describe("readSpec", () => {
     });
   });
 
+  it("keeps an instrument's added flag when it's true, and nothing else (#157)", () => {
+    const spec = readSpec(
+      JSON.stringify({
+        layout: "tracks",
+        islands: [],
+        instruments: [
+          { kind: "kit", config: {}, added: true },
+          { kind: "kit", config: {}, added: "yes" },
+          { kind: "kit", config: {}, added: false },
+        ],
+      }),
+    );
+    expect(spec?.instruments).toEqual([
+      { kind: "kit", config: {}, added: true },
+      { kind: "kit", config: {} },
+      { kind: "kit", config: {} },
+    ]);
+  });
+
   it("is null when there's no spec or it isn't one", () => {
     for (const bad of [null, undefined, "", "not json", "null", "[]", '{"islands":[]}', '{"layout":"drawer"}', '{"layout":3,"islands":[]}']) {
       expect(readSpec(bad), String(bad)).toBeNull();

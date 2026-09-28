@@ -8,7 +8,7 @@ describe("withDefaultInstruments", () => {
   it("seeds what a host's islands need when the host names no instruments: the thambura, and the tala's claps", () => {
     const spec = withDefaultInstruments({ layout: "embed", islands: [tala, thambura], instruments: [] });
     expect(spec.instruments).toEqual([
-      { kind: "thambura", config: {} },
+      { kind: "thambura", config: {}, added: true },
       { kind: "hands", config: { fixturesUrl: "/static/Resources/TalasFixtures.json" } },
     ]);
   });
@@ -21,7 +21,7 @@ describe("withDefaultInstruments", () => {
   });
 
   it("adds nothing an island doesn't need", () => {
-    expect(withDefaultInstruments({ layout: "embed", islands: [thambura], instruments: [] }).instruments).toEqual([{ kind: "thambura", config: {} }]);
+    expect(withDefaultInstruments({ layout: "embed", islands: [thambura], instruments: [] }).instruments).toEqual([{ kind: "thambura", config: {}, added: true }]);
     expect(withDefaultInstruments({ layout: "embed", islands: [], instruments: [] }).instruments).toEqual([]);
   });
 });
