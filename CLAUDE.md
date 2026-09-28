@@ -398,7 +398,8 @@ unit-tested:
   Start all and Shift+↑/↓ steps the shruthi (`shortcuts.ts`,
   `pageShortcut`); Space leaves a focused button alone, since it presses it.
   `sessionIsland.tsx` mounts the strip alone, as the `session` island.
-- `handsPresenter.ts` (`HandsPresenter`): the hand claps as a track,
+- `handsPresenter.ts` (`HandsPresenter`): the hand claps as a track (its
+  row reads "Kriyas": the claps, waves and finger counts, whatever the sound),
   `hands-1`, seeded by Go as a `hands` instrument in the page spec. It loads
   the fixture's sound groups, plays each call on `clock.ticks` from the
   chosen one, cancels its track on `transport.onStop`, and keeps Sounds and
@@ -943,13 +944,13 @@ opens `#shruthi-keys`, whose stretched keys have a `title`), the arrows
 mode: use `#play-all`, or scope to the strip. Space presses a focused button,
 so click the page body before testing it as Start all.
 On `/` the rows are `[aria-label="Instruments"] article`, each
-labelled by its instrument ("Claps", "Thambura", "Mridangam"), with
+labelled by its instrument ("Kriyas", "Thambura", "Mridangam"), with
 `button[aria-label="Show more of Mridangam"]` (then "Show less of…"), which
 opens `button[aria-label="Remove mridangam"]`, mute and solo as
-`button[aria-label^="Mute Claps"]` and `button[aria-label^="Solo Thambura"]`
+`button[aria-label^="Mute Kriyas"]` and `button[aria-label^="Solo Thambura"]`
 (their labels go on to say what they do), `input[aria-label="Thambura round length"]`,
 `select[aria-label="Add an instrument"]` (options by label), and Undo in the
-list's `[role="status"]`. A new browser starts with the claps and the
+list's `[role="status"]`. A new browser starts with the kriyas and the
 thambura only; add the mridangam with `selectOption({ label: "Mridangam" })`,
 and a second thambura with `selectOption({ label: "Thambura" })`, whose row
 is `article[aria-label="Thambura 2"]` (#103). A worktree with no kit and one

@@ -33,7 +33,7 @@ named by the instrument's id on the page:
   - the view (Mini, Studio, Raagini or Lab). (Links made before the track
     list also say whether the thambura's drawer was open; nothing reads that
     any more.)
-- **The claps** (`hands-1`): the sound group (Clap or Metronome) and their
+- **The kriyas** (`hands-1`): the sound group (Clap or Metronome) and their
   volume.
 - **Each kit** (`kit-1`, `kit-2`, …): which of the page's kits it is,
   Variety, its volume, and whether it plays along with the tala.
@@ -44,7 +44,7 @@ thambura's sound holds inside a page link too.
 
 A few things are left out on purpose. The thambura's volume isn't in the
 link, since it depends on the listener's room and speakers rather than on
-the sound. The claps' and kits' volumes are in it, though, and a link sets
+the sound. The kriyas' and kits' volumes are in it, though, and a link sets
 them. Solo (the Lab's on/off dots) is for working on one string at a
 time, and a link that silenced three strings would mostly confuse whoever
 opened it. The track list's mute and solo stay out of links for the same
@@ -59,7 +59,7 @@ When someone opens a page with a `?s=` link:
 - The session's shruthi is the one played, even though the thambura's part
   carries a key of its own.
 - On a page with a track list (the home page), the parts a link has are the
-  instruments the page opens with (the claps are always there). A page
+  instruments the page opens with (the kriyas are always there). A page
   without one (`/labs/side-by-side`, an embed) always has its own set, and
   plays what the link says for each of them.
 - If it changes the sound they had, their own setup is kept first, as a

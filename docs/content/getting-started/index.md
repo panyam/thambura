@@ -33,8 +33,9 @@ The home page has two islands:
 
 and three kinds of instrument:
 
-- **the claps**, which play the tala's beats. The tala itself makes no
-  sound; it says when each beat falls, and the claps play it.
+- **the kriyas**, the tala's hand actions heard: its claps, waves and
+  finger counts, as a clap or a metronome tick. The tala itself makes no
+  sound; it says when each beat falls, and the kriyas play it.
 - **the thambura**, which plucks its four strings in a round, or holds a
   sruti box's reed tone, at the page's shruthi.
 - **a kit** for each struck instrument installed, such as the mridangam. A
@@ -45,7 +46,7 @@ and three kinds of instrument:
   a tala by the shape of its cycle.
 
 Each instrument has an id on the page (`hands-1`, `thambura-1`, `kit-1`)
-and its own audio track, and they all share one clock, so the claps and the
+and its own audio track, and they all share one clock, so the kriyas and the
 drum land on the same beats and the drum follows the thambura's Sa.
 The home page shows them as a track list, a row per instrument, where you
 can add, remove, mute and solo them.
@@ -82,7 +83,7 @@ on a server with the mridangam kit installed, is:
 ```
 
 The instruments are what the page can have. Which of them are on it is the
-track list's business in the browser: a new visitor starts with the claps and
+track list's business in the browser: a new visitor starts with the kriyas and
 the thambura and adds the mridangam from the list.
 
 A missing config is an empty one. An island the registry doesn't know, or a

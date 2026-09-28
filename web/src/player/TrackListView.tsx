@@ -37,7 +37,7 @@ export interface TrackListViewProps {
  */
 export function TrackListView(props: TrackListViewProps) {
   const s = props.state;
-  const label = (a: Addable) => (a.kind === "thambura" ? "Thambura" : a.kind === "hands" ? "Claps" : props.kitNames()[a.kit ?? 0] || `Kit ${(a.kit ?? 0) + 1}`);
+  const label = (a: Addable) => (a.kind === "thambura" ? "Thambura" : a.kind === "hands" ? "Kriyas" : props.kitNames()[a.kit ?? 0] || `Kit ${(a.kit ?? 0) + 1}`);
   return (
     <section aria-label="Instruments" class="flex flex-col gap-3">
       <div class="flex items-center justify-between">
@@ -86,7 +86,7 @@ export function TrackListView(props: TrackListViewProps) {
 }
 
 function nameOf(row: { id: string; kind: string; kit?: number }, props: TrackListViewProps): string {
-  if (row.kind === "hands") return "Claps";
+  if (row.kind === "hands") return "Kriyas";
   // The first is plain "Thambura", as it was before a page could have two.
   if (row.kind === "thambura") return row.id === "thambura-1" ? "Thambura" : `Thambura ${row.id.split("-").at(-1)}`;
   const inst = props.instrument(row.id);
@@ -106,7 +106,7 @@ function TrackRowView(props: TrackListViewProps & { row: TrackRow; soloing: bool
   const row = () => props.row;
   const inst = () => props.instrument(row().id);
   const name = () => nameOf(row(), props);
-  // The claps have no panel and can't be removed, so there's nothing to open.
+  // The kriyas have no panel and can't be removed, so there's nothing to open.
   const opens = () => row().kind !== "hands";
   return (
     <article
@@ -284,11 +284,11 @@ function HandsQuick(props: { h: Extract<TrackInstrument, { kind: "hands" }> }) {
   const a = props.h.actions;
   return (
     <>
-      <span class="text-xs text-gray-500 dark:text-gray-400">Plays the tala's beats</span>
-      <select aria-label="Clap sounds" class={SMALL_SELECT} onChange={(e) => void a.setSoundGroup(e.currentTarget.value)}>
+      <span class="text-xs text-gray-500 dark:text-gray-400">The tala's claps, waves and finger counts</span>
+      <select aria-label="Kriya sounds" class={SMALL_SELECT} onChange={(e) => void a.setSoundGroup(e.currentTarget.value)}>
         <For each={s().soundGroups}>{(g) => <option value={g} selected={g === s().soundGroup}>{g}</option>}</For>
       </select>
-      <Level label="Claps level" value={s().volume} onInput={(v) => a.setVolume(v)} />
+      <Level label="Kriyas level" value={s().volume} onInput={(v) => a.setVolume(v)} />
     </>
   );
 }

@@ -60,7 +60,7 @@ optional <code>config</code>.</p>
 <table>
 <thead><tr><th>Name</th><th>What it is</th><th>Config</th></tr></thead>
 <tbody>
-<tr><td><code>tala</code></td><td>The tala keeper: the talas, speed, beat images, the claps' sound and volume, and the speed and shruthi strip.</td><td><code>instrumentControls: false</code> leaves out the claps' controls and a kit's stroke lane and pad, for a page with a <code>tracks</code> island, which shows them. <code>wide: true</code> puts the beat and its buttons on the left and the settings on the right, for a slot as wide as the page.</td></tr>
+<tr><td><code>tala</code></td><td>The tala keeper: the talas, speed, beat images, the kriyas' sound and volume, and the speed and shruthi strip.</td><td><code>instrumentControls: false</code> leaves out the claps' controls and a kit's stroke lane and pad, for a page with a <code>tracks</code> island, which shows them. <code>wide: true</code> puts the beat and its buttons on the left and the settings on the right, for a slot as wide as the page.</td></tr>
 <tr><td><code>thambura</code></td><td>The thambura's controls, docked in the slot: the Sound menu, the four views, Start and Copy link.</td><td>None.</td></tr>
 <tr><td><code>tracks</code></td><td>The instruments as a list of rows, one per instrument, each with its main controls, level, mute and solo, and a toggle that opens its full panel. Add and Remove change which are playing, and the list is remembered in the visitor's browser. Add offers the instruments your spec names that aren't playing, so name any kit you want offered.</td><td>None.</td></tr>
 <tr><td><code>session</code></td><td>The speed and shruthi strip on its own, for a page with a thambura and no tala, which carries its own.</td><td>None.</td></tr>
@@ -74,8 +74,9 @@ logged to the console and skipped, and the rest of the spec still mounts.</p>
 
 <p>Islands are what you see. Instruments are what plays, and
 <code>embed.js</code> adds the ones your islands need: the thambura for a
-<code>thambura</code> island, and the claps for a <code>tala</code> (the tala
-itself makes no sound; it says when each beat falls, and the claps play it).
+<code>thambura</code> island, and the kriyas for a <code>tala</code> (the tala
+itself makes no sound; it says when each beat falls, and the kriyas, its
+claps, waves and finger counts, play it).
 You only name instruments to add something, such as a kit:</p>
 
 <pre><code>{"kind": "kit", "config": {"url": "/static/Resources/Kits/compmusic/kit.json"}}</code></pre>
@@ -90,7 +91,7 @@ ghatam and kanjira are to come
 a <code>tracks</code> island for the rows, and the tala told to leave the
 instruments' controls to them. With a track list on the page, the instruments
 you name are what <strong>+ Add</strong> offers, and the listener starts with
-the claps and adds a drum when they want one. Add the mridangam below and
+the kriyas and adds a drum when they want one. Add the mridangam below and
 press Start: its row holds its level, mute and solo, and its stroke lane,
 which lights the stroke being played.</p>
 
