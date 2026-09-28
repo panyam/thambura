@@ -7,18 +7,19 @@ nadai: chatusram
 source: >-
   Transcribed stroke for stroke from a practice pattern shared with
   permission; where it came from is recorded privately (thambura-ext).
-  The left-hand tha with nam plays tham (thom with nam) until the kit has
-  the left-hand tha (#80).
+  Written in its source's stroke names. Its left-hand tha plays thom, so
+  "tha+num" is tham, marked as a stand-in until the kit has the left-hand
+  tha (#80).
 accents:
   0: 1.12
 ---
 \cycle("|4|2|2|")
 \beatDuration(4)
-mrid: tham , , ,
+mrid: "tha+num" , , ,
       dhin , , ,
       dhin , , ,
       dhin , , ,
-      tham , nam ,
+      "tha+num" , num ,
       dhin , , ,
-      tham , nam ,
+      "tha+num" , num ,
       dhin , , ,

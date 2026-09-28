@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { compilePattern } from "./patterns.mjs";
 import { phraseTable } from "./realize.mjs";
+import STROKES from "../patterns/strokes.json";
 
 const SYLLABLES = ["ta", "ka", "din", "na", "ki", "thom", "lang"].map((id) => ({ id, aliases: id === "din" ? ["dhin"] : [] }));
 const LETTERS = { k: "R.thi", o: "L.thom", od: "L.dheem", n: "R.nam", p: { stroke: "R.thi", gain: 0.6, standIn: "the left-hand tha" } };
 const TABLES = {
-  words: { tham: "L.tham", thi: "R.thi", nam: "R.nam" },
+  words: {
+    tham: "L.tham",
+    thi: "R.thi",
+    nam: "R.nam",
+    "thom+dhin": "L.dheem",
+    tha: { stroke: "L.thom", gain: 0.8, standIn: "the left-hand tha" },
+    "tha+num": { stroke: "L.tham", gain: 1, standIn: "the left-hand tha" },
+  },
   letters: LETTERS,
   syllables: SYLLABLES,
   table: phraseTable({ "ta ka din na": "k o o k", "ta ka": "k p", ta: "k", thom: "o" }, { syllables: SYLLABLES, letters: LETTERS }),
@@ -74,7 +82,45 @@ describe("compilePattern", () => {
     expect(() => compile(pattern("konnakol: ta ka din na ta ka din na"))).toThrow(/t\.not: unknown role "konnakol"/);
   });
 
+  it("marks a mrid: word that's a stand-in, its gain scaled by the accent", () => {
+    const p = compile(pattern('mrid: "tha+num" , , , tha , , ,', "accents:\n  0: 1.1\n"));
+    expect(p.strokes[0]).toMatchObject({ stroke: "L.tham", gain: 1.1, standIn: true });
+    expect(p.strokes[1]).toMatchObject({ stroke: "L.thom", gain: 0.8, standIn: true });
+    expect(compile(pattern("mrid: tham , , , tham , , ,")).strokes[0].standIn).toBeUndefined();
+  });
+
+  it("reads a quoted name with a + as one word, and ignores case", () => {
+    expect(at(compile(pattern('mrid: "thom+dhin" , , , Tham , "Tha+Num" ,')))).toEqual(["L.dheem@0/8", "L.tham@4/8", "L.tham@6/8"]);
+  });
+
+  it("says a combined name with no entry needs two strokes at once", () => {
+    expect(() => compile(pattern('mrid: "thom+thi" , , , tham , , ,'))).toThrow(/t\.not: no stroke for "thom\+thi": it would take two strokes at once/);
+    expect(() => compile(pattern("mrid: bang , , , tham , , ,"))).toThrow(/t\.not: no stroke for "bang"/);
+  });
+
   it("names the file and the akshara of a phrase it can't realize", () => {
     expect(() => compile(pattern("sol: ta ka din na ki , , ,"))).toThrow(/t\.not, akshara 2: no realization for "ki"/);
+  });
+});
+
+describe("the stroke tables", () => {
+  const standIn = (e) => typeof e === "object" && e.standIn;
+  it("play the left-hand tha as thom, a stand-in, in words and in letters", () => {
+    expect(STROKES.strokes.tha).toMatchObject({ stroke: "L.thom" });
+    expect(STROKES.letters.p).toMatchObject({ stroke: "L.thom" });
+    expect(standIn(STROKES.strokes.tha) && standIn(STROKES.letters.p)).toBeTruthy();
+    expect(STROKES.strokes["tha+num"]).toMatchObject({ stroke: "L.tham" });
+    expect(STROKES.strokes["tha+dhin"]).toMatchObject({ stroke: "L.dheem" });
+  });
+
+  it("use the source's names: dheem is the right hand's, thom with din is \"thom+dhin\"", () => {
+    expect(STROKES.strokes.dheem).toBe("R.dheem");
+    expect(STROKES.strokes["thom+dhin"]).toBe("L.dheem");
+    expect(STROKES.strokes["thom+num"]).toBe("L.tham");
+    expect([STROKES.strokes.num, STROKES.strokes.dhi, STROKES.strokes.cha]).toEqual(["R.nam", "R.thi", "R.chapu"]);
+  });
+
+  it("keep every key lowercase, since a token is looked up lowercased", () => {
+    for (const key of Object.keys(STROKES.strokes)) expect(key).toBe(key.toLowerCase());
   });
 });

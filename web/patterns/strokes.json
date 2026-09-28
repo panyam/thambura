@@ -1,27 +1,56 @@
 {
   "_comment": [
     "What a pattern's tokens play, as stroke ids in a kit.",
-    "strokes: the words a mrid: line is written in. Solkattu and strokes",
-    "aren't one to one, so a mrid: line names strokes unambiguously and this",
-    "table alone decides what each plays.",
+    "strokes: the words a mrid: line is written in, looked up lowercased. They",
+    "follow the usual stroke names: a stroke played with another is the two",
+    "joined by +, quoted in the pattern (\"thom+dhin\", \"tha+num\"), and so is a",
+    "name with a space (\"a cha\"). Solkattu and strokes aren't one to one, so a",
+    "mrid: line names strokes unambiguously and this table alone decides what",
+    "each plays.",
     "letters: what a sol: line's realization is written in (realize/*.json),",
-    "one letter per stroke, od and on for thom with din and with nam. A stroke",
-    "this kit has no take for plays a stand-in, {stroke, gain, standIn}, which",
-    "the compiled pattern marks; when it's recorded, only its line here changes.",
+    "one letter per stroke, od and on for thom with din and with nam.",
+    "A stroke this kit has no take for plays a stand-in, {stroke, gain, standIn},",
+    "which the compiled pattern marks; when it's recorded, only its line here",
+    "changes. The left-hand tha plays thom: tha alone is thom, and tha with a",
+    "right-hand stroke is thom with it (#80).",
     "An unknown token or letter is a build error, not a silence."
   ],
   "strokes": {
-    "tham": "L.tham",
     "thom": "L.thom",
-    "dheem": "L.dheem",
-    "chapu": "R.chapu",
-    "dhin": "R.dhin",
+    "gumki": "L.gumki",
+    "tham": "L.tham",
+    "thom+num": "L.tham",
+    "thom+dhin": "L.dheem",
+    "tha": {
+      "stroke": "L.thom",
+      "gain": 1,
+      "standIn": "the left-hand tha, not recorded yet (#80)"
+    },
+    "tha+num": {
+      "stroke": "L.tham",
+      "gain": 1,
+      "standIn": "the left-hand tha, not recorded yet (#80)"
+    },
+    "tha+dhin": {
+      "stroke": "L.dheem",
+      "gain": 1,
+      "standIn": "the left-hand tha, not recorded yet (#80)"
+    },
     "nam": "R.nam",
+    "num": "R.nam",
+    "dhin": "R.dhin",
+    "dheem": "R.dheem",
     "dheem_r": "R.dheem",
     "thi": "R.thi",
+    "dhi": "R.thi",
     "ta": "R.ta",
-    "tha": "R.tha",
-    "gumki": "L.gumki"
+    "chapu": "R.chapu",
+    "cha": "R.chapu",
+    "a cha": {
+      "stroke": "R.chapu",
+      "gain": 0.7,
+      "standIn": "arai chapu, not recorded yet (#80)"
+    }
   },
   "letters": {
     "k": "R.thi",
@@ -34,8 +63,8 @@
     "od": "L.dheem",
     "on": "L.tham",
     "p": {
-      "stroke": "R.thi",
-      "gain": 0.6,
+      "stroke": "L.thom",
+      "gain": 1,
       "standIn": "the left-hand tha, not recorded yet (#80)"
     },
     "u": {

@@ -296,8 +296,8 @@ stroke letter table above.
 | What a letter plays on this kit, a stand-in included | `web/patterns/strokes.json`, the letter table |
 
 `pnpm patterns` recompiles, and `make test` fails on stale compiled data or a
-phrase with no entry. Until the left-hand tha is recorded, `p` plays a soft
-ki (`R.thi` at a lower gain), marked as a stand-in.
+phrase with no entry. Until the left-hand tha is recorded, `p` plays thom
+(`L.thom`), marked as a stand-in, the same as the `mrid:` word `tha`.
 
 ## What it unlocks
 
@@ -331,5 +331,7 @@ ki (`R.thi` at a lower gain), marked as a stand-in.
 
 1. **Who checks it.** The realizations and the stand-ins for missing strokes
    are unverified, as the patterns' `source` lines already say.
-2. **The left-hand tha.** Decided: a soft ki stands in until it's recorded
-   (#80).
+2. **The left-hand tha.** Decided: thom stands in until it's recorded
+   (#80), so tha with nam plays tham. A soft ki was the first choice; thom
+   keeps the stroke on the left head, and the same rule covers tha with any
+   right-hand stroke.

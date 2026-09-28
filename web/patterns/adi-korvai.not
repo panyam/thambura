@@ -10,7 +10,7 @@ source: >-
   (github.com/elaforge/karya, GPL-3.0, used with permission). Written there as
   tri "D__k" "kookokk_", the phrase three times with a joining D__k, and
   marked "sam to sam": it fills one cycle and resolves on the next sam.
-  Converted here as thi for ki, thom for thom and dheem for thom-with-din.
+  Converted here as thi for ki, thom for thom and "thom+dhin" for thom-with-din.
   Unverified by a player.
 accents:
   0: 1.1
@@ -19,9 +19,9 @@ accents:
 \beatDuration(4)
 mrid: thi thom thom thi
       thom thi thi ,
-      dheem , , thi
+      "thom+dhin" , , thi
       thi thom thom thi
       thom thi thi ,
-      dheem , , thi
+      "thom+dhin" , , thi
       thi thom thom thi
       thom thi thi ,

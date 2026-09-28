@@ -749,8 +749,15 @@ See NEXTSTEPS.md for the order.
   `mrid:` line too, the strokes play as written and the syllables are only
   kept (`Pattern.solkattu`). The letters are `patterns/strokes.json`'s
   `letters`, beside the `mrid:` words; a stroke the kit lacks plays a
-  stand-in there (the left-hand tha `p` a soft ki, arai chapu `u` a softer
-  chapu) and compiles with `standIn: true`. An unknown role, syllable, letter
+  stand-in there (the left-hand tha `p` thom, arai chapu `u` a softer
+  chapu) and compiles with `standIn: true`. The `mrid:` words take stand-ins
+  too, and are looked up lowercased: they're the usual stroke names, a stroke
+  played with another written as the two joined by `+` and quoted
+  (`"thom+dhin"`, `"tha+num"`), like a name with a space (`"a cha"`); the
+  notations parser takes a quoted name as one token. `dheem` is the right
+  hand's; thom with din is `"thom+dhin"`. A `+` name with no entry is a build
+  error saying it would take two strokes at once, which the lane and the
+  kit's cues can't show yet. An unknown role, syllable, letter
   or unmatched phrase is a build error. The compiling is
   `scripts/patterns.mjs` and `scripts/realize.mjs`, pure and tested in
   vitest; `compile-patterns.mjs` only reads and writes. The syllable table

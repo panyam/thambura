@@ -70,6 +70,12 @@ describe("patterns", () => {
     expect(adi.beats).toBe(8);
     expect(adi.nadai).toBe("chatusram");
     expect(adi.strokes).toHaveLength(10);
+    // Its left-hand tha with nam plays tham, marked, until #80 records it.
+    expect(adi.strokes.filter((x) => x.standIn).map((x) => [x.stroke, x.at.n / x.at.d])).toEqual([
+      ["L.tham", 0],
+      ["L.tham", 0.5],
+      ["L.tham", 0.75],
+    ]);
     // Positions are fractions of the cycle, and Adi's eight aksharas carry
     // four slots each, so every stroke lands on a quarter of an akshara.
     for (const stroke of adi.strokes) {
