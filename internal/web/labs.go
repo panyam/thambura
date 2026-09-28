@@ -6,7 +6,7 @@ import (
 	goal "github.com/panyam/goapplib"
 
 	"github.com/panyam/thambura/internal/brand"
-	"github.com/panyam/thambura/internal/page"
+	"github.com/panyam/goapplib/page"
 )
 
 // Lab is one experiment with how the page is laid out, served on the live
@@ -67,14 +67,14 @@ type LabsIndexPage struct {
 	SitePage
 	Labs []Lab
 	// Spec mounts no islands; the page only needs the header's scripts.
-	Spec page.Spec
+	Spec Spec
 }
 
 // Load implements the goapplib View.
 func (p *LabsIndexPage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*App]) (error, bool) {
 	labPage(&p.SitePage, app, "Experiments", "Experiments with how "+brand.Name+" is laid out.")
 	p.Labs = labs
-	p.Spec = page.Spec{Layout: "index"}
+	p.Spec = Spec{Spec: page.Spec{Layout: "index"}}
 	return nil, false
 }
 
@@ -83,16 +83,15 @@ func (p *LabsIndexPage) Load(r *http.Request, w http.ResponseWriter, app *goal.A
 type SideBySidePage struct {
 	SitePage
 	Lab  Lab
-	Spec page.Spec
+	Spec Spec
 }
 
 // Load implements the goapplib View.
 func (p *SideBySidePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*App]) (error, bool) {
 	p.Lab = labBySlug("side-by-side")
 	labPage(&p.SitePage, app, p.Lab.Title, p.Lab.Blurb)
-	p.Spec = page.Spec{
-		Layout:      "side-by-side",
-		Islands:     []page.Island{talaIsland("main"), {Name: "thambura", Slot: "side", Presentation: "panel"}},
+	p.Spec = Spec{
+		Spec:        page.Spec{Layout: "side-by-side", Islands: []page.Island{talaIsland("main"), {Name: "thambura", Slot: "side", Presentation: "panel"}}},
 		Instruments: startingInstruments(app.Context.KitURLs),
 	}
 	if err := p.Spec.Validate(); err != nil {

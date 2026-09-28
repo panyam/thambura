@@ -89,10 +89,13 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       pieces can be imported elsewhere, including into the notation app for
       practice. The first two blockers are gone: `embed.js` (#92) mounts the
       islands on any page, in shadow roots, with assets resolved against
-      itself. Next: serving it from unpkg as a versioned package (#131), the
-      lift of `internal/page` and `web/src/page` into goapplib and tsappkit
-      (panyam/goapplib#28, then #27; waiting apps turnforge/lilbattle#199 and
-      panyam/notation#304), and asset packs (#132).
+      itself. The spec's Go half is goapplib's `page` package since
+      goapplib#30 (v0.2.0), with thambura's instruments in its own extended
+      spec. Next: `web/src/page` into tsappkit (panyam/goapplib#27; waiting
+      apps turnforge/lilbattle#199 and panyam/notation#304), serving
+      `embed.js` from unpkg as a versioned package (#131), and asset packs
+      (#132). Layout variants and labs helpers (goapplib#28) wait for
+      lilbattle.
 - [ ] **Developer docs** (#95, https://panyam.github.io/thambura/): the
       site (#105), Getting started, share links and presets with the format
       reference (#110), and the embed guide with live examples (#109) are

@@ -47,9 +47,6 @@ test: liftcheck
 	cd web && pnpm exec tsc -p ../docs/components
 	cd docs && go test ./...
 
-# internal/page and web/src/page are meant to move into goapplib and tsappkit
-# (#86), so they may import nothing else from this repo. Keeping it that way is
-# what makes the lift a copy.
 # The developer docs (docs/), published to GitHub Pages at docs.thambura.com.
 # The site is its own Go module, so s3gen stays out of the app's build; `make
 # test` builds it and checks every link. docs writes it to docs/dist; docsrun
@@ -77,9 +74,10 @@ docsjs:
 		NODE_PATH=$$PWD/node_modules pnpm exec esbuild ../docs/components/DocsPage.ts \
 		--bundle --format=esm --minify --outfile=../docs/static/js/gen/docs.js
 
+# web/src/page is meant to move into tsappkit (panyam/goapplib#27), so it may
+# import nothing else from this repo. Keeping it that way is what makes the
+# lift a copy. (Its Go half is goapplib's page package now, goapplib#30.)
 liftcheck:
-	@bad=$$(go list -deps ./internal/page | grep '^github.com/panyam/thambura/' | grep -v '^github.com/panyam/thambura/internal/page$$'); \
-	  if [ -n "$$bad" ]; then echo "internal/page imports from this repo: $$bad"; exit 1; fi
 	@bad=$$(grep -rnE "from ['\"]\.\./" web/src/page || true); \
 	  if [ -n "$$bad" ]; then echo "web/src/page imports from outside itself:"; echo "$$bad"; exit 1; fi
 

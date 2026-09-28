@@ -28,15 +28,18 @@ flight. Delete it once the items below close.
   live: #156 (a second thambura) and the docs PRs after it (#152, #154).
   Dev serves 7f50acb (#149's branch). `make deploydev` then `make deploy`
   when the user wants #156 out.
-- **Docs (#95)** on GitHub Pages were published from 6f5c85e, so the
-  embed guide's live mridangam example (#154) isn't there yet. `make
+- **Docs (#95)** on GitHub Pages are published from 039b8ba (#161), with
+  the live mridangam example (#154), and indexed (noindex is off). `make
   ghpages` from `origin/master` republishes.
-- **The lift into goapplib and tsappkit** is unchanged and unstarted:
-  goapplib#28 (`internal/page`, the Islands partial, labs/noindex helpers,
-  tag `v0.2.0`), then goapplib#27 (`web/src/page` into tsappkit `0.1.0`,
-  with an entry point that takes a registry). Use a fresh goapplib clone
-  (the `newstack/` one's `.git` points at a Mac path); npm publish
-  credentials here are unchecked.
+- **The lift into goapplib and tsappkit** is half done. The Go half is
+  goapplib#30 (PR goapplib#31, `v0.2.0`): a generic `page.Spec` of layout
+  and islands, which thambura embeds with its own instruments, and the
+  `PageSpecScript` partial. goapplib#28 keeps only layout variants and
+  labs/SEO helpers, for lilbattle. Next is goapplib#27, `web/src/page` into
+  tsappkit `0.1.0` with an entry point that takes a registry, which needs
+  `npm login` here (`npm whoami` says ENEEDAUTH). A fresh goapplib clone
+  lives at `../goapplib-lift/goapplib` (the `newstack/` one isn't a working
+  checkout).
 - **The mridangam is still paused** (#77 to #82).
 
 ## Next on the instruments path
