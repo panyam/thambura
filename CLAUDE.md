@@ -319,13 +319,17 @@ unit-tested:
   Links run 19-34 characters for everyday setups and stay under 200 for a
   plan edited everywhere. The orders at the top of the file are the format:
   append, never reorder, and bump `FORMAT` for anything else. A thambura
-  link is format 3 (#153): format 1 plus the volume after sustain, which is
+  link was format 3 from #153: format 1 plus the volume after sustain, which is
   why it went in as a new format rather than a byte on the end (a strict
   reader rejects extra bytes); format 1 is still read, and keeps the
   listener's volume, since the built-in presets and links people hold are
   format 1. It's 3, not 2, since 2 is a page link. Applying a preset still
   keeps the volume, and `soundOf` leaves it out, so a volume change isn't
-  an edit. Format 2 is a
+  an edit. Format 4 (#121) is format 3's bytes with a checksum that also
+  covers the built-in plan's hidden values, so a change to those shows the
+  drift note; it's what's written now, the same length as format 3, and
+  formats 1 and 3 keep their old checksum (`shareLinkDrift.test.ts` opens
+  links against a changed `planFor`). Format 2 is a
   page link (#100): one part per instrument, keyed by its page id, each a
   kind, a number, a length and a payload; a thambura's payload is a whole
   thambura link. A `session-1` part (#101, `encodeSession`) carries the
@@ -339,7 +343,7 @@ unit-tested:
   `thambura-1` and skips parts it can't read.
   The docs site's reference page (`docs/content/reference/share-link-format/`)
   describes both. `shareLink.test.ts`'s "format 1 links keep opening the
-  same" (and its format 3 twin) holds links as they were sent, with what they decode to; the
+  same" (and its format 3 and 4 twins) holds links as they were sent, with what they decode to; the
   round-trip tests can't see a reordered table, since both halves use it,
   and these can.
 - `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa in a `PluckPattern`:

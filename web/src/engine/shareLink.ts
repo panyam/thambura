@@ -36,9 +36,12 @@ import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanF
  * strings) is stored exactly, as a 64-bit float.
  * Format 1 leaves the volume out. Format 3 (#153) is format 1 with the volume,
  * 0-100, as one more byte after sustain (13), so everything after it moves
- * up one; it's what every link is written in now. A format 1 link keeps the
- * listener's own volume. (3 rather than 2, since 2 is a page link.) The
- * orders below are part of the format; add to their ends, never reorder.
+ * up one. A format 1 link keeps the listener's own volume. (3 rather than 2,
+ * since 2 is a page link.) Format 4 (#121) is format 3's bytes with a
+ * checksum that also covers the built-in plan's hidden values (HIDDEN), so a
+ * change to one of those shows the drift note too; it's what every link is
+ * written in now. Formats 1 and 3 keep the old checksum. The orders below are
+ * part of the format; add to their ends, never reorder.
  *
  * Format 2 is a page link: every instrument on the page, each as its own
  * part (#100). Bytes, then base64url without padding:
@@ -73,7 +76,9 @@ import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanF
  * (their order in the page spec), Variety (VARIETIES), the volume, and 1 if
  * it plays along with the tala.
  */
-const FORMAT = 3;
+const FORMAT = 4;
+// Format 4's bytes with a checksum of the slider values only, still read.
+const FORMAT_SLIDER_CHECKSUM = 3;
 // The thambura link without the volume, still read.
 const FORMAT_NO_VOLUME = 1;
 const PAGE_FORMAT = 2;
@@ -156,7 +161,7 @@ export function encodeLink(x: SharedSetup): string {
       return [false, true].map((whole) => {
         const out = new Writer();
         out.byte(i | (whole ? WHOLE : 0));
-        out.u16(checksum(start));
+        out.u16(checksum(start, true));
         if (whole) writeWhole(out, x.custom, start);
         else writeEdits(out, x.custom, start);
         writeHidden(out, x.custom, rebuild(x.custom, start));
@@ -184,7 +189,7 @@ export function decodeLink(link: string, current: { settings: ThamburaSettings }
   const r = new Reader(bytes);
   try {
     const format = r.byte();
-    if (format !== FORMAT && format !== FORMAT_NO_VOLUME) return null;
+    if (format !== FORMAT && format !== FORMAT_SLIDER_CHECKSUM && format !== FORMAT_NO_VOLUME) return null;
     const flags = r.byte();
     const mode = MODES[r.byte()];
     const settings = normalizeThambura(
@@ -200,7 +205,7 @@ export function decodeLink(link: string, current: { settings: ThamburaSettings }
         tone: r.byte(),
         pluck: r.byte(),
         sustain: r.byte(),
-        volume: format === FORMAT ? r.byte() : current.settings.volume,
+        volume: format === FORMAT_NO_VOLUME ? current.settings.volume : r.byte(),
       },
       current.settings,
     );
@@ -212,7 +217,7 @@ export function decodeLink(link: string, current: { settings: ThamburaSettings }
       const base = BASES[layout & ~WHOLE];
       if (base === undefined) return null;
       const start = planFor({ ...settings, mode: base });
-      drifted = r.u16() !== checksum(start);
+      drifted = r.u16() !== checksum(start, format === FORMAT);
       custom = readHidden(r, layout & WHOLE ? readWhole(r, start) : readEdits(r, start));
     }
     if (!r.done) return null;
@@ -249,8 +254,12 @@ function gapSteps(p: ThamburaPlan): number[] {
   return p.gaps.map((g) => Math.round(g * 10000));
 }
 
-function checksum(p: ThamburaPlan): number {
-  // FNV-1a over the plan's slider steps, folded to 16 bits.
+/**
+ * FNV-1a over the plan's slider steps, its attack-scaling mask and its gaps,
+ * folded to 16 bits. With `hidden` (format 4, #121) it goes on over each
+ * string's HIDDEN values, exactly, as their 64-bit floats in 16-bit words.
+ */
+function checksum(p: ThamburaPlan, hidden: boolean): number {
   let h = 0x811c9dc5;
   const mix = (n: number) => {
     h ^= n & 0xffff;
@@ -259,6 +268,15 @@ function checksum(p: ThamburaPlan): number {
   for (const s of p.strings) for (const spec of SPECS) mix(toStep(spec, readField(s, spec.field)));
   mix(scaleMask(p));
   gapSteps(p).forEach(mix);
+  if (hidden) {
+    const bits = new DataView(new ArrayBuffer(8));
+    for (const s of p.strings) {
+      for (const key of HIDDEN) {
+        bits.setFloat64(0, s.voice[key]);
+        for (let i = 0; i < 8; i += 2) mix(bits.getUint16(i));
+      }
+    }
+  }
   return (h ^ (h >>> 16)) & 0xffff;
 }
 
@@ -632,7 +650,7 @@ export function decodePage(link: string): Map<string, string> | null {
   } catch {
     return null;
   }
-  if (bytes[0] === FORMAT || bytes[0] === FORMAT_NO_VOLUME) {
+  if (bytes[0] === FORMAT || bytes[0] === FORMAT_SLIDER_CHECKSUM || bytes[0] === FORMAT_NO_VOLUME) {
     return decodeLink(link, { settings: DEFAULT_THAMBURA }) ? new Map([["thambura-1", link]]) : null;
   }
   if (bytes[0] !== PAGE_FORMAT) return null;
