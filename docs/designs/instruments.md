@@ -218,6 +218,9 @@ plan (`mridangam.md`).
 7. **A second thambura**, once the render numbers allow it.
 8. **More instruments as kits**: ghatam, kanjira, a drum kit. By then adding
    one is a recording session and a manifest, not code.
+   `percussion-vocabularies.md` works through the ghatam and the tabla:
+   their strokes, how solkattu and tabla bols realize on them, and what a
+   Hindustani taal needs from the tala grid.
 
 ## Several talas at once, later
 
