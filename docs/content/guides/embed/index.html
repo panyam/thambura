@@ -80,10 +80,19 @@ You only name instruments to add something, such as a kit:</p>
 
 <pre><code>{"kind": "kit", "config": {"url": "/static/Resources/Kits/compmusic/kit.json"}}</code></pre>
 
-<p>A kit plays along with the tala and follows the thambura's Sa. No kit is
-published on thambura.com yet
-(<a href="https://github.com/panyam/thambura/issues/104">#104</a>), so there's no
-live example of one here.</p>
+<p>The <code>url</code> is resolved against <code>embed.js</code>'s own address, so
+<code>/static/...</code> means thambura.com's. A kit plays along with the tala,
+shows its stroke lane and pad under the tala's beat, and tunes to the page's
+shruthi. The mridangam is the one kit published so far; the ghatam and kanjira
+are to come (<a href="https://github.com/panyam/thambura/issues/104">#104</a>).
+Here's the tala with it:</p>
+
+<pre><code>{"islands": [{"name": "tala", "slot": "practice"}],
+ "instruments": [{"kind": "kit", "config": {"url": "/static/Resources/Kits/compmusic/kit.json"}}]}</code></pre>
+
+<div class="embed-live" id="example-kit" data-embed-example='{"islands": [{"name": "tala", "slot": "practice"}], "instruments": [{"kind": "kit", "config": {"url": "/static/Resources/Kits/compmusic/kit.json"}}]}'>
+<div data-thambura-slot="practice"></div>
+</div>
 
 <h2 id="mount">Mounting from code</h2>
 
