@@ -1,9 +1,11 @@
 # Handoff: Thambura
 
 Written 2026-09-28, after the render work (#39 in #137, #40 in #140) and a
-second thambura (#103 in #156). It folds forward what's still open from the
-2026-09-27 handoff and drops what closed: #103, the #148/#149 deploy, #54,
-and the embed guide's kit example (#154). The durable notes are in
+second thambura (#103 in #156), and updated the same day after the ghatam
+and tabla design (#164) and the kit-named fallback (#166 in #168, with
+thambura-data#2). It folds forward what's still open from the 2026-09-27
+handoff and drops what closed: #103, the #148/#149 deploy, #54, the embed
+guide's kit example (#154), and the stale worktrees. The durable notes are in
 CLAUDE.md, NEXTSTEPS.md and `docs/designs/`; this file is only what's in
 flight. Delete it once the items below close.
 
@@ -41,6 +43,17 @@ flight. Delete it once the items below close.
   lives at `../goapplib-lift/goapplib` (the `newstack/` one isn't a working
   checkout).
 - **The mridangam is still paused** (#77 to #82).
+- **The ghatam and tabla are designed, not built**
+  (`docs/designs/percussion-vocabularies.md`, #164). It ends in nine
+  questions for a player's ear, which need a player, not a session.
+  Nothing openly licensed has isolated ghatam strokes, so the doc suggests
+  a recording session. For a first tabla kit, Deolekar's set on Zenodo
+  (4327350, CC BY 4.0) is enough.
+- **A kit names its own generated-fallback strokes** (#168). Before the
+  next deploy of master, run `make devkit` in the deploying worktree
+  (thambura-data#2 is merged, so `../mridangam-data` has the map; `git
+  pull` it first). A kit without the map plays nothing on Ata and every
+  other tala without a written pattern. Not live yet.
 
 ## Next on the instruments path
 
@@ -65,7 +78,16 @@ flight. Delete it once the items below close.
 ## Waiting on the user
 
 0. **Whether to deploy #156** (a second thambura) to thambura.com, after
-   a look on dev.
+   a look on dev. Master now has #168 too, so pull `../mridangam-data` and
+   `make devkit` first (above). Prod serves version 20260928t062322;
+   which commit that is wasn't checked this session.
+0. **The mridangam dataset's licence** (thambura-ext#1): Zenodo reads CC
+   BY-NC 4.0 for the kit on thambura.com. Ship under NC with an
+   attribution, ask the authors, or record our own.
+0. **The nine player's-ear questions** at the end of
+   `percussion-vocabularies.md` (ghatam open/closed and zones, the gumki,
+   the mridangam-to-ghatam letter map, a summed tabla dha, bols, the
+   bayan's bend, Rupak's first beat, Ektaal's fourth vibhag).
 0. **Whether links should set the thambura's volume** like the claps' and
    kits' (the share-links guide describes the difference as it is).
 1. **When to start the lift** (above), and whether #131's npm package and
@@ -93,7 +115,9 @@ flight. Delete it once the items below close.
 
 ## Open issues
 
-- **Instruments (#94):** #99, #102, #104, #132; #144 (embed storage).
+- **Instruments (#94):** #99, #102, #104, #132; #144 (embed storage);
+  #159 (a generic kit builder, filed by another session).
+- **thambura-ext#1:** the mridangam dataset's licence.
 - **Filed by other sessions:** #113 (pluck patterns beyond Pa Sa Sa Sa),
   #116 (the Lab beside any skin), #121 (a built-in sound's hidden values
   change old Custom links without the drift notice).
@@ -115,12 +139,10 @@ flight. Delete it once the items below close.
 
 ## Environment
 
-- This session worked in worktrees under `thambura/` and removed each when
-  its PR merged. Only `thambura/checkpoint-render` (this checkpoint's PR) is
-  left; remove it once that lands. `thambura/drawer-opened-link` and
-  `thambura/pwa` are older sessions' worktrees whose branches are merged;
-  safe to remove if nobody claims them. No servers of this session's are
-  running.
+- Only `thambura/checkpoint-percussion` (this checkpoint's PR) is left of
+  this session's worktrees; remove it once that lands. The older
+  `checkpoint-render`, `drawer-opened-link` and `pwa` worktrees are gone.
+  No servers of this session's are running.
 - Other sessions hold 8001 and 8002; 8080 and 8091 are something else.
   This session used 8021 to 8023. Serve a worktree on a free port, restart
   it after every rebuild, and **check the port is free afterwards**

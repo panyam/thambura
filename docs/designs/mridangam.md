@@ -147,10 +147,10 @@ Three options, and we'd like your call on them (see Open questions).
    ([Zenodo](https://zenodo.org/records/4068196)). 10 stroke classes at 6
    tonics, B to E, 6,977 WAV files from one player, 130 MB. The takes
    are plentiful, so choosing a few good ones per stroke is easy. The licence
-   is unclear, though. Zenodo and mirdata say CC BY 3.0, while the same
-   sounds on Freesound are CC BY-NC 3.0. We shouldn't ship it without
-   checking Zenodo's page (it was down while we looked) and, better, asking
-   the authors. It also only covers the men's range.
+   needs settling. When this was written, mirdata said CC BY 3.0 and
+   Freesound CC BY-NC 3.0; on 2026-09-28 both Zenodo records (4068196 and
+   1265188) read CC BY-NC 4.0. What that means for the kit thambura.com
+   ships is thambura-ext#1. It also only covers the men's range.
 2. **Record our own.** A player, a men's and a women's drum, each tuned to
    two or three tonics, every primitive stroke three or four times, each hit
    let to ring out, in a quiet room with no effects. That's probably an hour
