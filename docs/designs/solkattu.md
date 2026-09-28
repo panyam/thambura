@@ -188,8 +188,9 @@ single-sollu entries it leaves to each piece: *din* → `od`, *tat* → `k`,
 *dim*, *ta ka* and *ta ki ta* split too evenly to default; a pattern using
 them names its choice.
 
-This tally is a script over karya's source, not something Evan wrote; it
-lives with this doc's PR and reruns against a newer karya.
+This tally is a script over karya's source, not something Evan wrote:
+[`karya/phrase_tally.py`](https://github.com/panyam/thambura-ext/blob/main/karya/phrase_tally.py)
+in thambura-ext, which reruns it against a newer karya.
 
 ## For review 4: the counting syllables
 
