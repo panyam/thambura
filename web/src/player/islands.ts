@@ -15,7 +15,8 @@ import { createTracksIsland } from "./tracksIsland";
 import { SessionPresenter, startingPitch } from "./session";
 import { clearInstrument, instrumentStore, localStore, type Store } from "./storage";
 import { TrackList, type CatalogEntry, type Made, type Placed } from "./trackList";
-import { createThamburaIsland, newThamburaPresenter } from "./thamburaIsland";
+import { createThamburaIsland, newPluckRenderer, newThamburaPresenter } from "./thamburaIsland";
+import type { PluckRenderer } from "./pluckRenderer";
 import { ThamburaPresenter } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
@@ -82,10 +83,13 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
   // Each instrument as the track list makes it: on its audio track, the
   // clock and the shruthi, with its part of the page link, and how to take
   // all of that back off the page.
+  // One renderer for every thambura on the page, made with the first.
+  let renderer: PluckRenderer | undefined;
   const make = (p: Placed, entry: CatalogEntry): Made<Instrument> => {
     if (p.kind === "thambura") {
       // The thambura plays to the page's shruthi, moves it, and keeps its own link part.
-      const thambura = newThamburaPresenter(audio, p.id, link, shruthi);
+      renderer ??= newPluckRenderer();
+      const thambura = newThamburaPresenter(audio, p.id, link, shruthi, renderer);
       // A thambura playing keeps the screen on, wherever the page shows it.
       let live = true;
       thambura.watch((st) => live && awake.set(p.id, st.playing));
@@ -160,7 +164,7 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
   const session = new SessionPresenter({
     shruthi,
     tala,
-    thambura: () => tracks.list().find((t): t is ThamburaPresenter => t instanceof ThamburaPresenter),
+    thamburas: () => tracks.list().filter((t): t is ThamburaPresenter => t instanceof ThamburaPresenter),
     kits: () => tracks.list().filter((t): t is KitPresenter => t instanceof KitPresenter),
     link: link.part("session-1"),
   });

@@ -6,7 +6,7 @@ import { planFor } from "../engine/thamburaPlan";
 import { Shruthi } from "./pageContext";
 import { FakeAudio, FakeFrames, FakeTicker } from "./testFakes";
 import type { PluckJob, PluckRenderer } from "./pluckRenderer";
-import { BEFORE_LINK_PRESET, ThamburaPresenter, type ThamburaState } from "./thamburaPresenter";
+import { BEFORE_LINK_PRESET, thamburaInstance, ThamburaPresenter, type ThamburaDeps, type ThamburaState } from "./thamburaPresenter";
 
 class FakeLink {
   writes: string[] = [];
@@ -971,5 +971,78 @@ describe("ThamburaPresenter with a renderer off the main thread", () => {
     await p.toggle();
     expect(renderer.jobs).toHaveLength(3);
     expect(deferred).toHaveLength(0);
+  });
+});
+
+describe("a second thambura", () => {
+  let audio: FakeAudio;
+  let deferred: (() => void)[];
+  const flush = () => {
+    while (deferred.length) deferred.shift()!();
+  };
+  const make = (id: string, extra: Partial<ThamburaDeps> = {}) =>
+    new ThamburaPresenter({
+      id,
+      audio,
+      ticker: new FakeTicker(),
+      frames: new FakeFrames(),
+      defer: (cb) => {
+        deferred.push(cb);
+        return () => {
+          deferred = deferred.filter((d) => d !== cb);
+        };
+      },
+      rng: () => 0,
+      ...thamburaInstance(id),
+      ...extra,
+    });
+
+  beforeEach(() => {
+    audio = new FakeAudio();
+    deferred = [];
+  });
+
+  it("is set up apart from the first: Ma first, panned right, its own seeds", () => {
+    expect(thamburaInstance("thambura-1")).toEqual({ seedOffset: 0 });
+    expect(thamburaInstance("thambura-2")).toEqual({ defaults: { firstString: "Ma1" }, pan: 0.4, seedOffset: 4 });
+  });
+
+  it("keeps its samples when the other one changes, on one audio engine", async () => {
+    const a = make("thambura-1");
+    const b = make("thambura-2", { defaults: {} }); // the same sound, so the same pitches
+    await a.toggle();
+    await b.toggle();
+    flush();
+    const bKeys = [...audio.samples.keys()].filter((k) => k.startsWith("thambura-2/"));
+    expect(bKeys).toHaveLength(3);
+    a.set({ key: KEY_G3 });
+    flush();
+    for (const k of bKeys) expect(audio.samples.has(k)).toBe(true);
+  });
+
+  it("renders with its own seeds, starts from its own defaults, and pans its track", async () => {
+    const renderer = new HeldRenderer();
+    const b = make("thambura-2", { renderer });
+    expect(b.state.settings.firstString).toBe("Ma1");
+    expect(audio.pans["thambura-2"]).toBe(0.4);
+    await b.toggle();
+    expect(renderer.jobs.map((j) => j.job.seed)).toEqual([5, 6, 8]);
+  });
+
+  it("keeps what it saved over its defaults", () => {
+    const store = { load: () => ({ settings: { ...DEFAULT_THAMBURA, firstString: "Ni3" } }), save: () => {} };
+    expect(make("thambura-2", { store }).state.settings.firstString).toBe("Ni3");
+  });
+
+  it("can start a while after it's asked to, so two don't pluck in unison", async () => {
+    const ticker = new FakeTicker();
+    const b = make("thambura-2", { ticker });
+    await b.start(1.5);
+    flush();
+    for (let t = 0; t <= 3; t += 0.025) {
+      audio.now = t;
+      ticker.onTick?.();
+    }
+    expect(audio.played[0].when).toBeCloseTo(0.05 + 1.5, 6);
   });
 });
