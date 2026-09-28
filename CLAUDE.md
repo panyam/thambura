@@ -191,7 +191,7 @@ realized into strokes through karya's phrase table, which
 `karya/phrase_tally.py` in thambura-ext tallies from a karya checkout.
 
 **Other projects' formats live in thambura-ext** (`panyam/thambura-ext`,
-public, checked out at `../../thambura-ext/main`): anything tied to one
+private, checked out at `../../thambura-ext/main`): anything tied to one
 outside project, like parsing karya's Haskell. What it produces comes in
 here as a clean file with its source noted. A tool that works on any input
 of its kind stays here, even when the input sits in another repo (the sound
