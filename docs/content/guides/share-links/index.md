@@ -97,11 +97,12 @@ Two things are worth knowing here:
   names the sound rather than copying it, so it always plays the current
   version. That's deliberate, since an improved voice then reaches every
   link that uses it.
-- **The checksum doesn't cover everything yet.** It covers the values the Lab
-  shows, but not a few it hides (how long each string's sample is rendered,
-  its tail fade and its highest harmonic), so a change to one of those in a
-  built-in sound reaches old Custom links without the notice. That's
-  [#121](https://github.com/panyam/thambura/issues/121).
+- **Older Custom links see less.** Links made before
+  [#121](https://github.com/panyam/thambura/issues/121) have a checksum
+  that covers the values the Lab shows but not a few it hides (how long
+  each string's sample is rendered, its tail fade and its highest
+  harmonic), so a change to one of those in a built-in sound reaches them
+  without the note. Links made since cover those too.
 
 ## Presets
 

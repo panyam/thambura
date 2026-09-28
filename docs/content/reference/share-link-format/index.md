@@ -4,8 +4,8 @@ description: "The bytes behind a thambura ?s= link, how each value is stored, an
 prev: { title: "Share links and presets", url: "/thambura/guides/share-links/" }
 ---
 
-This page describes formats 1 and 3, one thambura's setup (3 is 1 plus
-the volume), and format 2, a page
+This page describes formats 1, 3 and 4, one thambura's setup (3 is 1 plus
+the volume, and 4 is 3 with a wider drift checksum), and format 2, a page
 link that carries every instrument on the page as its own part, plus a
 session part for what the page shares: the tala, its speed and the shruthi.
 A page with a tala always writes format 2. It's for anyone
@@ -19,12 +19,15 @@ so if the two ever disagree, the page is wrong.
 ## Overview
 
 A link's `s` parameter is a string of bytes written as base64url without
-padding. The first byte is the format number. A `3` is one thambura's
+padding. The first byte is the format number. A `4` is one thambura's
 setup: the next thirteen bytes hold the settings every link has, the volume
-among them, and a Custom link then carries its plan. A `1` is the same
-without the volume, which is how links were written before
-[#153](https://github.com/panyam/thambura/issues/153) and how the built-in
-presets still are. A `2` is a page link, made of parts (see "Page links"
+among them, and a Custom link then carries its plan. A `3` has the same
+bytes, with a checksum that covers less (see "The checksum"), and is how
+links were written between
+[#153](https://github.com/panyam/thambura/issues/153) and
+[#121](https://github.com/panyam/thambura/issues/121). A `1` is the same
+without the volume, which is how links were written before #153 and how the
+built-in presets still are. A `2` is a page link, made of parts (see "Page links"
 below), and anything else isn't read.
 
 A reader must use up every byte. A link with bytes left over, or one that
@@ -44,7 +47,7 @@ instead of half of someone else's.
 | 6-7 | A4 | tenths of a Hz, big-endian |
 | 8-9 | The round | hundredths of a second, big-endian |
 | 10-12 | Tone, pluck, sustain | 0 to 100 each |
-| 13 | Volume, format 3 only | 0 to 100 |
+| 13 | Volume, formats 3 and 4 | 0 to 100 |
 
 A format 1 link has no volume byte, and decoding takes the volume from the
 settings the caller passes in, so the listener keeps their own. Every value is clamped to the app's ranges on the way in
@@ -65,7 +68,7 @@ The orders these indexes point into:
 ## A Custom plan
 
 After the settings, a Custom link has the following. The byte numbers are
-format 1's; in format 3 each is one more, after the volume.
+format 1's; in formats 3 and 4 each is one more, after the volume.
 
 | Byte | Holds |
 | --- | --- |
@@ -123,10 +126,17 @@ in `HIDDEN`, a string mask and a double.
 
 The checksum is FNV-1a over the built-in plan's slider steps (every string,
 every field in `FIELDS` order), then its attack-scaling mask, then its gaps,
-folded to 16 bits. A decoder rebuilds the built-in plan, and if its checksum
-isn't the one in the link, it sets `drifted` and the app shows the "older
-version" note. It doesn't cover the hidden values
-([#121](https://github.com/panyam/thambura/issues/121)).
+folded to 16 bits. In format 4 it goes on over each string's hidden values
+(`HIDDEN`, in that order), exactly: each value's 64-bit float as four
+big-endian 16-bit words. A decoder rebuilds the built-in plan, and if its
+checksum isn't the one in the link, it sets `drifted` and the app shows the
+"older version" note.
+
+Formats 1 and 3 stop before the hidden values, and a decoder reads them that
+way, so a change to a built-in sound's hidden values reaches an old Custom
+link without the note
+([#121](https://github.com/panyam/thambura/issues/121)). Format 4 went in to
+cover them without adding a byte: a link is the same length in 3 and 4.
 
 Gaps are rescaled to add up to one on the way in, each at least one
 ten-thousandth.
@@ -294,12 +304,14 @@ the same sound after any later release. The rules:
   a wider mask: write it as a new format, and keep reading the old ones
   exactly as they read now. A version of the app that doesn't know the new
   format plays the listener's own setup and says it can't read the link,
-  which is the right failure. The volume went in this way (format 3), so a
-  build from before it drops a new link's thambura part.
+  which is the right failure. The volume went in this way (format 3), and
+  the wider checksum after it (format 4), so a build from before either
+  drops a new link's thambura part.
 
-`shareLink.test.ts` holds links made by formats 1 and 3, written down as
-they were sent, with what they decode to ("format 1 links keep opening the
-same", and the same for format 3). If
+`shareLink.test.ts` holds links made by formats 1, 3 and 4, written down
+as they were sent, with what they decode to ("format 1 links keep opening
+the same", and the same for 3 and 4), and `shareLinkDrift.test.ts` opens
+them against a built-in plan that has changed. If
 a change breaks one, the change broke the format. Shimmer, above, is one of
 them.
 

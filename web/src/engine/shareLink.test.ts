@@ -308,11 +308,32 @@ describe("format 3 links keep opening the same", () => {
   it("a plain setup at volume 20", () => {
     const d = decodeLink("AwgAA0AHETABwjIyPBQ", current)!;
     expect(d.settings).toEqual({ ...DEFAULT_THAMBURA, volume: 20 });
-    expect(encodeLink(setup({ volume: 20 }))).toBe("AwgAA0AHETABwjIyPBQ");
+  });
+
+  it("a Custom plan against jawari, its checksum over the slider values only", () => {
+    const d = decodeLink("AwgDA0AHETABwjIyPDwA2OYBQAg_4AAAAAAAAAA", current)!;
+    expect(d.drifted).toBe(false);
+    expect(d.custom!.strings.map((s) => s.level)).toEqual([...jawari.strings.slice(0, 3).map((s) => s.level), 0.5]);
   });
 
   it("clamps a volume past 100", () => {
     expect(decodeLink("AwgAA0AHETABwjIyPP8", current)!.settings.volume).toBe(100);
+  });
+});
+
+/** Format 4 (#121): format 3's bytes, with the checksum over the hidden values too. What's written now. */
+describe("format 4 links keep opening the same", () => {
+  it("is what a setup is written in now", () => {
+    expect(encodeLink(setup({ volume: 20 }))).toBe("BAgAA0AHETABwjIyPBQ");
+    expect(decodeLink("BAgAA0AHETABwjIyPBQ", current)!.settings).toEqual({ ...DEFAULT_THAMBURA, volume: 20 });
+  });
+
+  it("a Custom plan against jawari, the same length as format 3's", () => {
+    const link = "BAgDA0AHETABwjIyPDwANksBQAg_4AAAAAAAAAA";
+    const d = decodeLink(link, current)!;
+    expect(d.drifted).toBe(false);
+    expect(d.custom!.strings.map((s) => s.level)).toEqual([...jawari.strings.slice(0, 3).map((s) => s.level), 0.5]);
+    expect(link.length).toBe("AwgDA0AHETABwjIyPDwA2OYBQAg_4AAAAAAAAAA".length);
   });
 });
 
