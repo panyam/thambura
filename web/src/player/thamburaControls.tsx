@@ -10,6 +10,8 @@ export type ThamburaActions = Pick<
   | "nudgeCents"
   | "cycleFirstString"
   | "setView"
+  | "showsDescriptions"
+  | "setShowsDescriptions"
   | "setCustom"
   | "loadCustom"
   | "dismissNotice"

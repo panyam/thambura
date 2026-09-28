@@ -507,10 +507,16 @@ unit-tested:
   mounts them; `watched.ts` makes a presenter's state a signal through its
   `watch`, since a kit can show in the tala's lane and in its row at once
   (the kit, claps, tala and thambura all have `watch`).
-- `storage.ts`: every localStorage key goes through here. An instrument
-  keeps its state under its page id (`instrumentStore(id)`:
-  `thambura.thambura-1`, `thambura.kit-1`, `thambura.hands-1`); the page's
-  own keys (`player`, `presets`, `shruthi`, `tracks`) are named. `thambura-1` reads the
+- `storage.ts`: every key goes through a `Storage` scope that
+  `buildContext` is handed and passes to everything that saves:
+  `pageStorage()` on our pages (localStorage under `thambura.`), and for an
+  embed `embedStorage(name)` (#144): nothing written unless the host names a
+  space (`mount(spec, {storage})` or `data-storage`), then
+  `thambura.<name>.`. An instrument keeps its state under its page id
+  (`thambura.thambura-1`, `thambura.kit-1`, `thambura.hands-1`); the page's
+  own keys (`player`, `presets`, `shruthi`, `tracks`, and the Lab's
+  `lab.descriptions`, which the presenter now keeps) are named. The pluck
+  cache's IndexedDB stays shared, since it's sound, not settings. `thambura-1` reads the
   pre-id `thambura.drone` record once through `withFallback`, which writes
   only the new key. (`thambura.drawer`, the drawer's open state, is no longer
   read or written.)

@@ -5,6 +5,7 @@ import { shadowSlot } from "./page/shadow";
 import { withDefaultInstruments } from "./player/embedDefaults";
 import { buildContext, islandRegistry } from "./player/islands";
 import { PageLink } from "./player/pageLink";
+import { embedStorage } from "./player/storage";
 
 /**
  * Bundle entry for other sites (esbuild -> static/embed.js): the tala and
@@ -42,6 +43,14 @@ export interface MountOptions {
   root?: ParentNode;
   /** Light or dark, or "auto" (the default) to follow the host's colour scheme. */
   theme?: "light" | "dark" | "auto";
+  /**
+   * Where the listener's choices (the shruthi, the thambura's sound, presets,
+   * the track list) are remembered between visits: a name of the host's
+   * choosing, kept under `thambura.<name>.` in the host's localStorage. Left
+   * out, nothing is written anywhere and each visit starts fresh (#144).
+   * Lowercase letters, digits and dashes.
+   */
+  storage?: string;
 }
 
 /**
@@ -50,7 +59,8 @@ export interface MountOptions {
  * is, so a host can leave out the layout, the instruments and an island's
  * config; one that can't be read at all throws. Returns the mounted islands;
  * a slot that isn't there or an island this entry doesn't have is logged and
- * skipped. Each call builds its own audio, clock and instruments.
+ * skipped. Each call builds its own audio, clock and instruments, and keeps
+ * its state apart from any other call's (`storage`).
  */
 export async function mount(given: HostSpec, opts: MountOptions = {}): Promise<LCMComponent[]> {
   const read = hostSpec(given);
@@ -58,6 +68,7 @@ export async function mount(given: HostSpec, opts: MountOptions = {}): Promise<L
   const spec = withDefaultInstruments(read);
   const root = opts.root ?? document;
   const theme = opts.theme ?? "auto";
+  const storage = embedStorage(opts.storage);
   const dark = theme === "dark" || (theme === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
   const bus = new EventBus();
   const components = mountIslands(
@@ -67,7 +78,7 @@ export async function mount(given: HostSpec, opts: MountOptions = {}): Promise<L
       const el = root.querySelector<HTMLElement>(`[${SLOT_ATTR}="${slot}"]`);
       return el ? shadowSlot(el, STYLESHEET, dark) : null;
     },
-    () => buildContext(spec, HERE, new PageLink(noAddressBar, APP)),
+    () => buildContext(spec, HERE, new PageLink(noAddressBar, APP), storage),
     bus,
     (message) => console.warn(message),
   );
@@ -77,7 +88,7 @@ export async function mount(given: HostSpec, opts: MountOptions = {}): Promise<L
   return components;
 }
 
-/** Mounts every spec the host page declares, with the theme its script names (data-theme). */
+/** Mounts every spec the host page declares, with the theme and storage its script names (data-theme, data-storage). */
 function mountDeclared(): void {
   for (const script of document.querySelectorAll<HTMLScriptElement>(`script[${SPEC_ATTR}]`)) {
     const spec = hostSpec(script.textContent);
@@ -86,7 +97,9 @@ function mountDeclared(): void {
       continue;
     }
     const theme = script.dataset.theme;
-    void mount(spec, { theme: theme === "light" || theme === "dark" ? theme : "auto" });
+    mount(spec, { theme: theme === "light" || theme === "dark" ? theme : "auto", storage: script.dataset.storage || undefined }).catch((err) =>
+      console.warn("thambura embed:", err instanceof Error ? err.message : err),
+    );
   }
 }
 

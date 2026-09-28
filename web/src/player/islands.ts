@@ -13,7 +13,7 @@ import type { PlayerPresenter } from "./presenter";
 import { createSessionIsland } from "./sessionIsland";
 import { createTracksIsland } from "./tracksIsland";
 import { SessionPresenter, startingPitch } from "./session";
-import { clearInstrument, instrumentStore, localStore, type Store } from "./storage";
+import type { Storage, Store } from "./storage";
 import { TrackList, type CatalogEntry, type Made, type Placed } from "./trackList";
 import { createThamburaIsland, newPluckRenderer, newThamburaPresenter } from "./thamburaIsland";
 import type { PluckRenderer } from "./pluckRenderer";
@@ -65,17 +65,18 @@ export function islandRegistry(): Registry<PageContext, HTMLElement, LCMComponen
  * The page's shared services, and the instruments it starts with (the track
  * list decides which, trackList.ts). `assetBase` is what the spec's URLs
  * resolve against (PageContext), and `link` is where the instruments keep
- * the page's share link.
+ * the page's share link. `storage` is where everything on the page saves:
+ * pageStorage on our pages, embedStorage on someone else's (#144).
  */
-export function buildContext(spec: PageSpec, assetBase: string, link: PageLink): PageContext {
+export function buildContext(spec: PageSpec, assetBase: string, link: PageLink, storage: Storage): PageContext {
   usePlaybackSession(navigator as { audioSession?: { type: string } });
   const audio = new AudioEngine();
   const clock = createClock(audio, workerTicker());
   const tracks = new Tracks<Instrument>();
   const opened = { session: link.opened("session-1"), thambura: link.opened("thambura-1") };
   const shruthi = new Shruthi(
-    startingPitch(opened, loadQuietly(localStore("shruthi")), loadQuietly(instrumentStore("thambura-1"))),
-    localStore("shruthi"),
+    startingPitch(opened, loadQuietly(storage.store("shruthi")), loadQuietly(storage.instrument("thambura-1"))),
+    storage.store("shruthi"),
   );
   const resolve = (url: string) => new URL(url, assetBase).href;
   const awake = new KeepAwake({ wakeLock: (navigator as { wakeLock?: WakeLockLike }).wakeLock, doc: document });
@@ -89,7 +90,7 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
     if (p.kind === "thambura") {
       // The thambura plays to the page's shruthi, moves it, and keeps its own link part.
       renderer ??= newPluckRenderer();
-      const thambura = newThamburaPresenter(audio, p.id, link, shruthi, renderer);
+      const thambura = newThamburaPresenter(audio, p.id, link, storage, shruthi, renderer);
       // A thambura playing keeps the screen on, wherever the page shows it.
       let live = true;
       thambura.watch((st) => live && awake.set(p.id, st.playing));
@@ -104,7 +105,7 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
     }
     if (p.kind === "hands") {
       // The claps: the tala calls each sound on the clock, and they play it.
-      const claps = newHandsPresenter(audio, p.id, clock);
+      const claps = newHandsPresenter(audio, p.id, clock, storage);
       const shared = decodeHands(link.opened(p.id) ?? "");
       if (shared) claps.applyShared(shared);
       void claps.load(resolve(entry.config.fixturesUrl as string));
@@ -113,7 +114,7 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
       );
       return { instrument: claps, dispose: stop };
     }
-    const kit = newKitPresenter(audio, p.id, clock);
+    const kit = newKitPresenter(audio, p.id, storage, clock);
     const shared = decodeKit(link.opened(p.id) ?? "");
     if (shared) kit.applyShared(shared);
     const unfollow = shruthi.follow(() => kit.setTonic(shruthi.hz));
@@ -140,11 +141,11 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
     link,
     kitOf: (part) => decodeKit(part)?.kit ?? null,
     // Only a page that shows the list remembers it; `/` starts with the spec's instruments.
-    store: spec.islands.some((i) => i.name === "tracks") ? localStore("tracks") : undefined,
+    store: spec.islands.some((i) => i.name === "tracks") ? storage.store("tracks") : undefined,
     records: {
-      load: (id) => instrumentStore(id).load(),
-      save: (id, value) => instrumentStore(id).save(value),
-      clear: (id) => clearInstrument(id),
+      load: (id) => storage.instrument(id).load(),
+      save: (id, value) => storage.instrument(id).save(value),
+      clear: (id) => storage.clear(id),
     },
     defer: (cb, ms) => {
       const t = setTimeout(cb, ms);
@@ -157,7 +158,7 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink):
   // play without being saved, as a shared thambura's setup does.
   let tala: PlayerPresenter | undefined;
   if (spec.islands.some((i) => i.name === "tala")) {
-    tala = newPlayerPresenter(audio, clock);
+    tala = newPlayerPresenter(audio, clock, storage);
     const shared = opened.session && decodeSession(opened.session);
     if (shared) tala.applyShared(shared.tala, shared.tempo);
   }

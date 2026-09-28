@@ -111,6 +111,8 @@ export interface ThamburaDeps {
   store?: ThamburaStore;
   /** Where presets are kept, apart from the settings so neither can spoil the other. */
   presets?: ThamburaStore;
+  /** Where the Lab's own view preferences are kept (whether it shows descriptions). */
+  labPrefs?: ThamburaStore;
   link?: ThamburaLink;
   /**
    * The page's Sa (pageContext.ts, Shruthi). Given one, the thambura plays
@@ -476,6 +478,22 @@ export class ThamburaPresenter {
   }
 
   /** The current setup as a link's `s` parameter (engine/shareLink.ts). */
+  /** Whether the Lab shows each control's description; a per-listener preference, off by default. */
+  showsDescriptions(): boolean {
+    // Before #144 the Lab wrote "1" itself, which reads back as 1.
+    const v = loadSafely(this.deps.labPrefs);
+    return v === true || v === 1;
+  }
+
+  /** Remembers whether the Lab shows descriptions, where the page keeps things (quietly not, if it can't). */
+  setShowsDescriptions(on: boolean): void {
+    try {
+      this.deps.labPrefs?.save(on);
+    } catch {
+      // Just not remembered.
+    }
+  }
+
   shareLink(): string {
     return this.linkFor(this.state);
   }

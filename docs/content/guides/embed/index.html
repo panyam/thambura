@@ -131,7 +131,28 @@ document; passing the element that holds them keeps two embeds' slots apart.</li
 <li><code>theme</code> is <code>"light"</code>, <code>"dark"</code> or
 <code>"auto"</code> (the default), which follows the visitor's system setting. A
 spec script takes it as <code>data-theme</code>.</li>
+<li><code>storage</code> names where the listener's choices are remembered
+between visits (see below). A spec script takes it as
+<code>data-storage</code>.</li>
 </ul>
+
+<h3 id="saving">Saving the listener's choices</h3>
+
+<p>An embed writes nothing to your site's storage unless you ask it to. Left
+alone, it keeps the listener's choices (the shruthi, the thambura's sound,
+their presets, the track list) for the visit only, and each visit starts
+fresh. To have them remembered, give the embed a name:</p>
+
+<pre><code>&lt;script type="application/json" data-thambura-spec data-storage="kriti-page"&gt;
+{"islands": [{"name": "thambura", "slot": "drone"}]}
+&lt;/script&gt;</code></pre>
+
+<p>Its choices then go in your page's <code>localStorage</code> under
+<code>thambura.kriti-page.</code>, and an embed with another name keeps its own.
+A name is lowercase letters, digits and dashes. One thing is shared whatever
+you choose: rendered thambura plucks are cached in IndexedDB
+(<code>thambura-plucks</code>) so the drone starts faster on a return visit.
+They're sound, not settings, so every embed reuses the same ones.</p>
 
 <p>This one is mounted that way, in these docs' own light or dark:</p>
 
@@ -177,12 +198,6 @@ button; those come with our pages only.</li>
 <p>Embedding is new, and a few things will change as other sites use it:</p>
 
 <ul>
-<li><strong>Settings are saved in your site's storage.</strong> An embed keeps
-the listener's choices (the shruthi, the thambura's sound, their presets) in
-your page's <code>localStorage</code>, under names starting with
-<code>thambura.</code>. Two embeds on one page share them, so the one changed
-last is what both open with next time
-(<a href="https://github.com/panyam/thambura/issues/144">#144</a>).</li>
 <li><strong>Each spec is separate.</strong> Every spec on a page, declared or
 passed to <code>mount()</code>, gets its own audio and clock, so two specs'
 Start buttons don't know about each other. Put islands that belong together in
