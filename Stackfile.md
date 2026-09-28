@@ -13,11 +13,15 @@
 | goutils | github.com/panyam/goutils | v0.1.13 (indirect) | 2026-09-18 |
 | tsappkit (TS) | @panyam/tsappkit | 0.0.5 | 2026-09-18 |
 | tsappkit-solid (TS) | @panyam/tsappkit-solid | 0.0.1 | 2026-09-18 |
+| s3gen | github.com/panyam/s3gen (`docs/go.mod` only) | v0.1.6 | 2026-09-26 |
 
 goapplib + templar render the page shell (BasePage, header, theme toggle).
 tsappkit's `BasePage` wires the toggle, and tsappkit-solid's `SolidIsland` and
 `signalView` mount the player. This follows the goapplib + Solid pattern
 diffpp uses.
+
+s3gen builds the developer docs site (`docs/`, #95) in its own Go module, so
+it never reaches the app's build or its App Engine upload.
 
 Built here to be lifted into the stack (#86): `internal/page` and the page
 spec partial into goapplib (panyam/goapplib#28, planned as `v0.2.0`),

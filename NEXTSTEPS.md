@@ -90,6 +90,13 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       lift of `internal/page` and `web/src/page` into goapplib and tsappkit
       (panyam/goapplib#28, then #27; waiting apps turnforge/lilbattle#199 and
       panyam/notation#304), and asset packs (#132).
+- [ ] **Developer docs** (#95, https://panyam.github.io/thambura/): the
+      site (#105), Getting started, share links and presets with the format
+      reference (#110), and the embed guide with live examples (#109) are
+      published. Left: republish once #148 and #149 are deployed; a live kit
+      example in the embed guide, now that thambura.com serves one; #106
+      (kit.json) and #107 (patterns) alongside #102 and #99; #111 after the
+      lift; and the move to docs.thambura.com (steps in `docs/README.md`).
 - [x] **Mridangam, steps 1 to 4** (`docs/designs/mridangam.md`): strokes tuned to the
       thambura with a pad, patterns written in the notations DSL and compiled
       at build time, written patterns for Adi, Short Rupakam and the Misra and
