@@ -321,8 +321,9 @@ ki (`R.thi` at a lower gain), marked as a stand-in.
    Done: `engine/syllables.ts` holds the syllable table and the counting
    lines, and the lane shows the count beside each slot.
 3. **`sol:` and the phrase table** in the pattern compiler, with the defaults
-   and the agreed additions; today's patterns get a solkattu line where one
-   is known.
+   and the agreed additions. Done (#175): no pattern has a `sol:` line yet,
+   since none of today's has a known solkattu; the first comes with its
+   source in its own PR.
 4. **The lane shows solkattu** over strokes (#82).
 5. Then the editor, korvais every N cycles and the generator, each on this.
 

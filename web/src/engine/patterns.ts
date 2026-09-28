@@ -32,6 +32,12 @@ export interface PatternStroke {
   stroke: string;
   /** Louder for an accent, softer for a filler. 1 is a normal stroke. */
   gain: number;
+  /**
+   * Set when the stroke the pattern asks for isn't in the kit and this one
+   * plays in its place (the left-hand tha as a soft ki, say), so a view can
+   * say so. patterns/strokes.json's letters decide which.
+   */
+  standIn?: true;
 }
 
 export interface Pattern {
@@ -66,6 +72,12 @@ export interface Pattern {
    */
   role: "main" | "variation" | "korvai";
   strokes: PatternStroke[];
+  /**
+   * The solkattu, for a pattern written with a sol: line: each syllable's id
+   * (engine/syllables.ts) where it is said, as a fraction of the cycle like
+   * the strokes. Absent for a pattern written in strokes alone.
+   */
+  solkattu?: { at: Ratio; syllable: string }[];
 }
 
 
