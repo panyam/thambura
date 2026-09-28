@@ -242,6 +242,9 @@ export class KitPresenter {
       levels: Object.fromEntries(kit.zones.map((z) => [z.id, 1])),
       ...this.tuning(),
     });
+    // The tala may have published its cycle before the kit arrived, and the
+    // generated fallback needs the kit's own strokes.
+    if (this.timing) this.setTiming(this.timing);
   }
 
   // ---- intents -----------------------------------------------------------
@@ -359,7 +362,7 @@ export class KitPresenter {
   private setTiming(timing: TalaTiming): void {
     this.timing = timing;
     const { grid, nadai } = timing;
-    this.pattern = patternFor(grid, nadai) ?? generatedPattern(grid.beats, grid.shape, grid.patternCounts);
+    this.pattern = patternFor(grid, nadai) ?? generatedPattern(grid.beats, grid.shape, grid.patternCounts, this.kit?.fallback);
     this.arrangement = arrangementFor(grid, nadai, this.pattern);
     this.lanes.clear();
     this.korvaiAt = null;

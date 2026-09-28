@@ -72,6 +72,28 @@ describe("parseKit", () => {
   });
 });
 
+describe("the fallback map", () => {
+  const withFallback = (fallback: unknown) => parseKit({ ...KIT_JSON, fallback });
+  const roles = { sam: "L.thom", clap: "L.thom", wave: "R.chapu", count: "R.chapu", fill: "R.ta" };
+
+  it("names a stroke for each of the generator's roles", () => {
+    expect(withFallback(roles).fallback).toEqual(roles);
+  });
+
+  it("is optional, and a kit without one has none", () => {
+    expect(kit.fallback).toBeUndefined();
+  });
+
+  it("rejects a role that names no stroke in the kit", () => {
+    expect(() => withFallback({ ...roles, wave: "R.dhin" })).toThrow(/fallback.wave names an unknown stroke "R.dhin"/);
+  });
+
+  it("rejects a map missing a role", () => {
+    const { fill: _, ...four } = roles;
+    expect(() => withFallback(four)).toThrow(/fallback.fill/);
+  });
+});
+
 describe("tuning a kit to the shruthi", () => {
   it("sounds the pitch its measured offset says, not its name", () => {
     expect(packHz(kit.packs[0])).toBeCloseTo(261.63 * 2 ** (5 / 1200), 6);

@@ -1,4 +1,5 @@
 import type { Beat } from "./beat";
+import type { Fallback } from "./kit";
 import { add, mul, ratio, ZERO, type Ratio } from "./ratio";
 import type { Pattern, PatternStroke } from "./patterns";
 
@@ -9,36 +10,30 @@ import type { Pattern, PatternStroke } from "./patterns";
  * It plays where the tala's own claps play: every tick of every beat, which
  * for a sapta tala is the nadai's accent pattern and for a chaapu is the
  * chaapu's. So the drum reinforces what the student is already counting,
- * rather than inventing a phrase. Which stroke each one gets comes from the
- * beat's kriya: sam gets both heads, the other claps the bass, a wave the
- * ringing right head, and the finger counts a light nam, with anything
- * between the accents filled by a closed thi.
+ * rather than inventing a phrase. Each one's role comes from the beat's
+ * kriya (sam, the other claps, a wave, a finger count, or a fill between the
+ * accents), and the kit's manifest names the stroke for each role: on the
+ * mridangam, both heads for sam, the bass for a clap, and so on.
  *
  * This is a skeleton and says so. It isn't a sarvalaghu anyone plays, and a
  * pattern written by a mridangist should always win (see `patternFor`).
  */
 
-/** What the fallback plays for each kind of beat. */
-const SAM = "L.tham";
-const CLAP = "L.thom";
-const WAVE = "R.dhin";
-const COUNT = "R.nam";
-const FILL = "R.thi";
-
-/** The kriyas the tala tables name: a clap, a wave, or a finger count. */
-function strokeFor(image: string, sam: boolean): string {
-  if (sam) return SAM;
-  if (image === "down") return CLAP;
-  if (image === "open") return WAVE;
-  return COUNT;
+/** Which role a beat's first tick plays: sam, a clap, a wave, or a finger count. */
+function roleFor(image: string, sam: boolean): keyof Fallback {
+  if (sam) return "sam";
+  if (image === "down") return "clap";
+  if (image === "open") return "wave";
+  return "count";
 }
 
 /**
  * The pattern for a cycle of beats. Positions are fractions of the cycle, as
- * a written pattern's are, so this drops into the same sequencer.
+ * a written pattern's are, so this drops into the same sequencer. The strokes
+ * come from the kit's `fallback` map, and a kit without one gets nothing.
  */
-export function generatedPattern(beats: Beat[], shape: string, counts: Ratio): Pattern | null {
-  if (beats.length === 0 || counts.n <= 0) return null;
+export function generatedPattern(beats: Beat[], shape: string, counts: Ratio, fallback: Fallback | undefined): Pattern | null {
+  if (!fallback || beats.length === 0 || counts.n <= 0) return null;
 
   const strokes: PatternStroke[] = [];
   let at: Ratio = ZERO;
@@ -47,7 +42,7 @@ export function generatedPattern(beats: Beat[], shape: string, counts: Ratio): P
       const within = add(at, mul(tick.offset, beat.duration));
       strokes.push({
         at: mul(within, ratio(counts.d, counts.n)),
-        stroke: tickIndex === 0 ? strokeFor(beat.image, index === 0) : FILL,
+        stroke: fallback[tickIndex === 0 ? roleFor(beat.image, index === 0) : "fill"],
         gain: index === 0 && tickIndex === 0 ? 1.12 : 1,
       });
     });

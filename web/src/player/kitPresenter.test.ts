@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { TalaSettings } from "../engine/selection";
 import { KEY_C3, KEY_G3, DEFAULT_THAMBURA, tunedTonicHz } from "../engine/shruthi";
 import { KitPresenter, ZONE_CHOKE_FADE, type KitState } from "./kitPresenter";
 import { ratio } from "../engine/ratio";
@@ -232,6 +233,7 @@ const DRUM = {
     note: "",
     takes: { c: [`${id}.wav`] },
   })),
+  fallback: { sam: "L.tham", clap: "L.thom", wave: "R.dhin", count: "R.nam", fill: "R.thi" },
 };
 
 const TALA_FIXTURES = {
@@ -259,7 +261,7 @@ describe("KitPresenter on the tala's clock", () => {
   const stroke = (n: { url: string }) => n.url.split("/").pop()!.replace(/\.wav$/, "");
   const claps = () => audio.played.filter((n) => n.bus === "hands-1");
 
-  const setup = async (opts: { playerSaved?: unknown; kitSaved?: unknown } = {}) => {
+  const setup = async (opts: { playerSaved?: unknown; kitSaved?: unknown; manifest?: unknown; kitLast?: boolean; tala?: Partial<TalaSettings> } = {}) => {
     audio = new FakeAudio();
     ticker = new FakeTicker();
     frames = new FakeFrames();
@@ -269,7 +271,7 @@ describe("KitPresenter on the tala's clock", () => {
     kit = new KitPresenter({
       audio,
       frames,
-      fetchJson: async () => DRUM,
+      fetchJson: async () => opts.manifest ?? DRUM,
       rng: () => 0,
       clock,
       track: "kit-1",
@@ -277,7 +279,7 @@ describe("KitPresenter on the tala's clock", () => {
       legacyStore: new MemoryStore(opts.playerSaved),
     });
     kit.attach({ setState: () => {} });
-    await kit.load("/Kits/drum/kit.json");
+    if (!opts.kitLast) await kit.load("/Kits/drum/kit.json");
     const hands = new HandsPresenter({ audio, track: "hands-1", clock, fetchJson: async () => TALA_FIXTURES });
     await hands.load("/fixtures.json");
     tala = new PlayerPresenter({
@@ -289,9 +291,10 @@ describe("KitPresenter on the tala's clock", () => {
     });
     tala.attach({ setState: () => {} });
     await tala.load("/fixtures.json");
-    tala.setSettings({ tala: "custom_adi", nadai: "chatusram" });
+    tala.setSettings({ tala: "custom_adi", nadai: "chatusram", ...opts.tala });
     tala.setTempo(60);
     kit.setVariety("off");
+    if (opts.kitLast) await kit.load("/Kits/drum/kit.json");
   };
 
   beforeEach(() => setup());
@@ -317,6 +320,24 @@ describe("KitPresenter on the tala's clock", () => {
     expect(strokes()[0].when).toBe(claps()[0].when);
     expect(strokes()[0].opts!.gain).toBeGreaterThan(1); // sam is accented
     expect(audio.played.some((n) => n.bus === "percussion")).toBe(false);
+  });
+
+  it("plays nothing where there's no pattern, for a kit that names no fallback", async () => {
+    await setup({ manifest: { ...DRUM, fallback: undefined } });
+    expect(kit.state.pattern).toBe("Adi sarvalaghu, chatusram");
+    tala.setSettings({ tala: "sapta_ata", jaathi: "chatusram" });
+    expect(kit.state.pattern).toBeNull();
+    await tala.start();
+    advance(0.05);
+    expect(claps().length).toBeGreaterThan(0);
+    expect(strokes()).toEqual([]);
+  });
+
+  it("generates the skeleton from a kit that loads after the tala has published its cycle", async () => {
+    await setup({ kitLast: true, tala: { tala: "sapta_ata", jaathi: "chatusram" } });
+    expect(kit.state.pattern).toBe("Generated from the tala");
+    await setup({ kitLast: true });
+    expect(kit.state.pattern).toBe("Adi sarvalaghu, chatusram");
   });
 
   it("plays the generated skeleton where the claps fall", async () => {
