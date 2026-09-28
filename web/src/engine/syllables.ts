@@ -2,6 +2,7 @@ import type { Beat } from "./beat";
 import type { ChaapuTala, Gati } from "./carnatic";
 import { add, mul, ratio, ZERO, type Ratio } from "./ratio";
 import type { TalaSettings } from "./selection";
+import SYLLABLE_DATA from "./syllables.data.json";
 
 /**
  * The spoken syllables, and the counting line a student says along with the
@@ -21,39 +22,8 @@ export interface Syllable {
 
 // Merged spellings are aliases; ones the design holds apart (thom and dhom,
 // ta and tha, tam and tang) are separate ids until a player says otherwise.
-export const SYLLABLES: Syllable[] = [
-  { id: "cha", shown: "cha", aliases: [] },
-  { id: "cham", shown: "cham", aliases: [] },
-  { id: "di", shown: "di", aliases: ["dhi"] },
-  { id: "din", shown: "din", aliases: ["dhin"] },
-  { id: "dim", shown: "dim", aliases: ["dhim", "dheem"] },
-  { id: "dit", shown: "dit", aliases: ["dhit"] },
-  { id: "dhom", shown: "dhom", aliases: ["dom"] },
-  { id: "thom", shown: "thom", aliases: [] },
-  { id: "du", shown: "du", aliases: ["dhu"] },
-  { id: "ga", shown: "ga", aliases: [] },
-  { id: "gin", shown: "gin", aliases: [] },
-  { id: "gu", shown: "gu", aliases: [] },
-  { id: "jo", shown: "jo", aliases: ["ja"] },
-  { id: "ka", shown: "ka", aliases: [] },
-  { id: "ki", shown: "ki", aliases: [] },
-  { id: "ku", shown: "ku", aliases: [] },
-  { id: "kum", shown: "kum", aliases: [] },
-  { id: "lang", shown: "lang", aliases: [] },
-  { id: "mi", shown: "mi", aliases: [] },
-  { id: "na", shown: "na", aliases: [] },
-  { id: "nam", shown: "nam", aliases: [] },
-  { id: "nang", shown: "nang", aliases: [] },
-  { id: "nu", shown: "nu", aliases: [] },
-  { id: "ri", shown: "ri", aliases: [] },
-  { id: "ta", shown: "ta", aliases: ["ṭa"] },
-  { id: "tha", shown: "tha", aliases: [] },
-  { id: "tat", shown: "tat", aliases: [] },
-  { id: "tam", shown: "tam", aliases: [] },
-  { id: "tang", shown: "tang", aliases: [] },
-  { id: "ti", shown: "ti", aliases: [] },
-  { id: "tong", shown: "tong", aliases: [] },
-];
+// The table is JSON so the pattern compiler reads the same one.
+export const SYLLABLES: Syllable[] = SYLLABLE_DATA;
 
 const BY_SPELLING = new Map<string, string>(SYLLABLES.flatMap((s) => [s.id, ...s.aliases].map((spelling) => [spelling, s.id] as [string, string])));
 const SHOWN = new Map(SYLLABLES.map((s) => [s.id, s.shown]));

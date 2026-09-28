@@ -741,6 +741,20 @@ See NEXTSTEPS.md for the order.
   where it would cost 78 KB gzipped, and the compiler checks a pattern fills
   its cycle and that its shape and cycle agree. Five bugs found on the way are
   filed as notations#17 to #22.
+- **A pattern can be written in solkattu** (#175): a `sol:` role beside
+  `mrid:`. Alone it's realized into strokes at build time, longest phrase
+  first, through `patterns/realize/mridangam.json` (syllable ids to stroke
+  letters) and a pattern's own `realize:` front matter, which wins. With a
+  `mrid:` line too, the strokes play as written and the syllables are only
+  kept (`Pattern.solkattu`). The letters are `patterns/strokes.json`'s
+  `letters`, beside the `mrid:` words; a stroke the kit lacks plays a
+  stand-in there (the left-hand tha `p` a soft ki, arai chapu `u` a softer
+  chapu) and compiles with `standIn: true`. An unknown role, syllable, letter
+  or unmatched phrase is a build error. The compiling is
+  `scripts/patterns.mjs` and `scripts/realize.mjs`, pure and tested in
+  vitest; `compile-patterns.mjs` only reads and writes. The syllable table
+  is `src/engine/syllables.data.json`, read by both the app and the
+  compiler.
 - **Arrangements** (`engine/arrangement.ts`) decide what each cycle plays. A
   pattern's `role` is `main` or `variation`; `arrangementFor` gathers the
   alternates that fit the same cycle, and `patternForCycle` draws one per

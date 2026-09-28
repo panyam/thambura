@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "How a sol: line becomes mridangam strokes (docs/designs/solkattu.md).",
+    "Each key is a phrase of syllable ids (or their aliases) with _ for a",
+    "rest; each value is as many stroke letters, from the letters table in",
+    "../strokes.json, with _ for a rest. The longest phrase that matches wins,",
+    "and a pattern's own realize: front matter beats this table. A phrase",
+    "with no entry is a build error, never a guess."
+  ],
+  "phrases": {
+    "thom": "o",
+    "dhom": "o",
+    "tang": "u",
+    "lang": "u",
+    "cham": "u",
+    "din": "od",
+    "tat": "k",
+    "ta": "k",
+    "dit": "t",
+    "ta din": "k od",
+    "tat dit": "k t",
+    "ta lang": "p u",
+    "ta ka": "k p",
+    "ta ka din na": "k o o k",
+    "ta din gin na thom": "k t k n o",
+    "ta ka ti ku": "k p n p",
+    "ta ri ki ta": "o k n p",
+    "ta ka ti ku ta ri ki ta": "k t k t o k n p",
+    "ta ka ta ri ki ta ta ka": "n p u p k t p k",
+    "ta ka du gu ta ri ki ta": "t k o o k t p k"
+  }
+}
