@@ -63,8 +63,6 @@ flight. Delete it once the items below close.
 
 0. **Whether to deploy #156** (a second thambura) to thambura.com, after
    a look on dev.
-0. **A name for the hands track** in place of "Claps" ("Visual" and
-   "Position" were floated). Parked on 2026-09-27.
 0. **Whether links should set the thambura's volume** like the claps' and
    kits' (the share-links guide describes the difference as it is).
 1. **When to start the lift** (above), and whether #131's npm package and

@@ -251,9 +251,9 @@ from a newer version still opens the instruments this one has. A link that
 runs out partway through a part is rejected as a whole, like a short format
 1 link.
 
-### The claps and kit parts
+### The kriyas and kit parts
 
-The claps (`hands-1`) and each kit (`kit-1`, `kit-2`) have a part too
+The kriyas (`hands-1`) and each kit (`kit-1`, `kit-2`) have a part too
 ([#101](https://github.com/panyam/thambura/issues/101)), so a link carries
 every instrument on the page. On a page with a track list, the parts a link
 has are the instruments it opens with.
