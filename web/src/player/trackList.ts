@@ -29,7 +29,7 @@ export interface TrackRow extends Placed {
   removable: boolean;
 }
 
-/** Something that can be added now: a thambura while there's none, or a kit not yet on the page. */
+/** Something that can be added now: a thambura while there are fewer than two, or a kit not yet on the page. */
 export interface Addable {
   kind: TrackKind;
   kit?: number;
@@ -76,6 +76,13 @@ export interface TrackListDeps<T> {
   /** Runs `cb` after `ms`; returns a cancel. Undo lasts UNDO_MS. */
   defer(cb: () => void, ms: number): () => void;
 }
+
+/**
+ * How many thamburas a page can have. iTanpura plays two, the usual pair
+ * being the first string on Pa in one and Ma or Ni in the other; a third
+ * would only muddy the drone.
+ */
+export const MAX_THAMBURAS = 2;
 
 /** How long Remove can be undone, in ms. */
 export const UNDO_MS = 6000;
@@ -270,8 +277,7 @@ export class TrackList<T> {
   private read(): TrackListState {
     const kits = this.deps.catalog.filter((e) => e.kind === "kit");
     const addable: Addable[] = [];
-    // A second thambura waits on #103, so it's offered only while there's none.
-    if (this.catalogHas("thambura") && !this.placed.some((p) => p.kind === "thambura")) addable.push({ kind: "thambura" });
+    if (this.catalogHas("thambura") && this.placed.filter((p) => p.kind === "thambura").length < MAX_THAMBURAS) addable.push({ kind: "thambura" });
     kits.forEach((_, kit) => {
       if (!this.placed.some((p) => p.kind === "kit" && p.kit === kit)) addable.push({ kind: "kit", kit });
     });

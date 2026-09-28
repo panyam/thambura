@@ -387,7 +387,10 @@ unit-tested:
   strip shows them iTanpura's way (the note between semitone arrows, a fine
   tune between ♭ and ♯, the note opening all 15 keys with a dot where a kit
   would sound stretched, `KitPresenter.stretchedAt`), plus Start all (the
-  tala and the thambura together, or stop everything). It writes the page
+  tala and the thamburas together, or stop everything). With two
+  thamburas, Start all and T start the second half its own round late
+  (`ThamburaPresenter.start(delay)`), so their plucks interleave as two
+  players' would instead of sounding in unison as one louder instrument. It writes the page
   link's `session-1` part on every change, but not on each beat's state
   update. `startingPitch` picks the shruthi a page opens on: a shared
   session part, a shared thambura part, `thambura.shruthi`, the saved
@@ -457,8 +460,14 @@ unit-tested:
   drops its samples, and both remove their audio track. Remove clears the
   instrument's saved record (`clearInstrument`, which for `thambura-1` also
   drops the pre-id `thambura.drone`), with Undo for `UNDO_MS`; adding it
-  back by hand starts fresh. The claps can't be removed. Only one thambura
-  (#103), and each kit once. `TrackListView.tsx` draws a full-width row per
+  back by hand starts fresh. The claps can't be removed. Up to two
+  thamburas (`MAX_THAMBURAS`, #103, as iTanpura plays two), and each kit
+  once. `thamburaInstance(id)` sets the second apart: first string Ma,
+  its track panned to 0.4, and render seeds 4 on from the first's, so its
+  strings start at other phases and have their own cache entries. The
+  first keeps what it always had. Both share the page's pluck renderer
+  (`newPluckRenderer`, made with the first), so two cold thamburas are
+  six renders on one pool of four workers. Its row is "Thambura 2". `TrackListView.tsx` draws a full-width row per
   instrument: name, main controls (the thambura's round length among them),
   level, mute and solo icons, and a toggle that opens its panel (the
   thambura's, or the kit's pad) and Remove, which lives only there. The
@@ -513,7 +522,9 @@ unit-tested:
   its own saved key or link, follows it, and sets it when its own key, fine
   tune or A4 changes, so the Studio keyboard and the strip move together. Opening a link that changes a
   saved setup first keeps it as the "Before shared link" preset (only the
-  latest). Pitch and timbre
+  latest). Its sample keys start with its id, since the audio engine's
+  samples are the page's: without that, one thambura dropping a sample
+  silences the other's plucks, as `play` ignores an unknown key. Pitch and timbre
   changes re-render the plucks once nothing has changed for 100 ms (each
   change restarts the wait, so a knob turned through six keys renders only
   the last), and Start renders at once and waits for them. The presenter
@@ -575,7 +586,7 @@ unit-tested:
 - `thamburaIsland.tsx` is the thambura docked in a slot (it's handed the
   presenter; `newThamburaPresenter` is what `buildContext` makes it with).
   The page's floating `#play-all` is Start all (`wireFloatingPlay` in
-  `session.ts`), and the T key plays the thambura alone on every page of
+  `session.ts`), and the T key plays the thamburas alone on every page of
   ours (`pageShortcut`: not while typing in a field, not with Ctrl/Cmd/Alt,
   not on key repeat). A thambura playing holds the wake lock through
   `buildContext`'s `make`, whether or not an island shows it. The link goes to the address bar

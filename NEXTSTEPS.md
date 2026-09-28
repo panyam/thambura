@@ -113,8 +113,8 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       (#98), SaRiGaMa dropped (#122), the thambura as an instrument with an
       id and share links that carry every instrument (#100), and the track
       list (#101: the page's speed and shruthi strip #136, the list #139, on
-      `/` #142, rows #149). Next: a second thambura (#103, ready now render
-      speed allows it); #102 (drawn pads); #99 with the first new kit (#104);
+      `/` #142, rows #149), and a second thambura, as iTanpura plays two
+      (#103: Ma, panned right, half a round behind). Next: #102 (drawn pads); #99 with the first new kit (#104);
       #132 (asset packs, from the layouts side). A better name than "Claps"
       for the hands track is parked.
 - [ ] **Several talas at once**, later: talas stay their own group, not

@@ -17,7 +17,9 @@ class FakePlayer<S extends { playing: boolean }> {
     this.state = { ...this.state, ...patch };
     for (const f of this.watchers) f(this.state);
   }
-  async start() {
+  delays: (number | undefined)[] = [];
+  async start(delay?: number) {
+    this.delays.push(delay);
     this.change({ playing: true } as Partial<S>);
   }
   stop() {
@@ -30,20 +32,23 @@ class FakePlayer<S extends { playing: boolean }> {
 
 type TalaLike = { playing: boolean; tempo: number; settings: TalaSettings };
 
-function setUp() {
+type ThamburaLike = { playing: boolean; settings: { cycleSeconds: number } };
+
+function setUp(thamburas = 1) {
   const shruthi = new Shruthi();
   const tala = new FakePlayer<TalaLike>({ playing: false, tempo: 80, settings: DEFAULT_SETTINGS });
-  const thambura = new FakePlayer({ playing: false });
+  const all = Array.from({ length: thamburas }, (_, i) => new FakePlayer<ThamburaLike>({ playing: false, settings: { cycleSeconds: 3 + i } }));
+  const thambura = all[0];
   const writes: string[] = [];
   const session = new SessionPresenter({
     shruthi,
     tala: tala as never,
-    thambura: () => thambura as never,
+    thamburas: () => all as never,
     link: { read: () => null, write: (l) => writes.push(l) },
   });
   const views: SessionState[] = [];
   session.attach({ setState: (s) => views.push(s) });
-  return { shruthi, tala, thambura, session, writes, views };
+  return { shruthi, tala, thambura, all, session, writes, views };
 }
 
 describe("SessionPresenter", () => {
@@ -68,6 +73,28 @@ describe("SessionPresenter", () => {
     expect(session.state.playing).toBe(true);
     await session.toggleAll();
     expect([tala.state.playing, thambura.state.playing]).toEqual([false, false]);
+  });
+
+  it("starts two thamburas half the second's round apart, so they don't pluck in unison", async () => {
+    const { all, session } = setUp(2);
+    await session.toggleAll();
+    expect(all.map((t) => t.state.playing)).toEqual([true, true]);
+    expect(all.map((t) => t.delays)).toEqual([[0], [2]]);
+    await session.toggleAll();
+    expect(all.map((t) => t.state.playing)).toEqual([false, false]);
+  });
+
+  it("starts and stops both thamburas with T, and counts either as playing", async () => {
+    const { all, tala, session } = setUp(2);
+    await session.toggleThambura();
+    expect(all.map((t) => t.state.playing)).toEqual([true, true]);
+    expect(tala.state.playing).toBe(false);
+    await session.toggleThambura();
+    expect(all.map((t) => t.state.playing)).toEqual([false, false]);
+    await all[1].start();
+    expect(session.state.playing).toBe(true);
+    await session.toggleThambura();
+    expect(all.map((t) => t.state.playing)).toEqual([false, false]);
   });
 
   it("writes the session part at once and on each change, not on every beat", async () => {

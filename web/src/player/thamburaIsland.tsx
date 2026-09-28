@@ -4,9 +4,9 @@ import type { AudioEngine } from "./audio";
 import { ThamburaDocked } from "./ThamburaPanel";
 import type { PageLink } from "./pageLink";
 import { CachedRenderer, pluckStore } from "./pluckCache";
-import { browserPluckRenderer } from "./pluckRenderer";
+import { browserPluckRenderer, type PluckRenderer } from "./pluckRenderer";
 import { instrumentStore, localStore, withFallback } from "./storage";
-import { ThamburaPresenter, type PitchSource } from "./thamburaPresenter";
+import { thamburaInstance, ThamburaPresenter, type PitchSource } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
 /**
@@ -37,19 +37,32 @@ export function createThamburaIsland(
   return new SolidIsland("thambura", el, () => <ThamburaDocked state={state} actions={presenter} shareUrl={shareUrl} analyser={analyser} />, eventBus);
 }
 
+/** Runs `cb` after `ms`; returns a cancel. */
+const defer = (cb: () => void, ms: number) => {
+  const t = setTimeout(cb, ms);
+  return () => clearTimeout(t);
+};
+
+/**
+ * The page's pluck renderer, for every thambura on it: one pool of workers
+ * and one cache, so two thamburas don't start eight workers between them.
+ */
+export function newPluckRenderer(): PluckRenderer {
+  return new CachedRenderer(browserPluckRenderer(defer), pluckStore());
+}
+
 /**
  * A thambura on the page's audio, as the instrument with this `id`
- * (`thambura-1`), reading and writing the page's share link, and playing to
- * the page's shruthi when given it. The first
- * thambura takes the setup it saved before instance ids, once.
+ * (`thambura-1`, or `thambura-2` set up as the second: thamburaInstance),
+ * reading and writing the page's share link, and playing to the page's
+ * shruthi when given it. `renderer` is the page's, shared by its thamburas;
+ * without one it makes its own. The first thambura takes the setup it saved
+ * before instance ids, once.
  */
-export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink, shruthi?: PitchSource): ThamburaPresenter {
+export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink, shruthi?: PitchSource, renderer: PluckRenderer = newPluckRenderer()): ThamburaPresenter {
   const own = instrumentStore(id);
-  const defer = (cb: () => void, ms: number) => {
-    const t = setTimeout(cb, ms);
-    return () => clearTimeout(t);
-  };
   return new ThamburaPresenter({
+    ...thamburaInstance(id),
     id,
     audio,
     ticker: workerTicker(),
@@ -58,7 +71,7 @@ export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageL
       cancel: (frame) => cancelAnimationFrame(frame),
     },
     defer,
-    renderer: new CachedRenderer(browserPluckRenderer(defer), pluckStore()),
+    renderer,
     store: id === "thambura-1" ? withFallback(own, localStore("drone")) : own,
     presets: localStore("presets"),
     link: link.part(id),

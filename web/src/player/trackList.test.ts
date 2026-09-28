@@ -58,6 +58,7 @@ describe("TrackList", () => {
     const { list, tracks, store } = setUp();
     expect(tracks.ids()).toEqual(["hands-1", "thambura-1"]);
     expect(list.state.addable).toEqual([
+      { kind: "thambura" },
       { kind: "kit", kit: 0 },
       { kind: "kit", kit: 1 },
     ]);
@@ -141,13 +142,31 @@ describe("TrackList", () => {
     expect(UNDO_MS).toBeGreaterThanOrEqual(3000);
   });
 
-  it("won't remove the claps, add a second thambura, or add a kit twice", () => {
+  it("won't remove the claps, add a third thambura, or add a kit twice", () => {
     const { list, tracks } = setUp();
     list.add({ kind: "kit", kit: 0 });
     list.remove("hands-1");
     list.add({ kind: "thambura" });
+    list.add({ kind: "thambura" });
     list.add({ kind: "kit", kit: 0 });
-    expect(tracks.ids()).toEqual(["hands-1", "thambura-1", "kit-1"]);
+    expect(tracks.ids()).toEqual(["hands-1", "thambura-1", "kit-1", "thambura-2"]);
+  });
+
+  it("offers a second thambura, as iTanpura plays two, and no third", () => {
+    const { list, tracks } = setUp();
+    expect(list.state.addable).toEqual([{ kind: "thambura" }, { kind: "kit", kit: 0 }, { kind: "kit", kit: 1 }]);
+    list.add({ kind: "thambura" });
+    expect(tracks.ids()).toEqual(["hands-1", "thambura-1", "thambura-2"]);
+    expect(list.state.addable.some((a) => a.kind === "thambura")).toBe(false);
+    // Taking the first off leaves the second, and adding one back fills the first's place.
+    list.remove("thambura-1");
+    list.add({ kind: "thambura" });
+    expect(tracks.ids()).toEqual(["hands-1", "thambura-2", "thambura-1"]);
+  });
+
+  it("starts with both thamburas a shared link had", () => {
+    const { tracks } = setUp({ opened: { "thambura-1": "t", "thambura-2": "t2" } });
+    expect(tracks.ids()).toEqual(["hands-1", "thambura-1", "thambura-2"]);
   });
 
   it("numbers a new kit with the lowest free id", () => {

@@ -87,7 +87,8 @@ export function TrackListView(props: TrackListViewProps) {
 
 function nameOf(row: { id: string; kind: string; kit?: number }, props: TrackListViewProps): string {
   if (row.kind === "hands") return "Claps";
-  if (row.kind === "thambura") return "Thambura";
+  // The first is plain "Thambura", as it was before a page could have two.
+  if (row.kind === "thambura") return row.id === "thambura-1" ? "Thambura" : `Thambura ${row.id.split("-").at(-1)}`;
   const inst = props.instrument(row.id);
   const loaded = inst?.kind === "kit" ? inst.state().instrument : "";
   return capitalize(loaded || props.kitNames()[row.kit ?? 0] || "Kit");

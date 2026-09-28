@@ -118,7 +118,31 @@ export interface ThamburaDeps {
    * its own key, fine tune or A4 changes; a preset keeps it.
    */
   shruthi?: PitchSource;
+  /** What it starts from when nothing is saved or linked, over DEFAULT_THAMBURA. */
+  defaults?: Partial<ThamburaSettings>;
+  /** Where its track sits in the stereo image, -1 to 1; left alone (centre) if not given. */
+  pan?: number;
+  /**
+   * Added to each string's render seed, so a second thambura's strings start
+   * at other phases and the two don't sound like one louder instrument.
+   */
+  seedOffset?: number;
   rng?: () => number;
+}
+
+/** A thambura only thambura-1 can be, or the second, and the few ways the second differs. */
+export type ThamburaInstance = Pick<ThamburaDeps, "defaults" | "pan" | "seedOffset">;
+
+/**
+ * How the thambura with this id differs from the first. A page has up to
+ * two (trackList.ts), as iTanpura plays two: the second starts on Ma,
+ * sits to the right, and renders its own strings. The first keeps what it
+ * has always had.
+ */
+export function thamburaInstance(id: string): ThamburaInstance {
+  const n = Number(id.split("-").at(-1)) || 1;
+  if (n === 1) return { seedOffset: 0 };
+  return { defaults: { firstString: "Ma1" }, pan: 0.4, seedOffset: 4 * (n - 1) };
 }
 
 /** A pitch the page shares, which the thambura follows and moves. */
@@ -179,6 +203,8 @@ export class ThamburaPresenter {
   private settling: (() => void) | null = null;
   // Whether the transport should start once every string has its samples.
   private startWhenReady = false;
+  // How much later than usual the next start's first pluck comes (Start all's offset).
+  private startDelay = 0;
   // Plucks waiting to be heard, in time order, and when each string goes dark.
   private cues: { time: number; string: number }[] = [];
   private litUntil = [-Infinity, -Infinity, -Infinity, -Infinity];
@@ -187,7 +213,8 @@ export class ThamburaPresenter {
   constructor(private readonly deps: ThamburaDeps) {
     this.renderer = deps.renderer ?? new SlicedRenderer(deps.defer);
     const saved = (loadSafely(deps.store) ?? {}) as Record<string, unknown>;
-    let settings = normalizeThambura(saved.settings, DEFAULT_THAMBURA);
+    const base = normalizeThambura({ ...DEFAULT_THAMBURA, ...deps.defaults }, DEFAULT_THAMBURA);
+    let settings = normalizeThambura(saved.settings, base);
     let custom = normalizePlan(saved.custom, planFor({ ...settings, mode: "jawari" }));
     let view: ThamburaViewId = VIEW_IDS.includes(saved.view as ThamburaViewId) ? (saved.view as ThamburaViewId) : "studio";
     let notice: string | null = null;
@@ -230,6 +257,7 @@ export class ThamburaPresenter {
     this.transport = new Transport(deps.audio, deps.ticker);
     this.transport.add(this.seq, (e) => ("damp" in e ? this.damp(e) : this.pluck(e)));
     deps.audio.setBusVolume(deps.id, this.state.settings.volume);
+    if (deps.pan !== undefined) deps.audio.setPan(deps.id, deps.pan);
     // The address bar shows the current setup from the start. A shared one
     // isn't saved over this browser's own until the listener changes something.
     deps.link?.write(this.shareLink());
@@ -264,9 +292,15 @@ export class ThamburaPresenter {
     return this.start();
   }
 
-  async start(): Promise<void> {
+  /**
+   * Starts playing. The plucks begin `delay` seconds later than they
+   * otherwise would, so Start all can set a second thambura half a round
+   * behind the first; sruti mode's drone starts at once whatever it is.
+   */
+  async start(delay = 0): Promise<void> {
     if (this.state.playing) return;
     await this.deps.audio.unlock();
+    this.startDelay = delay;
     this.update({ playing: true });
     this.startVoice();
   }
@@ -307,7 +341,7 @@ export class ThamburaPresenter {
 
   private apply(next: ThamburaSettings, custom: ThamburaPlan): void {
     const prev = this.state.settings;
-    const prevKeys = sampleKeys(prev, planFor(prev, this.state.custom));
+    const prevKeys = sampleKeys(this.deps.id, prev, planFor(prev, this.state.custom));
     this.update({ settings: next, custom });
     this.save();
 
@@ -318,7 +352,7 @@ export class ThamburaPresenter {
     this.timing.cycleSeconds = next.cycleSeconds;
     this.timing.pattern = patternOf(plan);
 
-    if (sampleKeys(next, plan).join() !== prevKeys.join()) this.invalidate();
+    if (sampleKeys(this.deps.id, next, plan).join() !== prevKeys.join()) this.invalidate();
 
     if (!this.state.playing) return;
     if (isPlucked(next.mode) !== isPlucked(prev.mode)) {
@@ -450,6 +484,7 @@ export class ThamburaPresenter {
 
   private startVoice(): void {
     if (this.state.settings.mode === "sruti") {
+      this.startDelay = 0;
       this.startTones();
     } else if (this.stale) {
       // Rendering takes a moment; the first pluck waits for it.
@@ -461,7 +496,8 @@ export class ThamburaPresenter {
   }
 
   private startPlucking(): void {
-    this.transport.start();
+    this.transport.start(this.deps.audio.now + 0.05 + this.startDelay);
+    this.startDelay = 0;
     this.runFrames();
   }
 
@@ -472,6 +508,7 @@ export class ThamburaPresenter {
       return;
     }
     this.startWhenReady = false;
+    this.startDelay = 0;
     this.transport.stop();
     this.deps.audio.cancel(this.deps.id);
     this.deps.audio.release(this.deps.id, STOP_FADE);
@@ -518,7 +555,7 @@ export class ThamburaPresenter {
   }
 
   private keys(): string[] {
-    return sampleKeys(this.state.settings, this.plan());
+    return sampleKeys(this.deps.id, this.state.settings, this.plan());
   }
 
   private cancelUnneeded(keys: string[]): void {
@@ -542,7 +579,7 @@ export class ThamburaPresenter {
     this.cancelUnneeded(keys);
     keys.forEach((key, i) => {
       if (this.rendered.has(key) || this.pending.has(key)) return;
-      const job = { hz: hz[i], sampleRate: this.deps.audio.sampleRate, voice: plan.strings[i].voice, seed: i + 1 };
+      const job = { hz: hz[i], sampleRate: this.deps.audio.sampleRate, voice: plan.strings[i].voice, seed: i + 1 + (this.deps.seedOffset ?? 0) };
       const entry = { cancel: () => {} };
       this.pending.set(key, entry);
       entry.cancel = this.renderer.render(job, (samples) => {
@@ -695,14 +732,16 @@ function isPlucked(mode: ThamburaSettings["mode"]): boolean {
 /**
  * The sample each string plays: its pitch plus everything that shapes the
  * pluck. Two settings with the same keys can share samples; sruti mode keys
- * like tambura, so switching to it and back re-renders nothing.
+ * like tambura, so switching to it and back re-renders nothing. The keys
+ * start with the thambura's id, since the audio engine's samples are the
+ * page's: a second thambura dropping a sample must not silence the first.
  */
-function sampleKeys(s: ThamburaSettings, plan: ThamburaPlan): string[] {
+function sampleKeys(id: string, s: ThamburaSettings, plan: ThamburaPlan): string[] {
   return stringFrequencies(s).map((hz, i) => {
     const voice = Object.values(plan.strings[i].voice)
       .map((v) => v.toFixed(3))
       .join("/");
-    return `thambura/${hz.toFixed(3)}/${voice}`;
+    return `${id}/${hz.toFixed(3)}/${voice}`;
   });
 }
 

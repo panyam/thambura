@@ -10,12 +10,21 @@ import type { ThamburaPresenter } from "./thamburaPresenter";
 
 type ThamburaLike = Pick<ThamburaPresenter, "state" | "watch" | "start" | "stop">;
 
+/**
+ * Starts thamburas together, each after the first half its own round late,
+ * so two at one speed interleave their plucks as two players would rather
+ * than sounding in unison as one louder instrument.
+ */
+function startThamburas(thamburas: ThamburaLike[]): Promise<void>[] {
+  return thamburas.map((t, i) => t.start(i === 0 ? 0 : t.state.settings.cycleSeconds / 2));
+}
+
 /** What the session strip shows. */
 export interface SessionState {
   /** The tala's speed in bpm, or null when the page has no tala. */
   tempo: number | null;
   pitch: Pitch;
-  /** Whether the tala or the thambura is playing, for Start all. */
+  /** Whether the tala or any thambura is playing, for Start all. */
   playing: boolean;
 }
 
@@ -26,8 +35,8 @@ export interface SessionView {
 export interface SessionDeps {
   shruthi: Shruthi;
   tala?: Pick<PlayerPresenter, "state" | "watch" | "setTempo" | "start" | "stop">;
-  /** The page's thambura now, if it has one; the track list can add and remove it. */
-  thambura?: () => ThamburaLike | undefined;
+  /** The page's thamburas now (none, one or two); the track list can add and remove them. */
+  thamburas?: () => ThamburaLike[];
   /** The page's kits, asked which keys they'd sound stretched in. */
   kits?: () => Pick<KitPresenter, "state" | "stretchedAt">[];
   /** The page link's session part, written with the tala, speed and shruthi on every change. */
@@ -58,12 +67,12 @@ export class SessionPresenter {
 
   /** Adds a view; the tala's strip and a standalone one can show the same session. */
   /**
-   * The page's instruments changed: hears the thambura if there's a new one,
-   * and shows whether anything is playing now.
+   * The page's instruments changed: hears any new thambura, and shows
+   * whether anything is playing now.
    */
   tracksChanged(): void {
-    const thambura = this.deps.thambura?.();
-    if (thambura && !this.watched.has(thambura)) {
+    for (const thambura of this.thamburas()) {
+      if (this.watched.has(thambura)) continue;
       this.watched.add(thambura);
       thambura.watch(() => this.refresh());
     }
@@ -102,25 +111,24 @@ export class SessionPresenter {
     this.deps.shruthi.nudgeCents(delta);
   }
 
-  /** Starts or stops the thambura alone, as the T key does. */
-  toggleThambura(): Promise<void> {
-    const thambura = this.deps.thambura?.();
-    if (!thambura) return Promise.resolve();
-    if (thambura.state.playing) {
-      thambura.stop();
-      return Promise.resolve();
+  /** Starts or stops the thamburas alone, as the T key does: stops them all if any plays. */
+  async toggleThambura(): Promise<void> {
+    const thamburas = this.thamburas();
+    if (thamburas.some((t) => t.state.playing)) {
+      for (const t of thamburas) t.stop();
+      return;
     }
-    return thambura.start();
+    await Promise.all(startThamburas(thamburas));
   }
 
-  /** Stops everything if anything is playing, otherwise starts the tala and the thambura together. */
+  /** Stops everything if anything is playing, otherwise starts the tala and the thamburas together. */
   async toggleAll(): Promise<void> {
     if (this.state.playing) {
       this.deps.tala?.stop();
-      this.deps.thambura?.()?.stop();
+      for (const t of this.thamburas()) t.stop();
       return;
     }
-    await Promise.all([this.deps.tala?.start(), this.deps.thambura?.()?.start()]);
+    await Promise.all([this.deps.tala?.start(), ...startThamburas(this.thamburas())]);
   }
 
   /**
@@ -135,11 +143,15 @@ export class SessionPresenter {
 
   // ---- internals ---------------------------------------------------------
 
+  private thamburas(): ThamburaLike[] {
+    return this.deps.thamburas?.() ?? [];
+  }
+
   private read(): SessionState {
     return {
       tempo: this.deps.tala ? this.deps.tala.state.tempo : null,
       pitch: this.deps.shruthi.pitch,
-      playing: !!(this.deps.tala?.state.playing || this.deps.thambura?.()?.state.playing),
+      playing: !!(this.deps.tala?.state.playing || this.thamburas().some((t) => t.state.playing)),
     };
   }
 
