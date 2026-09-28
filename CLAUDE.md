@@ -713,8 +713,14 @@ See NEXTSTEPS.md for the order.
   cycle divides into (seven for a misra chaapu, which our tables call one
   beat), `StrokeEvent.index` says which stroke sounded, and the kit queues
   a cue per stroke so the lane lights from `heardNow` like the beat images.
-  `engine/lane.ts` lays a pattern out for it. It still sits under the beat
-  image and reads the kit's state; where a track's panel goes is #101.
+  `engine/lane.ts` lays a pattern out for it, each cell split into slots
+  fine enough for every stroke and counting syllable to sit in one. The
+  counting line (*ta ka di mi*, `engine/syllables.ts`) is the tala's, not
+  the kit's: the tala publishes it on `clock.tala` as `counting`, the
+  nadai's line per akshara, or a chaapu's own line across its one beat.
+  Syllables are held by id everywhere and spelled only through that file's
+  table (`docs/designs/solkattu.md`). The stroke labels (Ki, Din, Dim, Thom
+  din) come from the kit's `kit.json`, not from the app.
 - **A kit can derive a stroke from another.** The gumki is `L.thom` with a
   bend (300 cents over 0.25 s, a guess), declared in the manifest rather than
   recorded, since a gumki is a bent thom and the dataset has no take for it.
