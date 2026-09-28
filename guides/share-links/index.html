@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share links and presets · Thambura docs</title>
+    <meta name="description" content="What a Thambura link carries, what happens when someone opens one, and how presets and the built-in sounds are made of links.">
+    
+    
+    
+    <script>
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem("theme"); } catch (e) {}
+            if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+                document.documentElement.classList.add("dark");
+            }
+        })();
+    </script>
+    <link rel="icon" href="/thambura/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="icon" type="image/svg+xml" href="/thambura/favicon.svg">
+    <link rel="stylesheet" href="/thambura/static/css/docs.css">
+</head>
+<body>
+    
+
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/thambura/" class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path stroke-linecap="round" d="M12 3v3M12 18v3M3 12h3M18 12h3"/>
+                <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+            </svg>
+            <span>Thambura <span class="logo-sub">docs</span></span>
+        </a>
+        <nav class="main-nav" aria-label="Sections">
+            
+            <a href="/thambura/getting-started/">Getting started</a>
+            
+            <a href="/thambura/guides/" aria-current="page">Guides</a>
+            
+            <a href="/thambura/reference/">Reference</a>
+            
+        </nav>
+        <div class="header-actions">
+            <a href="https://thambura.com/" class="app-link">Open the app</a>
+            <a href="https://github.com/panyam/thambura" class="icon-link" aria-label="GitHub" title="GitHub">
+                <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            </a>
+            <button id="theme-toggle" type="button" class="icon-link" aria-label="Theme" title="Theme"></button>
+        </div>
+    </div>
+</header>
+
+    <div class="page">
+        
+
+
+<aside class="sidebar" aria-label="In this section">
+    
+    
+    
+    
+    <h2 class="sidebar-title"><a href="/thambura/guides/">Guides</a></h2>
+    
+    <ul>
+        
+        <li><a href="/thambura/guides/share-links/" aria-current="page">Share links and presets</a></li>
+        
+        <li><a href="/thambura/guides/embed/">Embed Thambura</a></li>
+        
+    </ul>
+    
+    
+    
+    
+    
+    
+    <nav class="toc" aria-label="On this page">
+        <h2 class="sidebar-title">On this page</h2>
+        <ul>
+            
+            <li><a href="#what-a-link-carries">What a link carries</a>
+                
+            </li>
+            
+            <li><a href="#opening-a-link">Opening a link</a>
+                
+            </li>
+            
+            <li><a href="#custom-sounds-and-built-in-sounds-that-change">Custom sounds, and built-in sounds that change</a>
+                
+            </li>
+            
+            <li><a href="#presets">Presets</a>
+                
+            </li>
+            
+            <li><a href="#suggesting-a-built-in-preset">Suggesting a built-in preset</a>
+                
+            </li>
+            
+            <li><a href="#making-links-in-code">Making links in code</a>
+                
+            </li>
+            
+        </ul>
+    </nav>
+    
+</aside>
+
+        <main class="main">
+            
+<article class="content">
+    
+    <header class="content-header">
+        <h1>Share links and presets</h1>
+        <p class="lead">What a Thambura link carries, what happens when someone opens one, and how presets and the built-in sounds are made of links.</p>
+    </header>
+    
+    <div class="content-body">
+        <p>Every page has a link that plays what&rsquo;s on it. The address bar keeps it up
+to date as you change things, and the thambura&rsquo;s <strong>Copy link</strong> button copies
+it. It looks like this:</p>
+<pre><code>https://thambura.com/?s=AgIBCwEEAQEBAFADQBEwAQENAQgAA0AHETABwjIyPAMBBwFQBENsYXA
+</code></pre><p>Everything after <code>?s=</code> is the page&rsquo;s setup, packed into a few bytes and
+written in URL-safe base64, so a link goes anywhere a URL can. That one is a
+page as it first opens, at 55 characters.</p>
+<h2 id="what-a-link-carries">What a link carries <a class="anchor" href="#what-a-link-carries">¶</a></h2>
+<p>A page can hold several instruments, so its link has a part for each one,
+named by the instrument&rsquo;s id on the page:</p>
+<ul>
+<li><strong>The session</strong> (<code>session-1</code>): the tala (with its jaathi, nadai and kalai),
+the speed, and the page&rsquo;s shruthi, meaning the key, fine tune and A4
+everything plays to.</li>
+<li><strong>The thambura</strong> (<code>thambura-1</code>):
+<ul>
+<li>the sound, meaning the mode (Tambura, Tambura (classic), Guitar, Sruti or
+Custom), gents or ladies, just or equal temperament, the swara the first
+string plays, the round&rsquo;s length, and tone, pluck and sustain;</li>
+<li>for a Custom sound, the whole plan the Lab edits, string by string,
+including the gaps between plucks;</li>
+<li>its volume;</li>
+<li>the view (Mini, Studio, Raagini or Lab). (Links made before the track
+list also say whether the thambura&rsquo;s drawer was open; nothing reads that
+any more.)</li>
+</ul>
+</li>
+<li><strong>The kriyas</strong> (<code>hands-1</code>): the sound group (Clap or Metronome) and their
+volume.</li>
+<li><strong>Each kit</strong> (<code>kit-1</code>, <code>kit-2</code>, …): which of the page&rsquo;s kits it is,
+Variety, its volume, and whether it plays along with the tala.</li>
+</ul>
+<p>The thambura&rsquo;s part is a whole link of its own, the kind every link was
+before pages had more than one instrument, so everything below about the
+thambura&rsquo;s sound holds inside a page link too.</p>
+<p>Every instrument&rsquo;s volume is in the link, so it opens with the balance its
+sender heard. (Links made before
+<a href="https://github.com/panyam/thambura/issues/153">#153</a> leave the thambura&rsquo;s
+out, and it plays at the listener&rsquo;s own.) A few things are left out on
+purpose. Solo (the Lab&rsquo;s on/off dots) is for working on one string at a
+time, and a link that silenced three strings would mostly confuse whoever
+opened it. The track list&rsquo;s mute and solo stay out of links for the same
+reason.</p>
+<h2 id="opening-a-link">Opening a link <a class="anchor" href="#opening-a-link">¶</a></h2>
+<p>When someone opens a page with a <code>?s=</code> link:</p>
+<ul>
+<li>Each instrument plays its part of the link, over what their browser had
+saved, volumes included.</li>
+<li>The session&rsquo;s shruthi is the one played, even though the thambura&rsquo;s part
+carries a key of its own.</li>
+<li>On a page with a track list (the home page), the parts a link has are the
+instruments the page opens with (the kriyas are always there). A page
+without one (<code>/labs/side-by-side</code>, an embed) always has its own set, and
+plays what the link says for each of them.</li>
+<li>If it changes the sound they had, their own setup is kept first, as a
+preset called <strong>Before shared link</strong>. Only the latest one is kept, so
+opening links all day doesn&rsquo;t pile them up.</li>
+<li>A note in the thambura&rsquo;s panel says &ldquo;Opened a shared setup.&rdquo;</li>
+<li>Nothing is saved over their own setup until they change something
+themselves.</li>
+<li>A part this version doesn&rsquo;t know (from a newer version, say) is skipped,
+and the rest of the page still opens. A link it can&rsquo;t read at all (a
+mistyped one) plays their own setup instead, and the note says so.</li>
+<li>Links from before pages had parts (a thambura setup on its own, like
+<code>?s=AQgAA0AHETABwjIyPA</code>) still open, as the thambura&rsquo;s part.</li>
+</ul>
+<h2 id="custom-sounds-and-built-in-sounds-that-change">Custom sounds, and built-in sounds that change <a class="anchor" href="#custom-sounds-and-built-in-sounds-that-change">¶</a></h2>
+<p>Writing out a whole Custom plan would make for long links, so a Custom link
+names the built-in sound its plan is closest to (Tambura, Tambura (classic)
+or Guitar) and stores only what&rsquo;s different. Most Lab edits then cost a
+byte or two each.</p>
+<p>That makes a Custom link depend on the built-in sound as it was when the
+link was made, and the built-in sounds do change: the Tambura voice was
+fitted to a recording, and may well be fitted again. So the link also carries a short
+checksum of the built-in sound it started from. If a later release has
+changed that sound, the link still opens, and the note adds that it &ldquo;was made
+from an older version of a built-in sound, so it may sound a little
+different.&rdquo;</p>
+<p>Two things are worth knowing here:</p>
+<ul>
+<li><strong>Plain links follow the built-in sounds.</strong> A link that says &ldquo;Tambura&rdquo;
+names the sound rather than copying it, so it always plays the current
+version. That&rsquo;s deliberate, since an improved voice then reaches every
+link that uses it.</li>
+<li><strong>Older Custom links see less.</strong> Links made before
+<a href="https://github.com/panyam/thambura/issues/121">#121</a> have a checksum
+that covers the values the Lab shows but not a few it hides (how long
+each string&rsquo;s sample is rendered, its tail fade and its highest
+harmonic), so a change to one of those in a built-in sound reaches them
+without the note. Links made since cover those too.</li>
+</ul>
+<h2 id="presets">Presets <a class="anchor" href="#presets">¶</a></h2>
+<p>A preset is a thambura sound: a name and a thambura link, nothing more.
+It doesn&rsquo;t carry the tala, the speed, the shruthi or the other instruments,
+so a preset works on any page and at any pitch. In the Lab, <strong>Save</strong> writes the
+current sound over the preset that&rsquo;s playing, and <strong>Save as…</strong> keeps it as a
+new one. Presets are kept in the browser under <code>thambura.presets</code>, apart
+from the settings, up to 200 of them. Picking one from the Sound menu plays
+its sound, but leaves the view, the volume and the page&rsquo;s shruthi alone.</p>
+<p>Since a preset is a link, <strong>Copy</strong> gives it to anyone, and the built-in
+presets are made the same way. Shimmer and Warm, in the Sound menu beside
+the built-in modes, are two links in
+<a href="https://github.com/panyam/thambura/blob/master/web/src/engine/presets.ts"><code>web/src/engine/presets.ts</code></a>.
+They can&rsquo;t be renamed, deleted or written over, so Save is refused on them
+and Save as… keeps your version.</p>
+<h2 id="suggesting-a-built-in-preset">Suggesting a built-in preset <a class="anchor" href="#suggesting-a-built-in-preset">¶</a></h2>
+<p>If you&rsquo;ve made a sound you think others would like, find it in the Lab&rsquo;s
+preset list and press <strong>Share</strong>. It opens the
+<a href="https://github.com/panyam/thambura/issues/new?template=share-a-preset.yml">share-a-preset</a>
+issue form with the link and name filled in, and asks what makes it good and
+what you were listening on. If we take it, its link goes into
+<code>BUILT_IN_PRESETS</code> as it is, and a test checks that every built-in preset
+opens without the &ldquo;older version&rdquo; notice.</p>
+<h2 id="making-links-in-code">Making links in code <a class="anchor" href="#making-links-in-code">¶</a></h2>
+<p>Everything behind this is in
+<a href="https://github.com/panyam/thambura/blob/master/web/src/engine/shareLink.ts"><code>web/src/engine/shareLink.ts</code></a>.
+A thambura&rsquo;s own link, which is what a preset holds and what goes in a page
+link&rsquo;s <code>thambura-1</code> part:</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">decodeLink</span>, <span style="color:#a6e22e">encodeLink</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;./engine/shareLink&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">DEFAULT_THAMBURA</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;./engine/shruthi&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">planFor</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;./engine/thamburaPlan&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">settings</span> <span style="color:#f92672">=</span> { ...<span style="color:#a6e22e">DEFAULT_THAMBURA</span>, <span style="color:#a6e22e">key</span>: <span style="color:#66d9ef">4</span>, <span style="color:#a6e22e">cycleSeconds</span>: <span style="color:#66d9ef">3</span> };
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">link</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">encodeLink</span>({ <span style="color:#a6e22e">settings</span>, <span style="color:#a6e22e">custom</span>: <span style="color:#66d9ef">planFor</span>(<span style="color:#a6e22e">settings</span>), <span style="color:#a6e22e">view</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;studio&#34;</span> });
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// decodeLink fills in what a link leaves out (an older link&#39;s volume) from
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// the settings you pass, and returns null for anything it can&#39;t read.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">opened</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">decodeLink</span>(<span style="color:#a6e22e">link</span>, { <span style="color:#a6e22e">settings</span>: <span style="color:#66d9ef">DEFAULT_THAMBURA</span> });
+</span></span></code></pre></code></pre><p>A page link is its parts, each an instrument&rsquo;s own link keyed by its id.
+<code>encodeSession</code>, <code>encodeHands</code> and <code>encodeKit</code> make the other parts, and
+each has a <code>decode…</code> to go with it:</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">decodePage</span>, <span style="color:#a6e22e">encodeHands</span>, <span style="color:#a6e22e">encodePage</span>, <span style="color:#a6e22e">encodeSession</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;./engine/shareLink&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">DEFAULT_SETTINGS</span>, <span style="color:#a6e22e">DEFAULT_TEMPO</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;./engine/selection&#34;</span>;
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">import</span> { <span style="color:#a6e22e">DEFAULT_PITCH</span> } <span style="color:#66d9ef">from</span> <span style="color:#e6db74">&#34;./engine/shruthi&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">page</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">encodePage</span>([
+</span></span><span style="display:flex;"><span>  { <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;session-1&#34;</span>, <span style="color:#a6e22e">link</span>: <span style="color:#66d9ef">encodeSession</span>({ <span style="color:#a6e22e">tala</span>: <span style="color:#66d9ef">DEFAULT_SETTINGS</span>, <span style="color:#a6e22e">tempo</span>: <span style="color:#66d9ef">DEFAULT_TEMPO</span>, <span style="color:#a6e22e">pitch</span>: <span style="color:#66d9ef">DEFAULT_PITCH</span> }) },
+</span></span><span style="display:flex;"><span>  { <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;thambura-1&#34;</span>, <span style="color:#a6e22e">link</span> },
+</span></span><span style="display:flex;"><span>  { <span style="color:#a6e22e">id</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;hands-1&#34;</span>, <span style="color:#a6e22e">link</span>: <span style="color:#66d9ef">encodeHands</span>({ <span style="color:#a6e22e">soundGroup</span><span style="color:#f92672">:</span> <span style="color:#e6db74">&#34;Clap&#34;</span>, <span style="color:#a6e22e">volume</span>: <span style="color:#66d9ef">80</span> }) },
+</span></span><span style="display:flex;"><span>]);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// The parts by id, or null for anything it can&#39;t read. An old thambura-only
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e">// link comes back as its thambura-1 part.
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">const</span> <span style="color:#a6e22e">parts</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">decodePage</span>(<span style="color:#a6e22e">page</span>);
+</span></span></code></pre></code></pre><p>They&rsquo;re pure TypeScript with no DOM, so they run anywhere. They&rsquo;re also
+still internal to this repo, and will move with the rest of the engine when
+it&rsquo;s lifted into its own library
+(<a href="https://github.com/panyam/thambura/issues/53">#53</a>).</p>
+<p>The bytes themselves, and the rules for changing them, are in
+<a href="/thambura/reference/share-link-format/">The share link format</a>.</p>
+
+    </div>
+    
+    <nav class="page-nav" aria-label="Previous and next">
+        
+        <a href="/thambura/reference/share-link-format/" class="next">The share link format →</a>
+    </nav>
+    
+</article>
+
+        </main>
+    </div>
+    
+<footer class="site-footer">
+    <div class="footer-inner">
+        <span>Thambura · <a href="https://github.com/panyam/thambura">GitHub</a> · <a href="https://github.com/panyam/thambura/issues">Issues</a></span>
+        <span>Built with <a href="https://github.com/panyam/s3gen">s3gen</a></span>
+    </div>
+</footer>
+
+    <script type="module" src="/thambura/static/js/gen/docs.js"></script>
+</body>
+</html>

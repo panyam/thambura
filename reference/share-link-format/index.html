@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The share link format · Thambura docs</title>
+    <meta name="description" content="The bytes behind a thambura ?s= link, how each value is stored, and the rules for changing the format without breaking links people already have.">
+    
+    
+    
+    <script>
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem("theme"); } catch (e) {}
+            if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+                document.documentElement.classList.add("dark");
+            }
+        })();
+    </script>
+    <link rel="icon" href="/thambura/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="icon" type="image/svg+xml" href="/thambura/favicon.svg">
+    <link rel="stylesheet" href="/thambura/static/css/docs.css">
+</head>
+<body>
+    
+
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/thambura/" class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path stroke-linecap="round" d="M12 3v3M12 18v3M3 12h3M18 12h3"/>
+                <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+            </svg>
+            <span>Thambura <span class="logo-sub">docs</span></span>
+        </a>
+        <nav class="main-nav" aria-label="Sections">
+            
+            <a href="/thambura/getting-started/">Getting started</a>
+            
+            <a href="/thambura/guides/">Guides</a>
+            
+            <a href="/thambura/reference/" aria-current="page">Reference</a>
+            
+        </nav>
+        <div class="header-actions">
+            <a href="https://thambura.com/" class="app-link">Open the app</a>
+            <a href="https://github.com/panyam/thambura" class="icon-link" aria-label="GitHub" title="GitHub">
+                <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            </a>
+            <button id="theme-toggle" type="button" class="icon-link" aria-label="Theme" title="Theme"></button>
+        </div>
+    </div>
+</header>
+
+    <div class="page">
+        
+
+
+<aside class="sidebar" aria-label="In this section">
+    
+    
+    
+    
+    
+    
+    <h2 class="sidebar-title"><a href="/thambura/reference/">Reference</a></h2>
+    
+    <ul>
+        
+        <li><a href="/thambura/reference/share-link-format/" aria-current="page">The share link format</a></li>
+        
+    </ul>
+    
+    
+    
+    
+    <nav class="toc" aria-label="On this page">
+        <h2 class="sidebar-title">On this page</h2>
+        <ul>
+            
+            <li><a href="#overview">Overview</a>
+                
+            </li>
+            
+            <li><a href="#the-settings">The settings</a>
+                
+            </li>
+            
+            <li><a href="#a-custom-plan">A Custom plan</a>
+                <ul><li><a href="#how-values-are-stored">How values are stored</a></li><li><a href="#edits">Edits</a></li><li><a href="#whole">Whole</a></li><li><a href="#hidden-values">Hidden values</a></li><li><a href="#the-checksum">The checksum</a></li><li><a href="#fields">FIELDS</a></li></ul>
+            </li>
+            
+            <li><a href="#a-worked-example">A worked example</a>
+                
+            </li>
+            
+            <li><a href="#page-links-format-2">Page links (format 2)</a>
+                <ul><li><a href="#the-session-part">The session part</a></li><li><a href="#the-kriyas-and-kit-parts">The kriyas and kit parts</a></li></ul>
+            </li>
+            
+            <li><a href="#changing-the-format">Changing the format</a>
+                
+            </li>
+            
+        </ul>
+    </nav>
+    
+</aside>
+
+        <main class="main">
+            
+<article class="content">
+    
+    <header class="content-header">
+        <h1>The share link format</h1>
+        <p class="lead">The bytes behind a thambura ?s= link, how each value is stored, and the rules for changing the format without breaking links people already have.</p>
+    </header>
+    
+    <div class="content-body">
+        <p>This page describes formats 1, 3 and 4, one thambura&rsquo;s setup (3 is 1 plus
+the volume, and 4 is 3 with a wider drift checksum), and format 2, a page
+link that carries every instrument on the page as its own part, plus a
+session part for what the page shares: the tala, its speed and the shruthi.
+A page with a tala always writes format 2. It&rsquo;s for anyone
+changing
+<a href="https://github.com/panyam/thambura/blob/master/web/src/engine/shareLink.ts"><code>web/src/engine/shareLink.ts</code></a>,
+or reading links outside the app. For what a link means to the person
+opening it, see <a href="/thambura/guides/share-links/">Share links and presets</a>.
+The code is the authority (the FIELDS table below was generated from it),
+so if the two ever disagree, the page is wrong.</p>
+<h2 id="overview">Overview <a class="anchor" href="#overview">¶</a></h2>
+<p>A link&rsquo;s <code>s</code> parameter is a string of bytes written as base64url without
+padding. The first byte is the format number. A <code>4</code> is one thambura&rsquo;s
+setup: the next thirteen bytes hold the settings every link has, the volume
+among them, and a Custom link then carries its plan. A <code>3</code> has the same
+bytes, with a checksum that covers less (see &ldquo;The checksum&rdquo;), and is how
+links were written between
+<a href="https://github.com/panyam/thambura/issues/153">#153</a> and
+<a href="https://github.com/panyam/thambura/issues/121">#121</a>. A <code>1</code> is the same
+without the volume, which is how links were written before #153 and how the
+built-in presets still are. A <code>2</code> is a page link, made of parts (see &ldquo;Page links&rdquo;
+below), and anything else isn&rsquo;t read.</p>
+<p>A reader must use up every byte. A link with bytes left over, or one that
+runs out early, is rejected as a whole, so the listener&rsquo;s own setup plays
+instead of half of someone else&rsquo;s.</p>
+<h2 id="the-settings">The settings <a class="anchor" href="#the-settings">¶</a></h2>
+<table>
+<thead>
+<tr>
+<th>Byte</th>
+<th>Holds</th>
+<th>Stored as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Format</td>
+<td><code>3</code>, or <code>1</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td>Flags</td>
+<td>bit 0 equal temperament, bit 1 ladies, bit 2 bar open, bits 3-5 the view</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Mode</td>
+<td>index into <code>MODES</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Key</td>
+<td>index into <code>KEYS</code>, 0 to 14</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Fine tune</td>
+<td>cents + 64</td>
+</tr>
+<tr>
+<td>5</td>
+<td>First string</td>
+<td>index into <code>SWARAS</code></td>
+</tr>
+<tr>
+<td>6-7</td>
+<td>A4</td>
+<td>tenths of a Hz, big-endian</td>
+</tr>
+<tr>
+<td>8-9</td>
+<td>The round</td>
+<td>hundredths of a second, big-endian</td>
+</tr>
+<tr>
+<td>10-12</td>
+<td>Tone, pluck, sustain</td>
+<td>0 to 100 each</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Volume, formats 3 and 4</td>
+<td>0 to 100</td>
+</tr>
+</tbody>
+</table>
+<p>A format 1 link has no volume byte, and decoding takes the volume from the
+settings the caller passes in, so the listener keeps their own. Every value is clamped to the app&rsquo;s ranges on the way in
+(<code>normalizeThambura</code>), so an out-of-range number plays the nearest valid
+value, and an index past the end of its table falls back to a valid entry,
+rather than failing.</p>
+<p>The orders these indexes point into:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Order</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MODES</code></td>
+<td><code>jawari</code>, <code>tambura</code>, <code>guitar</code>, <code>custom</code>, <code>sruti</code></td>
+</tr>
+<tr>
+<td><code>VIEWS</code></td>
+<td><code>mini</code>, <code>studio</code>, <code>raagini</code>, <code>lab</code></td>
+</tr>
+<tr>
+<td><code>SWARAS</code></td>
+<td><code>Sa</code>, <code>Ri1</code>, <code>Ri2</code>, <code>Ri3</code>, <code>Ga3</code>, <code>Ma1</code>, <code>Ma2</code>, <code>Pa</code>, <code>Da1</code>, <code>Da2</code>, <code>Da3</code>, <code>Ni3</code></td>
+</tr>
+<tr>
+<td><code>KEYS</code></td>
+<td>A2, A#2, B2, C3, C#3, D3, D#3, E3, F3, F#3, G3, G#3, A3, A#3, B3</td>
+</tr>
+<tr>
+<td><code>BASES</code></td>
+<td><code>jawari</code>, <code>tambura</code>, <code>guitar</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="a-custom-plan">A Custom plan <a class="anchor" href="#a-custom-plan">¶</a></h2>
+<p>After the settings, a Custom link has the following. The byte numbers are
+format 1&rsquo;s; in formats 3 and 4 each is one more, after the volume.</p>
+<table>
+<thead>
+<tr>
+<th>Byte</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>13</td>
+<td>The built-in plan it&rsquo;s stored against (index into <code>BASES</code>), plus <code>0x80</code> for the whole layout</td>
+</tr>
+<tr>
+<td>14-15</td>
+<td>That plan&rsquo;s checksum, big-endian</td>
+</tr>
+<tr>
+<td>16 on</td>
+<td>The plan, as edits or whole, then the hidden values</td>
+</tr>
+</tbody>
+</table>
+<p>The encoder tries all six choices (three built-in plans, two layouts) and
+keeps the shortest, so a link is never longer than the whole layout.</p>
+<h3 id="how-values-are-stored">How values are stored <a class="anchor" href="#how-values-are-stored">¶</a></h3>
+<p>Plan values are stored in the Lab&rsquo;s own units, as a count of the field&rsquo;s
+slider steps above its minimum. Ring at 50 s, with a minimum of 0.5 s and a
+step of 0.5 s, is step 99. Anything set in the Lab lands on a step and costs
+a byte or two. A value that isn&rsquo;t on a step (a built-in sound&rsquo;s own value,
+or one the Lab copied between strings) is stored exactly, as a big-endian
+IEEE 754 double.</p>
+<p>Steps and counts are varints: seven bits a byte, low bits first, with the top
+bit set on every byte but the last. So 0 to 127 is one byte, and 225 is
+<code>e1 01</code>.</p>
+<p>A string mask is one byte whose bits 0 to 3 are strings 1 to 4.</p>
+<h3 id="edits">Edits <a class="anchor" href="#edits">¶</a></h3>
+<p>A varint count, then each edit:</p>
+<ul>
+<li><strong>A plan field:</strong> a byte with the field&rsquo;s index in <code>FIELDS</code>, plus <code>0x40</code>
+when the value is exact; a string mask; then the value, a varint step or a
+double. Strings that share a new value share one edit.</li>
+<li><strong><code>254</code>, the attack scaling:</strong> a string mask of the strings whose render is
+scaled by its attack (<code>attackLevel</code>).</li>
+<li><strong><code>255</code>, the gaps:</strong> the four gaps between plucks as big-endian u16s, in
+ten-thousandths of the round, with no mask.</li>
+</ul>
+<p>Anything not edited stays as the built-in plan has it.</p>
+<h3 id="whole">Whole <a class="anchor" href="#whole">¶</a></h3>
+<p>For each of the four strings, and each field in <code>FIELDS</code> order, a varint that
+is <code>0</code> for &ldquo;as the built-in plan&rdquo;, <code>1</code> followed by a double for an exact
+value, or the step plus 2. Then the attack-scaling mask, and the four gaps as
+in the edits layout.</p>
+<h3 id="hidden-values">Hidden values <a class="anchor" href="#hidden-values">¶</a></h3>
+<p>Both layouts end with the voice values the Lab doesn&rsquo;t show (<code>HIDDEN</code>:
+<code>seconds</code>, <code>tailFade</code>, <code>maxPartialHz</code>, <code>attackLevel</code>), wherever they differ
+from what the layout above rebuilds: a varint count, then each one&rsquo;s index
+in <code>HIDDEN</code>, a string mask and a double.</p>
+<h3 id="the-checksum">The checksum <a class="anchor" href="#the-checksum">¶</a></h3>
+<p>The checksum is FNV-1a over the built-in plan&rsquo;s slider steps (every string,
+every field in <code>FIELDS</code> order), then its attack-scaling mask, then its gaps,
+folded to 16 bits. In format 4 it goes on over each string&rsquo;s hidden values
+(<code>HIDDEN</code>, in that order), exactly: each value&rsquo;s 64-bit float as four
+big-endian 16-bit words. A decoder rebuilds the built-in plan, and if its
+checksum isn&rsquo;t the one in the link, it sets <code>drifted</code> and the app shows the
+&ldquo;older version&rdquo; note.</p>
+<p>Formats 1 and 3 stop before the hidden values, and a decoder reads them that
+way, so a change to a built-in sound&rsquo;s hidden values reaches an old Custom
+link without the note
+(<a href="https://github.com/panyam/thambura/issues/121">#121</a>). Format 4 went in to
+cover them without adding a byte: a link is the same length in 3 and 4.</p>
+<p>Gaps are rescaled to add up to one on the way in, each at least one
+ten-thousandth.</p>
+<h3 id="fields">FIELDS <a class="anchor" href="#fields">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>Index</th>
+<th>Field</th>
+<th>In the Lab</th>
+<th>Range</th>
+<th>Step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>level</code></td>
+<td>Level</td>
+<td>-30 to 6 dB</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>bite</code></td>
+<td>Force</td>
+<td>0 to 3</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>attack</code></td>
+<td>Attack</td>
+<td>1 to 80 ms</td>
+<td>1</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>pluckAt</code></td>
+<td>Pluck point</td>
+<td>2 to 50 %</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>ringSeconds</code></td>
+<td>Ring</td>
+<td>0.5 to 60 s</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>damping</code></td>
+<td>High decay</td>
+<td>0 to 0.3</td>
+<td>0.002</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>damp</code></td>
+<td>Stop before next</td>
+<td>0 to 40 %</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>rolloff</code></td>
+<td>Rolloff</td>
+<td>0.3 to 3</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>maxPartials</code></td>
+<td>Harmonics</td>
+<td>1 to 64</td>
+<td>1</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>formantDb</code></td>
+<td>Bloom</td>
+<td>0 to 60 dB</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>formantHz</code></td>
+<td>Bloom centre</td>
+<td>200 to 5000 Hz</td>
+<td>10</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>formantOctaves</code></td>
+<td>Bloom width</td>
+<td>0.2 to 3 oct</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>formantRise</code></td>
+<td>Bloom rise</td>
+<td>0.02 to 3 s</td>
+<td>0.01</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>formantHold</code></td>
+<td>Bloom hold</td>
+<td>0 to 4 s</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>formantFall</code></td>
+<td>Bloom fall</td>
+<td>0.1 to 3 s</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>formantRest</code></td>
+<td>Bloom rest</td>
+<td>0 to 1</td>
+<td>0.01</td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>formantEnergy</code></td>
+<td>Bloom energy</td>
+<td>0 to 1</td>
+<td>0.01</td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>sweepFrom</code></td>
+<td>Sweep from</td>
+<td>1 to 60</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>18</td>
+<td><code>sweepTo</code></td>
+<td>Sweep to</td>
+<td>1 to 30</td>
+<td>0.5</td>
+</tr>
+<tr>
+<td>19</td>
+<td><code>sweepSeconds</code></td>
+<td>Sweep time</td>
+<td>0.1 to 20 s</td>
+<td>0.1</td>
+</tr>
+<tr>
+<td>20</td>
+<td><code>sweepWidth</code></td>
+<td>Sweep width</td>
+<td>0.5 to 10</td>
+<td>0.1</td>
+</tr>
+<tr>
+<td>21</td>
+<td><code>bloom</code></td>
+<td>Sweep gain</td>
+<td>0 to 5</td>
+<td>0.05</td>
+</tr>
+<tr>
+<td>22</td>
+<td><code>shimmer</code></td>
+<td>Shimmer</td>
+<td>0 to 5</td>
+<td>0.1</td>
+</tr>
+<tr>
+<td>23</td>
+<td><code>swell</code></td>
+<td>Swell</td>
+<td>0 to 1</td>
+<td>0.01</td>
+</tr>
+<tr>
+<td>24</td>
+<td><code>detune</code></td>
+<td>Detune</td>
+<td>-20 to 20 ¢</td>
+<td>0.1</td>
+</tr>
+<tr>
+<td>25</td>
+<td><code>pan</code></td>
+<td>Pan</td>
+<td>-1 to 1</td>
+<td>0.05</td>
+</tr>
+</tbody>
+</table>
+<p>The ranges and steps come from <code>FIELD_SPECS</code> in <code>thamburaPlan.ts</code>, and a
+step&rsquo;s meaning depends on them. Changing a field&rsquo;s minimum or step changes
+what every stored step of it decodes to, so those count as format changes
+too.</p>
+<h2 id="a-worked-example">A worked example <a class="anchor" href="#a-worked-example">¶</a></h2>
+<p>The built-in Shimmer preset, a format 1 link, is 86 characters and 64 bytes:</p>
+<pre><code>ARwDBEAHETABLDIyPADY5g8BDwcCDxEED2MFDwMGDwAHDxQJB1wJCDQKD2QLDxYMDzUNDzQODxgPDzcYBOEBAA
+
+01 1c 03 04 40 07 11 30 01 2c 32 32 3c 00 d8 e6 0f 01 0f 07 02 0f 11 04 0f 63 05 0f
+03 06 0f 00 07 0f 14 09 07 5c 09 08 34 0a 0f 64 0b 0f 16 0c 0f 35 0d 0f 34 0e 0f 18
+0f 0f 37 18 04 e1 01 00
+</code></pre><table>
+<thead>
+<tr>
+<th>Bytes</th>
+<th>Reads as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01</code></td>
+<td>format 1</td>
+</tr>
+<tr>
+<td><code>1c</code></td>
+<td>flags <code>00011100</code>: just, gents, bar open, view 3 (Lab)</td>
+</tr>
+<tr>
+<td><code>03</code></td>
+<td>mode 3, Custom</td>
+</tr>
+<tr>
+<td><code>04</code></td>
+<td>key 4, C#3</td>
+</tr>
+<tr>
+<td><code>40</code></td>
+<td>fine tune 0 (64 − 64)</td>
+</tr>
+<tr>
+<td><code>07</code></td>
+<td>first string 7, Pa</td>
+</tr>
+<tr>
+<td><code>11 30</code></td>
+<td>A4 4400 tenths, 440 Hz</td>
+</tr>
+<tr>
+<td><code>01 2c</code></td>
+<td>the round, 300 hundredths, 3 s</td>
+</tr>
+<tr>
+<td><code>32 32 3c</code></td>
+<td>tone 50, pluck 50, sustain 60</td>
+</tr>
+<tr>
+<td><code>00</code></td>
+<td>stored against <code>jawari</code>, as edits</td>
+</tr>
+<tr>
+<td><code>d8 e6</code></td>
+<td>the jawari plan&rsquo;s checksum</td>
+</tr>
+<tr>
+<td><code>0f</code></td>
+<td>15 edits</td>
+</tr>
+<tr>
+<td><code>01 0f 07</code></td>
+<td>Force, all four strings, step 7 (0.35)</td>
+</tr>
+<tr>
+<td><code>02 0f 11</code></td>
+<td>Attack, all four, step 17 (18 ms)</td>
+</tr>
+<tr>
+<td><code>04 0f 63</code></td>
+<td>Ring, all four, step 99 (50 s)</td>
+</tr>
+<tr>
+<td><code>05 0f 03</code></td>
+<td>High decay, all four, step 3 (0.006)</td>
+</tr>
+<tr>
+<td><code>06 0f 00</code></td>
+<td>Stop before next, all four, step 0 (let it ring)</td>
+</tr>
+<tr>
+<td><code>07 0f 14</code></td>
+<td>Rolloff, all four, step 20 (1.3)</td>
+</tr>
+<tr>
+<td><code>09 07 5c</code></td>
+<td>Bloom, strings 1-3, step 92 (46 dB)</td>
+</tr>
+<tr>
+<td><code>09 08 34</code></td>
+<td>Bloom, string 4 (the low Sa), step 52 (26 dB)</td>
+</tr>
+<tr>
+<td><code>0a 0f 64</code></td>
+<td>Bloom centre, all four, step 100 (1200 Hz)</td>
+</tr>
+<tr>
+<td><code>0b 0f 16</code></td>
+<td>Bloom width, all four, step 22 (1.3 oct)</td>
+</tr>
+<tr>
+<td><code>0c 0f 35</code></td>
+<td>Bloom rise, all four, step 53 (0.55 s)</td>
+</tr>
+<tr>
+<td><code>0d 0f 34</code></td>
+<td>Bloom hold, all four, step 52 (2.6 s)</td>
+</tr>
+<tr>
+<td><code>0e 0f 18</code></td>
+<td>Bloom fall, all four, step 24 (1.3 s)</td>
+</tr>
+<tr>
+<td><code>0f 0f 37</code></td>
+<td>Bloom rest, all four, step 55 (0.55)</td>
+</tr>
+<tr>
+<td><code>18 04 e1 01</code></td>
+<td>Detune, string 3, step 225 (+2.5 ¢)</td>
+</tr>
+<tr>
+<td><code>00</code></td>
+<td>no hidden values</td>
+</tr>
+</tbody>
+</table>
+<p>The levels, pans and gaps aren&rsquo;t edited, so they&rsquo;re the jawari plan&rsquo;s.</p>
+<h2 id="page-links-format-2">Page links (format 2) <a class="anchor" href="#page-links-format-2">¶</a></h2>
+<p>A page can hold more than one instrument, so its link is made of parts, one
+per instrument, keyed by the instrument&rsquo;s id on the page (<code>thambura-1</code>,
+<code>thambura-2</code>). After the format byte <code>2</code>, each part is:</p>
+<table>
+<thead>
+<tr>
+<th>Bytes</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>The kind, as an index into <code>PAGE_KINDS</code> plus one</td>
+</tr>
+<tr>
+<td>1</td>
+<td>The instrument&rsquo;s number on the page: <code>thambura-2</code> is 2</td>
+</tr>
+<tr>
+<td>varint</td>
+<td>The payload&rsquo;s length</td>
+</tr>
+<tr>
+<td>that many</td>
+<td>The payload</td>
+</tr>
+</tbody>
+</table>
+<p><code>PAGE_KINDS</code> is <code>thambura</code>, <code>session</code>, <code>hands</code>, then <code>kit</code>. A thambura&rsquo;s payload is a whole
+thambura link, the same bytes as above, so its bar flag and drift checksum
+work as they always have.</p>
+<h3 id="the-session-part">The session part <a class="anchor" href="#the-session-part">¶</a></h3>
+<p><code>session-1</code> is what the whole page shares rather than one instrument
+(<a href="https://github.com/panyam/thambura/issues/101">#101</a>). Its payload is
+eleven bytes:</p>
+<table>
+<thead>
+<tr>
+<th>Byte</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Its own format, <code>1</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td>The tala, as an index into <code>TALAS</code></td>
+</tr>
+<tr>
+<td>2, 3</td>
+<td>Jaathi and nadai, as indexes into <code>GATIS</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Kalai</td>
+</tr>
+<tr>
+<td>5-6</td>
+<td>The tempo in bpm</td>
+</tr>
+<tr>
+<td>7</td>
+<td>The key, 0 (A2) to 14 (B3)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>The fine tune in cents, plus 64</td>
+</tr>
+<tr>
+<td>9-10</td>
+<td>A4 in tenths of a Hz</td>
+</tr>
+</tbody>
+</table>
+<p>The thambura&rsquo;s part still carries its own key, fine tune and A4, since a
+thambura link must. When a page link has both, the session&rsquo;s shruthi is the
+one played. A page link without a session part, and a lone thambura link, take
+the shruthi from <code>thambura-1</code>&rsquo;s part, as they always did.</p>
+<p>A reader skips a part of a kind it doesn&rsquo;t know, and a thambura part that
+isn&rsquo;t a readable thambura link, and keeps the rest of the page, so a link
+from a newer version still opens the instruments this one has. A link that
+runs out partway through a part is rejected as a whole, like a short format
+1 link.</p>
+<h3 id="the-kriyas-and-kit-parts">The kriyas and kit parts <a class="anchor" href="#the-kriyas-and-kit-parts">¶</a></h3>
+<p>The kriyas (<code>hands-1</code>) and each kit (<code>kit-1</code>, <code>kit-2</code>) have a part too
+(<a href="https://github.com/panyam/thambura/issues/101">#101</a>), so a link carries
+every instrument on the page. On a page with a track list, the parts a link
+has are the instruments it opens with.</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Bytes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>hands</td>
+<td>its own format <code>1</code>; the volume; the sound group&rsquo;s name as a length byte and that many bytes of UTF-8</td>
+</tr>
+<tr>
+<td>kit</td>
+<td>its own format <code>1</code>; which of the page&rsquo;s kits it is (their order in the page spec); Variety as an index into <code>VARIETIES</code>; the volume; <code>1</code> if it plays along with the tala, else <code>0</code></td>
+</tr>
+</tbody>
+</table>
+<p>The sound group is written by name because the groups come from the
+fixture file, not from a table in the code. A kit is written by position
+because the kits are whatever the server found at startup, so a link from a
+server with a different set of kits can open a different one.</p>
+<p>A page whose only part is <code>thambura-1</code> is written as that part alone.
+Every page now writes a session part too, so nothing writes one alone any
+more, but lone thambura links keep opening. One read as a page, of either
+format, is <code>thambura-1</code>&rsquo;s part.</p>
+<h2 id="changing-the-format">Changing the format <a class="anchor" href="#changing-the-format">¶</a></h2>
+<p>People keep links, and presets are links, so a link made today has to open
+the same sound after any later release. The rules:</p>
+<ul>
+<li><strong>Add to the ends of the tables, never reorder them.</strong> <code>MODES</code>, <code>VIEWS</code>,
+<code>SWARAS</code>, <code>BASES</code>, <code>FIELDS</code>, <code>HIDDEN</code>, <code>PAGE_KINDS</code>, <code>TALAS</code>, <code>GATIS</code> and <code>VARIETIES</code> are all part of the format, since
+a link stores positions in them. A new mode, view or field goes at the
+end, and old links never mention it.</li>
+<li><strong>Leave the ranges and steps of existing fields alone,</strong> for the reason
+above.</li>
+<li><strong>Anything else bumps <code>FORMAT</code>.</strong> A new byte in the settings, a new layout,
+a wider mask: write it as a new format, and keep reading the old ones
+exactly as they read now. A version of the app that doesn&rsquo;t know the new
+format plays the listener&rsquo;s own setup and says it can&rsquo;t read the link,
+which is the right failure. The volume went in this way (format 3), and
+the wider checksum after it (format 4), so a build from before either
+drops a new link&rsquo;s thambura part.</li>
+</ul>
+<p><code>shareLink.test.ts</code> holds links made by formats 1, 3 and 4, written down
+as they were sent, with what they decode to (&ldquo;format 1 links keep opening
+the same&rdquo;, and the same for 3 and 4), and <code>shareLinkDrift.test.ts</code> opens
+them against a built-in plan that has changed. If
+a change breaks one, the change broke the format. Shimmer, above, is one of
+them.</p>
+<p>Page links came in with instance ids
+(<a href="https://github.com/panyam/thambura/issues/100">#100</a>). A new kind of
+instrument in a link is a new entry at the end of <code>PAGE_KINDS</code> and needs no
+new format: older versions skip its parts.</p>
+
+    </div>
+    
+    <nav class="page-nav" aria-label="Previous and next">
+        <a href="/thambura/guides/share-links/" class="prev">← Share links and presets</a>
+        
+    </nav>
+    
+</article>
+
+        </main>
+    </div>
+    
+<footer class="site-footer">
+    <div class="footer-inner">
+        <span>Thambura · <a href="https://github.com/panyam/thambura">GitHub</a> · <a href="https://github.com/panyam/thambura/issues">Issues</a></span>
+        <span>Built with <a href="https://github.com/panyam/s3gen">s3gen</a></span>
+    </div>
+</footer>
+
+    <script type="module" src="/thambura/static/js/gen/docs.js"></script>
+</body>
+</html>

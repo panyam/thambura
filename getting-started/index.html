@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting started · Thambura docs</title>
+    <meta name="description" content="What Thambura is made of, how a page is put together, and where to go next.">
+    
+    
+    
+    <script>
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem("theme"); } catch (e) {}
+            if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+                document.documentElement.classList.add("dark");
+            }
+        })();
+    </script>
+    <link rel="icon" href="/thambura/favicon.ico" sizes="16x16 32x32 48x48">
+    <link rel="icon" type="image/svg+xml" href="/thambura/favicon.svg">
+    <link rel="stylesheet" href="/thambura/static/css/docs.css">
+</head>
+<body>
+    
+
+
+<header class="site-header">
+    <div class="header-inner">
+        <a href="/thambura/" class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path stroke-linecap="round" d="M12 3v3M12 18v3M3 12h3M18 12h3"/>
+                <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+            </svg>
+            <span>Thambura <span class="logo-sub">docs</span></span>
+        </a>
+        <nav class="main-nav" aria-label="Sections">
+            
+            <a href="/thambura/getting-started/" aria-current="page">Getting started</a>
+            
+            <a href="/thambura/guides/">Guides</a>
+            
+            <a href="/thambura/reference/">Reference</a>
+            
+        </nav>
+        <div class="header-actions">
+            <a href="https://thambura.com/" class="app-link">Open the app</a>
+            <a href="https://github.com/panyam/thambura" class="icon-link" aria-label="GitHub" title="GitHub">
+                <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            </a>
+            <button id="theme-toggle" type="button" class="icon-link" aria-label="Theme" title="Theme"></button>
+        </div>
+    </div>
+</header>
+
+    <div class="page">
+        
+
+
+<aside class="sidebar" aria-label="In this section">
+    
+    
+    <h2 class="sidebar-title"><a href="/thambura/getting-started/">Getting started</a></h2>
+    
+    
+    
+    
+    
+    
+    
+    
+    <nav class="toc" aria-label="On this page">
+        <h2 class="sidebar-title">On this page</h2>
+        <ul>
+            
+            <li><a href="#the-pieces">The pieces</a>
+                
+            </li>
+            
+            <li><a href="#how-a-page-is-put-together">How a page is put together</a>
+                
+            </li>
+            
+            <li><a href="#run-it-locally">Run it locally</a>
+                
+            </li>
+            
+            <li><a href="#where-to-go-next">Where to go next</a>
+                
+            </li>
+            
+        </ul>
+    </nav>
+    
+</aside>
+
+        <main class="main">
+            
+<article class="content">
+    
+    <header class="content-header">
+        <h1>Getting started</h1>
+        <p class="lead">What Thambura is made of, how a page is put together, and where to go next.</p>
+    </header>
+    
+    <div class="content-body">
+        <p>Thambura runs in the browser. The Go server sends a page and its
+settings, and everything after that, from timing the beats to rendering the
+drone, happens in JavaScript on the listener&rsquo;s machine. There are no
+accounts and no server-side data: a listener&rsquo;s settings live in their
+browser, and a setup is shared as a link.</p>
+<h2 id="the-pieces">The pieces <a class="anchor" href="#the-pieces">¶</a></h2>
+<p>A page is made of <strong>islands</strong> and <strong>instruments</strong>. An island is a view,
+something you see and press, mounted into a slot the page&rsquo;s layout
+provides. An instrument is something that plays. The two are kept apart
+because they come and go differently: a page&rsquo;s islands are fixed by its
+layout, while instruments can be added and removed in the browser.</p>
+<p>The home page has two islands:</p>
+<ul>
+<li><strong>tala</strong>, the tala keeper, across the top of the page. It counts a
+tala&rsquo;s beats at a tempo, with the nadai&rsquo;s ticks inside each beat, and
+shows an image for each beat. Beside the image on a wide screen (under it
+on a phone) is the <strong>session strip</strong>, with the page&rsquo;s speed, its shruthi
+(the Sa everything plays to) and a Start all button.</li>
+<li><strong>tracks</strong>, the track list under the tala: a full-width row for each
+instrument on the page, with its main controls, level, mute and solo, and
+a toggle that opens its full panel. Add and Remove change which are
+playing. The thambura&rsquo;s panel has four views over the same sound (Mini,
+Studio, a Raagini replica and a Lab for editing the sound string by
+string).</li>
+</ul>
+<p>and three kinds of instrument:</p>
+<ul>
+<li><strong>the kriyas</strong>, the tala&rsquo;s hand actions heard: its claps, waves and
+finger counts, as a clap or a metronome tick. The tala itself makes no
+sound; it says when each beat falls, and the kriyas play it.</li>
+<li><strong>the thambura</strong>, which plucks its four strings in a round, or holds a
+sruti box&rsquo;s reed tone, at the page&rsquo;s shruthi.</li>
+<li><strong>a kit</strong> for each struck instrument installed, such as the mridangam. A
+kit is a <code>kit.json</code> manifest naming its strokes and the recorded takes of
+each, which the code plays without knowing anything about that particular
+drum. What it plays comes from <strong>patterns</strong>, written in the
+<a href="https://github.com/panyam/notations">notations</a> language and matched to
+a tala by the shape of its cycle.</li>
+</ul>
+<p>Each instrument has an id on the page (<code>hands-1</code>, <code>thambura-1</code>, <code>kit-1</code>)
+and its own audio track, and they all share one clock, so the kriyas and the
+drum land on the same beats and the drum follows the thambura&rsquo;s Sa.
+The home page shows them as a track list, a row per instrument, where you
+can add, remove, mute and solo them.</p>
+<p>Under all of it sits the <strong>engine</strong>, plain TypeScript with no DOM, audio or
+timers: the tala tables, exact fractions for every musical position, the
+tempo map that turns counts into seconds, and the sequencers that say what
+sounds when. It&rsquo;s what the planned libraries will be lifted from
+(<a href="https://github.com/panyam/thambura/issues/53">#53</a>).</p>
+<h2 id="how-a-page-is-put-together">How a page is put together <a class="anchor" href="#how-a-page-is-put-together">¶</a></h2>
+<p>The server describes each page with a <strong>page spec</strong>: a layout, the islands
+to mount (a name, a slot, how it&rsquo;s presented, and its config) and the
+instruments to start with (a kind and its config). It writes the spec into
+the page as JSON, and the browser mounts each island from a registry of
+factories by name and numbers the instruments by kind. The home page&rsquo;s spec,
+on a server with the mridangam kit installed, is:</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;layout&#34;</span>: <span style="color:#e6db74">&#34;tracks&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;islands&#34;</span>: [
+</span></span><span style="display:flex;"><span>    { <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;tala&#34;</span>, <span style="color:#f92672">&#34;slot&#34;</span>: <span style="color:#e6db74">&#34;main&#34;</span>, <span style="color:#f92672">&#34;presentation&#34;</span>: <span style="color:#e6db74">&#34;page&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#f92672">&#34;config&#34;</span>: { <span style="color:#f92672">&#34;fixturesUrl&#34;</span>: <span style="color:#e6db74">&#34;/static/Resources/TalasFixtures.json&#34;</span>, <span style="color:#f92672">&#34;instrumentControls&#34;</span>: <span style="color:#66d9ef">false</span>, <span style="color:#f92672">&#34;wide&#34;</span>: <span style="color:#66d9ef">true</span> } },
+</span></span><span style="display:flex;"><span>    { <span style="color:#f92672">&#34;name&#34;</span>: <span style="color:#e6db74">&#34;tracks&#34;</span>, <span style="color:#f92672">&#34;slot&#34;</span>: <span style="color:#e6db74">&#34;tracks&#34;</span>, <span style="color:#f92672">&#34;presentation&#34;</span>: <span style="color:#e6db74">&#34;page&#34;</span> }
+</span></span><span style="display:flex;"><span>  ],
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">&#34;instruments&#34;</span>: [
+</span></span><span style="display:flex;"><span>    { <span style="color:#f92672">&#34;kind&#34;</span>: <span style="color:#e6db74">&#34;hands&#34;</span>, <span style="color:#f92672">&#34;config&#34;</span>: { <span style="color:#f92672">&#34;fixturesUrl&#34;</span>: <span style="color:#e6db74">&#34;/static/Resources/TalasFixtures.json&#34;</span> } },
+</span></span><span style="display:flex;"><span>    { <span style="color:#f92672">&#34;kind&#34;</span>: <span style="color:#e6db74">&#34;thambura&#34;</span>, <span style="color:#f92672">&#34;added&#34;</span>: <span style="color:#66d9ef">true</span> },
+</span></span><span style="display:flex;"><span>    { <span style="color:#f92672">&#34;kind&#34;</span>: <span style="color:#e6db74">&#34;kit&#34;</span>, <span style="color:#f92672">&#34;config&#34;</span>: { <span style="color:#f92672">&#34;url&#34;</span>: <span style="color:#e6db74">&#34;/static/Resources/Kits/compmusic/kit.json&#34;</span> } }
+</span></span><span style="display:flex;"><span>  ]
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></code></pre><p>The instruments are what the page can have. Which of them are on it is the
+track list&rsquo;s business in the browser: a new visitor starts with the kriyas and
+the thambura and adds the mridangam from the list.</p>
+<p>A missing config is an empty one. <code>added</code> marks what a new listener starts
+with; on a page with a track list the rest wait under + Add. An island the registry doesn&rsquo;t know, or a
+slot that isn&rsquo;t on the page, is logged and skipped, so one bad entry doesn&rsquo;t
+stop the rest of the page.</p>
+<p>The same spec is how the islands go on <strong>someone else&rsquo;s page</strong>. A host
+writes a spec in a <code>data-thambura-spec</code> script, a <code>data-thambura-slot</code>
+element for each island, and loads <code>embed.js</code> from our site. Each island
+mounts in a shadow root with our styles, so the host&rsquo;s CSS and ours stay
+apart, and everything it loads (sounds, images, the Lab&rsquo;s code) comes from
+our site. <a href="https://thambura.com/embed/demo"><code>/embed/demo</code></a> is a page written
+that way, and <a href="/thambura/guides/embed/">Embed Thambura in your page</a>
+walks through it.</p>
+<p>Each page also keeps its whole setup in a link, one part per instrument
+plus the session. <a href="/thambura/guides/share-links/">Share links and presets</a>
+covers what&rsquo;s in one.</p>
+<h2 id="run-it-locally">Run it locally <a class="anchor" href="#run-it-locally">¶</a></h2>
+<p>You need Go, Node with pnpm, and <code>make</code>.</p>
+<pre><code><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;"><code><span style="display:flex;"><span>git clone https://github.com/panyam/thambura
+</span></span><span style="display:flex;"><span>cd thambura
+</span></span><span style="display:flex;"><span>make run          <span style="color:#75715e"># builds the frontend, then serves on :8000</span>
+</span></span><span style="display:flex;"><span>make docsrun      <span style="color:#75715e"># serves these pages on :8012 as you edit them</span>
+</span></span></code></pre></code></pre><p><code>make test</code> is the whole gate: the Go tests, type checks, the vitest suite,
+and a build of this site with every link checked.</p>
+<h2 id="where-to-go-next">Where to go next <a class="anchor" href="#where-to-go-next">¶</a></h2>
+<ul>
+<li><a href="/thambura/guides/">Guides</a> for adding an instrument, writing a pattern and
+sharing a setup, as they are written.</li>
+<li><a href="/thambura/reference/">Reference</a> for the engine&rsquo;s API, after the lift.</li>
+<li>The design notes in the repo explain why things are the way they are:
+<a href="https://github.com/panyam/thambura/blob/master/docs/designs/architecture.md">architecture</a>
+covers how sounds are made and timed, and
+<a href="https://github.com/panyam/thambura/blob/master/docs/designs/mridangam.md">mridangam</a>
+covers kits and patterns.</li>
+</ul>
+
+    </div>
+    
+</article>
+
+        </main>
+    </div>
+    
+<footer class="site-footer">
+    <div class="footer-inner">
+        <span>Thambura · <a href="https://github.com/panyam/thambura">GitHub</a> · <a href="https://github.com/panyam/thambura/issues">Issues</a></span>
+        <span>Built with <a href="https://github.com/panyam/s3gen">s3gen</a></span>
+    </div>
+</footer>
+
+    <script type="module" src="/thambura/static/js/gen/docs.js"></script>
+</body>
+</html>
