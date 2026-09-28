@@ -659,7 +659,11 @@ See NEXTSTEPS.md for the order.
   one, follows the page's shruthi, plays on its own audio track (`kit-1`,
   numbered by kind in the spec's order) and, given the page's clock, plays
   along with the tala (below); `player/StrokePad.tsx` draws whatever the
-  manifest declares. The mridangam is data, not code. `docs/designs/mridangam.md` is the plan
+  manifest declares. The mridangam is data, not code. That includes the
+  generated accompaniment for a tala with no written pattern
+  (`engine/generated.ts`): the manifest's `fallback` names the stroke for
+  each role (sam, clap, wave, count, fill), and a kit without one plays
+  nothing there (#166). `docs/designs/mridangam.md` is the plan
   (strokes and tuning, patterns per tala, packaging, views, build order).
 - **Kits aren't committed.** They're build products from the `thambura-data`
   repo: `make devkit` copies one into `web/static/Resources/Kits/<kit>/`,

@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { laneFor } from "./lane";
 import { PATTERNS, type Pattern } from "./patterns";
 import { generatedPattern } from "./generated";
+import type { Fallback } from "./kit";
 import { beatsFor, type TalaSettings } from "./selection";
 import { countingFor } from "./syllables";
 import { TalaGrid } from "./talaGrid";
 import { ratio } from "./ratio";
+
+const MRIDANGAM: Fallback = { sam: "L.tham", clap: "L.thom", wave: "R.dhin", count: "R.nam", fill: "R.thi" };
 
 const pattern = (id: string) => PATTERNS.find((p) => p.id === id)!;
 const counting = (settings: TalaSettings) => countingFor(settings, beatsFor(settings));
@@ -46,7 +49,7 @@ describe("laneFor", () => {
   it("gives a generated chaapu, one cell for the whole beat, the seven syllables inside it", () => {
     const beats = beatsFor(MISRA_CHAAPU);
     const grid = new TalaGrid(beats);
-    const lane = laneFor(generatedPattern(beats, grid.shape, grid.patternCounts), counting(MISRA_CHAAPU))!;
+    const lane = laneFor(generatedPattern(beats, grid.shape, grid.patternCounts, MRIDANGAM), counting(MISRA_CHAAPU))!;
     expect(lane.aksharas).toBe(1);
     expect(lane.columns).toBe(7);
     expect(lane.counting.map((c) => c.column)).toEqual([0, 1, 2, 3, 4, 5, 6]);
@@ -56,7 +59,7 @@ describe("laneFor", () => {
     const settings: TalaSettings = { tala: "sapta_thriputa", jaathi: "chatusram", nadai: "sankeernam", kalai: 1 };
     const beats = beatsFor(settings);
     const grid = new TalaGrid(beats);
-    const lane = laneFor(generatedPattern(beats, grid.shape, grid.patternCounts), counting(settings))!;
+    const lane = laneFor(generatedPattern(beats, grid.shape, grid.patternCounts, MRIDANGAM), counting(settings))!;
     expect(lane.columns).toBe(9);
     expect(lane.counting.filter((c) => c.akshara === 0).map((c) => c.syllable).join(" ")).toBe("ta ka di mi ta ka ta ki ta");
   });

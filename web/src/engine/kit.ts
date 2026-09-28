@@ -61,6 +61,17 @@ export interface Pack {
   cents: number;
 }
 
+/**
+ * The roles the generated accompaniment plays (`generated.ts`), for a tala
+ * nobody has written a pattern for: sam, the other claps, a wave, a finger
+ * count, and a filler between the accents.
+ */
+export const FALLBACK_ROLES = ["sam", "clap", "wave", "count", "fill"] as const;
+export type FallbackRole = (typeof FALLBACK_ROLES)[number];
+
+/** Which of the kit's strokes plays each role. */
+export type Fallback = Record<FallbackRole, string>;
+
 export interface Kit {
   kit: string;
   name: string;
@@ -69,6 +80,8 @@ export interface Kit {
   zones: Zone[];
   packs: Pack[];
   strokes: Stroke[];
+  /** Missing on a kit that plays nothing on a tala without a pattern. */
+  fallback?: Fallback;
 }
 
 /** A stroke ready to play: which file, and how far to shift it. */
@@ -216,6 +229,19 @@ export function parseKit(json: unknown): Kit {
   });
   if (packs.length === 0) throw new Error("kit: no packs");
   if (strokes.length === 0) throw new Error("kit: no strokes");
+  let fallback: Fallback | undefined;
+  if (json.fallback !== undefined) {
+    if (!isRecord(json.fallback)) throw new Error("kit: fallback must be an object");
+    const strokeIds = new Set(strokes.map((s) => s.id));
+    const map = json.fallback;
+    fallback = Object.fromEntries(
+      FALLBACK_ROLES.map((role) => {
+        const id = asString(map[role], `fallback.${role}`);
+        if (!strokeIds.has(id)) throw new Error(`kit: fallback.${role} names an unknown stroke "${id}"`);
+        return [role, id];
+      }),
+    ) as Fallback;
+  }
   return {
     kit: typeof json.kit === "string" ? json.kit : "kit",
     name: typeof json.name === "string" ? json.name : "Kit",
@@ -223,6 +249,7 @@ export function parseKit(json: unknown): Kit {
     zones,
     packs,
     strokes,
+    ...(fallback ? { fallback } : {}),
   };
 }
 

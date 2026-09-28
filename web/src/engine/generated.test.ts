@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { generatedPattern } from "./generated";
+import type { Fallback } from "./kit";
 import { ratio } from "./ratio";
 import { beatsFor, type TalaSettings } from "./selection";
 import { TalaGrid } from "./talaGrid";
 
-const forTala = (patch: Partial<TalaSettings> = {}) => {
+/** What the mridangam kit's manifest names. */
+const MRIDANGAM: Fallback = { sam: "L.tham", clap: "L.thom", wave: "R.dhin", count: "R.nam", fill: "R.thi" };
+
+const forTala = (patch: Partial<TalaSettings> = {}, fallback: Fallback = MRIDANGAM) => {
   const settings: TalaSettings = {
     tala: "custom_adi",
     jaathi: "chatusram",
@@ -14,7 +18,7 @@ const forTala = (patch: Partial<TalaSettings> = {}) => {
   };
   const beats = beatsFor(settings);
   const grid = new TalaGrid(beats, settings.kalai);
-  return generatedPattern(beats, grid.shape, grid.patternCounts)!;
+  return generatedPattern(beats, grid.shape, grid.patternCounts, fallback)!;
 };
 
 /** Where each stroke falls, as a fraction of the cycle. */
@@ -62,7 +66,19 @@ describe("the generated fallback", () => {
   });
 
   it("has nothing to play for an empty tala", () => {
-    expect(generatedPattern([], "", ratio(0))).toBeNull();
+    expect(generatedPattern([], "", ratio(0), MRIDANGAM)).toBeNull();
+  });
+
+  it("plays whatever strokes the kit names for each role", () => {
+    const pot: Fallback = { sam: "P.both", clap: "P.thom", wave: "P.din", count: "P.nam", fill: "P.ki" };
+    expect(forTala({}, pot).strokes.map((s) => s.stroke)).toEqual(["P.both", "P.nam", "P.nam", "P.nam", "P.thom", "P.din", "P.thom", "P.din"]);
+    expect(forTala({ nadai: "thisram" }, pot).strokes[1].stroke).toBe("P.ki");
+  });
+
+  it("has nothing to play for a kit that names no fallback", () => {
+    const beats = beatsFor({ tala: "custom_adi", jaathi: "chatusram", nadai: "chatusram", kalai: 1 });
+    const grid = new TalaGrid(beats);
+    expect(generatedPattern(beats, grid.shape, grid.patternCounts, undefined)).toBeNull();
   });
 
   it("covers every tala and nadai in the menus", () => {
