@@ -15,11 +15,11 @@ accents:
 ---
 \cycle("|4|2|2|")
 \beatDuration(4)
-mrid: tham dheem , tham
-      nam dheem , tham
+mrid: tham "thom+dhin" , tham
+      nam "thom+dhin" , tham
       tham dhin , nam
       nam dhin , nam
-      tham dheem , tham
-      nam dheem , tham
+      tham "thom+dhin" , tham
+      nam "thom+dhin" , tham
       tham dhin , nam
       nam dhin , nam

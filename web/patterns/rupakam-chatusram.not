@@ -14,6 +14,6 @@ accents:
 ---
 \cycle("|1|1|1|")
 \beatDuration(4)
-mrid: dheem , thom thi
-      nam thom dheem ,
-      dheem , tham ,
+mrid: "thom+dhin" , thom thi
+      nam thom "thom+dhin" ,
+      "thom+dhin" , tham ,

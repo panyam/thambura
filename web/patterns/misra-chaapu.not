@@ -14,6 +14,6 @@ accents:
 ---
 \cycle("|7|")
 \beatDuration(1)
-mrid: tham dheem tham
+mrid: tham "thom+dhin" tham
       [ tham tham ]
-      dheem dheem tham
+      "thom+dhin" "thom+dhin" tham
