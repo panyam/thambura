@@ -287,6 +287,18 @@ The phrase table lives in `web/patterns/`, one file per instrument kind
 (`realize/mridangam.json`), next to today's `strokes.json`, which becomes the
 stroke letter table above.
 
+### Where to change the table
+
+| To change | Edit |
+|---|---|
+| A default, for every pattern | `web/patterns/realize/mridangam.json`, one file per instrument kind |
+| One piece's choice | that pattern's `.not` front matter, `realize:` |
+| What a letter plays on this kit, a stand-in included | `web/patterns/strokes.json`, the letter table |
+
+`pnpm patterns` recompiles, and `make test` fails on stale compiled data or a
+phrase with no entry. Until the left-hand tha is recorded, `p` plays a soft
+ki (`R.thi` at a lower gain), marked as a stand-in.
+
 ## What it unlocks
 
 - **The lane (#82)** shows solkattu large and the stroke small, or counting
@@ -318,5 +330,5 @@ stroke letter table above.
 
 1. **Who checks it.** The realizations and the stand-ins for missing strokes
    are unverified, as the patterns' `source` lines already say.
-2. **The left-hand tha.** Silent, a stand-in, or wait for a recording
-   (review 1, point 3)?
+2. **The left-hand tha.** Decided: a soft ki stands in until it's recorded
+   (#80).
