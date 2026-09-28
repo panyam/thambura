@@ -180,7 +180,7 @@ func TestEmbedExamplesAreMountable(t *testing.T) {
 	if len(specs) < 3 {
 		t.Fatalf("found %d example specs, want the tala, the thambura and both", len(specs))
 	}
-	known := map[string]bool{"tala": true, "thambura": true, "session": true}
+	known := map[string]bool{"tala": true, "thambura": true, "session": true, "tracks": true}
 	for _, text := range specs {
 		var spec struct {
 			Islands []struct{ Name, Slot string }

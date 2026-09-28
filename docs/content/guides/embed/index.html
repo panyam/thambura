@@ -80,10 +80,35 @@ You only name instruments to add something, such as a kit:</p>
 
 <pre><code>{"kind": "kit", "config": {"url": "/static/Resources/Kits/compmusic/kit.json"}}</code></pre>
 
-<p>A kit plays along with the tala and follows the thambura's Sa. No kit is
-published on thambura.com yet
-(<a href="https://github.com/panyam/thambura/issues/104">#104</a>), so there's no
-live example of one here.</p>
+<p>The <code>url</code> is resolved against <code>embed.js</code>'s own address, so
+<code>/static/...</code> means thambura.com's. A kit plays along with the tala and
+tunes to the page's shruthi. The mridangam is the one kit published so far; the
+ghatam and kanjira are to come
+(<a href="https://github.com/panyam/thambura/issues/104">#104</a>).</p>
+
+<p>Each instrument is best shown in its own row, the way our home page does it:
+a <code>tracks</code> island for the rows, and the tala told to leave the
+instruments' controls to them. With a track list on the page, the instruments
+you name are what <strong>+ Add</strong> offers, and the listener starts with
+the claps and adds a drum when they want one. Add the mridangam below and
+press Start: its row holds its level, mute and solo, and its stroke lane,
+which lights the stroke being played.</p>
+
+<pre><code>{"islands": [
+  {"name": "tala", "slot": "practice", "config": {"instrumentControls": false}},
+  {"name": "tracks", "slot": "tracks"}
+ ],
+ "instruments": [{"kind": "kit", "config": {"url": "/static/Resources/Kits/compmusic/kit.json"}}]}</code></pre>
+
+<div class="embed-live" id="example-kit" data-embed-example='{"islands": [{"name": "tala", "slot": "practice", "config": {"instrumentControls": false}}, {"name": "tracks", "slot": "tracks"}], "instruments": [{"kind": "kit", "config": {"url": "/static/Resources/Kits/compmusic/kit.json"}}]}'>
+<div data-thambura-slot="practice"></div>
+<div data-thambura-slot="tracks"></div>
+</div>
+
+<p>On a page without a <code>tracks</code> island there's no Add, so the
+first kit you name starts on the page, and its stroke lane and pad show under
+the tala's beat instead. That's the way to have a drum playing from the start,
+for now (<a href="https://github.com/panyam/thambura/issues/157">#157</a>).</p>
 
 <h2 id="mount">Mounting from code</h2>
 
