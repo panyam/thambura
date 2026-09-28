@@ -186,6 +186,9 @@ docs site (see Docs site below). `docs/designs/architecture.md` explains how the
 continuous voices, and what changed from the 2016 app. `docs/designs/layouts.md` and
 `docs/designs/library.md` are plans, not descriptions: where the thambura could sit,
 and what it would take to import these pieces from another project.
+`docs/designs/solkattu.md` is a plan too: patterns written in solkattu and
+realized into strokes through karya's phrase table, which
+`tools/solkattu/karya_tally.py` tallies from a karya checkout.
 `docs/designs/sound-analysis.md` explains how the jawari voice was fitted to a
 recording, and how to rerun it: `pnpm render-mix` (web/scripts, over
 `src/tools/thamburaMix.ts`) renders the thambura offline to WAV, and the
