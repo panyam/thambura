@@ -302,9 +302,12 @@ stroke letter table above.
 
 ## Build order
 
-1. **Settle the names** (reviews 1, 2 and 4). A small PR renames the kit's
-   labels if we change them.
+1. **Settle the names** (reviews 1, 2 and 4). Done: the kit's labels are
+   Ki, Din, Dim and Thom din (ids unchanged), the counting line is spelled
+   *ta ka di mi … jo nu*, and misram counts *ta ki ta ta ka di mi*.
 2. **Counting syllables in the lane**, from the nadai, no patterns involved.
+   Done: `engine/syllables.ts` holds the syllable table and the counting
+   lines, and the lane shows the count beside each slot.
 3. **`sol:` and the phrase table** in the pattern compiler, with the defaults
    and the agreed additions; today's patterns get a solkattu line where one
    is known.

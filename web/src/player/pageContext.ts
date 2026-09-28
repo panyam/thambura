@@ -2,6 +2,7 @@ import type { Gati } from "../engine/carnatic";
 import type { Ratio } from "../engine/ratio";
 import { DEFAULT_TEMPO } from "../engine/selection";
 import { DEFAULT_PITCH, KEYS, MAX_CENTS, normalizePitch, samePitch, tunedTonicHz, type Pitch } from "../engine/shruthi";
+import type { CountedSyllable } from "../engine/syllables";
 import type { TalaGrid } from "../engine/talaGrid";
 import { TempoMap } from "../engine/tempoMap";
 import type { AudioEngine } from "./audio";
@@ -98,6 +99,8 @@ export interface TalaTiming {
    * yet heard, and every instrument has to resume there too.
    */
   resumesAt: Ratio;
+  /** The cycle's counting line (ta ka di mi…), the tala's rather than any instrument's. */
+  counting: CountedSyllable[];
 }
 
 export function createClock(audio: { readonly now: number }, ticker: Ticker, bpm = DEFAULT_TEMPO): Clock {

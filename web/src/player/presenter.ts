@@ -9,6 +9,7 @@ import {
   type TalaSettings,
 } from "../engine/selection";
 import { add, type Ratio } from "../engine/ratio";
+import { countingFor } from "../engine/syllables";
 import { TalaSequencer, type TalaEvent } from "../engine/sequencer";
 import { TalaGrid } from "../engine/talaGrid";
 import { DEFAULT_MOTION, isBeatMotion, motionAt, REST, type BeatMotion, type BeatPose } from "../engine/motion";
@@ -292,6 +293,7 @@ export class PlayerPresenter {
       grid: this.grid,
       nadai: this.state.settings.nadai,
       resumesAt: this.grid.aksharaStart(beat * Math.max(1, this.state.settings.kalai) + repeat),
+      counting: countingFor(this.state.settings, this.grid.beats),
     });
   }
 

@@ -333,16 +333,21 @@ describe("KitPresenter on the tala's clock", () => {
     const lane = kit.state.lane!;
     expect(lane.name).toBe("Adi sarvalaghu, chatusram");
     expect(lane.aksharas).toBe(8);
+    expect(lane.columns).toBe(4);
     expect(lane.strokes.slice(0, 3)).toEqual([
-      { stroke: "L.tham", akshara: 0, within: 0 },
-      { stroke: "R.thi", akshara: 0, within: 0.5 },
-      { stroke: "R.nam", akshara: 1, within: 0 },
+      { stroke: "L.tham", akshara: 0, column: 0 },
+      { stroke: "R.thi", akshara: 0, column: 2 },
+      { stroke: "R.nam", akshara: 1, column: 0 },
     ]);
+    // The counting line comes from the tala, over the clock.
+    expect(lane.counting.slice(0, 5).map((c) => c.syllable)).toEqual(["ta", "ka", "di", "mi", "ta"]);
+    expect(lane.counting[4]).toEqual({ syllable: "ta", akshara: 1, column: 0 });
 
     // A chaapu is one beat here, but its pattern is written in seven.
     tala.setSettings({ tala: "chaapu_misram" });
     expect(kit.state.lane!.aksharas).toBe(7);
-    expect(kit.state.lane!.strokes[3]).toEqual({ stroke: "L.tham", akshara: 3, within: 0 });
+    expect(kit.state.lane!.strokes[3]).toEqual({ stroke: "L.tham", akshara: 3, column: 0 });
+    expect(kit.state.lane!.counting.map((c) => c.syllable).join(" ")).toBe("ta ki ta ta ka di mi");
 
     // The generated skeleton says what it is, so the view can too.
     tala.setSettings({ tala: "sapta_ata", jaathi: "chatusram" });
