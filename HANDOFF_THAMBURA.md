@@ -4,7 +4,8 @@ Written 2026-09-28, after the render work (#39 in #137, #40 in #140) and a
 second thambura (#103 in #156), and updated the same day after the ghatam
 and tabla design (#164), the kit-named fallback (#166 in #168, with
 thambura-data#2), the Kriyas rename (#160), the thambura's volume in links
-(#153 in #165) and the drift checksum (#121 in #170). It folds forward
+(#153 in #165) and the drift checksum (#121 in #170), with the solkattu thread (#155,
+#162) added after. It folds forward
 what's still open from the 2026-09-27 handoff and drops what closed: #103,
 #121, #153, the #148/#149 and #156 deploys, #54, the hands track's name,
 the embed guide's kit example (#154), and the stale worktrees. The durable notes are in
@@ -74,6 +75,55 @@ flight. Delete it once the items below close.
    localStorage under our keys).
 5. **#138, a settings page for the pluck cache** (its size, Clear, usage).
    Filed this session; it should count both thamburas' entries.
+
+## The solkattu path (the mridangam's vocabulary)
+
+`docs/designs/solkattu.md` is the plan: patterns written in solkattu and
+realized into strokes through a phrase table. Steps 1 and 2 are live
+(#162 with thambura-data#1, thambura.com version 20260928t061843): the
+kit's labels are Ki, Din, Dim and Thom din, and the lane shows the tala's
+counting line (*ta ka di mi*, `engine/syllables.ts`, published on
+`clock.tala` as `counting`).
+
+Decided with the user on 2026-09-28, for step 3:
+
+- **`sol:` is a role** in the notations DSL beside `mrid:`, like any other,
+  with a meaning only we give it.
+- **The left-hand tha (`p`) plays a soft ki** (`R.thi`, lower gain) until
+  it's recorded (#80), marked as a stand-in so the lane can show it.
+- **The default phrase table is accepted**: the fourteen defaults in
+  solkattu.md plus the single-syllable additions (*din* → `od`, *tat* and
+  *ta* → `k`, *dit* → `t`, *ta din* → `k od`, *tat dit* → `k t`).
+
+Next, in order:
+
+1. **Step 3:** the `sol:` role and the phrase table in
+   `scripts/compile-patterns.mjs`. Where things get edited, so the user
+   can change the table later: defaults in
+   `web/patterns/realize/mridangam.json` (one file per instrument kind), one
+   piece's choice in its `.not` front matter (`realize:`), and what a
+   letter plays on this kit, the `p` stand-in included, in
+   `web/patterns/strokes.json`, which becomes the letter table. A phrase
+   with no entry is a build error naming it; `pnpm patterns:check` in
+   `make test` catches stale data. Write that table into solkattu.md's
+   format section too, and later into the "write a pattern" guide (#107).
+2. **Step 4, #82:** solkattu in the lane, large, over the strokes, with the
+   counting line when a pattern has none.
+3. **Then** the pattern editor, a korvai every N cycles, and the korvai
+   generator, all working in syllable ids.
+4. **#81** (wrap the lane by anga) gets more pressing: the counting rows
+   make sankeernam's cells nine rows tall and the lane wider.
+
+Also from this thread:
+
+- Syllables and strokes are held by id everywhere (saved patterns, links,
+  the table); only `syllables.ts` and `kit.json` spell them.
+- Speeds (1st, 2nd, 3rd per nadai) are still undefined; *ta ka di mi ta ka
+  jo nu* is in the table but nothing plays second speed.
+- **thambura-ext** (`panyam/thambura-ext`, private, checked out at
+  `../../thambura-ext/main`) holds code tied to one outside project's
+  format; `karya/phrase_tally.py` produced the override counts in
+  solkattu.md. Generic tools stay here (CLAUDE.md says which).
 
 ## Small follow-ups from #103, not filed
 

@@ -109,6 +109,10 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       at build time, written patterns for Adi, Short Rupakam and the Misra and
       Khanda chaapus with a generated skeleton for everything else, the stroke
       lane, variations and a korvai. Heard in Chrome on 2026-09-21.
+- [ ] **Solkattu as the patterns' vocabulary** (`docs/designs/solkattu.md`).
+      Done: the stroke names and the counting line in the lane (#162). Next:
+      a `sol:` role realized through a phrase table (step 3), then solkattu
+      in the lane (#82), then the editor and korvais on demand.
 - [ ] **Mridangam, what's left**, tracked as #77 (fills, eduppu, count-in),
       #78 (pattern per tempo), #79 (more patterns, and replacing the drafted
       Adi one), #80 (record arai chapu and the left-hand tha), #81 (the lane
