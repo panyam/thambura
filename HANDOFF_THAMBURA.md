@@ -1,93 +1,85 @@
 # Handoff: Thambura
 
-Written 2026-09-27, late, after #101 (the track list) landed in five PRs and
-the first production deploy since a78db12. It folds forward what's still
-open from the earlier 2026-09-27 handoff and drops what closed: the #101
-design question, the deploy, render speed (#39, #40), and #130. The durable
-notes are in CLAUDE.md, NEXTSTEPS.md and `docs/designs/`; this file is only
-what's in flight. Delete it once the items below close.
+Written 2026-09-28, after the render work (#39 in #137, #40 in #140) and a
+second thambura (#103 in #156). It folds forward what's still open from the
+2026-09-27 handoff and drops what closed: #103, the #148/#149 deploy, #54,
+and the embed guide's kit example (#154). The durable notes are in
+CLAUDE.md, NEXTSTEPS.md and `docs/designs/`; this file is only what's in
+flight. Delete it once the items below close.
 
 ## Where things stand
 
-- **The home page is the track list.** `/` is the tala across the top
-  (image and transport left, the speed and shruthi strip and selects right
-  from `lg` up, the island's `wide` config) and a full-width row per
-  instrument under it (`TrackList`, `TrackListView.tsx`). A row's toggle
-  opens its panel and Remove; the thambura's panel is its row's, and the
-  drawer and floating Thambura button are gone. The floating button is
-  Start all, Space starts or stops everything, T plays the thambura alone,
-  and Shift+↑/↓ steps the page's shruthi (`Shruthi`, one per page, which
-  the thambura and the kit follow). A new visitor starts with the claps and
-  a thambura and adds the mridangam. The About text is on `/about`. The
-  whole setup is one link (session, claps, thambura and kit parts).
-  `docs/designs/instruments.md` ("Views") records the decisions.
-- **The same layout is buildable from the public API.** The embed guide
-  documents the `tracks` island and the tala's `wide` and
-  `instrumentControls`, and #149 checked a track list embedded on a second
-  origin. What stays ours on purpose: `main.ts`'s page keys, the floating
-  Start all, the address-bar link, the service worker and Install.
-- **Deployed:** thambura.com serves 3c4e21a (the track list on `/`, #142,
-  and everything since a78db12, the mridangam kit included, so the dataset
-  is public). Master is ahead by #148 and #149; dev serves #149's build,
-  which is master's.
-- **Docs (#95)** are on GitHub Pages at https://panyam.github.io/thambura/,
-  published from 9201ab2 (#147), before #151, so the live pages still
-  describe the track list as cards. Republish (`make ghpages` from `origin/master`)
-  once #148 and #149 are on thambura.com. Writing the guides found #121,
-  #143 (fixed in #145) and #144, plus smaller embed rough edges in a comment
-  on #86 (the "(T)" tooltip, no unmount, the theme fixed at mount, a context
-  per spec). The embed guide's "no kit is published" is out of date: the
-  compmusic kit is on thambura.com with the CORS header, so a live kit
-  example can go in.
-- **The lift into goapplib and tsappkit** is unchanged from the last
-  handoff and still unstarted: goapplib#28 (`internal/page`, the Islands
-  partial, labs/noindex helpers, tag `v0.2.0`) then goapplib#27
-  (`web/src/page` into tsappkit `0.1.0`, with an entry point that takes a
-  registry). Use a fresh goapplib clone (the `newstack/` one's `.git`
-  points at a Mac path), and npm publish credentials here are unchecked.
-- **The mridangam is still paused** (#77 to #82); its patterns live in the
-  kit track, and its stroke lane is now in its row.
+- **Renders are off the main thread and cached.** Plucks render on a pool
+  of up to four workers (`pluckRenderer.ts`), the strings in parallel, and
+  a change cancels any render it made useless within a slice. Rendered
+  plucks stay in IndexedDB (`pluckCache.ts`, 60 MB, least recently used
+  out), keyed on `RENDER_VERSION` plus every value that shapes a pluck. A
+  cold Start's first pluck is about 70 ms (210 before), a returning
+  visit's about 23 ms with no render at all. #36's plan is done bar the
+  spikes #41 (WebAssembly, a poor trade) and #42 (an AudioWorklet).
+- **A page can have two thamburas**, as iTanpura plays two. Add offers a
+  second while there's one; `thamburaInstance` starts it on Ma, panned
+  right (0.4), with its own render seeds. Start all and T start both, the
+  second half its round behind. Both share one renderer. Sample keys now
+  start with the thambura's id, which fixed a bug that only two could hit
+  (one dropping a sample silenced the other's plucks).
+- **Deployed:** thambura.com serves 6f5c85e (#151, checked 2026-09-28),
+  which has the track list rows (#148, #149) and the render work. Not
+  live: #156 (a second thambura) and the docs PRs after it (#152, #154).
+  Dev serves 7f50acb (#149's branch). `make deploydev` then `make deploy`
+  when the user wants #156 out.
+- **Docs (#95)** on GitHub Pages were published from 6f5c85e, so the
+  embed guide's live mridangam example (#154) isn't there yet. `make
+  ghpages` from `origin/master` republishes.
+- **The lift into goapplib and tsappkit** is unchanged and unstarted:
+  goapplib#28 (`internal/page`, the Islands partial, labs/noindex helpers,
+  tag `v0.2.0`), then goapplib#27 (`web/src/page` into tsappkit `0.1.0`,
+  with an entry point that takes a registry). Use a fresh goapplib clone
+  (the `newstack/` one's `.git` points at a Mac path); npm publish
+  credentials here are unchecked.
+- **The mridangam is still paused** (#77 to #82).
 
 ## Next on the instruments path
 
-1. **Deploy #148 and #149** once the user has tried dev.
-2. **#103, a second thambura**, labelled ready. Only one thambura can be
-   added today (`TrackList` offers one while there's none); a second needs
-   Add to offer it, its own link part and storage (ids already allow it),
-   and `newThamburaPresenter` starting it fresh (only `thambura-1` inherits
-   the pre-id record).
-3. **#102, drawn pads** from a `layout` in `kit.json`, shown under the kit
-   row's toggle where the pad is now.
-4. **#99 with #104:** patterns naming their instrument, with the first
+1. **#102, drawn pads** from a `layout` in `kit.json`, under the kit row's
+   toggle where the pad is now.
+2. **#99 with #104:** patterns naming their instrument, with the first
    ghatam or kanjira kit, which needs recordings first. A second copy of
-   the same kit waits on this too: two copies would play the same pattern.
-5. **#132, asset packs**, and **#144** (filed by another session: embeds
-   save to the host's localStorage under our keys).
+   the same kit waits on this too, since two would play the same pattern.
+3. **#132, asset packs**, and **#144** (embeds save to the host's
+   localStorage under our keys).
+4. **#138, a settings page for the pluck cache** (its size, Clear, usage).
+   Filed this session; it should count both thamburas' entries.
+
+## Small follow-ups from #103, not filed
+
+- A pan control per thambura, as iTanpura has one per tanpura. The second's
+  0.4 is fixed and unsaved today.
+- The docked `thambura` island (`/labs/side-by-side`, embeds) always shows
+  `thambura-1`.
+- The T key's hint and `#play-all`'s title still say "the thambura".
 
 ## Waiting on the user
 
+0. **Whether to deploy #156** (a second thambura) to thambura.com, after
+   a look on dev.
 0. **A name for the hands track** in place of "Claps" ("Visual" and
    "Position" were floated). Parked on 2026-09-27.
-0. **Whether the embed guide should point at the published kit.** It still
-   says no kit is published on thambura.com, which stopped being true with
-   the 3c4e21a deploy.
 0. **Whether links should set the thambura's volume** like the claps' and
-   kits' (the share-links guide describes the difference as it is; raised
-   in #141).
-0. **Whether to close #54** (where the thambura sits): the track list
-   settled it, and NEXTSTEPS now says so.
+   kits' (the share-links guide describes the difference as it is).
 1. **When to start the lift** (above), and whether #131's npm package and
    tsappkit's publish can share credentials.
 2. **The wording and date of Evan Laforge's permission** for karya's
    patterns. `web/patterns/CREDITS.md` has a placeholder asking for it.
 3. **Phone checks** on the live site, which headless Chromium can't do:
    iPhone Safari with the silent switch on, the address bar updating, Copy
-   link and Share, and whether the screen stays awake through a long drone
-   (the wake lock now follows the thambura from `buildContext`, not its
-   island).
-4. **A listen to the tala** against the images, and to the mridangam at the
-   Variety odds ("some" varies about a third of cycles, "lots" seven in ten),
-   now with the lane in the kit's row.
+   link and Share, whether the screen stays awake through a long drone,
+   and how fast a cold Start is on a phone now that renders use workers
+   (CDP's CPU throttle can't show that; it doesn't slow workers).
+4. **A listen to the tala** against the images, to the mridangam at the
+   Variety odds ("some" varies about a third of cycles, "lots" seven in
+   ten), and to two thamburas together (does Ma, right, half a round
+   behind, sound like a second player?).
 5. **Three sound questions** for the Lab: a louder second Sa (+1.2 dB
    against the recording's +2.8), a softer attack (20-30 ms against 7 ms),
    a shorter ring (the recording's harmonics fall about twice as fast).
@@ -100,45 +92,45 @@ what's in flight. Delete it once the items below close.
 
 ## Open issues
 
-- **Instruments (#94):** #99, #102, #103, #104, #132; #144 (embed storage).
+- **Instruments (#94):** #99, #102, #104, #132; #144 (embed storage).
 - **Filed by other sessions:** #113 (pluck patterns beyond Pa Sa Sa Sa),
   #116 (the Lab beside any skin), #121 (a built-in sound's hidden values
-  change old Custom links without the drift notice), #138 (a settings page
-  for the pluck cache's size).
+  change old Custom links without the drift notice).
 - **Mridangam, paused:** #77 fills, eduppu and a count-in; #78 a pattern to
   suit the tempo; #79 more patterns and replacing the drafted Adi one; #80
   arai chapu and the left-hand tha; #81 the lane on a long cycle; #82
   solkattu under the strokes.
 - **#72, the AAC kit:** decided by attack onset in real Chrome and Safari,
   which Playwright's Chromium (no AAC) can't measure.
-- **Thambura sound:** #8 umbrella; #51 a Hindustani-leaning preset; #45,
-  #46, #47; #64 curves outrun a 3 s round; #52 pluck models.
-- **Render speed #36:** #37 to #40 done; #41 (WebAssembly) a poor trade;
-  #42 (an AudioWorklet) open.
+- **Thambura sound:** #8 umbrella (its "second tambura panned apart" is
+  ticked; a 5th string is still open); #51 a Hindustani-leaning preset;
+  #45, #46, #47; #64 curves outrun a 3 s round; #52 pluck models.
+- **Render speed #36:** #41 and #42, the spikes.
 - **#22, hand images**, blocked on what the three kriyas should look like.
-- **Upstream, panyam/notations:** #17 to #22, filed earlier with
-  reproductions; #19 and #21 shape how our pattern files are written.
-- **Small follow-ups not filed:** the manifest's install screenshots and
-  `og.png` still show the drawer-era layout (`design/render-images.mjs`
-  regenerates them).
+- **Upstream, panyam/notations:** #17 to #22; #19 and #21 shape how our
+  pattern files are written.
+- **Not filed:** the manifest's install screenshots and `og.png` still show
+  the drawer-era layout (`design/render-images.mjs` regenerates them).
 
 ## Environment
 
 - This session worked in worktrees under `thambura/` and removed each when
-  its PR merged. Only `thambura/checkpoint-home` (this checkpoint's PR) is
-  left; remove it once that lands. No servers of this session's are running.
+  its PR merged. Only `thambura/checkpoint-render` (this checkpoint's PR) is
+  left; remove it once that lands. `thambura/drawer-opened-link` and
+  `thambura/pwa` are older sessions' worktrees whose branches are merged;
+  safe to remove if nobody claims them. No servers of this session's are
+  running.
 - Other sessions hold 8001 and 8002; 8080 and 8091 are something else.
-  Serve a worktree on a free port, restart it after every rebuild (a stale
-  `bundle.json` shows as chunk 404s), and **check the port is free
-  afterwards**: `fuser` isn't installed, so `fuser -k` silently does
-  nothing. See CLAUDE.md, "Checking in a browser".
-- A worktree needs the kit copied in for anything mridangam
-  (`cp -r ../main/web/static/Resources/Kits web/static/Resources/`, or
-  `make devkit`); `make deploy` and `make deploydev` upload whatever kit the
+  This session used 8021 to 8023. Serve a worktree on a free port, restart
+  it after every rebuild, and **check the port is free afterwards**
+  (`fuser` isn't installed). See CLAUDE.md, "Checking in a browser".
+- Screenshots for PRs go on `pr-assets` through a worktree of
+  `origin/pr-assets`; #156's are under `second-thambura/`.
+- A worktree needs the kit copied in for anything mridangam (`make
+  devkit`); `make deploy` and `make deploydev` upload whatever kit the
   worktree has.
 - A box restart loses each worktree's `web/node_modules` and the shared
   `../.venv` (`make setupvenv` rebuilds it).
 - `thambura/mridangam-data` is the `thambura-data` working copy (359 MB);
   the C recording is `thambura/01-Tanpura-Sample.mp3`, outside every
-  checkout (copy it into a worktree's `recordings/` as `tambura-C.mp3` to
-  rerun the sound analysis).
+  checkout.

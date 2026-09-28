@@ -869,6 +869,11 @@ edits. So:
   `cd <dir>/web && pnpm install`. A worktree gets its own `node_modules`,
   and its own `tools/sound-analysis/.venv` if you're running the sound
   analysis; both are gitignored, so a new worktree starts without them.
+- Never undo a temporary test edit with `git checkout <file>`: it resets the
+  whole file to the last commit and takes every uncommitted change in it
+  along. It wiped `build.mjs`'s new worker build during #39's buildcheck
+  test (restored from a copy made just before). Undo the edit with the
+  reverse `sed`, or copy the file aside first.
 - Stage explicit paths, and check `git status` for files you didn't touch.
   After `git rm -r <dir>`, leave `<dir>` out of the `git add`: the pathspec
   no longer matches and `git add` fails, and a commit chained with `;` rather
@@ -924,7 +929,8 @@ label:ready` is what can be picked up now.
 ## Checking in a browser
 
 Playwright's Chromium is at `~/.cache/ms-playwright/chromium-<n>/` (1243 as
-of 2026-09-26; `ls` it, the number moves with Playwright updates), and
+of 2026-09-26; `ls` it, the number moves with Playwright updates), with the
+binary under `chrome-linux-arm64/chrome` on this arm64 box, and
 `playwright-core` can be required from another project's node_modules (e.g.
 `../Agni/main/web` or `/workspace/repos/projects/sdlold/web/frontend`). Launch with `--autoplay-policy=no-user-gesture-required`.
 The speed and shruthi strip is `[aria-label="Speed and shruthi"]`: the tempo
@@ -932,8 +938,10 @@ box `input[aria-label="Tempo in beats per minute"]`, the note
 `button[aria-controls="shruthi-keys"]` (its text reads `C 3 · 1`; clicking it
 opens `#shruthi-keys`, whose stretched keys have a `title`), the arrows
 `button[aria-label="Shruthi up a semitone"]` and "Fine tune up a cent", and
-`button:has-text("Start all")`. Space presses a focused button, so click the
-page body before testing it as Start all.
+`button:has-text("Start all")`. That text also matches the floating
+`#play-all`, so a `getByRole` or unscoped locator hits two buttons in strict
+mode: use `#play-all`, or scope to the strip. Space presses a focused button,
+so click the page body before testing it as Start all.
 On `/` the rows are `[aria-label="Instruments"] article`, each
 labelled by its instrument ("Claps", "Thambura", "Mridangam"), with
 `button[aria-label="Show more of Mridangam"]` (then "Show less of…"), which
@@ -942,7 +950,13 @@ opens `button[aria-label="Remove mridangam"]`, mute and solo as
 (their labels go on to say what they do), `input[aria-label="Thambura round length"]`,
 `select[aria-label="Add an instrument"]` (options by label), and Undo in the
 list's `[role="status"]`. A new browser starts with the claps and the
-thambura only; add the mridangam with `selectOption({ label: "Mridangam" })`.
+thambura only; add the mridangam with `selectOption({ label: "Mridangam" })`,
+and a second thambura with `selectOption({ label: "Thambura" })`, whose row
+is `article[aria-label="Thambura 2"]` (#103). A worktree with no kit and one
+thambura already on the page has no Add menu at all, since there's nothing
+to add. A native `<select>`'s options never show in a screenshot; setting
+its `size` to the option count renders them as a list (say so in the
+caption).
 The tala's transport buttons are icons, so select them by label:
 `button[aria-label="Start"]` (or "Stop", "Restart", "Previous beat"). With
 `getByRole`, pass `exact: true`: name matching is a substring match, so
@@ -1016,6 +1030,27 @@ A few probes that worked, all set up in an init script:
   relied on the default once reported a difference that was only that.
 - A `PerformanceObserver` for `longtask` shows any main-thread stall over
   50 ms, which is how the render slicing was checked with the tala playing.
+- To tell which thambura a pluck came from (#103), wrap
+  `AudioNode.prototype.connect` to remember each node's destination, and at
+  `AudioBufferSourceNode.prototype.start` follow the chain past the
+  `StereoPannerNode`: the next node is that thambura's mixer track. Rendered
+  plucks are the buffers made by `createBuffer` (wrap it into a `WeakSet`);
+  claps and strokes are decoded instead.
+- Render work: wrap `Worker.prototype.postMessage` and count messages with
+  `type: "render"` (jobs sent to the pluck workers), and the `Worker`
+  constructor for URLs containing `pluckWorker` (workers started; the
+  transport's tickers are blob workers too). A returning visit with the
+  pluck cache (#140) sends none. The cache is the IndexedDB database
+  `thambura-plucks`; its `meta` store lists each entry's key, bytes and
+  last use.
+- CDP's `Emulation.setCPUThrottlingRate` slows the page's main thread, not
+  its workers, so a throttled run flatters anything done in a worker. Quote
+  it as main-thread evidence (long tasks), not as a phone's render time.
+- After rebuilding under a running server, the first load in a profile that
+  has visited before still runs the previous `app.js`: the service worker
+  serves it from its cache and refreshes behind it. Load once more before
+  measuring. That's also what a real deploy does, which is why a
+  `RENDER_VERSION` bump re-renders on the second visit after a deploy.
 - Headless Chromium can't test a real wake lock or audio session, so define
   stand-in `navigator.wakeLock` and `navigator.audioSession` objects and log
   the calls.
@@ -1024,8 +1059,11 @@ A few probes that worked, all set up in an init script:
   is undefined, and the failure reads as "Cannot read properties of undefined".
 - Cold Start is measured by wrapping `AudioBufferSourceNode.prototype.start` in
   an init script, pressing T (before #136, clicking the floating play
-  button) and waiting for the first booked pluck: 375 ms on master before #62, 225 ms after. Serve the branch and the
-  base on two ports and alternate between them, for the reason above.
+  button) and waiting for the first booked pluck: 375 ms on master before #62, 225 ms after,
+  about 70 ms with the workers (#39), and about 23 ms on a returning visit
+  with the cache (#40). Two thamburas cold take about 1.35x one (#103).
+  Serve the branch and the base on two ports and alternate between them,
+  for the reason above.
 - `pkill -f <pattern>` can match the shell running it and kill it, and
   `fuser` isn't installed. Find a server by its port instead:
   `ss -ltnp | grep :8011` gives the pid; kill it and its `go run` parent
