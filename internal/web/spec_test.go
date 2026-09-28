@@ -54,3 +54,28 @@ func TestSpecValidate(t *testing.T) {
 		t.Fatal("a spec without a layout validated")
 	}
 }
+
+// A spec marks the instruments that are on the page from the start (#157);
+// the flag is written only when set, so an instrument that's only offered
+// looks as it always has.
+func TestInstrumentAddedIsWrittenOnlyWhenSet(t *testing.T) {
+	s := Spec{Spec: page.Spec{Layout: "tracks"}, Instruments: []Instrument{{Kind: "thambura", Added: true}, {Kind: "kit"}}}
+	out := string(s.JSON())
+	if !strings.Contains(out, `{"kind":"thambura","config":{},"added":true}`) || !strings.Contains(out, `{"kind":"kit","config":{}}`) {
+		t.Fatalf("JSON() = %s", out)
+	}
+}
+
+// The home page starts a new listener with the claps (always there) and a
+// thambura, and only offers its kits.
+func TestHomeSpecAddsTheThamburaOnly(t *testing.T) {
+	var added []string
+	for _, in := range homeSpec([]string{"/static/Resources/Kits/compmusic/kit.json"}).Instruments {
+		if in.Added {
+			added = append(added, in.Kind)
+		}
+	}
+	if strings.Join(added, ",") != "thambura" {
+		t.Fatalf("added = %v, want only the thambura", added)
+	}
+}

@@ -3,9 +3,11 @@ import { Tracks } from "./pageContext";
 import { FakeAudio } from "./testFakes";
 import { TrackList, UNDO_MS, type CatalogEntry, type Placed } from "./trackList";
 
+// As the home page's spec offers them: the thambura added (#157), the kits
+// only offered.
 const CATALOG: CatalogEntry[] = [
   { kind: "hands", config: { fixturesUrl: "/f.json" } },
-  { kind: "thambura", config: {} },
+  { kind: "thambura", config: {}, added: true },
   { kind: "kit", config: { url: "/Kits/mridangam/kit.json" } },
   { kind: "kit", config: { url: "/Kits/ghatam/kit.json" } },
 ];
@@ -20,7 +22,7 @@ class Mem {
   }
 }
 
-function setUp(opts: { store?: Mem | null; opened?: Record<string, string>; records?: Record<string, unknown> } = {}) {
+function setUp(opts: { store?: Mem | null; opened?: Record<string, string>; records?: Record<string, unknown>; catalog?: CatalogEntry[] } = {}) {
   const log: string[] = [];
   const records = new Map<string, unknown>(Object.entries(opts.records ?? {}));
   const timers: (() => void)[] = [];
@@ -30,7 +32,7 @@ function setUp(opts: { store?: Mem | null; opened?: Record<string, string>; reco
   const removedParts: string[] = [];
   const store = opts.store === null ? undefined : (opts.store ?? new Mem());
   const list = new TrackList<Placed>({
-    catalog: CATALOG,
+    catalog: opts.catalog ?? CATALOG,
     make: (p) => {
       log.push(`make ${p.id}${p.kind === "kit" ? `:${p.kit}` : ""} ${JSON.stringify(records.get(p.id) ?? null)}`);
       return { instrument: p, dispose: () => log.push(`dispose ${p.id}`) };
@@ -65,6 +67,30 @@ describe("TrackList", () => {
     expect(list.state.rows.map((r) => r.removable)).toEqual([false, true]);
     // Not saved until they change it, so a later default still reaches them.
     expect(store?.value).toBeNull();
+  });
+
+  it("starts with the instruments the spec marks added, and offers the rest (#157)", () => {
+    const withKit = CATALOG.map((e, i) => (i === 3 ? { ...e, added: true } : e));
+    const { tracks, log, list } = setUp({ catalog: withKit });
+    // The second kit in the spec, numbered kit-1 since it's the first on the page.
+    expect(tracks.ids()).toEqual(["hands-1", "thambura-1", "kit-1"]);
+    expect(log).toContain("make kit-1:1 null");
+    expect(list.state.addable).toEqual([{ kind: "thambura" }, { kind: "kit", kit: 0 }]);
+  });
+
+  it("starts without a thambura when the spec doesn't mark it added, and always with the claps", () => {
+    const noThambura = CATALOG.map((e) => ({ ...e, added: undefined }));
+    const { tracks, list } = setUp({ catalog: noThambura });
+    expect(tracks.ids()).toEqual(["hands-1"]);
+    expect(list.state.addable.map((a) => a.kind)).toEqual(["thambura", "kit", "kit"]);
+  });
+
+  it("starts with a saved list or a shared link over what the spec marks added", () => {
+    const withKit = CATALOG.map((e, i) => (i === 2 ? { ...e, added: true } : e));
+    const saved = setUp({ catalog: withKit, store: new Mem({ tracks: [{ id: "hands-1", kind: "hands" }] }) });
+    expect(saved.tracks.ids()).toEqual(["hands-1"]);
+    const linked = setUp({ catalog: withKit, opened: { "thambura-1": "t" } });
+    expect(linked.tracks.ids()).toEqual(["hands-1", "thambura-1"]);
   });
 
   it("starts a page without the list with the first kit too, since it can't add one", () => {

@@ -11,6 +11,12 @@ const KINDS: TrackKind[] = ["hands", "thambura", "kit"];
 export interface CatalogEntry {
   kind: TrackKind;
   config: Record<string, unknown>;
+  /**
+   * On the page when a new listener opens it (the spec's `added`, #157),
+   * rather than only offered under Add. A saved list or a shared link still
+   * wins, and a page without the list starts with what it always has.
+   */
+  added?: boolean;
 }
 
 /** An instrument on the page, as the list keeps it: its id, and for a kit which of the catalog's kits. */
@@ -198,12 +204,22 @@ export class TrackList<T> {
     if (this.deps.store && fromLink.length > 0) return fromLink;
     if (this.deps.store && saved) return saved.filter((p) => this.entry(p));
     const out: Placed[] = [];
+    // The claps are always there: the tala calls them, and they can't be removed.
     if (this.catalogHas("hands")) out.push({ id: "hands-1", kind: "hands" });
-    if (this.catalogHas("thambura")) out.push({ id: "thambura-1", kind: "thambura" });
-    // A new listener starts with the tala's claps and a thambura, and adds a
-    // drum when they want one. A page without the list can't add one, so it
-    // starts with the first kit, as pages always have.
-    if (this.catalogHas("kit") && !this.deps.store) out.push({ id: "kit-1", kind: "kit", kit: 0 });
+    if (!this.deps.store) {
+      // A page without the list can't add anything, so it starts with a
+      // thambura and the first kit, as pages always have.
+      if (this.catalogHas("thambura")) out.push({ id: "thambura-1", kind: "thambura" });
+      if (this.catalogHas("kit")) out.push({ id: "kit-1", kind: "kit", kit: 0 });
+      return out;
+    }
+    // With the list, a new listener starts with what the spec marks added
+    // (the home page: a thambura) and adds the rest when they want it.
+    if (this.deps.catalog.some((e) => e.kind === "thambura" && e.added)) out.push({ id: "thambura-1", kind: "thambura" });
+    const kits = this.deps.catalog.filter((e) => e.kind === "kit");
+    kits.forEach((e, kit) => {
+      if (e.added) out.push({ id: `kit-${out.filter((p) => p.kind === "kit").length + 1}`, kind: "kit", kit });
+    });
     return out;
   }
 

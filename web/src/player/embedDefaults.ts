@@ -15,7 +15,8 @@ export function withDefaultInstruments(spec: PageSpec): PageSpec {
   const shows = (name: string) => spec.islands.some((i) => i.name === name);
   const has = (kind: string) => spec.instruments.some((i) => i.kind === kind);
   const added = [
-    ...(shows("thambura") && !has("thambura") ? [{ kind: "thambura", config: {} }] : []),
+    // Added, so a host's thambura island has its thambura with a track list too (#157).
+    ...(shows("thambura") && !has("thambura") ? [{ kind: "thambura", config: {}, added: true }] : []),
     ...(shows("tala") && !has("hands") ? [{ kind: "hands", config: { fixturesUrl: FIXTURES } }] : []),
   ];
   return added.length ? { ...spec, instruments: [...spec.instruments, ...added] } : spec;

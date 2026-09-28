@@ -24,6 +24,11 @@ export interface InstrumentSpec {
   kind: string;
   /** Handed to whatever builds it, as is. Always an object. */
   config: Record<string, unknown>;
+  /**
+   * On the page from the start rather than only offered, where the page has
+   * a list to add instruments from (#157). Present only when true.
+   */
+  added?: boolean;
 }
 
 export interface PageSpec {
@@ -40,7 +45,8 @@ const SLOT = /^[a-z][a-z0-9-]*$/;
  * The spec in `text`, or null when there is none or it isn't one. Islands
  * without a name or with a slot name that isn't plain are dropped, and a
  * config that isn't an object becomes {}, so what comes back can be mounted.
- * Instruments without a kind are dropped too, and a missing list is empty.
+ * Instruments without a kind are dropped too, and a missing list is empty;
+ * an instrument's `added` is kept only when it's true.
  */
 export function readSpec(text: string | null | undefined): PageSpec | null {
   if (!text) return null;
@@ -64,7 +70,7 @@ export function readSpec(text: string | null | undefined): PageSpec | null {
   const instruments: InstrumentSpec[] = [];
   for (const inst of Array.isArray(raw.instruments) ? raw.instruments : []) {
     if (!isObject(inst) || typeof inst.kind !== "string" || !inst.kind) continue;
-    instruments.push({ kind: inst.kind, config: isObject(inst.config) ? inst.config : {} });
+    instruments.push({ kind: inst.kind, config: isObject(inst.config) ? inst.config : {}, ...(inst.added === true && { added: true }) });
   }
   return { layout: raw.layout, islands, instruments };
 }
