@@ -87,19 +87,55 @@ Things to decide:
    (wrong head, wrong sound), or record it (#80). This decides how much of
    the table plays at all before a recording session.
 
-## For review 2: the sollus
+## For review 2: the syllables
 
-The 34 spoken syllables. The lane would show these; the question is the
-spelling, and whether we transliterate one way everywhere (this list is
-phonetic ASCII; Tamil and Kannada teachers write differently).
+Each syllable gets an id, one spelling the app shows, and aliases the
+editor and the pattern files also accept. The phrase table, saved patterns
+and share links hold the id, never the spelling (see "Watch out for").
 
-`cha cham dhom dom di din dim dit du ga gin gu jo ka ki ku kum lang mi na nam
-nang nu ri ta ṭa tam tang tat tha thom ti tong`
+A spelling merges into another only when a teacher would say the same sound
+**and** nothing realizes the two differently. Romanization alone isn't enough:
+Tamil writes *t*, *th* and *dh* with one letter, so spelling differences are
+mostly noise, but *thom* and *dhom* are realized differently in the counts
+below (review 3), so they stay apart until a player says otherwise.
 
-- It says *jo nu*, not *ja nu*. Both are heard (*ta ka jo nu*, *ta ka ja
-  nu*); pick one for the counting line.
-- It says *di mi*, not *dhi mi*: no aspirated *dh* in the syllables.
-- *ṭa* (retroflex) exists alongside *ta*.
+| Id | Shown as | Aliases | Status |
+|---|---|---|---|
+| `cha` | cha | | |
+| `cham` | cham | | |
+| `di` | di | dhi | merge |
+| `din` | din | dhin | merge |
+| `dim` | dim | dhim, dheem | merge |
+| `dit` | dit | dhit | merge |
+| `dhom` | dhom | dom | merge |
+| `thom` | thom | | **hold**: not merged with dhom (thom → `od` 4 of 5, dhom → `o` 5 of 5) |
+| `du` | du | dhu | merge |
+| `ga` | ga | | |
+| `gin` | gin | | keep apart from ki |
+| `gu` | gu | | |
+| `jo` | jo | ja | merge (*ta ka jo nu* = *ta ka ja nu*) |
+| `ka` | ka | | |
+| `ki` | ki | | |
+| `ku` | ku | | |
+| `kum` | kum | | |
+| `lang` | lang | | |
+| `mi` | mi | | |
+| `na` | na | | keep apart from nam and nang |
+| `nam` | nam | | |
+| `nang` | nang | | |
+| `nu` | nu | | |
+| `ri` | ri | | |
+| `ta` | ta | ṭa | merge (the retroflex *ṭa* shown as ta) |
+| `tha` | tha | | **hold**: some teachers keep it apart from ta |
+| `tat` | tat | | keep: nearly always `k` (23 of 25) |
+| `tam` | tam | | **hold**: tam splits `u` / `od`, tang is `u`; whether *tham* is an alias waits on this |
+| `tang` | tang | | |
+| `ti` | ti | | |
+| `tong` | tong | | |
+
+Which spelling is shown is the other half of this review: *din* or *dhin*,
+*jo* or *ja*, *dim* or *dheem*. The ids can stay as they are whatever is
+shown.
 
 ## For review 3: the phrase table
 
@@ -182,6 +218,37 @@ whatever review 2 settles.
 | Sankeernam | 9 | ta ka di mi ta ka ta ki ta |
 
 Which misram order?
+
+## Watch out for
+
+- **Store ids, never spellings.** Saved patterns, share links and the phrase
+  table hold syllable ids and stroke ids (`R.thi`). Renaming "Thi" to "Ki",
+  choosing *jo* over *ja*, or showing Tamil or Kannada script later is then a
+  change to a display table that breaks nothing anyone saved. The stroke
+  renames from review 1 change `label` in `kit.json` and keep the `id`.
+- **Counting syllables are not solkattu to realize.** *ta ka di mi* in the
+  counting line uses the same words as a composition. If the counting line
+  ever reached the phrase table, the app would play the count as strokes. They
+  are separate data, and the realizer never sees the counting line.
+- **Syllables and strokes share names.** *ta*, *nam*, *din*, *thom* and
+  *dheem* are both. With solkattu large and strokes small in the lane, "ta"
+  over "ta" reads as a duplicate and "ta" over "ki" as a mistake. The stroke
+  line looks different: the stroke letters, or a head marker (L, R).
+- **Words written together.** Teachers write *takadimi* and *tadinginathom*
+  as one word, sometimes dropping an *n* (*tadinginathom* for
+  *tadinginnathom*). Every alias makes splitting more ambiguous, so the parser
+  rejects an ambiguous split instead of picking one, and the editor takes
+  syllables separated by spaces.
+- **Speed and gathi change the realization.** *ta ri ki ta* is `o k n p` at
+  one speed and `p k t p` fast. A table entry takes an optional speed, or the
+  fast version is its own entry; otherwise first and second speed play the
+  same strokes.
+- **Syllables with length.** *din _ ga* and a held *tam* take more than one
+  slot. The table carries the gaps, and the lane shows a held syllable across
+  its slots rather than as a cell followed by blanks.
+- **One school's answer isn't the answer.** Banis differ. The defaults stay
+  modest, a school's choice lives in a pattern's overrides, and a merge in
+  review 2 shouldn't quietly settle a question between schools.
 
 ## The format
 
