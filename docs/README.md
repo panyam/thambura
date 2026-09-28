@@ -12,7 +12,7 @@ docs/
   go.mod, main.go   the site's own Go module; `go run . -build` writes dist/
   linkcheck.go      checks every link in a build (site_test.go runs it)
   content/          the pages: index.html, then a folder per section
-    SiteMetadata.json    site name, description, links, and noindex
+    SiteMetadata.json    site name, description, links, the embed base, and noindex
     HeaderNavLinks.json  the sections, and each section's pages for the sidebar
   templates/        BasePage, Header, Sidebar, Content, Footer
   components/       DocsPage.ts, the pages' script, bundled into static/js/gen/
@@ -91,6 +91,7 @@ before step 3.
 
 ## Search engines
 
-Every page carries `noindex` while `SiteMetadata.json` has `"noindex": true`.
-Remove it once the first guides are in, and delete `TestPagesAreNoindex`,
-which fails on purpose when the flag goes.
+The site is indexed. `"noindex": true` in `SiteMetadata.json` puts a
+`noindex` meta tag on every page, for a preview that shouldn't turn up in
+search; `TestPagesAreIndexable` fails while it's on, so it can't be published
+that way by accident.

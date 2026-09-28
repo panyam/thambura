@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"html"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -51,19 +52,31 @@ func TestBuildCNAMEFollowsDomain(t *testing.T) {
 	}
 }
 
-// Until the first guides land (#95), every page asks search engines to stay
-// away. This fails once SiteMetadata.json drops noindex, as a reminder to
-// delete it.
-func TestPagesAreNoindex(t *testing.T) {
+// The published site is indexed (#95 took noindex off once the first
+// guides were in), so no page may ask search engines to stay away. The
+// switch stays in SiteMetadata.json for a preview; this catches it left on.
+var robotsNoindex = regexp.MustCompile(`<meta name="robots"[^>]*noindex`)
+
+func TestPagesAreIndexable(t *testing.T) {
 	out := t.TempDir()
 	if err := Build(out); err != nil {
 		t.Fatal(err)
 	}
-	for _, p := range []string{"index.html", "guides/index.html"} {
-		b, _ := os.ReadFile(filepath.Join(out, p))
-		if !strings.Contains(string(b), `<meta name="robots" content="noindex">`) {
-			t.Errorf("%s is not noindex", p)
+	err := filepath.WalkDir(out, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || filepath.Ext(p) != ".html" {
+			return err
 		}
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		if robotsNoindex.Match(b) {
+			t.Errorf("%s asks search engines not to index it", p)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
