@@ -187,13 +187,11 @@ continuous voices, and what changed from the 2016 app. `docs/designs/layouts.md`
 `docs/designs/library.md` are plans, not descriptions: where the thambura could sit,
 and what it would take to import these pieces from another project.
 `docs/designs/solkattu.md` is a plan too: patterns written in solkattu and
-realized into strokes through karya's phrase table, which
-`karya/phrase_tally.py` in thambura-ext tallies from a karya checkout.
+realized into strokes through karya's phrase table.
 
 **Other projects' formats live in thambura-ext** (`panyam/thambura-ext`,
 private, checked out at `../../thambura-ext/main`): anything tied to one
-outside project, like parsing karya's Haskell. What it produces comes in
-here as a clean file with its source noted. A tool that works on any input
+outside project, like parsing karya's Haskell. A tool that works on any input
 of its kind stays here, even when the input sits in another repo (the sound
 analysis, `make devkit`). Recordings, datasets and kits are thambura-data.
 `docs/designs/sound-analysis.md` explains how the jawari voice was fitted to a
