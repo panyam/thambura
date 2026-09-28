@@ -531,6 +531,7 @@ the stroke pad, and the lane. The rest is tracked rather than planned here:
 | Recording arai chapu and the left-hand tha | #80 |
 | A lane that copes with a long cycle | #81 |
 | Solkattu under the strokes | #82 |
+| Solkattu as the patterns' vocabulary, with a phrase table (a design for review) | [`solkattu.md`](solkattu.md) |
 
 Attention moves to several instruments at once and the views that go with
 them (`instruments.md`), which is likely to change how an instrument's
