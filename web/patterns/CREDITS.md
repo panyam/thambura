@@ -14,8 +14,15 @@ is GPL-3.0.
 | `khanda-chaapu.not` | `s_bhajan_kanda`, the `N,ND,` variation | references [this recording](https://www.youtube.com/watch?v=ctpe5H1Snd0) |
 | `rupakam-chatusram.not` | `s_rupaka`, first line | dated 2026-02-05 |
 
-`adi-chatusram.not` is not from karya. It was drafted here from the stroke
-names and no mridangist has checked it, which is what its `source` says.
+## adi-chatusram.not
+
+The Adi sarvalaghu is transcribed stroke for stroke from a practice pattern
+shared with permission. Where it came from, and the permission, are recorded
+privately in thambura-ext. It replaced an Adi drafted here that no mridangist
+had checked. Its source plays a slap on the left head (the left-hand tha)
+with nam on beats 1, 5 and 7; this kit has no take of the left-hand tha, so
+those play `tham` (thom with nam) until one is recorded (#80): a boom where
+the source slaps, in the same place.
 
 ## How karya's notation was converted
 
@@ -58,7 +65,8 @@ word, different hand.
 
 ## What still needs a player
 
-Every pattern's `source` says whether a mridangist has checked it. None has.
+Every pattern's `source` says whether a mridangist has checked it. None of
+karya's has.
 The conversion above is the part most likely to be wrong: the stroke choices
 are defensible from the descriptions, but only an ear can say whether the
 result sounds like the pattern Evan learned.

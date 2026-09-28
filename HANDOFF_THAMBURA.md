@@ -164,7 +164,11 @@ Also from this thread:
    bare domain, and whether to keep the dev container's IP (98.248.54.110)
    on the Namecheap API whitelist.
 8. **Who vets the mridangam patterns.** All but the Adi one are karya's
-   (converted by us, unverified) or generated; the Adi one is drafted.
+   (converted by us, unverified) or generated; the Adi one is transcribed
+   from a practice pattern shared with permission (provenance in
+   thambura-ext). More talas come the same way, written straight into `mrid:`
+   lines; a vocabulary PR on top of #175 will let them keep their source's
+   stroke names in quotes (`"tha+num"`), with stand-ins through `standIn`.
 
 ## Open issues
 
@@ -174,7 +178,7 @@ Also from this thread:
 - **Filed by other sessions:** #113 (pluck patterns beyond Pa Sa Sa Sa),
   #116 (the Lab beside any skin).
 - **Mridangam, paused:** #77 fills, eduppu and a count-in; #78 a pattern to
-  suit the tempo; #79 more patterns and replacing the drafted Adi one; #80
+  suit the tempo; #79 more patterns; #80
   arai chapu and the left-hand tha; #81 the lane on a long cycle; #82
   solkattu under the strokes.
 - **#72, the AAC kit:** decided by attack onset in real Chrome and Safari,

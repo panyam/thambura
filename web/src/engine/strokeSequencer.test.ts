@@ -5,10 +5,35 @@ import { beatsFor, type TalaSettings } from "./selection";
 import { TalaSequencer, type StepEvent, type TalaEvent } from "./sequencer";
 import { StrokeSequencer } from "./strokeSequencer";
 import { TalaGrid } from "./talaGrid";
-import { PATTERNS, patternFor, type Pattern } from "./patterns";
+import { PATTERNS, type Pattern } from "./patterns";
 import { TempoMap } from "./tempoMap";
 
-const ADI = PATTERNS.find((p) => p.id === "adi-chatusram-1") as Pattern;
+// A dense Adi, with strokes inside each akshara, so the tests can see
+// positions within a beat. It was Thambura's own Adi until the Mridangam app's
+// replaced it; the tests are about the sequencer, not about which Adi plays.
+const ADI: Pattern = {
+  ...(PATTERNS.find((p) => p.id === "adi-chatusram-1") as Pattern),
+  strokes: [
+    { at: ratio(0, 32), stroke: "L.tham", gain: 1.15 },
+    { at: ratio(2, 32), stroke: "R.thi", gain: 1.15 },
+    { at: ratio(4, 32), stroke: "R.nam", gain: 1 },
+    { at: ratio(6, 32), stroke: "R.thi", gain: 1 },
+    { at: ratio(8, 32), stroke: "L.thom", gain: 1 },
+    { at: ratio(10, 32), stroke: "R.thi", gain: 1 },
+    { at: ratio(12, 32), stroke: "R.nam", gain: 1 },
+    { at: ratio(14, 32), stroke: "R.thi", gain: 1 },
+    { at: ratio(15, 32), stroke: "R.thi", gain: 1 },
+    { at: ratio(16, 32), stroke: "L.tham", gain: 1.05 },
+    { at: ratio(18, 32), stroke: "R.thi", gain: 1.05 },
+    { at: ratio(20, 32), stroke: "R.nam", gain: 1 },
+    { at: ratio(22, 32), stroke: "R.thi", gain: 1 },
+    { at: ratio(24, 32), stroke: "L.thom", gain: 1 },
+    { at: ratio(26, 32), stroke: "R.thi", gain: 1 },
+    { at: ratio(28, 32), stroke: "R.nam", gain: 1 },
+    { at: ratio(29, 32), stroke: "R.thi", gain: 1 },
+    { at: ratio(30, 32), stroke: "R.nam", gain: 1 },
+  ],
+};
 
 const SETTINGS: TalaSettings = { tala: "custom_adi", jaathi: "chatusram", nadai: "chatusram", kalai: 1 };
 
@@ -17,7 +42,7 @@ function setup(patch: Partial<TalaSettings> = {}, bpm = 60, given: Pattern | nul
   const settings = { ...SETTINGS, ...patch };
   const beats = beatsFor(settings);
   const grid = new TalaGrid(beats, settings.kalai);
-  const chosen = given === undefined ? patternFor(grid, settings.nadai) : given;
+  const chosen = given === undefined ? ADI : given;
   const map = new TempoMap(bpm);
   const seq = new StrokeSequencer(() => ({ grid, pattern: chosen }), map);
   map.start(0);

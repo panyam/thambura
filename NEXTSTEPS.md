@@ -114,8 +114,7 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
       a `sol:` role realized through a phrase table (step 3), then solkattu
       in the lane (#82), then the editor and korvais on demand.
 - [ ] **Mridangam, what's left**, tracked as #77 (fills, eduppu, count-in),
-      #78 (pattern per tempo), #79 (more patterns, and replacing the drafted
-      Adi one), #80 (record arai chapu and the left-hand tha), #81 (the lane
+      #78 (pattern per tempo), #79 (more patterns; Adi is replaced), #80 (record arai chapu and the left-hand tha), #81 (the lane
       on a long cycle), #82 (solkattu under the strokes). Still open too: who
       vets the patterns, and a kit we can ship.
 - [ ] **Several instruments at once** (`docs/designs/instruments.md`, epic #94).
