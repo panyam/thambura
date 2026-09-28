@@ -10,7 +10,7 @@ import type { Clock } from "./pageContext";
 import { PlayerView } from "./PlayerView";
 import { watched } from "./watched";
 import type { SessionPresenter, SessionState } from "./session";
-import { instrumentStore, localStore } from "./storage";
+import type { Storage } from "./storage";
 
 const DEFAULT_FIXTURES_URL = "/static/Resources/TalasFixtures.json";
 
@@ -53,7 +53,7 @@ export interface PlayerIslandDeps {
  * The tala on the page's audio and clock, with the real browser pieces
  * (animation frames, fetch, image preloading) and its saved choices.
  */
-export function newPlayerPresenter(audio: AudioEngine, clock: Clock): PlayerPresenter {
+export function newPlayerPresenter(audio: AudioEngine, clock: Clock, storage: Storage): PlayerPresenter {
   return new PlayerPresenter({
     audio,
     clock,
@@ -63,7 +63,7 @@ export function newPlayerPresenter(audio: AudioEngine, clock: Clock): PlayerPres
     },
     fetchJson,
     preloadImages,
-    store: localStore("player"),
+    store: storage.store("player"),
   });
 }
 
@@ -116,14 +116,14 @@ export function createPlayerIsland(el: HTMLElement, eventBus: EventBus, deps: Pl
  * The hand claps on the page's audio, playing the tala's calls from `clock`
  * on track `track`. Load the fixture's sound groups before they're heard.
  */
-export function newHandsPresenter(audio: AudioEngine, track: string, clock: Clock): HandsPresenter {
+export function newHandsPresenter(audio: AudioEngine, track: string, clock: Clock, storage: Storage): HandsPresenter {
   return new HandsPresenter({
     audio,
     track,
     clock,
     fetchJson,
-    store: instrumentStore(track),
-    legacyStore: localStore("player"),
+    store: storage.instrument(track),
+    legacyStore: storage.store("player"),
   });
 }
 
@@ -131,13 +131,13 @@ export function newHandsPresenter(audio: AudioEngine, track: string, clock: Cloc
  * A kit presenter on the page's audio, with nothing loaded, playing on track
  * `track`. Given the page's clock, it plays along with the tala.
  */
-export function newKitPresenter(audio: AudioEngine, track: string, clock?: Clock): KitPresenter {
+export function newKitPresenter(audio: AudioEngine, track: string, storage: Storage, clock?: Clock): KitPresenter {
   return new KitPresenter({
     audio,
     track,
     clock,
-    store: instrumentStore(track),
-    legacyStore: localStore("player"),
+    store: storage.instrument(track),
+    legacyStore: storage.store("player"),
     fetchJson,
     frames: { request: (cb) => requestAnimationFrame(cb), cancel: (id) => cancelAnimationFrame(id) },
   });

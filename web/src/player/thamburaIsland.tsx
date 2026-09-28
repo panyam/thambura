@@ -5,7 +5,7 @@ import { ThamburaDocked } from "./ThamburaPanel";
 import type { PageLink } from "./pageLink";
 import { CachedRenderer, pluckStore } from "./pluckCache";
 import { browserPluckRenderer, type PluckRenderer } from "./pluckRenderer";
-import { instrumentStore, localStore, withFallback } from "./storage";
+import { withFallback, type Storage } from "./storage";
 import { thamburaInstance, ThamburaPresenter, type PitchSource } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
@@ -54,13 +54,13 @@ export function newPluckRenderer(): PluckRenderer {
 /**
  * A thambura on the page's audio, as the instrument with this `id`
  * (`thambura-1`, or `thambura-2` set up as the second: thamburaInstance),
- * reading and writing the page's share link, and playing to the page's
- * shruthi when given it. `renderer` is the page's, shared by its thamburas;
+ * reading and writing the page's share link, saving to `storage` (the page's
+ * scope, storage.ts), and playing to the page's shruthi when given it. `renderer` is the page's, shared by its thamburas;
  * without one it makes its own. The first thambura takes the setup it saved
  * before instance ids, once.
  */
-export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink, shruthi?: PitchSource, renderer: PluckRenderer = newPluckRenderer()): ThamburaPresenter {
-  const own = instrumentStore(id);
+export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageLink, storage: Storage, shruthi?: PitchSource, renderer: PluckRenderer = newPluckRenderer()): ThamburaPresenter {
+  const own = storage.instrument(id);
   return new ThamburaPresenter({
     ...thamburaInstance(id),
     id,
@@ -72,8 +72,9 @@ export function newThamburaPresenter(audio: AudioEngine, id: string, link: PageL
     },
     defer,
     renderer,
-    store: id === "thambura-1" ? withFallback(own, localStore("drone")) : own,
-    presets: localStore("presets"),
+    store: id === "thambura-1" ? withFallback(own, storage.store("drone")) : own,
+    presets: storage.store("presets"),
+    labPrefs: storage.store("lab"),
     link: link.part(id),
     shruthi,
   });

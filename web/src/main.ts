@@ -6,6 +6,7 @@ import { buildContext, islandRegistry } from "./player/islands";
 import type { PageContext } from "./player/pageContext";
 import { addressBar, PageLink } from "./player/pageLink";
 import { wireFloatingPlay, wireSessionKeys } from "./player/session";
+import { pageStorage } from "./player/storage";
 
 /**
  * Bundle entry (esbuild -> static/app.js). The page is server-rendered by
@@ -28,7 +29,7 @@ class HomePage extends IslandPage<PageContext> {
   }
 
   protected makeContext(spec: PageSpec): PageContext {
-    const ctx = buildContext(spec, location.href, new PageLink(addressBar()));
+    const ctx = buildContext(spec, location.href, new PageLink(addressBar()), pageStorage());
     wireSessionKeys(document, ctx.session);
     wireFloatingPlay(document.getElementById("play-all"), ctx.session);
     return ctx;

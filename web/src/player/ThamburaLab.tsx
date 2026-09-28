@@ -30,8 +30,6 @@ const GROUPS: { id: FieldSpec["group"]; title: string; note?: string }[] = [
   { id: "place", title: "Place" },
 ];
 const GAP_LABELS = ["After the first string", "After Sa 1", "After Sa 2", "After the low Sa"];
-// Whether the Lab shows each control's description; a per-browser preference.
-const HELP_KEY = "thambura.lab.descriptions";
 const LEGEND = "mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400";
 const GROUP = "mb-5 grid break-inside-avoid content-start gap-2.5";
 
@@ -52,7 +50,8 @@ export function ThamburaLab(props: ThamburaViewProps) {
   const [all, setAll] = createSignal(false);
   const [pasted, setPasted] = createSignal("");
   const [note, setNote] = createSignal("");
-  const [help, setHelp] = createSignal(readHelp());
+  // Whether it shows each control's description, kept where the page keeps things (storage.ts).
+  const [help, setHelp] = createSignal(a.showsDescriptions());
   const labels = () => {
     const l = stringLabels(s());
     return [`1 · ${l[0]}`, "2 · Sa", "3 · Sa", "4 · low Sa"];
@@ -93,11 +92,7 @@ export function ThamburaLab(props: ThamburaViewProps) {
   };
   const toggleHelp = (on: boolean) => {
     setHelp(on);
-    try {
-      localStorage.setItem(HELP_KEY, on ? "1" : "0");
-    } catch {
-      // Just not remembered.
-    }
+    a.setShowsDescriptions(on);
   };
   const field = (spec: FieldSpec) => (
     <FieldSlider spec={spec} plan={plan()} string={tab()} help={help()} onCommit={(v) => setField(spec, v)} />
@@ -301,14 +296,6 @@ export function ThamburaLab(props: ThamburaViewProps) {
       </details>
     </div>
   );
-}
-
-function readHelp(): boolean {
-  try {
-    return localStorage.getItem(HELP_KEY) === "1";
-  } catch {
-    return false;
-  }
 }
 
 /**

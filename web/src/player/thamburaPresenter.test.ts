@@ -1061,3 +1061,34 @@ describe("a second thambura", () => {
     expect(audio.played[0].when).toBeCloseTo(0.05 + 1.5, 6);
   });
 });
+
+describe("the Lab's descriptions preference (#144)", () => {
+  const make = (value: unknown) => {
+    const saved: unknown[] = [];
+    const p = new ThamburaPresenter({
+      id: "thambura-1",
+      audio: new FakeAudio(),
+      ticker: new FakeTicker(),
+      frames: new FakeFrames(),
+      defer: () => () => {},
+      rng: () => 0,
+      ...thamburaInstance("thambura-1"),
+      labPrefs: { load: () => value, save: (v) => void saved.push(v) },
+    });
+    return { p, saved };
+  };
+
+  it("is off by default, and remembered where the page keeps things", () => {
+    const { p, saved } = make(null);
+    expect(p.showsDescriptions()).toBe(false);
+    p.setShowsDescriptions(true);
+    expect(saved).toEqual([true]);
+  });
+
+  it("reads the value the Lab wrote itself before it went through a store", () => {
+    // "1" in localStorage parses as 1.
+    expect(make(1).p.showsDescriptions()).toBe(true);
+    expect(make(0).p.showsDescriptions()).toBe(false);
+    expect(make(true).p.showsDescriptions()).toBe(true);
+  });
+});
