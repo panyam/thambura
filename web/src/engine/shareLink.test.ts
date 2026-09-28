@@ -62,7 +62,7 @@ function labEdits(rng: () => number, from: ThamburaPlan, edits: number): Thambur
 }
 
 describe("share links", () => {
-  it("carries every setting but the volume", () => {
+  it("carries every setting, the volume too", () => {
     const rng = mulberry32(3);
     for (let n = 0; n < 200; n++) {
       const settings: ThamburaSettings = {
@@ -81,7 +81,7 @@ describe("share links", () => {
       };
       const view = (["mini", "studio", "raagini", "lab"] as const)[n % 4];
       const d = decodeLink(encodeLink(setup(settings, jawari, { view, open: n % 2 === 0 })), current)!;
-      expect(d.settings).toEqual({ ...settings, volume: 37 });
+      expect(d.settings).toEqual(settings);
       expect(d.view).toBe(view);
       expect(d.open).toBe(n % 2 === 0);
       expect(d.custom).toBeNull();
@@ -106,7 +106,7 @@ describe("share links", () => {
     strings = strings.map((s, i) => (i === 2 ? writeField(s, level.field, 1) : s)) as ThamburaPlan["strings"];
     const plan = { ...jawari, strings };
     const link = encodeLink(setup({ mode: "custom" }, plan));
-    expect(link.length).toBeLessThanOrEqual(32);
+    expect(link.length).toBeLessThanOrEqual(34);
     expectSamePlan(decodeLink(link, current)!.custom!, plan);
   });
 
@@ -150,8 +150,8 @@ describe("share links", () => {
   it("notices when the starting sound has changed since the link was made", () => {
     const plan = labEdits(mulberry32(5), jawari, 2);
     const bytes = [...atob(encodeLink(setup({ mode: "custom" }, plan)).replace(/-/g, "+").replace(/_/g, "/"))];
-    expect(bytes[13].charCodeAt(0)).toBe(0); // stored as edits to the jawari plan
-    bytes[14] = String.fromCharCode(bytes[14].charCodeAt(0) ^ 0xff);
+    expect(bytes[14].charCodeAt(0)).toBe(0); // stored as edits to the jawari plan
+    bytes[15] = String.fromCharCode(bytes[15].charCodeAt(0) ^ 0xff);
     const tampered = btoa(bytes.join("")).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
     expect(decodeLink(tampered, current)!.drifted).toBe(true);
   });
@@ -299,6 +299,23 @@ describe("format 1 links keep opening the same", () => {
   });
 });
 
+/**
+ * Format 3 is format 1 with the thambura's volume after sustain (#153). As
+ * with format 1, these are links as they were written; a failure means the
+ * format changed.
+ */
+describe("format 3 links keep opening the same", () => {
+  it("a plain setup at volume 20", () => {
+    const d = decodeLink("AwgAA0AHETABwjIyPBQ", current)!;
+    expect(d.settings).toEqual({ ...DEFAULT_THAMBURA, volume: 20 });
+    expect(encodeLink(setup({ volume: 20 }))).toBe("AwgAA0AHETABwjIyPBQ");
+  });
+
+  it("clamps a volume past 100", () => {
+    expect(decodeLink("AwgAA0AHETABwjIyPP8", current)!.settings.volume).toBe(100);
+  });
+});
+
 describe("page links: every instrument on the page in one link", () => {
   const one = encodeLink(setup({ key: 3 }));
   const two = encodeLink(setup({ key: 9, mode: "tambura" }, jawari, { view: "lab" }));
@@ -307,8 +324,9 @@ describe("page links: every instrument on the page in one link", () => {
     expect(encodePage([{ id: "thambura-1", link: one }])).toBe(one);
   });
 
-  it("reads an old single-thambura link as thambura-1", () => {
+  it("reads a single-thambura link as thambura-1, of either format", () => {
     expect(decodePage(one)).toEqual(new Map([["thambura-1", one]]));
+    expect(decodePage("AQgAA0AHETABwjIyPA")).toEqual(new Map([["thambura-1", "AQgAA0AHETABwjIyPA"]]));
   });
 
   it("carries several thamburas, each part exactly as it was", () => {

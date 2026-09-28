@@ -428,7 +428,7 @@ export class ThamburaPresenter {
     if (!shared) return;
     this.update({ notice: null });
     const pitch = this.deps.shruthi?.pitch ?? {};
-    this.apply({ ...shared.settings, ...pitch }, shared.custom ?? this.state.custom);
+    this.apply({ ...shared.settings, volume: this.state.settings.volume, ...pitch }, shared.custom ?? this.state.custom);
     this.update({ presetId: id, edited: false });
     this.audition();
   }
@@ -769,10 +769,12 @@ function presetId(): string {
   return `${Date.now().toString(36)}-${(presetCount++).toString(36)}`;
 }
 
-/** A link without the view and the bar's state, which a preset doesn't apply. */
+/** A link without the view, the bar's state and the volume, which a preset doesn't apply. */
 function soundOf(link: string): string {
   const d = decodeLink(link, { settings: DEFAULT_THAMBURA });
-  return d ? encodeLink({ ...d, custom: d.custom ?? planFor({ ...d.settings, mode: "jawari" }), view: "studio", open: false }) : link;
+  if (!d) return link;
+  const settings = { ...d.settings, volume: DEFAULT_THAMBURA.volume };
+  return encodeLink({ ...d, settings, custom: d.custom ?? planFor({ ...settings, mode: "jawari" }), view: "studio", open: false });
 }
 
 function loadSafely(store: ThamburaStore | undefined): unknown {

@@ -306,7 +306,7 @@ unit-tested:
   building it in the Lab and pasting its link in. Shimmer and Warm lean
   Hindustani (#51). They can't be renamed, deleted or written over, so Save
   is refused on them and Save as… keeps your version.
-- `shareLink.ts`: the thambura's whole setup (settings but volume, view,
+- `shareLink.ts`: the thambura's whole setup (settings with the volume, view,
   whether the bar is open, and for Custom mode the plan) packed into the
   `?s=` query parameter as base64url bytes. The presenter never sets the
   bar's flag; `barOpen` and `withBarOpen` read and flip that one bit and
@@ -316,23 +316,30 @@ unit-tested:
   with a checksum of that plan so a link made before a built-in sound
   changed can say so. Slider values take a byte or two; anything off a
   slider's step, and voice values the Lab hides, travel as exact floats.
-  Links run 18-32 characters for everyday setups and stay under 200 for a
+  Links run 19-34 characters for everyday setups and stay under 200 for a
   plan edited everywhere. The orders at the top of the file are the format:
-  append, never reorder, and bump `FORMAT` for anything else. Format 2 is a
+  append, never reorder, and bump `FORMAT` for anything else. A thambura
+  link is format 3 (#153): format 1 plus the volume after sustain, which is
+  why it went in as a new format rather than a byte on the end (a strict
+  reader rejects extra bytes); format 1 is still read, and keeps the
+  listener's volume, since the built-in presets and links people hold are
+  format 1. It's 3, not 2, since 2 is a page link. Applying a preset still
+  keeps the volume, and `soundOf` leaves it out, so a volume change isn't
+  an edit. Format 2 is a
   page link (#100): one part per instrument, keyed by its page id, each a
   kind, a number, a length and a payload; a thambura's payload is a whole
-  format 1 link. A `session-1` part (#101, `encodeSession`) carries the
+  thambura link. A `session-1` part (#101, `encodeSession`) carries the
   tala, speed and shruthi in 11 bytes, and its shruthi wins over the
   thambura part's key; every page writes one, so today's links are format 2
   (about 60 characters with a thambura). The claps (`encodeHands`: volume
   and the sound group's name) and each kit (`encodeKit`: which of the
   page's kits, Variety, volume, on) have parts too; each instrument's
   `applyShared` plays a link's setup without saving it. `encodePage` would still write a
-  lone `thambura-1` as format 1, and `decodePage` reads a format 1 link as
+  lone `thambura-1` as its own link, and `decodePage` reads a lone link as
   `thambura-1` and skips parts it can't read.
   The docs site's reference page (`docs/content/reference/share-link-format/`)
   describes both. `shareLink.test.ts`'s "format 1 links keep opening the
-  same" holds links as they were sent, with what they decode to; the
+  same" (and its format 3 twin) holds links as they were sent, with what they decode to; the
   round-trip tests can't see a reordered table, since both halves use it,
   and these can.
 - `thamburaSequencer.ts` plucks first, Sa, Sa, low Sa in a `PluckPattern`:
@@ -524,7 +531,8 @@ unit-tested:
   until their own next pluck chokes them. `presetId` and `edited` follow which
   preset is playing and whether it has changed, so `savePreset` (as a new one)
   and `updatePreset` (over that one) are separate. A link
-  in `deps.link` wins over the saved setup (keeping the listener's volume)
+  in `deps.link` wins over the saved setup (its volume too, unless it's a
+  format 1 link, which has none)
   but isn't saved over it until the listener changes something; every change
   writes the current link back. Presets (`ThamburaPreset`) are a name and a
   share link, kept apart from the settings in `deps.presets`; applying one

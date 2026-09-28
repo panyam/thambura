@@ -34,8 +34,11 @@ import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanF
  * slider above its minimum, so anything set in the Lab is a byte or two. A
  * value off the slider's steps (a built-in sound's, or one copied to other
  * strings) is stored exactly, as a 64-bit float.
- * Volume is left out: it depends on the listener's room. The orders below are
- * part of the format; add to their ends, never reorder.
+ * Format 1 leaves the volume out. Format 3 (#153) is format 1 with the volume,
+ * 0-100, as one more byte after sustain (13), so everything after it moves
+ * up one; it's what every link is written in now. A format 1 link keeps the
+ * listener's own volume. (3 rather than 2, since 2 is a page link.) The
+ * orders below are part of the format; add to their ends, never reorder.
  *
  * Format 2 is a page link: every instrument on the page, each as its own
  * part (#100). Bytes, then base64url without padding:
@@ -43,13 +46,12 @@ import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanF
  *   0      format (2)
  *   then per part: its kind (PAGE_KINDS index + 1), its number on the page
  *          (thambura-2 is 2), the payload's length as a varint, the payload
- *   A thambura's payload is a whole format 1 link, so its bar flag and
+ *   A thambura's payload is a whole thambura link, so its bar flag and
  *   drift checksum travel as they always have. A part of a kind this
  *   version doesn't know is skipped, and so is a thambura part that isn't a
  *   thambura link, rather than refusing the whole page.
  *
- * A page whose only part is thambura-1 is written as that part alone, in
- * format 1, so older versions still open it.
+ * A page whose only part is thambura-1 is written as that part alone.
  *
  * A session part (session-1) is what the whole page shares rather than one
  * instrument: the tala, its speed and the shruthi. Its payload:
@@ -60,7 +62,7 @@ import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanF
  *   7-8    key, cents + 64
  *   9-10   A4 in tenths of a Hz
  *
- * A thambura part still carries its own key and cents, as a format 1 link
+ * A thambura part still carries its own key and cents, as a thambura link
  * must; where a page link has both, the session's shruthi is the one played.
  *
  * A hands part (hands-1): its own format (1), the volume, then the sound
@@ -71,7 +73,9 @@ import { FIELD_SPECS, planFor, readField, writeField, type FieldSpec, type PlanF
  * (their order in the page spec), Variety (VARIETIES), the volume, and 1 if
  * it plays along with the tala.
  */
-const FORMAT = 1;
+const FORMAT = 3;
+// The thambura link without the volume, still read.
+const FORMAT_NO_VOLUME = 1;
 const PAGE_FORMAT = 2;
 // Instrument kinds a page link carries a part for. Append, never reorder.
 const PAGE_KINDS = ["thambura", "session", "hands", "kit"] as const;
@@ -144,6 +148,7 @@ export function encodeLink(x: SharedSetup): string {
   w.byte(s.tone);
   w.byte(s.pluck);
   w.byte(s.sustain);
+  w.byte(s.volume);
   if (s.mode === "custom") {
     // Store whichever is shortest: against each built-in plan, as edits or whole.
     const options = BASES.flatMap((base, i) => {
@@ -166,7 +171,8 @@ export function encodeLink(x: SharedSetup): string {
 /**
  * The setup a link carries, clamped to valid values, or null if it isn't a
  * link this app can read. `current` fills in anything the link leaves out
- * (volume, and the Custom plan when the link isn't a Custom one).
+ * (a format 1 link's volume, and the Custom plan when the link isn't a
+ * Custom one).
  */
 export function decodeLink(link: string, current: { settings: ThamburaSettings }): DecodedLink | null {
   let bytes: Uint8Array;
@@ -177,7 +183,8 @@ export function decodeLink(link: string, current: { settings: ThamburaSettings }
   }
   const r = new Reader(bytes);
   try {
-    if (r.byte() !== FORMAT) return null;
+    const format = r.byte();
+    if (format !== FORMAT && format !== FORMAT_NO_VOLUME) return null;
     const flags = r.byte();
     const mode = MODES[r.byte()];
     const settings = normalizeThambura(
@@ -193,7 +200,7 @@ export function decodeLink(link: string, current: { settings: ThamburaSettings }
         tone: r.byte(),
         pluck: r.byte(),
         sustain: r.byte(),
-        volume: current.settings.volume,
+        volume: format === FORMAT ? r.byte() : current.settings.volume,
       },
       current.settings,
     );
@@ -616,7 +623,7 @@ export function encodePage(parts: PagePart[]): string {
 
 /**
  * The parts of a page link by instrument id, or null if it isn't a link this
- * app can read. A format 1 link is thambura-1's part.
+ * app can read. A lone thambura link is thambura-1's part.
  */
 export function decodePage(link: string): Map<string, string> | null {
   let bytes: Uint8Array;
@@ -625,7 +632,7 @@ export function decodePage(link: string): Map<string, string> | null {
   } catch {
     return null;
   }
-  if (bytes[0] === FORMAT) {
+  if (bytes[0] === FORMAT || bytes[0] === FORMAT_NO_VOLUME) {
     return decodeLink(link, { settings: DEFAULT_THAMBURA }) ? new Map([["thambura-1", link]]) : null;
   }
   if (bytes[0] !== PAGE_FORMAT) return null;
