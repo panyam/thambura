@@ -1,5 +1,5 @@
 import type { Pattern } from "./patterns";
-import { mul, ratio, type Ratio } from "./ratio";
+import { cmp, mul, ratio, type Ratio } from "./ratio";
 import type { CountedSyllable } from "./syllables";
 
 /** A pattern as the stroke lane draws it, over the tala's counting line. */
@@ -10,7 +10,8 @@ export interface Lane {
   aksharas: number;
   /** How many slots each cell divides into, fine enough for every stroke and syllable to sit in one. */
   columns: number;
-  strokes: { stroke: string; akshara: number; column: number }[];
+  /** Each stroke in the pattern's order, with where it falls in the cycle (`at`) and where it sits in the lane. */
+  strokes: { stroke: string; at: Ratio; akshara: number; column: number }[];
   counting: { syllable: string; akshara: number; column: number }[];
 }
 
@@ -33,7 +34,7 @@ export function laneFor(pattern: Pattern | null, counting: CountedSyllable[]): L
     return { akshara, within: ratio(pos.n - akshara * pos.d, pos.d) };
   };
 
-  const strokes = pattern.strokes.map((s) => ({ stroke: s.stroke, ...place(s.at) }));
+  const strokes = pattern.strokes.map((s) => ({ stroke: s.stroke, at: s.at, ...place(s.at) }));
   const said = counting.map((c) => ({ syllable: c.syllable, ...place(c.at) }));
 
   let columns = [...strokes, ...said].reduce((cols, p) => lcm(cols, p.within.d), 1);
@@ -45,9 +46,21 @@ export function laneFor(pattern: Pattern | null, counting: CountedSyllable[]): L
     source: pattern.source,
     aksharas,
     columns,
-    strokes: strokes.map((s) => ({ stroke: s.stroke, akshara: s.akshara, column: column(s.within) })),
+    strokes: strokes.map((s) => ({ stroke: s.stroke, at: s.at, akshara: s.akshara, column: column(s.within) })),
     counting: said.map((c) => ({ syllable: c.syllable, akshara: c.akshara, column: column(c.within) })),
   };
+}
+
+/**
+ * The strokes to light when stroke `index` is heard: it and every stroke at
+ * the same moment, as a pair's two halves are. Each half queues its own cue,
+ * and the later one wins the frame, so lighting by moment rather than by
+ * index keeps both lit whichever arrived last.
+ */
+export function litStrokes(lane: Lane, index: number | null): Set<number> {
+  const heard = index === null ? undefined : lane.strokes[index];
+  if (!heard) return new Set();
+  return new Set(lane.strokes.flatMap((s, i) => (cmp(s.at, heard.at) === 0 ? [i] : [])));
 }
 
 function lcm(a: number, b: number): number {

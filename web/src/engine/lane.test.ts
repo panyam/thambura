@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { laneFor } from "./lane";
+import { laneFor, litStrokes } from "./lane";
 import { PATTERNS, type Pattern } from "./patterns";
 import { generatedPattern } from "./generated";
 import type { Fallback } from "./kit";
@@ -34,7 +34,23 @@ describe("laneFor", () => {
 
   it("puts a stroke in the column it falls in", () => {
     const toy: Pattern = { ...pattern("adi-chatusram-1"), strokes: [{ at: ratio(1, 32), stroke: "R.thi", gain: 1 }] };
-    expect(laneFor(toy, counting(ADI))!.strokes).toEqual([{ stroke: "R.thi", akshara: 0, column: 1 }]);
+    expect(laneFor(toy, counting(ADI))!.strokes).toEqual([{ stroke: "R.thi", at: ratio(1, 32), akshara: 0, column: 1 }]);
+  });
+
+  it("lights every stroke struck with the one heard, whichever of them it was", () => {
+    const toy: Pattern = {
+      ...pattern("adi-chatusram-1"),
+      strokes: [
+        { at: ratio(0), stroke: "L.thom", gain: 1 },
+        { at: ratio(0), stroke: "R.thi", gain: 1 },
+        { at: ratio(1, 32), stroke: "R.thi", gain: 1 },
+      ],
+    };
+    const lane = laneFor(toy, counting(ADI))!;
+    expect([...litStrokes(lane, 0)]).toEqual([0, 1]);
+    expect([...litStrokes(lane, 1)]).toEqual([0, 1]);
+    expect([...litStrokes(lane, 2)]).toEqual([2]);
+    expect(litStrokes(lane, null).size).toBe(0);
   });
 
   it("gives a written misra chaapu one syllable per akshara, and halves for its strokes", () => {

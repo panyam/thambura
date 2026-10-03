@@ -7,6 +7,7 @@ const SYLLABLES = ["ta", "ka", "din", "na", "ki", "thom", "lang"].map((id) => ({
 const LETTERS = { k: "R.thi", o: "L.thom", od: "L.dheem", n: "R.nam", p: { stroke: "R.thi", gain: 0.6, standIn: "the left-hand tha" } };
 const TABLES = {
   words: {
+    thom: "L.thom",
     tham: "L.tham",
     thi: "R.thi",
     nam: "R.nam",
@@ -100,9 +101,29 @@ describe("compilePattern", () => {
     expect(at(compile(pattern('mrid: "thom+dhin" , , , Tham , "Tha+Num" ,')))).toEqual(["L.dheem@0/8", "L.tham@4/8", "L.tham@6/8"]);
   });
 
-  it("says a combined name with no entry needs two strokes at once", () => {
-    expect(() => compile(pattern('mrid: "thom+thi" , , , tham , , ,'))).toThrow(/t\.not: no stroke for "thom\+thi": it would take two strokes at once/);
+  it("plays a pair with no entry of its own as its two strokes at once, each softer", () => {
+    const p = compile(pattern('mrid: "thom+thi" , , , tham , , ,', "accents:\n  0: 1.1\n"));
+    expect(at(p)).toEqual(["L.thom@0/8", "R.thi@0/8", "L.tham@4/8"]);
+    expect(p.strokes.map((s) => s.gain)).toEqual([0.77, 0.77, 1]);
+  });
+
+  it("keeps a pair's own entry, a stroke recorded as one", () => {
+    expect(at(compile(pattern('mrid: "thom+dhin" , , , "Tha+Num" , , ,')))).toEqual(["L.dheem@0/8", "L.tham@4/8"]);
+  });
+
+  it("marks a pair's stand-in part, and only that part", () => {
+    const [tha, thi] = compile(pattern('mrid: "tha+thi" , , , tham , , ,')).strokes;
+    expect(tha).toMatchObject({ stroke: "L.thom", gain: 0.56, standIn: true });
+    expect(thi.standIn).toBeUndefined();
+  });
+
+  it("names the part of a pair it doesn't know, and an unknown word", () => {
+    expect(() => compile(pattern('mrid: "thom+zap" , , , tham , , ,'))).toThrow(/t\.not: no stroke for "zap" in "thom\+zap"/);
     expect(() => compile(pattern("mrid: bang , , , tham , , ,"))).toThrow(/t\.not: no stroke for "bang"/);
+  });
+
+  it("refuses a pair on one head, where the second would choke the first", () => {
+    expect(() => compile(pattern('mrid: "thi+nam" , , , tham , , ,'))).toThrow(/t\.not: "thi\+nam" plays two strokes on one head/);
   });
 
   it("names the file and the akshara of a phrase it can't realize", () => {
