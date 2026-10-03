@@ -110,6 +110,7 @@ export const PATTERNS: Pattern[] = [
     counts: ratio(5, 2),
     aksharas: 5,
     nadai: "any",
+    ticks: "0 2/5 3/5",
     role: "main",
     beats: 1,
     strokes: [
@@ -128,6 +129,7 @@ export const PATTERNS: Pattern[] = [
     counts: ratio(7, 2),
     aksharas: 7,
     nadai: "any",
+    ticks: "0 1/7 3/7 5/7",
     role: "variation",
     beats: 1,
     strokes: [
@@ -153,6 +155,7 @@ export const PATTERNS: Pattern[] = [
     counts: ratio(7, 2),
     aksharas: 7,
     nadai: "any",
+    ticks: "0 1/7 3/7 5/7",
     role: "main",
     beats: 1,
     strokes: [

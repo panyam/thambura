@@ -63,6 +63,17 @@ export class TalaGrid {
     return this.beats.map((b) => b.image).join(" ");
   }
 
+  /**
+   * Where each beat's ticks fall, as fractions of the beat, beats separated
+   * by "|": "0 1/7 3/7 5/7" for Misra Chaapu. A chaapu matches patterns on any
+   * nadai, so its shape and length alone can't tell Misra from Viloma, which
+   * is the same seven counts with its ticks reversed. Kalai repeats a beat,
+   * not its ticks, so it leaves this alone.
+   */
+  get ticks(): string {
+    return this.beats.map((b) => b.ticks.map((t) => (t.offset.d === 1 ? `${t.offset.n}` : `${t.offset.n}/${t.offset.d}`)).join(" ")).join("|");
+  }
+
   /** How many aksharas a cycle has, kalai included. */
   get aksharaCount(): number {
     return this.starts.length;

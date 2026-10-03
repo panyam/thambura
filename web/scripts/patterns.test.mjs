@@ -78,6 +78,13 @@ describe("compilePattern", () => {
     expect(() => compile(pattern("sol: ta ka din na\nmrid: tham , thi , nam , thi ,"))).toThrow(/t\.not: the sol: line fills 1 beats, but its cycle is 2/);
   });
 
+  it("needs a chaapu's ticks, since its nadai can't tell it from another of the same length", () => {
+    const chaapu = (ticks) => pattern("mrid: tham , thi , nam , thi ,", `nadai: any\n${ticks}`).replace("nadai: chatusram\n", "");
+    expect(() => compile(chaapu(""))).toThrow(/t\.not: no ticks in the front matter/);
+    expect(compile(chaapu('ticks: "0 2/14 3/7"\n')).ticks).toBe("0 1/7 3/7");
+    expect(compile(pattern("mrid: tham , thi , nam , thi ,")).ticks).toBeUndefined();
+  });
+
   it("refuses a role it doesn't know", () => {
     expect(() => compile(pattern("konnakol: ta ka din na ta ka din na"))).toThrow(/t\.not: unknown role "konnakol"/);
   });

@@ -52,12 +52,10 @@ describe("patternReport", () => {
 
   it("says which talas the compiled patterns cover", () => {
     // Update this when a pattern lands: it's the mission's progress (#185).
-    // Viloma Chaapu gets Misra's pattern, since they share a shape and length (#187).
     expect(patternReport().filter((r) => r.main).map((r) => [r.tala, r.main])).toEqual([
       ["Thriputa (Chathusram)", "adi-chatusram-1"],
       ["Khanda Chaapu", "khanda-chaapu-1"],
       ["Misra Chaapu", "misra-chaapu-1"],
-      ["Viloma Chaapu", "misra-chaapu-1"],
       ["Adi", "adi-chatusram-1"],
       ["Short Rupakam", "rupakam-chatusram-1"],
     ]);
