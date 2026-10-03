@@ -67,7 +67,7 @@ type Social struct {
 type HomePage struct {
 	SitePage
 	// Spec says which islands the page mounts, and each one's config; the
-	// browser reads it from the page (web/src/page/).
+	// browser reads it from the page (web/src/player/spec.ts).
 	Spec Spec
 }
 

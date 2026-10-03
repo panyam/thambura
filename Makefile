@@ -80,9 +80,9 @@ docsjs:
 		NODE_PATH=$$PWD/node_modules pnpm exec esbuild ../docs/components/DocsPage.ts \
 		--bundle --format=esm --minify --outfile=../docs/static/js/gen/docs.js
 
-# web/src/page is meant to move into tsappkit (panyam/goapplib#27), so it may
+# web/src/page (the embed helpers) is meant to move into tsappkit (panyam/goapplib#44), so it may
 # import nothing else from this repo. Keeping it that way is what makes the
-# lift a copy. (Its Go half is goapplib's page package now, goapplib#30.)
+# lift a copy.
 liftcheck:
 	@bad=$$(grep -rnE "from ['\"]\.\./" web/src/page || true); \
 	  if [ -n "$$bad" ]; then echo "web/src/page imports from outside itself:"; echo "$$bad"; exit 1; fi

@@ -1,7 +1,5 @@
-import type { EventBus, LCMComponent } from "@panyam/tsappkit";
+import type { EventBus, LCMComponent, Registry } from "@panyam/tsappkit";
 import { decodeHands, decodeKit, decodeSession, encodeHands, encodeKit } from "../engine/shareLink";
-import type { Registry } from "../page/mount";
-import type { PageSpec } from "../page/spec";
 import { AudioEngine } from "./audio";
 import { HandsPresenter } from "./handsPresenter";
 import { createPlayerIsland, newHandsPresenter, newKitPresenter, newPlayerPresenter } from "./island";
@@ -13,6 +11,7 @@ import type { PlayerPresenter } from "./presenter";
 import { createSessionIsland } from "./sessionIsland";
 import { createTracksIsland } from "./tracksIsland";
 import { SessionPresenter, startingPitch } from "./session";
+import type { Spec } from "./spec";
 import type { Storage, Store } from "./storage";
 import { TrackList, type CatalogEntry, type Made, type Placed } from "./trackList";
 import { createThamburaIsland, newPluckRenderer, newThamburaPresenter } from "./thamburaIsland";
@@ -68,7 +67,7 @@ export function islandRegistry(): Registry<PageContext, HTMLElement, LCMComponen
  * the page's share link. `storage` is where everything on the page saves:
  * pageStorage on our pages, embedStorage on someone else's (#144).
  */
-export function buildContext(spec: PageSpec, assetBase: string, link: PageLink, storage: Storage): PageContext {
+export function buildContext(spec: Spec, assetBase: string, link: PageLink, storage: Storage): PageContext {
   usePlaybackSession(navigator as { audioSession?: { type: string } });
   const audio = new AudioEngine();
   const clock = createClock(audio, workerTicker());
@@ -185,7 +184,7 @@ export function buildContext(spec: PageSpec, assetBase: string, link: PageLink, 
 }
 
 /** What the page can put on it: the spec's instruments that have what they need. */
-function catalogOf(spec: PageSpec): CatalogEntry[] {
+function catalogOf(spec: Spec): CatalogEntry[] {
   const out: CatalogEntry[] = [];
   for (const i of spec.instruments) {
     const added = i.added === true ? { added: true } : {};

@@ -5,7 +5,7 @@ sources:
   goapplib:
     url: github.com/panyam/goapplib
     path: templates
-    ref: v0.2.0
+    ref: v0.3.0
 
 vendor_dir: ./templar_modules
 search_paths:

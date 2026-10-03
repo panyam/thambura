@@ -1,10 +1,10 @@
-import { EventBus, LifecycleController, type LCMComponent } from "@panyam/tsappkit";
+import { EventBus, LifecycleController, mountIslands, type LCMComponent } from "@panyam/tsappkit";
 import { hostSpec, type HostSpec } from "./page/embedSpec";
-import { mountIslands } from "./page/mount";
 import { shadowSlot } from "./page/shadow";
 import { withDefaultInstruments } from "./player/embedDefaults";
 import { buildContext, islandRegistry } from "./player/islands";
 import { PageLink } from "./player/pageLink";
+import { readInstruments, type InstrumentSpec } from "./player/spec";
 import { embedStorage } from "./player/storage";
 
 /**
@@ -38,6 +38,11 @@ const APP = new URL("/", HERE).href;
 // Copy link makes a link on the app.
 const noAddressBar = { read: () => null, write: () => {} };
 
+/** A host's spec: the islands, and the instruments it starts with if it names any. */
+export interface EmbedSpec extends HostSpec {
+  instruments?: { kind: string; config?: InstrumentSpec["config"] }[];
+}
+
 export interface MountOptions {
   /** Where to look for the spec's slots. Defaults to the whole document. */
   root?: ParentNode;
@@ -62,8 +67,8 @@ export interface MountOptions {
  * skipped. Each call builds its own audio, clock and instruments, and keeps
  * its state apart from any other call's (`storage`).
  */
-export async function mount(given: HostSpec, opts: MountOptions = {}): Promise<LCMComponent[]> {
-  const read = hostSpec(given);
+export async function mount(given: EmbedSpec, opts: MountOptions = {}): Promise<LCMComponent[]> {
+  const read = hostSpec(given, readInstruments);
   if (!read) throw new Error("thambura embed: mount() was given something that isn't a spec");
   const spec = withDefaultInstruments(read);
   const root = opts.root ?? document;
@@ -91,7 +96,7 @@ export async function mount(given: HostSpec, opts: MountOptions = {}): Promise<L
 /** Mounts every spec the host page declares, with the theme and storage its script names (data-theme, data-storage). */
 function mountDeclared(): void {
   for (const script of document.querySelectorAll<HTMLScriptElement>(`script[${SPEC_ATTR}]`)) {
-    const spec = hostSpec(script.textContent);
+    const spec = hostSpec(script.textContent, readInstruments);
     if (!spec) {
       console.warn(`thambura embed: a ${SPEC_ATTR} script isn't a spec this version can read`);
       continue;

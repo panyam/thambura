@@ -8,7 +8,7 @@ import (
 	"github.com/panyam/goapplib/page"
 )
 
-// The browser reads one flat object (web/src/page/spec.ts): layout, islands
+// The browser reads one flat object (web/src/player/spec.ts): layout, islands
 // and instruments side by side, whatever Go embeds.
 func TestSpecJSONIsOneObject(t *testing.T) {
 	s := Spec{

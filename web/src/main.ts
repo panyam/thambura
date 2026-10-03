@@ -1,10 +1,9 @@
-import type { LCMComponent } from "@panyam/tsappkit";
-import { IslandPage } from "./page/islandPage";
-import type { PageSpec } from "./page/spec";
+import { IslandPage, type LCMComponent } from "@panyam/tsappkit";
 import { isIOS, isInstalled, wireInstall } from "./player/install";
 import { buildContext, islandRegistry } from "./player/islands";
 import type { PageContext } from "./player/pageContext";
 import { addressBar, PageLink } from "./player/pageLink";
+import { readInstruments, type InstrumentSpec, type Spec } from "./player/spec";
 import { wireFloatingPlay, wireSessionKeys } from "./player/session";
 import { pageStorage } from "./player/storage";
 
@@ -23,12 +22,16 @@ import { pageStorage } from "./player/storage";
  */
 const REGISTRY = islandRegistry();
 
-class HomePage extends IslandPage<PageContext> {
+class HomePage extends IslandPage<PageContext, { instruments: InstrumentSpec[] }> {
   protected registry() {
     return REGISTRY;
   }
 
-  protected makeContext(spec: PageSpec): PageContext {
+  protected override readExtension(raw: Record<string, unknown>) {
+    return readInstruments(raw);
+  }
+
+  protected makeContext(spec: Spec): PageContext {
     const ctx = buildContext(spec, location.href, new PageLink(addressBar()), pageStorage());
     wireSessionKeys(document, ctx.session);
     wireFloatingPlay(document.getElementById("play-all"), ctx.session);

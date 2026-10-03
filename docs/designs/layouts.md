@@ -194,8 +194,11 @@ once per library, so #90 to #92 can still reshape the spec without a release
 each time. The Go half has moved: goapplib's `page` package (goapplib#30) is
 the layout and its islands, and thambura's `Spec` (`internal/web/spec.go`)
 embeds it with the instruments, which are thambura's alone. The TypeScript
-still lives in `web/src/page/`, and `make liftcheck` (part of `make test`)
-fails if it imports anything else from this repo, so its lift stays a copy.
+has moved too: tsappkit's `IslandPage`, `readSpec` and `mountIslands`
+(goapplib#27), with `web/src/player/spec.ts` reading the instruments. What's
+left in `web/src/page/` is the embed helpers, which wait for a second
+embedding app (goapplib#44), and `make liftcheck` (part of `make test`)
+still fails if they import anything else from this repo.
 
 ## The repo as a library
 

@@ -25,9 +25,12 @@ it never reaches the app's build or its App Engine upload.
 
 Lifted into the stack (#86): the page spec's Go half is goapplib's `page`
 package and `page/Islands.html` partial (panyam/goapplib#30, `v0.2.0`), which
-`internal/web/spec.go` extends with thambura's instruments. Still here:
-`web/src/page` for tsappkit (panyam/goapplib#27, `0.1.0`), which `make
-liftcheck` keeps free of thambura imports; goapplib#28 (layout variants, labs
+`internal/web/spec.go` extends with thambura's instruments. The browser half
+is tsappkit's `IslandPage`, `readSpec` and `mountIslands` (panyam/goapplib#27,
+`@panyam/tsappkit` `0.1.0`); `web/src/player/spec.ts` reads the instruments
+through `readExtension`. Still here: `web/src/page`, now only the embed
+helpers (`hostSpec`, `shadowSlot`), which `make liftcheck` keeps free of
+thambura imports for panyam/goapplib#44; goapplib#28 (layout variants, labs
 and SEO helpers) waits for lilbattle; and maybe the esbuild splitting and
 preload setup as a shared preset (panyam/goapplib#29).
 
