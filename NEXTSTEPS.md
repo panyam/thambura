@@ -2,6 +2,14 @@
 
 In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the design notes.
 
+## At a glance
+
+- **Active mission:** #185, every tala in the menu plays a written mridangam
+  pattern (`mission_written_patterns`). Exercise: `make patternreport`, then
+  listen at 60 and 120 bpm.
+- **Next ready:** #181 (sources for the ten talas karya doesn't cover), then
+  #79, #179 and #180 (which makes the exercise runnable).
+
 ## Live app
 
 - [x] First deploy. thambura.appspot.com, thambura.com and www.thambura.com

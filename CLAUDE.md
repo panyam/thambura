@@ -1008,6 +1008,23 @@ flips `blocked` to `ready` when a blocker closes; do it by hand, and tick
 the epic's checklist, when a PR merges. `label:"track: instruments"
 label:ready` is what can be picked up now.
 
+## Issues and missions
+
+Work is ranked by the mission it serves, not by how recently it was filed.
+A mission is an issue labelled `mission` (title `Mission: ...`) with an
+outcome, an exercise to run and a done-when; its tickets carry its
+`mission_<slug>` label and block it. The active one is #185
+(`mission_written_patterns`): every tala in the menu plays a written
+mridangam pattern, checked with `make patternreport` (#180) and by ear.
+
+Every open issue that isn't a mission or an `epic` has one of `P0`-`P3`
+(P1 capped at five per mission) or `waiting` with its trigger in the body
+or a comment. File a new issue with a priority and either a mission link
+(blocked-by) or `waiting`. Off-mission work is P3 or `waiting`. The
+`ready`/`blocked` labels above predate this; the queue works readiness out
+from the blocked-by links. After a PR on the mission merges, log the
+exercise's result as a comment on the mission issue.
+
 ## Checking in a browser
 
 Playwright's Chromium is at `~/.cache/ms-playwright/chromium-<n>/` (1243 as
