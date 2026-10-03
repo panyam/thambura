@@ -12,6 +12,7 @@ make test        # go test ./... ; pnpm typecheck ; pnpm test (vitest) ; pnpm bu
 make ui          # pnpm install, Tailwind -> web/static/css/tailwind.css, esbuild -> web/static/app.js
 make templates   # templar get: re-vendor goapplib templates after a ref bump
 make devkit      # copy an instrument kit in from ../mridangam-data (gitignored)
+make kitcheck    # every kit a deploy would upload has its fallback map (#190)
 make setupvenv   # one Python venv at ../.venv, shared by every worktree
 make deploy      # tests + prod build, then App Engine project thambura (see Deploying)
 make deploydev   # the same, to a no-traffic "dev" version, to try before thambura.com
@@ -694,7 +695,10 @@ See NEXTSTEPS.md for the order.
   starts depending on a new manifest field, the thambura-data PR merges
   first and `make devkit` runs before the app deploys: #166's `fallback`
   map is optional, but a kit without it plays nothing on a tala with no
-  written pattern.
+  written pattern. thambura.com went out that way once (#190), since the
+  local `../mridangam-data` was behind its origin, so `make devkit` now warns
+  when it is, and `make kitcheck` (run by `devkit`, `deploy` and `deploydev`)
+  refuses a kit with no `fallback` map.
 - **Check a dataset's licence on Zenodo's API**, not a fetched page's
   summary: `curl -s https://zenodo.org/api/records/<id>` and read
   `metadata.license`. Summaries twice reported a licence the record doesn't

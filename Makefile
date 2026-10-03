@@ -103,10 +103,23 @@ KIT ?= compmusic
 
 devkit:
 	@test -f $(DATA)/$(KITSRC)/kit.json || { echo "no kit at $(DATA)/$(KITSRC): run 'make kit' in thambura-data"; exit 1; }
+	@n=$$(git -C $(DATA) fetch -q 2>/dev/null && git -C $(DATA) rev-list --count HEAD..@{u} 2>/dev/null); \
+		test -z "$$n" || test "$$n" = 0 || echo "warning: $(DATA) is $$n commits behind its origin: pull it for the current kit"
 	rm -rf web/static/Resources/Kits/$(KIT)
 	mkdir -p web/static/Resources/Kits
 	cp -R $(DATA)/$(KITSRC) web/static/Resources/Kits/$(KIT)
 	@echo "kit in web/static/Resources/Kits/$(KIT): $$(find web/static/Resources/Kits/$(KIT) -type f | wc -l) files, $$(du -sh web/static/Resources/Kits/$(KIT) | cut -f1)"
+	@$(MAKE) -s kitcheck
+
+# Every kit a deploy would upload names the strokes the generated pattern plays
+# (its fallback map, #166). Without one, every tala with no written pattern
+# plays no mridangam, and thambura.com went out that way once (#190). A
+# checkout with no kit passes: it deploys without the mridangam.
+kitcheck:
+	@for k in web/static/Resources/Kits/*/kit.json; do \
+		test -f "$$k" || continue; \
+		grep -q '"fallback"' "$$k" || { echo "$$k has no fallback map: pull thambura-data, then 'make devkit'"; exit 1; }; \
+	done
 
 # Re-vendor goapplib's templates after bumping the ref in web/templates/templar.yaml.
 templates:
@@ -129,7 +142,7 @@ DOMAINS ?= thambura.com www.thambura.com
 # Deploy to App Engine (https://thambura.appspot.com, https://thambura.com).
 # Tests and a production frontend build run first, and checklinks refuses to
 # ship with local replace directives.
-deploy: checklinks test uiprod server
+deploy: kitcheck checklinks test uiprod server
 	gcloud app deploy app.yaml --project $(GCP_PROJECT) --verbosity=info
 
 prodlogs:
@@ -153,7 +166,7 @@ checkpromote:
 	@test -z "$(PROMOTE)" || test "$(DEV_PROJECT)" != "$(GCP_PROJECT)" || \
 		{ echo "PROMOTE=1 would put this build on thambura.com: run 'make deploy'"; exit 1; }
 
-deploydev: checkpromote checklinks test uiprod server
+deploydev: checkpromote kitcheck checklinks test uiprod server
 	gcloud app deploy app.yaml --project $(DEV_PROJECT) --version=$(DEV_VERSION) \
 		$(if $(PROMOTE),--promote,--no-promote) --verbosity=info
 	@echo "== $$(gcloud app versions describe $(DEV_VERSION) --service=default \
@@ -186,4 +199,4 @@ domainstatus:
 clean:
 	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css docs/dist docs/static/js/gen
 
-.PHONY: all patternreport setupvenv venvpath ui uiprod server build run watch test docs docsrun docsjs ghpages liftcheck soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean
+.PHONY: all kitcheck patternreport setupvenv venvpath ui uiprod server build run watch test docs docsrun docsjs ghpages liftcheck soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean
