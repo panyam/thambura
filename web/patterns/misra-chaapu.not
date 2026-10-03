@@ -4,6 +4,7 @@ name: Misra Chaapu sarvalaghu
 counts: 7/2
 shape: down
 nadai: any
+ticks: "0 1/7 3/7 5/7"
 source: >-
   karya, Solkattu/Score/MridangamSarva.hs, kir_misra_2, learned from Ganesh,
   2017-09-26 (github.com/elaforge/karya, GPL-3.0, used with permission).

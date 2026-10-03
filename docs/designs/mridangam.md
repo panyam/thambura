@@ -317,8 +317,11 @@ accompaniment needs is sarvalaghu.
 the app's own name for the cycle, `down one two three down open down open`
 for Adi, so Adi and a chatusra-jaathi Thriputa share one pattern. The length
 is needed because both chaapus are a single clap, so they have the same
-shape, and only 7/2 counts against 5/2 tells them apart. Kalai is ignored in
-the match and applied in the playing: the same pattern stretches.
+shape, and only 7/2 counts against 5/2 tells them apart. Length isn't enough
+on its own either: Viloma Chaapu is Misra's seven counts with its claps
+reversed, so a chaapu's pattern also names its ticks (`ticks: "0 1/7 3/7
+5/7"`), which a sapta tala's shape, length and nadai already settle. Kalai is
+ignored in the match and applied in the playing: the same pattern stretches.
 
 **Positions are fractions of the cycle**, not of a beat, for the same reason.
 A chaapu is one long beat in our tables while its pattern is written per

@@ -4,6 +4,7 @@ name: Khanda Chaapu sarvalaghu
 counts: 5/2
 shape: down
 nadai: any
+ticks: "0 2/5 3/5"
 source: >-
   karya, Solkattu/Score/MridangamSarva.hs, s_bhajan_kanda variation 2, the
   "N,ND," line (youtube.com/watch?v=ctpe5H1Snd0), github.com/elaforge/karya,

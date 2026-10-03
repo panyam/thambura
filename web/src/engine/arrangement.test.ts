@@ -43,6 +43,13 @@ describe("arrangementFor", () => {
     expect(setup({ tala: "chaapu_misram", nadai: "khandam" }).variations).toHaveLength(1);
   });
 
+  it("keeps Misra Chaapu's alternates off Viloma Chaapu, the same length with other ticks", () => {
+    const grid = new TalaGrid(beatsFor({ tala: "chaapu_vilomam", jaathi: "chatusram", nadai: "chatusram", kalai: 1 }));
+    expect(patternFor(grid, "chatusram")).toBeNull();
+    const main = PATTERNS.find((p) => p.id === "misra-chaapu-1")!;
+    expect(arrangementFor(grid, "chatusram", main)!.variations).toEqual([]);
+  });
+
   it("has no alternates where nobody has written any", () => {
     expect(setup({ tala: "chaapu_khandam" }).variations).toEqual([]);
     expect(setup({ tala: "custom_rupakam" }).variations).toEqual([]);

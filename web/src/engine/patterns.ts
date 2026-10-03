@@ -64,6 +64,14 @@ export interface Pattern {
    * divides a cycle. A chaapu has one beat but seven or five aksharas.
    */
   aksharas: number;
+  /**
+   * The tala's ticks, as `TalaGrid.ticks` writes them, for a pattern whose
+   * nadai is "any". Two chaapus can share a shape and a length (Misra and
+   * Viloma are both one beat of seven counts), so a chaapu's pattern names
+   * where its claps fall. Absent for a pattern with a nadai, where the shape,
+   * length and nadai already decide that.
+   */
+  ticks?: string;
   /** The nadai it is written for, or "any" when the tala has none. */
   nadai: Gati | "any";
   /**
@@ -82,25 +90,28 @@ export interface Pattern {
 
 
 /**
- * The pattern for a tala, or null when none fits. A pattern matches on the
- * cycle's shape and the nadai, so the Adi sarvalaghu serves both Adi and a
- * chatusra-jaathi Thriputa, which are the same eight beats played the same
- * way, and not Matya in thisram, which is eight beats of a different shape.
- * A chaapu is one long beat rather than even aksharas, so nothing fits it yet.
+ * Whether a pattern fits a tala: the same cycle shape and length, and the
+ * same nadai, or for a chaapu's pattern ("any" nadai) the same ticks. The
+ * shape matters because counting alone confuses talas that share a length:
+ * the Adi sarvalaghu serves both Adi and a chatusra-jaathi Thriputa, which
+ * are the same eight beats played the same way, and not Matya in thisram,
+ * which is eight beats of a different shape. `patternFor` and the
+ * arrangement both match through this, so they can't disagree.
  */
-export function patternFor(grid: TalaGrid, nadai: Gati, from: Pattern[] = PATTERNS): Pattern | null {
-  // A chaapu is one beat whatever the nadai says, so its patterns say "any".
+export function fitsGrid(p: Pattern, grid: TalaGrid, nadai: Gati): boolean {
   return (
-    from.find(
-      (p) =>
-        // Only the pattern that plays most cycles; the alternates are the
-        // arrangement's business (see arrangement.ts).
-        p.role === "main" &&
-        p.shape === grid.shape &&
-        cmp(p.counts, grid.patternCounts) === 0 &&
-        (p.nadai === nadai || p.nadai === "any"),
-    ) ?? null
+    p.shape === grid.shape &&
+    cmp(p.counts, grid.patternCounts) === 0 &&
+    (p.nadai === nadai || p.nadai === "any") &&
+    (p.ticks === undefined || p.ticks === grid.ticks)
   );
+}
+
+/** The main pattern for a tala, or null when none fits (see `fitsGrid`). */
+export function patternFor(grid: TalaGrid, nadai: Gati, from: Pattern[] = PATTERNS): Pattern | null {
+  // Only the pattern that plays most cycles; the alternates are the
+  // arrangement's business (see arrangement.ts).
+  return from.find((p) => p.role === "main" && fitsGrid(p, grid, nadai)) ?? null;
 }
 
 /** Where a pattern's stroke falls in counts, given how long the cycle lasts. */

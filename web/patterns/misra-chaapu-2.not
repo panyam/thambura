@@ -4,6 +4,7 @@ name: Misra Chaapu, second
 counts: 7/2
 shape: down
 nadai: any
+ticks: "0 1/7 3/7 5/7"
 role: variation
 source: >-
   karya, Solkattu/Score/MridangamSarva.hs, c_18_05_25 first line, learned from

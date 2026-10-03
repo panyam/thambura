@@ -731,7 +731,10 @@ See NEXTSTEPS.md for the order.
   teacher and the stroke mapping); the Adi one is transcribed from a
   practice pattern shared with permission, recorded privately in
   thambura-ext (its left-hand tha plays `tham` until #80 records it). A pattern matches a tala on shape plus cycle length, since both
-  chaapus are one clap and share a shape, and its positions are fractions of
+  chaapus are one clap and share a shape, and a chaapu's pattern (`nadai:
+  any`) on its `ticks:` too, since Misra and Viloma are both seven counts
+  (#187; the compiler refuses one without). `fitsGrid` is the one rule
+  `patternFor` and the arrangement share. Its positions are fractions of
   the cycle so a chaapu's single long beat works. CompMusic's transcriptions
   are CC BY-NC-ND, so they can't be adapted.
 - **Patterns are notations DSL, compiled at build time.** They live in

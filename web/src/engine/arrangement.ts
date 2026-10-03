@@ -1,6 +1,5 @@
 import type { Gati } from "./carnatic";
-import { cmp } from "./ratio";
-import { PATTERNS, type Pattern } from "./patterns";
+import { fitsGrid, PATTERNS, type Pattern } from "./patterns";
 import type { TalaGrid } from "./talaGrid";
 
 /**
@@ -50,8 +49,7 @@ export function arrangementFor(
   from: Pattern[] = PATTERNS,
 ): Arrangement | null {
   if (!main) return null;
-  const fits = (p: Pattern) =>
-    p.shape === grid.shape && cmp(p.counts, grid.patternCounts) === 0 && (p.nadai === nadai || p.nadai === "any");
+  const fits = (p: Pattern) => fitsGrid(p, grid, nadai);
   return {
     main,
     variations: from.filter((p) => p.role === "variation" && fits(p)),

@@ -132,6 +132,11 @@ export function compilePattern(source, file, tables) {
   if (!meta.source) {
     throw new Error(`${file}: no source in the front matter (who wrote this pattern, and has a player checked it?)`);
   }
+  // A chaapu's pattern plays on any nadai, so its ticks are what tell it from
+  // another chaapu of the same length (Misra and Viloma are both seven).
+  if (meta.nadai === "any" && meta.ticks === undefined) {
+    throw new Error(`${file}: no ticks in the front matter (where do the chaapu's claps fall? e.g. "0 1/7 3/7 5/7")`);
+  }
   // The shape is the app's own name for the cycle (its beat images), which a
   // chaapu writes as one beat while its pattern is written per akshara. So
   // the shape is not checked against the DSL's cycle, only that it is there.
@@ -152,8 +157,28 @@ export function compilePattern(source, file, tables) {
     beats: shapeBeats,
     strokes: events,
   };
+  if (meta.ticks !== undefined) out.ticks = normalizeTicks(String(meta.ticks));
   if (solkattu) out.solkattu = solkattu;
   return out;
+}
+
+/** Ticks as `TalaGrid.ticks` writes them: each fraction in lowest terms, beats split by "|". */
+function normalizeTicks(text) {
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+  return text
+    .split("|")
+    .map((beat) =>
+      beat
+        .trim()
+        .split(/\s+/)
+        .map((t) => {
+          const [n, d = 1] = t.split("/").map(Number);
+          const g = gcd(n, d) || 1;
+          return d / g === 1 ? `${n / g}` : `${n / g}/${d / g}`;
+        })
+        .join(" "),
+    )
+    .join("|");
 }
 
 /** patterns.data.ts's text for the compiled patterns. */
@@ -167,7 +192,8 @@ export function renderPatterns(patterns) {
     shape: ${JSON.stringify(p.shape)},
     counts: ratio(${p.counts[0]}, ${p.counts[1]}),
     aksharas: ${p.aksharas},
-    nadai: ${JSON.stringify(p.nadai)},
+    nadai: ${JSON.stringify(p.nadai)},${p.ticks ? `
+    ticks: ${JSON.stringify(p.ticks)},` : ""}
     role: ${JSON.stringify(p.role)},
     beats: ${p.beats},
     strokes: [

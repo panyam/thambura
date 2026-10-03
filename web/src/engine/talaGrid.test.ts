@@ -55,6 +55,15 @@ describe("TalaGrid", () => {
     expect(g.cycleStart(3)).toEqual(ratio(24));
   });
 
+  it("writes where each beat's ticks fall, which tells two chaapus of one length apart", () => {
+    expect(gridFor({ tala: "chaapu_misram" }).ticks).toBe("0 1/7 3/7 5/7");
+    expect(gridFor({ tala: "chaapu_vilomam" }).ticks).toBe("0 2/7 3/7 5/7");
+    expect(gridFor({ tala: "chaapu_khandam" }).ticks).toBe("0 2/5 3/5");
+    // One entry per beat, not per akshara, so kalai leaves it alone.
+    expect(gridFor({ kalai: 2 }).ticks).toBe(gridFor().ticks);
+    expect(gridFor().ticks).toBe("0|0|0|0|0|0|0|0");
+  });
+
   it("copes with no beats at all", () => {
     const g = new TalaGrid([]);
     expect(g.cycleCounts).toEqual(ZERO);
