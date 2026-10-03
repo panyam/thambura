@@ -764,9 +764,11 @@ See NEXTSTEPS.md for the order.
   played with another written as the two joined by `+` and quoted
   (`"thom+dhin"`, `"tha+num"`), like a name with a space (`"a cha"`); the
   notations parser takes a quoted name as one token. `dheem` is the right
-  hand's; thom with din is `"thom+dhin"`. A `+` name with no entry is a build
-  error saying it would take two strokes at once, which the lane and the
-  kit's cues can't show yet. An unknown role, syllable, letter
+  hand's; thom with din is `"thom+dhin"`. A `+` name with no entry plays its
+  parts at the same moment (#179), each at `PAIR_GAIN` (0.7, since a thom
+  and a ki summed peak about 4 dB over the recorded tham), and the lane
+  lights both (`litStrokes`, by moment rather than index). A pair on one head
+  is a build error, since the kit chokes a head's last note. An unknown role, syllable, letter
   or unmatched phrase is a build error. `make patternreport`
   (`src/tools/patternReport.ts`) lists which talas in the mission's scope
   play a written pattern and which the generated one, by asking `patternFor`

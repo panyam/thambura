@@ -50,6 +50,42 @@ function atomsByRole(notation) {
 const round = (x) => Math.round(x * 1000) / 1000;
 
 /**
+ * How loud each half of a pair plays (0.7, -3.1 dB). A thom and a ki summed
+ * peak about 4 dB over the kit's recorded tham (thom with nam), measured over
+ * 24 take pairs, so each half comes down to land a pair near one recorded
+ * stroke.
+ */
+export const PAIR_GAIN = 0.7;
+
+/**
+ * The strokes a mrid: word plays. A word with an entry in the table plays
+ * that, which keeps a pair recorded as one stroke ("thom+num" is tham). A
+ * quoted pair with no entry ("thom+dhi") plays each part at the same
+ * moment, each at PAIR_GAIN. A pair on one head is refused, since the kit
+ * chokes a head's last note when the next one starts.
+ */
+function wordStrokes(name, words, file) {
+  const lookup = (w) => {
+    const entry = words[w.toLowerCase()];
+    return entry && (typeof entry === "string" ? { stroke: entry, gain: 1 } : entry);
+  };
+  const whole = lookup(name);
+  if (whole) return [whole];
+  const parts = name.split("+");
+  if (parts.length === 1) throw new Error(`${file}: no stroke for "${name}" (add it to patterns/strokes.json)`);
+  const strokes = parts.map((part) => {
+    const word = lookup(part);
+    if (!word) throw new Error(`${file}: no stroke for "${part}" in "${name}" (add it to patterns/strokes.json)`);
+    return { ...word, gain: word.gain * PAIR_GAIN };
+  });
+  const heads = strokes.map((w) => w.stroke.split(".")[0]);
+  if (new Set(heads).size < heads.length) {
+    throw new Error(`${file}: "${name}" plays two strokes on one head, where the second would cut the first off`);
+  }
+  return strokes;
+}
+
+/**
  * One pattern, compiled. `tables` holds `words` (a mrid: token, lowercased,
  * to a stroke id or a {stroke, gain, standIn} stand-in), `letters` and `syllables` (for a pattern's own realize: phrases), and
  * `table`, the instrument's phrase table from phraseTable(). Throws, naming
@@ -106,15 +142,11 @@ export function compilePattern(source, file, tables) {
       const name = atom.value;
       // A Space is a rest, and takes its time without playing anything.
       if (!name) continue;
-      const entry = tables.words[name.toLowerCase()];
-      if (!entry) {
-        const why = name.includes("+") ? ": it would take two strokes at once, which a pattern can't play yet" : " (add it to patterns/strokes.json)";
-        throw new Error(`${file}: no stroke for "${name}"${why}`);
+      for (const word of wordStrokes(name, tables.words, file)) {
+        const event = { ...place(offset), stroke: word.stroke, gain: round(accent(aksharaOf(offset)) * word.gain) };
+        if (word.standIn) event.standIn = true;
+        events.push(event);
       }
-      const word = typeof entry === "string" ? { stroke: entry, gain: 1 } : entry;
-      const event = { ...place(offset), stroke: word.stroke, gain: round(accent(aksharaOf(offset)) * word.gain) };
-      if (word.standIn) event.standIn = true;
-      events.push(event);
     }
   } else {
     sol.forEach((a, i) => {

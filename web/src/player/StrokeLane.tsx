@@ -1,7 +1,7 @@
-import { For, Show, type Accessor } from "solid-js";
+import { createMemo, For, Show, type Accessor } from "solid-js";
 import { VARIETY_OPTIONS, type Variety } from "../engine/arrangement";
 import type { KitState } from "./kitPresenter";
-import type { Lane } from "../engine/lane";
+import { litStrokes, type Lane } from "../engine/lane";
 
 /**
  * What the mridangam is playing, a cycle at a time: one cell per akshara,
@@ -41,6 +41,12 @@ export function StrokeLane(props: {
       })),
     );
   };
+
+  // A pair's two strokes light together, whichever of them was heard last.
+  const lit = createMemo(() => {
+    const lane = props.lane();
+    return lane ? litStrokes(lane, props.strokeIndex()) : new Set<number>();
+  });
 
   // The kit's own name for a stroke, so the lane reads as the pads do.
   const label = (id: string) => props.kit().strokes.find((s) => s.id === id)?.label ?? id;
@@ -105,8 +111,8 @@ export function StrokeLane(props: {
                                 <span
                                   class="whitespace-nowrap rounded px-1 text-xs leading-4 transition-colors"
                                   classList={{
-                                    "bg-amber-500 text-white": props.strokeIndex() === stroke.index,
-                                    "text-gray-700 dark:text-gray-300": props.strokeIndex() !== stroke.index,
+                                    "bg-amber-500 text-white": lit().has(stroke.index),
+                                    "text-gray-700 dark:text-gray-300": !lit().has(stroke.index),
                                   }}
                                 >
                                   {label(stroke.stroke)}
