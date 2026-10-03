@@ -14,6 +14,7 @@
     "bench": "node scripts/bench-render.mjs",
     "patterns": "node scripts/compile-patterns.mjs",
     "patterns:check": "node scripts/compile-patterns.mjs --check",
+    "patterns:report": "node scripts/pattern-report.mjs",
     "buildcheck": "node scripts/check-build.mjs"
   },
   "dependencies": {

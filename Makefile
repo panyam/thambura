@@ -47,6 +47,12 @@ test: liftcheck
 	cd web && pnpm exec tsc -p ../docs/components
 	cd docs && go test ./...
 
+# Which talas play a written mridangam pattern: the written-patterns mission's
+# exercise (#185). It fails while any tala falls back to the generated skeleton,
+# so it stays out of `test` until the mission closes.
+patternreport:
+	cd web && pnpm patterns:report
+
 # The developer docs (docs/), published to GitHub Pages at docs.thambura.com.
 # The site is its own Go module, so s3gen stays out of the app's build; `make
 # test` builds it and checks every link. docs writes it to docs/dist; docsrun
@@ -180,4 +186,4 @@ domainstatus:
 clean:
 	rm -Rf bin locallinks web/static/app.js web/static/app.js.map web/static/sw.js web/static/css/tailwind.css docs/dist docs/static/js/gen
 
-.PHONY: all setupvenv venvpath ui uiprod server build run watch test docs docsrun docsjs ghpages liftcheck soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean
+.PHONY: all patternreport setupvenv venvpath ui uiprod server build run watch test docs docsrun docsjs ghpages liftcheck soundtest templates resymlink checklinks deploy prodlogs checkpromote deploydev devlogs verifydomain domains domainstatus clean

@@ -16,6 +16,7 @@ make setupvenv   # one Python venv at ../.venv, shared by every worktree
 make deploy      # tests + prod build, then App Engine project thambura (see Deploying)
 make deploydev   # the same, to a no-traffic "dev" version, to try before thambura.com
 make prodlogs    # tail App Engine logs
+make patternreport # which talas play a written mridangam pattern (#185); fails until all do
 ```
 
 Built assets (`app.js`, `static/chunks/`, `tailwind.css`, `web/bundle.json`)
@@ -758,7 +759,11 @@ See NEXTSTEPS.md for the order.
   hand's; thom with din is `"thom+dhin"`. A `+` name with no entry is a build
   error saying it would take two strokes at once, which the lane and the
   kit's cues can't show yet. An unknown role, syllable, letter
-  or unmatched phrase is a build error. The compiling is
+  or unmatched phrase is a build error. `make patternreport`
+  (`src/tools/patternReport.ts`) lists which talas in the mission's scope
+  play a written pattern and which the generated one, by asking `patternFor`
+  as the kit does; it fails until none is generated, so it isn't in `make
+  test`. The compiling is
   `scripts/patterns.mjs` and `scripts/realize.mjs`, pure and tested in
   vitest; `compile-patterns.mjs` only reads and writes. The syllable table
   is `src/engine/syllables.data.json`, read by both the app and the
