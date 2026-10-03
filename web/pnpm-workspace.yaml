@@ -3,5 +3,7 @@
 # allowBuilds; pnpm 10 reads onlyBuiltDependencies. Both are here so either works.
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@panyam/tsappkit@0.1.0'
 onlyBuiltDependencies:
   - esbuild

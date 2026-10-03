@@ -12,7 +12,7 @@ import (
 // instruments are kept apart because they come and go differently: the
 // islands are fixed by the page, while instruments are added and removed in
 // the browser once it runs. encoding/json flattens the embedded spec, so the
-// browser reads one object: layout, islands, instruments (web/src/page/).
+// browser reads one object: layout, islands, instruments (web/src/player/spec.ts).
 type Spec struct {
 	page.Spec
 	Instruments []Instrument `json:"instruments"`

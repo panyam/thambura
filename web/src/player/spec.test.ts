@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { readSpec } from "./spec";
+import { readPageSpec } from "./spec";
 
-describe("readSpec", () => {
+describe("readPageSpec", () => {
   it("treats a spec without instruments as starting with none", () => {
-    expect(readSpec('{"layout":"drawer","islands":[]}')).toEqual({ layout: "drawer", islands: [], instruments: [] });
+    expect(readPageSpec('{"layout":"drawer","islands":[]}')).toEqual({ layout: "drawer", islands: [], instruments: [] });
   });
 
   it("reads the spec the server writes", () => {
@@ -15,7 +15,7 @@ describe("readSpec", () => {
       ],
       instruments: [{ kind: "kit", config: { url: "/a/kit.json" } }],
     });
-    expect(readSpec(text)).toEqual({
+    expect(readPageSpec(text)).toEqual({
       layout: "drawer",
       islands: [
         { name: "tala", slot: "main", presentation: "page", config: { fixturesUrl: "/f.json", kitUrls: ["/a/kit.json"] } },
@@ -26,7 +26,7 @@ describe("readSpec", () => {
   });
 
   it("keeps an instrument's added flag when it's true, and nothing else (#157)", () => {
-    const spec = readSpec(
+    const spec = readPageSpec(
       JSON.stringify({
         layout: "tracks",
         islands: [],
@@ -46,12 +46,12 @@ describe("readSpec", () => {
 
   it("is null when there's no spec or it isn't one", () => {
     for (const bad of [null, undefined, "", "not json", "null", "[]", '{"islands":[]}', '{"layout":"drawer"}', '{"layout":3,"islands":[]}']) {
-      expect(readSpec(bad), String(bad)).toBeNull();
+      expect(readPageSpec(bad), String(bad)).toBeNull();
     }
   });
 
-  it("drops islands it couldn't mount and cleans the rest", () => {
-    const spec = readSpec(
+  it("drops islands and instruments it couldn't use and cleans the rest", () => {
+    const spec = readPageSpec(
       JSON.stringify({
         layout: "drawer",
         islands: [

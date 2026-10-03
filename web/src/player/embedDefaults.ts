@@ -1,4 +1,4 @@
-import type { PageSpec } from "../page/spec";
+import type { Spec } from "./spec";
 
 /** Where the tala's sounds are, from the root; resolved against embed.js's address. */
 const FIXTURES = "/static/Resources/TalasFixtures.json";
@@ -11,7 +11,7 @@ const FIXTURES = "/static/Resources/TalasFixtures.json";
  * play). So each is added when an island needs it and the host hasn't named
  * one. A host that names its own keeps them.
  */
-export function withDefaultInstruments(spec: PageSpec): PageSpec {
+export function withDefaultInstruments(spec: Spec): Spec {
   const shows = (name: string) => spec.islands.some((i) => i.name === name);
   const has = (kind: string) => spec.instruments.some((i) => i.kind === kind);
   const added = [

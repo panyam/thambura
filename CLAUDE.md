@@ -105,9 +105,11 @@ Sadhana).
   `kit-1`). goapplib's partial `@goapplib/page/Islands.html`
   (`PageSpecScript`, vendored by `make templates`) writes it as
   `<script type="application/json" id="page-spec">`, and all island config
-  travels there, never in `data-*` attributes. `web/src/page/` imports
+  travels there, never in `data-*` attributes. tsappkit's `IslandPage`
+  reads it, and `web/src/player/spec.ts` adds the instruments through
+  `readExtension`. `web/src/page/` (now only the embed helpers) imports
   nothing else from this repo (`make liftcheck`, part of `make test`), since
-  it moves into tsappkit next (goapplib#27).
+  it's waiting to move into tsappkit too (goapplib#44).
 - Templates come in three layers. `web/templates/BasePage.html` extends
   goapplib's BasePage: our logo, no login actions, no HTMX, no header drawer.
   A layout (`web/templates/layouts/Tracks.html` for `/`) includes it, defines
@@ -449,10 +451,9 @@ unit-tested:
   in as props. `Stepper.tsx` is the slider between − and + both use.
   `island.tsx` wires the real browser dependencies in. `islands.ts` holds
   the island registry (`tala`, `thambura`, `session`) and `buildContext`, which both
-  entries use: `main.ts` for our pages, through the generic
-  `web/src/page/islandPage.ts` (a tsappkit `BasePage`, which also wires the
-  theme toggle), and `embed.ts` for other sites. Both mount through
-  `mountIslands`, which logs and skips an unknown island, a missing slot or
+  entries use: `main.ts` for our pages, through tsappkit's
+  `IslandPage` (a `BasePage`, which also wires the theme toggle), and
+  `embed.ts` for other sites. Both mount through tsappkit's `mountIslands`, which logs and skips an unknown island, a missing slot or
   a factory that throws, and builds the context only when there's an island.
 - `embed.ts` (`/static/embed.js`) is the tala and the thambura on someone
   else's page. It finds a host's `data-thambura-spec` script

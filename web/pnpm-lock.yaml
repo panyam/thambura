@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@panyam/tsappkit':
-        specifier: ^0.0.5
-        version: 0.0.5
+        specifier: ^0.1.0
+        version: 0.1.0
       '@panyam/tsappkit-solid':
         specifier: ^0.0.1
-        version: 0.0.1(@panyam/tsappkit@0.0.5)(solid-js@1.9.15)
+        version: 0.0.1(@panyam/tsappkit@0.1.0)(solid-js@1.9.15)
       solid-js:
         specifier: ^1.9.15
         version: 1.9.15
@@ -379,8 +379,8 @@ packages:
       '@panyam/tsappkit': ^0.0.5
       solid-js: ^1.9.0
 
-  '@panyam/tsappkit@0.0.5':
-    resolution: {integrity: sha512-bKBRgbxzE5ifnrpevcXcMsWkmMlQslvpeIDQ+aCB3zzu4DAjP0gYd8bs+u/DmHhiHKYVO7Ez22Rbtbchs7WiEw==}
+  '@panyam/tsappkit@0.1.0':
+    resolution: {integrity: sha512-59ScXgp/17zHhKU5NhWRheA/s/lYklJWzLr+rrTNyd8lKXfMrQ/2nr5127Yn6acdC5PuACLr8/TQ3Ka0RbdLpQ==}
     peerDependencies:
       ace-builds: ^1.0.0
     peerDependenciesMeta:
@@ -1418,12 +1418,12 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.3
 
-  '@panyam/tsappkit-solid@0.0.1(@panyam/tsappkit@0.0.5)(solid-js@1.9.15)':
+  '@panyam/tsappkit-solid@0.0.1(@panyam/tsappkit@0.1.0)(solid-js@1.9.15)':
     dependencies:
-      '@panyam/tsappkit': 0.0.5
+      '@panyam/tsappkit': 0.1.0
       solid-js: 1.9.15
 
-  '@panyam/tsappkit@0.0.5': {}
+  '@panyam/tsappkit@0.1.0': {}
 
   '@panyam/tsutils@1.0.0': {}
 
