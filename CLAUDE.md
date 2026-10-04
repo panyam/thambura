@@ -180,6 +180,14 @@ Things that have bitten:
 - **No formatter is configured.** The code runs long lines (up to about 270
   columns in the JSX). `npx prettier` falls back to 80 columns and rewraps
   whole files, burying the change in the diff; don't run it.
+- **A goapplib bump moves four things together**: `go get
+  github.com/panyam/goapplib@vX`, the `ref:` in `web/templates/templar.yaml`
+  then `make templates`, and `@panyam/tsappkit` and `@panyam/tsappkit-solid`
+  in `web/package.json` (one version for all three since 0.6.0, #202).
+  pnpm refuses a package younger than its minimum release age, so a release
+  from the same day goes into `minimumReleaseAgeExclude` in
+  `web/pnpm-workspace.yaml`; keep that list to the versions installed.
+  `Stackfile.md` records them.
 - **Measure a performance change before trusting it.** Splitting the bundle
   (#91) made a first visit *slower* until the shared chunks were preloaded,
   because the browser found them one after another. A throttled Playwright
@@ -735,7 +743,9 @@ See NEXTSTEPS.md for the order.
   used with permission, see `web/patterns/CREDITS.md` for the piece, the
   teacher and the stroke mapping); the Adi main is transcribed from a
   practice pattern shared with permission, recorded privately in
-  thambura-ext (its left-hand tha plays `tham` until #80 records it). A pattern matches a tala on shape plus cycle length, since both
+  thambura-ext. The repo is public, so files, issues and PRs call it "a
+  practice pattern shared with permission" and never name it (thambura-ext's
+  README says why) (its left-hand tha plays `tham` until #80 records it). A pattern matches a tala on shape plus cycle length, since both
   chaapus are one clap and share a shape, and a chaapu's pattern (`nadai:
   any`) on its `ticks:` too, since Misra and Viloma are both seven counts
   (#187; the compiler refuses one without). `fitsGrid` is the one rule
@@ -1151,6 +1161,11 @@ A few probes that worked, all set up in an init script:
   base saved. Set every setting a run depends on explicitly, since the
   profile carries the last run's tala into the next page load; a run that
   relied on the default once reported a difference that was only that.
+- To see what each cycle plays, take the first clap's `when` as sam, divide
+  every kit sample's `when` by the cycle's seconds (its counts × 60 / bpm),
+  and print each cycle's strokes and its first stroke's offset from sam.
+  That's how #189, #199 and #201 checked Viloma's claps, the variations and
+  a three-cycle korvai landing on sam.
 - A `PerformanceObserver` for `longtask` shows any main-thread stall over
   50 ms, which is how the render slicing was checked with the tala playing.
 - To tell which thambura a pluck came from (#103), wrap

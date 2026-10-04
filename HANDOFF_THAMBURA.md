@@ -8,7 +8,9 @@ thambura-data#2), the Kriyas rename (#160), the thambura's volume in links
 #162) added after. It folds forward
 what's still open from the 2026-09-27 handoff and drops what closed: #103,
 #121, #153, the #148/#149 and #156 deploys, #54, the hands track's name,
-the embed guide's kit example (#154), and the stale worktrees. The durable notes are in
+the embed guide's kit example (#154), and the stale worktrees. Checked
+again on 2026-10-04: the mridangam's work is now the mission #185 (see
+NEXTSTEPS.md), and what closed since is dropped. The durable notes are in
 CLAUDE.md, NEXTSTEPS.md and `docs/designs/`; this file is only what's in
 flight. Delete it once the items below close.
 
@@ -71,59 +73,18 @@ flight. Delete it once the items below close.
 3. **#99 with #104:** patterns naming their instrument, with the first
    ghatam or kanjira kit, which needs recordings first. A second copy of
    the same kit waits on this too, since two would play the same pattern.
-4. **#132, asset packs**, and **#144** (embeds save to the host's
-   localStorage under our keys).
+4. **#132, asset packs.**
 5. **#138, a settings page for the pluck cache** (its size, Clear, usage).
    Filed this session; it should count both thamburas' entries.
 
 ## The solkattu path (the mridangam's vocabulary)
 
-`docs/designs/solkattu.md` is the plan: patterns written in solkattu and
-realized into strokes through a phrase table. Steps 1 and 2 are live
-(#162 with thambura-data#1, thambura.com version 20260928t061843): the
-kit's labels are Ki, Din, Dim and Thom din, and the lane shows the tala's
-counting line (*ta ka di mi*, `engine/syllables.ts`, published on
-`clock.tala` as `counting`).
-
-Decided with the user on 2026-09-28, for step 3:
-
-- **`sol:` is a role** in the notations DSL beside `mrid:`, like any other,
-  with a meaning only we give it.
-- **The left-hand tha (`p`) plays a soft ki** (`R.thi`, lower gain) until
-  it's recorded (#80), marked as a stand-in so the lane can show it.
-- **The default phrase table is accepted**: the fourteen defaults in
-  solkattu.md plus the single-syllable additions (*din* → `od`, *tat* and
-  *ta* → `k`, *dit* → `t`, *ta din* → `k od`, *tat dit* → `k t`).
-
-Next, in order:
-
-1. **Step 3:** the `sol:` role and the phrase table in
-   `scripts/compile-patterns.mjs`. Where things get edited, so the user
-   can change the table later: defaults in
-   `web/patterns/realize/mridangam.json` (one file per instrument kind), one
-   piece's choice in its `.not` front matter (`realize:`), and what a
-   letter plays on this kit, the `p` stand-in included, in
-   `web/patterns/strokes.json`, which becomes the letter table. A phrase
-   with no entry is a build error naming it; `pnpm patterns:check` in
-   `make test` catches stale data. Write that table into solkattu.md's
-   format section too, and later into the "write a pattern" guide (#107).
-2. **Step 4, #82:** solkattu in the lane, large, over the strokes, with the
-   counting line when a pattern has none.
-3. **Then** the pattern editor, a korvai every N cycles, and the korvai
-   generator, all working in syllable ids.
-4. **#81** (wrap the lane by anga) gets more pressing: the counting rows
-   make sankeernam's cells nine rows tall and the lane wider.
-
-Also from this thread:
-
-- Syllables and strokes are held by id everywhere (saved patterns, links,
-  the table); only `syllables.ts` and `kit.json` spell them.
-- Speeds (1st, 2nd, 3rd per nadai) are still undefined; *ta ka di mi ta ka
-  jo nu* is in the table but nothing plays second speed.
-- **thambura-ext** (`panyam/thambura-ext`, private, checked out at
-  `../../thambura-ext/main`) holds code tied to one outside project's
-  format; `karya/phrase_tally.py` produced the override counts in
-  solkattu.md. Generic tools stay here (CLAUDE.md says which).
+`docs/designs/solkattu.md` is the plan. Steps 1 to 3 are in: the kit's
+labels, the counting line in the lane (#162), and the `sol:` role realized
+through the phrase table (#176), with the left-hand tha playing thom
+(#178). No pattern has a `sol:` line yet. Next: solkattu in the lane (#82)
+once one does, then the pattern editor and the korvai generator, all in
+syllable ids. Speeds (1st, 2nd, 3rd per nadai) are #198.
 
 ## Small follow-ups from #103, not filed
 
@@ -163,24 +124,23 @@ Also from this thread:
 7. **Small decisions:** whether www.thambura.com should redirect to the
    bare domain, and whether to keep the dev container's IP (98.248.54.110)
    on the Namecheap API whitelist.
-8. **Who vets the mridangam patterns.** All but the Adi one are karya's
-   (converted by us, unverified) or generated; the Adi one is transcribed
-   from a practice pattern shared with permission (provenance in
-   thambura-ext). More talas come the same way, written straight into `mrid:`
-   lines; a vocabulary PR on top of #175 will let them keep their source's
-   stroke names in quotes (`"tha+num"`), with stand-ins through `standIn`.
+8. **Who vets the mridangam patterns.** All but the Adi main are karya's
+   (converted by us, unverified); the Adi main is transcribed from a
+   practice pattern shared with permission (provenance in thambura-ext).
+9. **#181: which talas the practice source covers**, and their lines
+   written into thambura-ext, so #182 to #184 can start.
+10. **A listen on dev** (https://dev-dot-thambura.uc.r.appspot.com, 26bffbb)
+   to the new variations and korvais, before a production deploy.
 
 ## Open issues
 
-- **Instruments (#94):** #99, #102, #104, #132; #144 (embed storage);
-  #159 (a generic kit builder, filed by another session).
+- **Instruments (#94):** #99, #102, #104, #132; #159 (a generic kit
+  builder, filed by another session).
 - **thambura-ext#1:** the mridangam dataset's licence.
 - **Filed by other sessions:** #113 (pluck patterns beyond Pa Sa Sa Sa),
   #116 (the Lab beside any skin).
-- **Mridangam, paused:** #77 fills, eduppu and a count-in; #78 a pattern to
-  suit the tempo; #79 more patterns; #80
-  arai chapu and the left-hand tha; #81 the lane on a long cycle; #82
-  solkattu under the strokes.
+- **Mridangam:** the mission #185 and its tickets (`gh issue list -l
+  mission_written_patterns`); outside it #77, #78, #80, #82, #194, #198.
 - **#72, the AAC kit:** decided by attack onset in real Chrome and Safari,
   which Playwright's Chromium (no AAC) can't measure.
 - **Thambura sound:** #8 umbrella (its "second tambura panned apart" is
@@ -195,10 +155,7 @@ Also from this thread:
 
 ## Environment
 
-- Only `thambura/checkpoint-volume` (this checkpoint's PR) is left of this
-  session's worktrees; remove it once that lands. The older
-  `checkpoint-render`, `drawer-opened-link` and `pwa` worktrees are gone.
-  No servers of this session's are running.
+- `thambura/checkpoint-percussion` is another session's worktree; leave it.
 - Other sessions hold 8001 and 8002; 8080 and 8091 are something else.
   This session used 8021 to 8023. Serve a worktree on a free port, restart
   it after every rebuild, and **check the port is free afterwards**
