@@ -34,7 +34,7 @@ compiled pattern, until it's recorded (#80). The rule is the same for a
 
 | Missing stroke | Plays |
 |---|---|
-| the left-hand tha (`tha`, letter `p`) | thom; with a right-hand stroke, thom with it (`"tha+num"` is tham, `"tha+dhin"` is thom with din) |
+| the left-hand tha (`tha`, letter `p`) | thom; with a right-hand stroke, thom with it (`"tha+num"` is tham, `"tha+dhin"` is thom with din, and any other pair, `"tha+cha"`, is thom and that stroke together) |
 | arai chapu (`"a cha"`, letter `u`) | chapu, softer |
 | mi, kin, tan (letters `l`, `y`, `j`) | ki or ta, softer |
 
