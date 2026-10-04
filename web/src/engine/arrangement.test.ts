@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { arrangementFor, patternForCycle, type Arrangement } from "./arrangement";
+import { arrangementFor, korvaiCycles, patternForCycle, type Arrangement } from "./arrangement";
 import { PATTERNS, patternFor, type Pattern } from "./patterns";
+import { ratio as r } from "./ratio";
 import { beatsFor, type TalaSettings } from "./selection";
 import { TalaGrid } from "./talaGrid";
 
@@ -75,7 +76,6 @@ describe("the korvai", () => {
 
   it("is absent where nobody has written one", () => {
     expect(setup({ tala: "chaapu_khandam" }).korvai).toBeNull();
-    expect(setup({ tala: "custom_rupakam" }).korvai).toBeNull();
   });
 
   it("is Misra Chaapu's tirmanam: a phrase three times, joined by thom with din, in one cycle", () => {
@@ -182,5 +182,56 @@ describe("patternForCycle", () => {
     expect(patternForCycle(three, 1, "lots", draws([0, 0])).id).toBe("v1");
     expect(patternForCycle(three, 1, "lots", draws([0, 0.5])).id).toBe("v2");
     expect(patternForCycle(three, 1, "lots", draws([0, 0.99])).id).toBe("v3");
+  });
+});
+
+describe("korvaiCycles", () => {
+  const main: Pattern = {
+    ...PATTERNS.find((p) => p.id === "adi-chatusram-1")!,
+    strokes: [0, 1, 2, 3].map((i) => ({ at: r(i, 4), stroke: "M", gain: 1 })),
+  };
+  const korvai = (counts: number, ats: [number, number][]): Pattern => ({
+    ...main,
+    id: "k",
+    name: "K",
+    role: "korvai",
+    counts: r(counts),
+    strokes: ats.map(([n, d]) => ({ at: r(n, d), stroke: "K", gain: 1 })),
+  });
+  const show = (pieces: Pattern[]) => pieces.map((p) => p.strokes.map((s) => `${s.stroke}@${s.at.n}/${s.at.d}`).join(" "));
+
+  it("starts a korvai two and a half cycles long halfway into a cycle, so it ends on sam", () => {
+    const pieces = korvaiCycles(korvai(20, [[0, 1], [1, 5], [4, 5], [19, 20]]), main);
+    expect(show(pieces)).toEqual(["M@0/1 M@1/4 K@1/2", "K@0/1", "K@1/2 K@7/8"]);
+    expect(pieces.every((p) => p.role === "korvai" && p.name === "K")).toBe(true);
+    expect(pieces.every((p) => p.counts.n === 8 && p.counts.d === 1)).toBe(true);
+  });
+
+  it("gives a korvai of exactly one cycle the whole cycle, as before", () => {
+    expect(show(korvaiCycles(korvai(8, [[0, 1], [1, 2]]), main))).toEqual(["K@0/1 K@1/2"]);
+  });
+
+  it("lands a korvai shorter than a cycle on the next sam", () => {
+    expect(show(korvaiCycles(korvai(4, [[0, 1], [1, 2]]), main))).toEqual(["M@0/1 M@1/4 K@1/2 K@3/4"]);
+  });
+
+  it("lands on a point after sam, the main pattern carrying on from there", () => {
+    // One cycle long, landing a quarter in: it starts a quarter into the first cycle.
+    expect(show(korvaiCycles(korvai(8, [[0, 1], [1, 2]]), main, r(1, 4)))).toEqual(["M@0/1 K@1/4 K@3/4", "M@1/4 M@1/2 M@3/4"]);
+  });
+});
+
+describe("a korvai's length", () => {
+  it("is free, so Short Rupakam's three-cycle korvai fits it and Adi's doesn't", () => {
+    expect(setup({ tala: "custom_rupakam" }).korvai?.id).toBe("rupakam-korvai-1");
+    expect(setup({ tala: "custom_rupakam" }).korvai?.counts).toEqual(r(9));
+    expect(setup().korvai?.id).toBe("adi-korvai-1");
+  });
+
+  it("is free only for a korvai: a main or variation still has to fill the cycle", () => {
+    const grid = new TalaGrid(beatsFor({ tala: "custom_adi", jaathi: "chatusram", nadai: "chatusram", kalai: 1 }));
+    const long = { ...PATTERNS.find((p) => p.id === "adi-chatusram-2")!, counts: r(16) };
+    const main = PATTERNS.find((p) => p.id === "adi-chatusram-1")!;
+    expect(arrangementFor(grid, "chatusram", main, [main, long])!.variations).toEqual([]);
   });
 });

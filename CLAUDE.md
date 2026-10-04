@@ -782,9 +782,13 @@ See NEXTSTEPS.md for the order.
   pattern's `role` is `main` or `variation`; `arrangementFor` gathers the
   alternates that fit the same cycle, and `patternForCycle` draws one per
   cycle at the Variety setting's chance (off, 0.3, 0.7). The first cycle is
-  always the main one. A `korvai` role is an ending: the Korvai button hands
-  the next cycle to it, and it resolves on the sam after, which is how an
-  accompanist closes a section. The kit asks per cycle through `StrokeSequencer`'s
+  always the main one. A `korvai` role is an ending, as long as it is (its
+  `counts` aren't matched against the cycle): the Korvai button gives it the
+  next cycle not yet booked, `korvaiCycles` cuts it into one pattern per cycle
+  it plays in, starting it wherever it has to so it lands on sam (Short
+  Rupakam's is three cycles), and the accompaniment carries on from there,
+  which is how an accompanist closes a section. The landing point is a
+  parameter for the eduppu (#197). The kit asks per cycle through `StrokeSequencer`'s
   source, and keeps a lane per cycle so the lane changes when that cycle is
   heard, not when it was booked. Variety is saved per kit under
   `thambura.kit-1`, taken once from `thambura.player`, where the tala kept it.

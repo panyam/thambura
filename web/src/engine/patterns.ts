@@ -90,7 +90,8 @@ export interface Pattern {
 
 
 /**
- * Whether a pattern fits a tala: the same cycle shape and length, and the
+ * Whether a pattern fits a tala: the same cycle shape and length (a korvai's
+ * length is free), and the
  * same nadai, or for a chaapu's pattern ("any" nadai) the same ticks. The
  * shape matters because counting alone confuses talas that share a length:
  * the Adi sarvalaghu serves both Adi and a chatusra-jaathi Thriputa, which
@@ -101,7 +102,8 @@ export interface Pattern {
 export function fitsGrid(p: Pattern, grid: TalaGrid, nadai: Gati): boolean {
   return (
     p.shape === grid.shape &&
-    cmp(p.counts, grid.patternCounts) === 0 &&
+    // A korvai is as long as it is (see korvaiCycles); the rest fill the cycle.
+    (p.role === "korvai" || cmp(p.counts, grid.patternCounts) === 0) &&
     (p.nadai === nadai || p.nadai === "any") &&
     (p.ticks === undefined || p.ticks === grid.ticks)
   );

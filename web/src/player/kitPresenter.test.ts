@@ -415,6 +415,30 @@ describe("KitPresenter on the tala's clock", () => {
     expect(kit.state.lane!.name).not.toBe("Adi korvai");
   });
 
+  it("plays a korvai longer than a cycle across the cycles it needs, then the accompaniment on sam", async () => {
+    tala.setSettings({ tala: "custom_rupakam" });
+    tala.setTempo(240); // a Rupakam cycle is three counts, 0.75 s
+    expect(kit.state.hasKorvai).toBe(true);
+    await tala.start();
+    advance(0.05);
+    kit.askForKorvai();
+
+    // Three cycles of korvai, so the lane shows it for over two of them.
+    let first: number | null = null;
+    let last = 0;
+    for (let t = 0.1; t < 5; t += 0.01) {
+      advance(t);
+      if (kit.state.lane?.name === "Short Rupakam korvai") {
+        first ??= t;
+        last = t;
+      }
+    }
+    expect(first).not.toBeNull();
+    expect(last - first!).toBeGreaterThan(1.5);
+    expect(kit.state.korvaiQueued).toBe(false);
+    expect(kit.state.lane!.name).not.toBe("Short Rupakam korvai");
+  });
+
   it("forgets a korvai that was asked for but never played", async () => {
     await tala.start();
     advance(0.05);

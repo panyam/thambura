@@ -1,0 +1,30 @@
+---
+id: rupakam-korvai-1
+name: Short Rupakam korvai
+counts: 9
+shape: down down open
+nadai: chatusram
+role: korvai
+source: >-
+  karya, Solkattu/Score/MridangamTirmanam.hs,
+  tir_icarnatic_guhan_kamalakiran_rupaka, 2023-03-10
+  (github.com/elaforge/karya, GPL-3.0, used with permission). Written there as
+  tri "D_o" (su "ktpkpktp ktpkpk" . "DDk"): the phrase three times, joined by
+  thom with din and thom, three cycles of Short Rupakam from sam to sam.
+  Converted as thi for k, ta for t, "thom+dhin" for D and thom for o; its p is
+  the left-hand tha, which plays thom until the kit has one (#80). Unverified
+  by a player.
+accents:
+  0: 1.1
+---
+\cycle("|1|1|1|1|1|1|1|1|1|")
+\beatDuration(8)
+mrid: thi ta tha thi tha thi ta tha
+      thi ta tha thi tha thi "thom+dhin" ,
+      "thom+dhin" , thi , "thom+dhin" , , ,
+      thom , thi ta tha thi tha thi
+      ta tha thi ta tha thi tha thi
+      "thom+dhin" , "thom+dhin" , thi , "thom+dhin" ,
+      , , thom , thi ta tha thi
+      tha thi ta tha thi ta tha thi
+      tha thi "thom+dhin" , "thom+dhin" , thi ,

@@ -1,5 +1,6 @@
 import type { Gati } from "./carnatic";
-import { fitsGrid, PATTERNS, type Pattern } from "./patterns";
+import { fitsGrid, PATTERNS, type Pattern, type PatternStroke } from "./patterns";
+import { add, cmp, mul, ratio, ZERO, type Ratio } from "./ratio";
 import type { TalaGrid } from "./talaGrid";
 
 /**
@@ -23,8 +24,9 @@ export interface Arrangement {
   variations: Pattern[];
   /**
    * An ending that lands on sam, played once when the student asks for it.
-   * A korvai fills whole cycles and resolves on the next sam, which is how
-   * an accompanist tells a singer the section is over.
+   * It's as long as it is: `korvaiCycles` works out where it starts so it
+   * resolves on sam, which is how an accompanist tells a singer the section
+   * is over.
    */
   korvai: Pattern | null;
 }
@@ -73,3 +75,49 @@ export function patternForCycle(
   const pick = Math.min(variations.length - 1, Math.floor(rng() * variations.length));
   return variations[pick];
 }
+
+/**
+ * A korvai cut into one pattern per cycle it plays in, so the stroke
+ * sequencer, which asks for a cycle at a time, can play one of any length.
+ *
+ * It ends on `landing` (a fraction of the cycle: 0 is sam, and an eduppu
+ * would be later), so it starts wherever that puts it: two and a half cycles
+ * long, it starts halfway into the first of three. The first cycle plays
+ * `main` up to there. When it lands after sam, the last cycle plays `main`
+ * again from the landing point. Each piece keeps `main`'s length and akshara
+ * count, so the lane and the sequencer treat it as any other cycle, and the
+ * korvai's name and role, so the lane says what is playing.
+ */
+export function korvaiCycles(korvai: Pattern, main: Pattern, landing: Ratio = ZERO): Pattern[] {
+  // Everything below is in cycles from the start of the first piece.
+  const length = div(korvai.counts, main.counts);
+  const cycles = Math.max(0, ceil(sub(length, landing)));
+  const end = add(ratio(cycles), landing);
+  const start = sub(end, length);
+  const pieces = Math.max(1, ceil(end));
+  const out: PatternStroke[][] = Array.from({ length: pieces }, () => []);
+  const put = (at: Ratio, stroke: PatternStroke) => {
+    const cycle = floor(at);
+    if (cycle >= 0 && cycle < pieces) out[cycle].push({ ...stroke, at: sub(at, ratio(cycle)) });
+  };
+  for (let cycle = 0; cycle < pieces; cycle++) {
+    for (const s of main.strokes) {
+      const at = add(ratio(cycle), s.at);
+      if (cmp(at, start) < 0 || cmp(at, end) >= 0) put(at, s);
+    }
+  }
+  for (const s of korvai.strokes) put(add(start, mul(s.at, length)), s);
+  return out.map((strokes) => ({
+    ...main,
+    id: korvai.id,
+    name: korvai.name,
+    source: korvai.source,
+    role: "korvai",
+    strokes: strokes.sort((a, b) => cmp(a.at, b.at)),
+  }));
+}
+
+const sub = (a: Ratio, b: Ratio) => add(a, mul(b, ratio(-1)));
+const div = (a: Ratio, b: Ratio) => mul(a, ratio(b.d, b.n));
+const floor = (a: Ratio) => Math.floor(a.n / a.d);
+const ceil = (a: Ratio) => Math.ceil(a.n / a.d);
