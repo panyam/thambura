@@ -518,13 +518,14 @@ Each step is a PR that works on its own.
    solkattu line under the strokes.
 4. **Arrangements.** Variations and the korvai are in. A pattern's role says
    whether it is the main one, an alternate to swap in (the Variety control
-   sets how often), or an ending: the Korvai button gives the next cycle to
-   an ending that resolves on the following sam, then the accompaniment
+   sets how often), or an ending: the Korvai button hands over to an ending,
+   however many cycles long, started where it has to so it resolves on sam,
+   then the accompaniment
    carries on.
 
 **The mridangam pauses here.** What plays today: written patterns for Adi,
 Short Rupakam and the Misra and Khanda chaapus, a variation for each of those four,
-korvais for Adi and Misra Chaapu, a generated skeleton for every other tala and nadai,
+korvais for Adi, Misra Chaapu and Short Rupakam, a generated skeleton for every other tala and nadai,
 the stroke pad, and the lane. The rest is tracked rather than planned here:
 
 | What | Ticket |

@@ -18,9 +18,10 @@ is GPL-3.0.
 | `misra-chaapu-2.not` | `c_18_05_25`, first line | learned from Ganesh, dated 2018-05-25 |
 | `adi-chatusram-2.not` | `kizh3` | learned from Sudhindra |
 | `adi-korvai.not` | `tir_sam_adi_kirkalam` in `MridangamTirmanam.hs` | dated 2022-04-23 |
+| `rupakam-korvai.not` | `tir_icarnatic_guhan_kamalakiran_rupaka` in `MridangamTirmanam.hs` | dated 2023-03-10 |
 | `misra-chaapu-korvai.not` | `tir_18_06_15` in `Mridangam2018.hs`, the `t.k.o.o.k.o.o.k` variant | learned from Ganesh, dated 2018-06-15 |
 
-All but the last two are in `MridangamSarva.hs`.
+All but the last three are in `MridangamSarva.hs`.
 
 ## adi-chatusram.not
 

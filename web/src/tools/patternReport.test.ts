@@ -19,6 +19,7 @@ function toy(settings: TalaSettings, id: string, role: Pattern["role"], standIns
     beats: grid.beats.length,
     aksharas: grid.beats.length,
     nadai: "any",
+    ticks: grid.ticks,
     role,
     strokes: [0, 1, 2].map((i) => ({ at: ratio(i, 3), stroke: "R.thi", gain: 1, ...(i < standIns ? { standIn: true as const } : {}) })),
   };

@@ -9,7 +9,7 @@ import {
   type Kit,
   type Zone,
 } from "../engine/kit";
-import { arrangementFor, patternForCycle, type Arrangement, type Variety } from "../engine/arrangement";
+import { arrangementFor, korvaiCycles, patternForCycle, type Arrangement, type Variety } from "../engine/arrangement";
 import { generatedPattern } from "../engine/generated";
 import { laneFor, type Lane } from "../engine/lane";
 import { patternFor, type Pattern } from "../engine/patterns";
@@ -139,6 +139,8 @@ export class KitPresenter {
   private arrangement: Arrangement | null = null;
   // Which cycle the korvai was given, so the button clears when it is heard.
   private korvaiAt: number | null = null;
+  // The korvai cut into cycles (korvaiCycles), from the cycle it starts in.
+  private korvaiRun: { from: number; pieces: Pattern[] } | null = null;
   // The lane for each cycle the sequencer has laid out but the ear hasn't
   // reached yet, since a variation changes what the lane should show.
   private readonly lanes = new Map<number, Lane>();
@@ -313,9 +315,9 @@ export class KitPresenter {
   }
 
   /**
-   * Plays the ending at the next cycle. A korvai resolves on the sam after
-   * it, so it can start at any cycle boundary; it plays once and the
-   * accompaniment carries on.
+   * Plays the ending from the next cycle not yet booked. A korvai starts
+   * wherever it has to so that it resolves on sam (`korvaiCycles`), plays
+   * once, and the accompaniment carries on from there.
    */
   askForKorvai(): void {
     if (!this.arrangement?.korvai || this.state.korvaiQueued) return;
@@ -366,6 +368,7 @@ export class KitPresenter {
     this.arrangement = arrangementFor(grid, nadai, this.pattern);
     this.lanes.clear();
     this.korvaiAt = null;
+    this.korvaiRun = null;
     this.update({
       pattern: this.pattern?.name ?? null,
       lane: laneFor(this.pattern, timing.counting),
@@ -383,10 +386,16 @@ export class KitPresenter {
   private cycleSource(cycle: number) {
     const grid = this.timing?.grid ?? EMPTY_GRID;
     if (!this.arrangement) return { grid, pattern: this.pattern };
-    // A korvai claims the next cycle to be laid out, once.
-    const korvai = this.state.korvaiQueued && this.korvaiAt === null ? this.arrangement.korvai : null;
-    if (korvai) this.korvaiAt = cycle;
-    const pattern = korvai ?? patternForCycle(this.arrangement, cycle, this.state.variety, this.rng);
+    // A korvai claims the next cycle to be laid out, once, and as many after
+    // it as it needs to land on sam.
+    if (this.state.korvaiQueued && this.korvaiAt === null && this.arrangement.korvai) {
+      const before = patternForCycle(this.arrangement, cycle, this.state.variety, this.rng);
+      this.korvaiAt = cycle;
+      this.korvaiRun = { from: cycle, pieces: korvaiCycles(this.arrangement.korvai, before) };
+    }
+    const piece = this.korvaiRun?.pieces[cycle - this.korvaiRun.from];
+    if (this.korvaiRun && !piece) this.korvaiRun = null;
+    const pattern = piece ?? patternForCycle(this.arrangement, cycle, this.state.variety, this.rng);
     const lane = laneFor(pattern, this.timing?.counting ?? []);
     if (lane) this.lanes.set(cycle, lane);
     return { grid, pattern };
@@ -397,6 +406,7 @@ export class KitPresenter {
     this.deps.audio.cancel(this.deps.track);
     this.cues = this.cues.filter((c) => c.index === undefined);
     this.korvaiAt = null;
+    this.korvaiRun = null;
     if (this.state.korvaiQueued) this.update({ korvaiQueued: false });
   }
 
