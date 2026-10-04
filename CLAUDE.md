@@ -730,10 +730,10 @@ See NEXTSTEPS.md for the order.
   shape and the nadai, so one Adi pattern serves Adi and a chatusra Thriputa
   and stretches with kalai. What's left for the mridangam is more patterns
   and a generated fallback, then arrangements (`docs/designs/mridangam.md`).
-- **Patterns carry their provenance.** Three come from karya's
-  `MridangamSarva.hs` (Evan Laforge's transcriptions from his teachers, GPL,
+- **Patterns carry their provenance.** All but the Adi main
+  come from karya's scores (Evan Laforge's transcriptions from his teachers, GPL,
   used with permission, see `web/patterns/CREDITS.md` for the piece, the
-  teacher and the stroke mapping); the Adi one is transcribed from a
+  teacher and the stroke mapping); the Adi main is transcribed from a
   practice pattern shared with permission, recorded privately in
   thambura-ext (its left-hand tha plays `tham` until #80 records it). A pattern matches a tala on shape plus cycle length, since both
   chaapus are one clap and share a shape, and a chaapu's pattern (`nadai:

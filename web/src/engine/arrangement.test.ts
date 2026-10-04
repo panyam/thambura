@@ -50,9 +50,15 @@ describe("arrangementFor", () => {
     expect(arrangementFor(grid, "chatusram", main)!.variations).toEqual([]);
   });
 
+  it("finds Khanda Chaapu's and Short Rupakam's alternates", () => {
+    expect(setup({ tala: "chaapu_khandam" }).variations.map((p) => p.id)).toEqual(["khanda-chaapu-2"]);
+    expect(setup({ tala: "custom_rupakam" }).variations.map((p) => p.id)).toEqual(["rupakam-chatusram-2"]);
+  });
+
   it("has no alternates where nobody has written any", () => {
-    expect(setup({ tala: "chaapu_khandam" }).variations).toEqual([]);
-    expect(setup({ tala: "custom_rupakam" }).variations).toEqual([]);
+    const grid = new TalaGrid(beatsFor({ tala: "chaapu_khandam", jaathi: "chatusram", nadai: "chatusram", kalai: 1 }));
+    const main = PATTERNS.find((p) => p.id === "khanda-chaapu-1")!;
+    expect(arrangementFor(grid, "chatusram", main, [main])!.variations).toEqual([]);
   });
 
   it("is nothing at all without a main pattern", () => {
@@ -68,8 +74,25 @@ describe("the korvai", () => {
   });
 
   it("is absent where nobody has written one", () => {
-    expect(setup({ tala: "chaapu_misram" }).korvai).toBeNull();
+    expect(setup({ tala: "chaapu_khandam" }).korvai).toBeNull();
     expect(setup({ tala: "custom_rupakam" }).korvai).toBeNull();
+  });
+
+  it("is Misra Chaapu's tirmanam: a phrase three times, joined by thom with din, in one cycle", () => {
+    const korvai = setup({ tala: "chaapu_misram" }).korvai!;
+    expect(korvai.id).toBe("misra-chaapu-korvai-1");
+    expect(korvai.aksharas).toBe(7);
+    // Eight slots of phrase and two of join, so the phrase starts at 0, 10 and 20 of 28.
+    const slots = (from: number, len: number) =>
+      korvai.strokes
+        .map((x) => ({ slot: (x.at.n / x.at.d) * 28, stroke: x.stroke }))
+        .filter((x) => x.slot >= from && x.slot < from + len)
+        .map((x) => `${x.slot - from}:${x.stroke}`);
+    expect(slots(0, 8)).toEqual(["0:R.ta", "1:R.thi", "2:L.thom", "3:L.thom", "4:R.thi", "5:L.thom", "6:L.thom", "7:R.thi"]);
+    expect(slots(10, 8)).toEqual(slots(0, 8));
+    expect(slots(20, 8)).toEqual(slots(0, 8));
+    expect(slots(8, 2)).toEqual(["0:L.dheem"]);
+    expect(slots(18, 2)).toEqual(["0:L.dheem"]);
   });
 
   it("fills exactly one cycle, so it resolves on the next sam", () => {
@@ -125,8 +148,8 @@ describe("patternForCycle", () => {
   });
 
   it("stays on the main pattern when there is nothing to swap in", () => {
-    const khanda = setup({ tala: "chaapu_khandam" });
-    expect(patternForCycle(khanda, 3, "lots", draws([0])).id).toBe("khanda-chaapu-1");
+    const main = PATTERNS.find((p) => p.id === "khanda-chaapu-1")!;
+    expect(patternForCycle({ main, variations: [], korvai: null }, 3, "lots", draws([0])).id).toBe("khanda-chaapu-1");
   });
 
   it("varies about as often as asked over a long run", () => {

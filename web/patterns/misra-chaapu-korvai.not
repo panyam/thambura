@@ -1,0 +1,27 @@
+---
+id: misra-chaapu-korvai-1
+name: Misra Chaapu korvai
+counts: 7/2
+shape: down
+nadai: any
+ticks: "0 1/7 3/7 5/7"
+role: korvai
+source: >-
+  karya, Solkattu/Score/Mridangam2018.hs, tir_18_06_15, learned from Ganesh,
+  2018-06-15 (github.com/elaforge/karya, GPL-3.0, used with permission). A
+  tirmanam written there as tri (od.__) (t.k.o.o.k.o.o.k): the phrase three
+  times, joined by thom with din. It fills one cycle and resolves on the next
+  sam. Converted as ta, thi for ki, thom, and "thom+dhin". Unverified by a
+  player.
+accents:
+  0: 1.1
+---
+\cycle("|7|")
+\beatDuration(4)
+mrid: ta thi thom thom
+      thi thom thom thi
+      "thom+dhin" , ta thi
+      thom thom thi thom
+      thom thi "thom+dhin" ,
+      ta thi thom thom
+      thi thom thom thi

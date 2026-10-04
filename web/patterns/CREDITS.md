@@ -2,8 +2,8 @@
 
 ## karya (Evan Laforge)
 
-Three of the patterns here are derived from
-[`Solkattu/Score/MridangamSarva.hs`](https://github.com/elaforge/karya/blob/work/Solkattu/Score/MridangamSarva.hs)
+Most of the patterns here are derived from the scores in
+[`Solkattu/Score/`](https://github.com/elaforge/karya/tree/work/Solkattu/Score)
 in [karya](https://github.com/elaforge/karya), a collection of Carnatic
 percussion scores that Evan Laforge transcribed from his teachers. The repo
 is GPL-3.0. 
@@ -13,6 +13,14 @@ is GPL-3.0.
 | `misra-chaapu.not` | `kir_misra_2` | learned from Ganesh, dated 2017-09-26 |
 | `khanda-chaapu.not` | `s_bhajan_kanda`, the `N,ND,` variation | references [this recording](https://www.youtube.com/watch?v=ctpe5H1Snd0) |
 | `rupakam-chatusram.not` | `s_rupaka`, first line | dated 2026-02-05 |
+| `rupakam-chatusram-2.not` | `rupaka1`, the first cycle of its second line | none given |
+| `khanda-chaapu-2.not` | `kanda1`, its second cycle | none given |
+| `misra-chaapu-2.not` | `c_18_05_25`, first line | learned from Ganesh, dated 2018-05-25 |
+| `adi-chatusram-2.not` | `kizh3` | learned from Sudhindra |
+| `adi-korvai.not` | `tir_sam_adi_kirkalam` in `MridangamTirmanam.hs` | dated 2022-04-23 |
+| `misra-chaapu-korvai.not` | `tir_18_06_15` in `Mridangam2018.hs`, the `t.k.o.o.k.o.o.k` variant | learned from Ganesh, dated 2018-06-15 |
+
+All but the last two are in `MridangamSarva.hs`.
 
 ## adi-chatusram.not
 

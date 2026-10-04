@@ -1,0 +1,24 @@
+---
+id: khanda-chaapu-2
+name: Khanda Chaapu, second
+counts: 5/2
+shape: down
+nadai: any
+ticks: "0 2/5 3/5"
+role: variation
+source: >-
+  karya, Solkattu/Score/MridangamSarva.hs, kanda1, its second cycle
+  (github.com/elaforge/karya, GPL-3.0, used with permission). Two slots to the
+  akshara: D _ D _ N N D _ n _, converted as "thom+dhin", tham and nam. The
+  first cycle plays the left-hand tha, which this kit lacks (#80), so only the
+  second is here. Unverified.
+accents:
+  0: 1.12
+---
+\cycle("|5|")
+\beatDuration(2)
+mrid: "thom+dhin" ,
+      "thom+dhin" ,
+      tham tham
+      "thom+dhin" ,
+      nam ,
