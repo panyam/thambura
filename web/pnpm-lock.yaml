@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@panyam/tsappkit':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.6.0
+        version: 0.6.0
       '@panyam/tsappkit-solid':
-        specifier: ^0.0.2
-        version: 0.0.2(@panyam/tsappkit@0.1.0)(solid-js@1.9.15)
+        specifier: ^0.6.0
+        version: 0.6.0(@panyam/tsappkit@0.6.0)(solid-js@1.9.15)
       solid-js:
         specifier: ^1.9.15
         version: 1.9.15
@@ -373,14 +373,14 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@panyam/tsappkit-solid@0.0.2':
-    resolution: {integrity: sha512-oa90VUW6GBEkg1oDS6Cc7PXxizM4x3Rk0buknh2t9EvLrITL/OytMj9SnWNontcYMTS3ZTjMuYyqxwqW+cOjdQ==}
+  '@panyam/tsappkit-solid@0.6.0':
+    resolution: {integrity: sha512-LAbhjS4kFk6QG6z75wKrqAMdcVFBFmpx2KCxa+5+K+9ZSNegXxHxGX/BJXTuHl2fIxil8HEUU2DJuEgML1YPyg==}
     peerDependencies:
-      '@panyam/tsappkit': ^0.0.5 || ^0.1.0
+      '@panyam/tsappkit': '>=0.0.5 <1.0.0'
       solid-js: ^1.9.0
 
-  '@panyam/tsappkit@0.1.0':
-    resolution: {integrity: sha512-59ScXgp/17zHhKU5NhWRheA/s/lYklJWzLr+rrTNyd8lKXfMrQ/2nr5127Yn6acdC5PuACLr8/TQ3Ka0RbdLpQ==}
+  '@panyam/tsappkit@0.6.0':
+    resolution: {integrity: sha512-Or209kATgZXvfK47JPijyQEpjP/0Vmg5VLZNr4NlJ4zIjx2ZkygzrJA8BZVdu84rIXnRYCiuv1KsnY7BTffZYg==}
     peerDependencies:
       ace-builds: ^1.0.0
     peerDependenciesMeta:
@@ -1418,12 +1418,12 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.3
 
-  '@panyam/tsappkit-solid@0.0.2(@panyam/tsappkit@0.1.0)(solid-js@1.9.15)':
+  '@panyam/tsappkit-solid@0.6.0(@panyam/tsappkit@0.6.0)(solid-js@1.9.15)':
     dependencies:
-      '@panyam/tsappkit': 0.1.0
+      '@panyam/tsappkit': 0.6.0
       solid-js: 1.9.15
 
-  '@panyam/tsappkit@0.1.0': {}
+  '@panyam/tsappkit@0.6.0': {}
 
   '@panyam/tsutils@1.0.0': {}
 
