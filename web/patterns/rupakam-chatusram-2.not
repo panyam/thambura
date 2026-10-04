@@ -1,0 +1,20 @@
+---
+id: rupakam-chatusram-2
+name: Short Rupakam sarvalaghu, second
+counts: 3
+shape: down down open
+nadai: chatusram
+role: variation
+source: >-
+  karya, Solkattu/Score/MridangamSarva.hs, rupaka1, the first cycle of its
+  second line (github.com/elaforge/karya, GPL-3.0, used with permission).
+  "N_D_nkn_d___" converted by us: N is thom with nam (tham), D is thom with din
+  ("thom+dhin"), n is nam, k is ki (thi), d is din. Unverified by a player.
+accents:
+  0: 1.12
+---
+\cycle("|1|1|1|")
+\beatDuration(4)
+mrid: tham , "thom+dhin" ,
+      nam thi nam ,
+      dhin , , ,

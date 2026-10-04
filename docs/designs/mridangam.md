@@ -523,8 +523,8 @@ Each step is a PR that works on its own.
    carries on.
 
 **The mridangam pauses here.** What plays today: written patterns for Adi,
-Short Rupakam and the Misra and Khanda chaapus, a variation for Adi and Misra
-Chaapu, an Adi korvai, a generated skeleton for every other tala and nadai,
+Short Rupakam and the Misra and Khanda chaapus, a variation for each of those four,
+korvais for Adi and Misra Chaapu, a generated skeleton for every other tala and nadai,
 the stroke pad, and the lane. The rest is tracked rather than planned here:
 
 | What | Ticket |
