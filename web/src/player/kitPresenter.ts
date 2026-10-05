@@ -371,7 +371,7 @@ export class KitPresenter {
     this.korvaiRun = null;
     this.update({
       pattern: this.pattern?.name ?? null,
-      lane: laneFor(this.pattern, timing.counting),
+      lane: laneFor(this.pattern, timing.counting, grid),
       strokeIndex: null,
       hasVariations: (this.arrangement?.variations.length ?? 0) > 0,
       hasKorvai: this.arrangement?.korvai != null,
@@ -396,7 +396,7 @@ export class KitPresenter {
     const piece = this.korvaiRun?.pieces[cycle - this.korvaiRun.from];
     if (this.korvaiRun && !piece) this.korvaiRun = null;
     const pattern = piece ?? patternForCycle(this.arrangement, cycle, this.state.variety, this.rng);
-    const lane = laneFor(pattern, this.timing?.counting ?? []);
+    const lane = laneFor(pattern, this.timing?.counting ?? [], this.timing?.grid);
     if (lane) this.lanes.set(cycle, lane);
     return { grid, pattern };
   }

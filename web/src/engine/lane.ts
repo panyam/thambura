@@ -1,6 +1,7 @@
 import type { Pattern } from "./patterns";
 import { cmp, mul, ratio, type Ratio } from "./ratio";
 import type { CountedSyllable } from "./syllables";
+import type { TalaGrid } from "./talaGrid";
 
 /** A pattern as the stroke lane draws it, over the tala's counting line. */
 export interface Lane {
@@ -13,6 +14,13 @@ export interface Lane {
   /** Each stroke in the pattern's order, with where it falls in the cycle (`at`) and where it sits in the lane. */
   strokes: { stroke: string; at: Ratio; akshara: number; column: number }[];
   counting: { syllable: string; akshara: number; column: number }[];
+  /**
+   * The akshara each row starts at, from 0: a row per anga, since a cycle
+   * reads as its claps and waves, and a long one (Dhruva's 14 aksharas) then
+   * fits a phone without scrolling sideways. One row when the cycle can't be
+   * split that way.
+   */
+  rows: number[];
 }
 
 // Past this many slots a cell is too narrow to read, so positions round to
@@ -25,7 +33,7 @@ const MAX_COLUMNS = 12;
  * cycle, so this is the one place that decides how a cycle is divided for
  * reading.
  */
-export function laneFor(pattern: Pattern | null, counting: CountedSyllable[]): Lane | null {
+export function laneFor(pattern: Pattern | null, counting: CountedSyllable[], grid?: TalaGrid): Lane | null {
   if (!pattern || pattern.strokes.length === 0) return null;
   const aksharas = Math.max(1, pattern.aksharas);
   const place = (at: Ratio) => {
@@ -48,7 +56,33 @@ export function laneFor(pattern: Pattern | null, counting: CountedSyllable[]): L
     columns,
     strokes: strokes.map((s) => ({ stroke: s.stroke, at: s.at, akshara: s.akshara, column: column(s.within) })),
     counting: said.map((c) => ({ syllable: c.syllable, akshara: c.akshara, column: column(c.within) })),
+    rows: rowsFor(aksharas, grid),
   };
+}
+
+/**
+ * Where each anga starts: every beat the tala claps on (a laghu, drutam or
+ * anudrutam opens with one, its image "down"). Only for a pattern written an
+ * akshara per beat; a chaapu is one beat in our tables but seven aksharas in
+ * its pattern, and stays one row, which fits.
+ */
+function rowsFor(aksharas: number, grid: TalaGrid | undefined): number[] {
+  if (!grid || grid.beats.length !== aksharas) return [0];
+  const starts = grid.beats.flatMap((b, i) => (i === 0 || b.image === "down" ? [i] : []));
+  return starts.length > 0 ? starts : [0];
+}
+
+/**
+ * The scrollLeft that shows a cell in a row scrolled to `scrollLeft` and
+ * `width` wide, moving as little as it can, or `scrollLeft` when the cell is
+ * already in view. Positions are from the start of the row's content. For a
+ * row too wide for the screen (a sankeerna laghu's nine cells), so the
+ * stroke being heard stays in view without the page itself scrolling.
+ */
+export function scrollToShow(scrollLeft: number, width: number, cellLeft: number, cellWidth: number): number {
+  if (cellLeft < scrollLeft) return cellLeft;
+  if (cellLeft + cellWidth > scrollLeft + width) return cellLeft + cellWidth - width;
+  return scrollLeft;
 }
 
 /**

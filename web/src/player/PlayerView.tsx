@@ -71,8 +71,11 @@ export function PlayerView(props: {
       </Show>
 
       {/* The beat, and the buttons that move it, together: the image, the
-          transport right under it, and what the kit plays this cycle. */}
-      <div class="flex flex-col items-center gap-4">
+          transport right under it, and what the kit plays this cycle. Unless
+          wide, it takes the width it's given, up to the lane's, rather than
+          its content's: the lane's rows scroll inside themselves on a phone,
+          so they can't size it (StrokeLane.tsx). */}
+      <div class="flex flex-col items-center gap-4" classList={{ "w-full max-w-md": !props.wide }}>
         <section class="flex flex-col items-center gap-3">
           {/* The beat images are drawn for a white background, so the frame stays white in dark mode.
               The image moves with the beat (engine/motion.ts), unless the viewer asks for reduced motion. */}
