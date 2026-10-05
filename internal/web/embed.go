@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	goal "github.com/panyam/goapplib"
+	"github.com/panyam/goapplib/page"
 
 	"github.com/panyam/thambura/internal/brand"
 )
@@ -14,15 +15,21 @@ import (
 // embed.js from /static (web/src/embed.ts). It shows hosts what to write and
 // is how the browser checks exercise embedding. Kept out of search.
 type EmbedDemoPage struct {
-	// Preload is embed.js's chunks, for <link rel="modulepreload">. A real
-	// host can't know them; the demo lists them to show it can be done.
+	// Preload is embed.js's chunks and its islands', for <link
+	// rel="modulepreload">. A real host can't know them; the demo lists them
+	// to show it can be done.
 	Preload []string
 	AppURL  string
 }
 
+// embedDemoSpec is the spec the demo's template writes for embed.js, as a
+// host would (web/templates/embed/EmbedDemo.html), so Go knows which
+// islands' chunks to preload. Keep the two in step.
+var embedDemoSpec = page.Spec{Islands: []page.Island{{Name: "tala", Slot: "tala"}, {Name: "thambura", Slot: "thambura", Presentation: "panel"}}}
+
 // Load implements the goapplib View.
 func (p *EmbedDemoPage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*App]) (error, bool) {
-	p.Preload = app.Context.Bundle.Embed.Preload
+	p.Preload = app.Context.Assets.For("embed", embedDemoSpec)
 	p.AppURL = brand.URL + "/"
 	return nil, false
 }

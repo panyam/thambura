@@ -1,62 +1,40 @@
-import type { EventBus, LCMComponent, Registry } from "@panyam/tsappkit";
+import { lazy, type EventBus, type LCMComponent, type Registry } from "@panyam/tsappkit";
 import { decodeHands, decodeKit, decodeSession, encodeHands, encodeKit } from "../engine/shareLink";
 import { AudioEngine } from "./audio";
-import { HandsPresenter } from "./handsPresenter";
-import { createPlayerIsland, newHandsPresenter, newKitPresenter, newPlayerPresenter } from "./island";
+import { newHandsPresenter, newKitPresenter, newPlayerPresenter } from "./island";
 import { KeepAwake, usePlaybackSession, type WakeLockLike } from "./keepAwake";
 import { KitPresenter } from "./kitPresenter";
 import { createClock, Shruthi, Tracks, type Instrument, type PageContext } from "./pageContext";
 import type { PageLink } from "./pageLink";
 import type { PlayerPresenter } from "./presenter";
-import { createSessionIsland } from "./sessionIsland";
-import { createTracksIsland } from "./tracksIsland";
 import { SessionPresenter, startingPitch } from "./session";
 import type { Spec } from "./spec";
 import type { Storage, Store } from "./storage";
 import { TrackList, type CatalogEntry, type Made, type Placed } from "./trackList";
-import { createThamburaIsland, newPluckRenderer, newThamburaPresenter } from "./thamburaIsland";
+import { newPluckRenderer, newThamburaPresenter } from "./thamburaIsland";
 import type { PluckRenderer } from "./pluckRenderer";
 import { ThamburaPresenter } from "./thamburaPresenter";
 import { workerTicker } from "./transport";
 
-// The tala's sounds and images, from the root, so the same string works on
-// our pages and, resolved against embed.js, on anyone else's.
-const FIXTURES = "/static/Resources/TalasFixtures.json";
-
 /**
  * The islands a Thambura page can mount, by the names the page spec uses.
  * Both entries use it: app.js (main.ts) for our pages and embed.js
- * (embed.ts) for other sites.
+ * (embed.ts) for other sites. Each is its own chunk (src/islands/), fetched
+ * only on a page whose spec names it, when its `load` says; Go preloads
+ * the eager ones' chunks (page.Assets, internal/web/assets.go). They share
+ * the page's context, which buildContext makes before the first one mounts.
  */
 export function islandRegistry(): Registry<PageContext, HTMLElement, LCMComponent, EventBus> {
   return {
-    tala: (el, island, ctx, bus) => {
-      if (!ctx.tala) throw new Error("the page made no tala for its tala island");
-      return createPlayerIsland(el, bus, {
-        presenter: ctx.tala,
-        audio: ctx.audio,
-        fixturesUrl: new URL(typeof island.config.fixturesUrl === "string" ? island.config.fixturesUrl : FIXTURES, ctx.assetBase).href,
-        kit: () => ctx.tracks.list().find((t): t is KitPresenter => t instanceof KitPresenter),
-        onTracksChange: (f) => ctx.tracks.onChange(f),
-        instrumentControls: island.config.instrumentControls !== false,
-        wide: island.config.wide === true,
-        hands: handsOf(ctx.tracks.get("hands-1")),
-        session: ctx.session,
-        onPlaying: (on) => ctx.awake.set("tala", on),
-      });
-    },
+    tala: lazy(() => import("../islands/tala")),
     // The speed and shruthi strip on its own, for a page whose tala doesn't
     // show it (a thambura-only embed); the tala island carries its own.
-    session: (el, _island, ctx, bus) => createSessionIsland(el, bus, ctx.session),
-    // The instruments on the page, as cards with Add and Remove (#101).
-    tracks: (el, _island, ctx, bus) => createTracksIsland(el, bus, ctx),
+    session: lazy(() => import("../islands/session")),
+    // The instruments on the page, as rows with Add and Remove (#101).
+    tracks: lazy(() => import("../islands/tracks")),
     // Docked in a slot of its own (layouts/SideBySide.html, and embeds). A
-    // page with a track list shows the thambura in its card instead.
-    thambura: (el, _island, ctx, bus) => {
-      const thambura = thamburaOf(ctx.tracks.get("thambura-1"));
-      if (!thambura) throw new Error("the page has no thambura-1 for its thambura island");
-      return createThamburaIsland(el, bus, thambura, ctx.audio, ctx.link);
-    },
+    // page with a track list shows the thambura in its row instead.
+    thambura: lazy(() => import("../islands/thambura")),
   };
 }
 
@@ -221,12 +199,4 @@ function loadQuietly(store: Store): unknown {
   } catch {
     return null;
   }
-}
-
-function thamburaOf(track: Instrument | undefined): ThamburaPresenter | undefined {
-  return track instanceof ThamburaPresenter ? track : undefined;
-}
-
-function handsOf(track: Instrument | undefined): HandsPresenter | undefined {
-  return track instanceof HandsPresenter ? track : undefined;
 }

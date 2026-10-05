@@ -1,19 +1,19 @@
-import type { EventBus } from "@panyam/tsappkit";
+import type { EventBus, IslandFactory, LCMComponent } from "@panyam/tsappkit";
 import { SolidIsland, signalView } from "@panyam/tsappkit-solid";
 import { createSignal } from "solid-js";
-import { HandsPresenter } from "./handsPresenter";
-import { KitPresenter } from "./kitPresenter";
-import type { Instrument, PageContext } from "./pageContext";
-import { ThamburaPresenter } from "./thamburaPresenter";
-import { TrackListView, type TrackInstrument } from "./TrackListView";
-import { watched } from "./watched";
+import { HandsPresenter } from "../player/handsPresenter";
+import { KitPresenter } from "../player/kitPresenter";
+import type { Instrument, PageContext } from "../player/pageContext";
+import { ThamburaPresenter } from "../player/thamburaPresenter";
+import { TrackListView, type TrackInstrument } from "../player/TrackListView";
+import { watched } from "../player/watched";
 
 /**
  * Mounts the page's track list (#101) on `el`: a card per instrument, with
  * Add and Remove. The list itself is the page's (`ctx.trackList`), made with
  * the page, since it decides which instruments the page starts with.
  */
-export function createTracksIsland(el: HTMLElement, eventBus: EventBus, ctx: PageContext): SolidIsland {
+function createTracksIsland(el: HTMLElement, eventBus: EventBus, ctx: PageContext): SolidIsland {
   const list = ctx.trackList;
   const [state, setState] = signalView(list.state);
   list.attach({ setState });
@@ -66,3 +66,7 @@ export function createTracksIsland(el: HTMLElement, eventBus: EventBus, ctx: Pag
     eventBus,
   );
 }
+
+/** The tracks island, loaded lazily (player/islands.ts). */
+const tracks: IslandFactory<PageContext, HTMLElement, LCMComponent, EventBus> = (el, _island, ctx, bus) => createTracksIsland(el, bus, ctx);
+export default tracks;

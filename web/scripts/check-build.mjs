@@ -7,9 +7,9 @@
 //   who has been here once can open any view offline.
 // - Chunks left from an earlier build are removed, so a deploy never uploads
 //   a chunk nothing asks for.
-// - The bundle manifest Go reads (bundle.json) preloads exactly the chunks
-//   each entry (app.js, embed.js) imports before it runs, found here by
-//   reading the built files.
+// - Each island (src/islands/) is its own chunk, which neither entry imports
+//   up front, so a page fetches only the islands its spec names. The
+//   metafile Go reads to preload them (meta.json) names each one.
 // - embed.js, which runs on other sites, carries none of our page chrome
 //   (the service worker, the install button), and shares its chunks with
 //   app.js rather than a second copy of Solid and the player.
@@ -26,7 +26,7 @@ const fail = (msg) => failures.push(msg);
 try {
   mkdirSync(join(out, "chunks"), { recursive: true });
   writeFileSync(join(out, "chunks", "stale-OLD.js"), "// from an earlier build\n");
-  const manifest = join(out, "bundle.json");
+  const manifest = join(out, "meta.json");
   execFileSync("node", ["build.mjs", "--outdir", out, "--manifest", manifest], { stdio: "pipe" });
 
   if (existsSync(join(out, "chunks", "stale-OLD.js"))) fail("a chunk from an earlier build survived the build");
@@ -69,11 +69,11 @@ try {
     follow(join(out, `${entry}.js`), out);
     return found;
   };
-  let bundle = {};
+  let meta = { outputs: {} };
   try {
-    bundle = JSON.parse(readFileSync(manifest, "utf8"));
+    meta = JSON.parse(readFileSync(manifest, "utf8"));
   } catch (e) {
-    fail(`no readable bundle manifest: ${e.message}`);
+    fail(`no readable metafile: ${e.message}`);
   }
   const eager = {};
   for (const entry of ["app", "embed"]) {
@@ -83,9 +83,19 @@ try {
     }
     eager[entry] = eagerOf(entry);
     if (eager[entry].size === 0) fail(`${entry}.js imports no chunks, so there's nothing to preload; did splitting change?`);
-    const listed = [...(bundle[entry]?.preload ?? [])].sort();
-    const want = [...eager[entry]].sort();
-    if (JSON.stringify(listed) !== JSON.stringify(want)) fail(`bundle.json preloads ${JSON.stringify(listed)} for ${entry}, but ${entry}.js imports ${JSON.stringify(want)}`);
+  }
+  // The metafile's output paths are relative to where the build ran.
+  const urlOf = (output) => "/static/" + join(process.cwd(), output).slice(out.length + 1);
+  for (const island of ["tala", "tracks", "thambura", "session"]) {
+    const output = Object.keys(meta.outputs).find((o) => meta.outputs[o].entryPoint === `src/islands/${island}.tsx`);
+    if (!output) {
+      fail(`the ${island} island has no chunk of its own in the metafile`);
+      continue;
+    }
+    const url = urlOf(output);
+    for (const entry of ["app", "embed"]) {
+      if (eager[entry]?.has(url)) fail(`${entry}.js imports the ${island} island up front; it should load when the island mounts`);
+    }
   }
   if (eager.embed) {
     const embedCode = [join(out, "embed.js"), ...[...eager.embed].map((u) => join(out, u.slice("/static/".length)))].map((f) => readFileSync(f, "utf8")).join("\n");

@@ -18,6 +18,11 @@ and render "BasePage". The page must carry .Lab for the banner.
     <div class="mx-auto grid w-full max-w-7xl gap-6 px-4 py-6 sm:py-10 lg:grid-cols-2 lg:items-start">
         <div data-slot="main" class="min-w-0">
             <noscript>Thambura needs JavaScript to play.</noscript>
+            {{/* Holds the tala's place until its chunk mounts and replaces it.
+                 Below lg the thambura sits under the tala and mounts when
+                 scrolled to; without this the empty slot would leave it on
+                 screen at load, and it would mount at once. */}}
+            <div class="min-h-[100svh] lg:min-h-0" aria-hidden="true"></div>
         </div>
         <div data-slot="side" class="min-w-0"></div>
     </div>

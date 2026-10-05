@@ -4,7 +4,7 @@
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
-  - '@panyam/tsappkit@0.6.0'
-  - '@panyam/tsappkit-solid@0.6.0'
+  - '@panyam/tsappkit@0.6.3'
+  - '@panyam/tsappkit-solid@0.6.3'
 onlyBuiltDependencies:
   - esbuild

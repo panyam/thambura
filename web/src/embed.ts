@@ -1,4 +1,5 @@
-import { EventBus, LifecycleController, mountIslands, type LCMComponent } from "@panyam/tsappkit";
+import { EventBus, type LCMComponent } from "@panyam/tsappkit";
+import { mountAll } from "./page/mountAll";
 import { hostSpec, type HostSpec } from "./page/embedSpec";
 import { shadowSlot } from "./page/shadow";
 import { withDefaultInstruments } from "./player/embedDefaults";
@@ -76,7 +77,9 @@ export async function mount(given: EmbedSpec, opts: MountOptions = {}): Promise<
   const storage = embedStorage(opts.storage);
   const dark = theme === "dark" || (theme === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
   const bus = new EventBus();
-  const components = mountIslands(
+  // The islands are lazy chunks, so this waits for them (mountAll), and
+  // resolves once each one is mounted and running.
+  return mountAll(
     spec,
     islandRegistry(),
     (slot) => {
@@ -87,10 +90,6 @@ export async function mount(given: EmbedSpec, opts: MountOptions = {}): Promise<
     bus,
     (message) => console.warn(message),
   );
-  // No page class runs the islands' lifecycle here, so a stand-in root does.
-  const top: LCMComponent = { performLocalInit: () => components, setupDependencies() {}, activate() {}, deactivate() {} };
-  await new LifecycleController(bus, LifecycleController.DefaultConfig).initializeFromRoot(top);
-  return components;
 }
 
 /** Mounts every spec the host page declares, with the theme and storage its script names (data-theme, data-storage). */
