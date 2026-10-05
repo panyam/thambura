@@ -1,7 +1,7 @@
-import { createMemo, For, Show, type Accessor } from "solid-js";
+import { createEffect, createMemo, For, Show, type Accessor } from "solid-js";
 import { VARIETY_OPTIONS, type Variety } from "../engine/arrangement";
 import type { KitState } from "./kitPresenter";
-import { litStrokes, type Lane } from "../engine/lane";
+import { litStrokes, scrollToShow, type Lane } from "../engine/lane";
 
 /**
  * What the mridangam is playing, a cycle at a time: one cell per akshara,
@@ -48,6 +48,32 @@ export function StrokeLane(props: {
     return lane ? litStrokes(lane, props.strokeIndex()) : new Set<number>();
   });
 
+  // The cycle's angas (Lane.rows), each the akshara numbers it holds. They
+  // flow onto new lines only when the next one doesn't fit, so a wide row
+  // keeps a cycle on one line with a gap at each clap, and a phone breaks it
+  // where the tala does rather than mid-anga.
+  const rows = () => {
+    const lane = props.lane();
+    if (!lane) return [];
+    const starts = lane.rows.length > 0 ? lane.rows : [0];
+    return starts.map((start, i) => Array.from({ length: (starts[i + 1] ?? lane.aksharas) - start }, (_, k) => start + k));
+  };
+
+  // An anga wider than the screen (a sankeerna laghu is nine cells) scrolls
+  // sideways inside itself (min-w-0 lets it shrink below its cells), and
+  // follows the stroke being heard, without scrolling the page.
+  const cellEls = new Map<number, HTMLElement>();
+  createEffect(() => {
+    const lane = props.lane();
+    const index = props.strokeIndex();
+    if (!lane || index === null) return;
+    const akshara = lane.strokes[index]?.akshara;
+    const cell = akshara === undefined ? undefined : cellEls.get(akshara);
+    const row = cell?.parentElement;
+    if (!cell || !row || row.scrollWidth <= row.clientWidth) return;
+    row.scrollLeft = scrollToShow(row.scrollLeft, row.clientWidth, cell.offsetLeft, cell.offsetWidth);
+  });
+
   // The kit's own name for a stroke, so the lane reads as the pads do.
   const label = (id: string) => props.kit().strokes.find((s) => s.id === id)?.label ?? id;
 
@@ -87,47 +113,54 @@ export function StrokeLane(props: {
               </label>
             </Show>
           </div>
-          <ol class="flex gap-1 overflow-x-auto pb-1" role="list">
-            <For each={cells()}>
-              {(slots, akshara) => (
-                <li
-                  class="flex min-w-16 flex-1 flex-col items-center gap-0.5 rounded-md border px-1 py-1"
-                  classList={{
-                    "border-gray-300 dark:border-gray-600": akshara() !== 0,
-                    // Sam, so the eye finds the start of the cycle.
-                    "border-gray-400 bg-gray-50 dark:border-gray-500 dark:bg-gray-800": akshara() === 0,
-                  }}
-                >
-                  <span class="text-[10px] tabular-nums text-gray-400 dark:text-gray-500">{akshara() + 1}</span>
-                  <div class="grid w-full grid-cols-[auto_1fr] items-center gap-x-1">
-                    <For each={slots}>
-                      {(slot) => (
-                        <>
-                          {/* The count is said, never struck, so it stays quiet and never lights. */}
-                          <span class="text-right text-[10px] italic leading-4 text-gray-400 dark:text-gray-500">{slot.syllable ?? ""}</span>
-                          <span class="flex min-h-4 flex-col items-start">
-                            <For each={slot.strokes}>
-                              {(stroke) => (
-                                <span
-                                  class="whitespace-nowrap rounded px-1 text-xs leading-4 transition-colors"
-                                  classList={{
-                                    "bg-amber-500 text-white": lit().has(stroke.index),
-                                    "text-gray-700 dark:text-gray-300": !lit().has(stroke.index),
-                                  }}
-                                >
-                                  {label(stroke.stroke)}
+          <div class="flex flex-wrap gap-x-3 gap-y-1">
+            <For each={rows()}>
+              {(row) => (
+                <ol class="relative flex min-w-0 max-w-full gap-1 overflow-x-auto pb-1" role="list">
+                  <For each={row}>
+                    {(akshara) => (
+                      <li
+                        ref={(el) => cellEls.set(akshara, el)}
+                        class="flex w-16 shrink-0 flex-col items-center gap-0.5 rounded-md border px-1 py-1"
+                        classList={{
+                          "border-gray-300 dark:border-gray-600": akshara !== 0,
+                          // Sam, so the eye finds the start of the cycle.
+                          "border-gray-400 bg-gray-50 dark:border-gray-500 dark:bg-gray-800": akshara === 0,
+                        }}
+                      >
+                        <span class="text-[10px] tabular-nums text-gray-400 dark:text-gray-500">{akshara + 1}</span>
+                        <div class="grid w-full grid-cols-[auto_1fr] items-center gap-x-1">
+                          <For each={cells()[akshara]}>
+                            {(slot) => (
+                              <>
+                                {/* The count is said, never struck, so it stays quiet and never lights. */}
+                                <span class="text-right text-[10px] italic leading-4 text-gray-400 dark:text-gray-500">{slot.syllable ?? ""}</span>
+                                <span class="flex min-h-4 flex-col items-start">
+                                  <For each={slot.strokes}>
+                                    {(stroke) => (
+                                      <span
+                                        class="whitespace-nowrap rounded px-1 text-xs leading-4 transition-colors"
+                                        classList={{
+                                          "bg-amber-500 text-white": lit().has(stroke.index),
+                                          "text-gray-700 dark:text-gray-300": !lit().has(stroke.index),
+                                        }}
+                                      >
+                                        {label(stroke.stroke)}
+                                      </span>
+                                    )}
+                                  </For>
                                 </span>
-                              )}
-                            </For>
-                          </span>
-                        </>
-                      )}
-                    </For>
-                  </div>
-                </li>
+                              </>
+                            )}
+                          </For>
+                        </div>
+                      </li>
+                    )}
+                  </For>
+                </ol>
               )}
             </For>
-          </ol>
+          </div>
         </section>
       )}
     </Show>

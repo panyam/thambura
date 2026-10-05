@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { laneFor, litStrokes } from "./lane";
+import { laneFor, litStrokes, scrollToShow } from "./lane";
 import { PATTERNS, type Pattern } from "./patterns";
 import { generatedPattern } from "./generated";
 import type { Fallback } from "./kit";
@@ -84,5 +84,48 @@ describe("laneFor", () => {
     const lane = laneFor(pattern("adi-chatusram-1"), [])!;
     expect(lane.counting).toEqual([]);
     expect(lane.strokes.length).toBe(pattern("adi-chatusram-1").strokes.length);
+  });
+});
+
+describe("the lane's rows", () => {
+  // A generated pattern fits any tala, so every tala here has a lane.
+  const rows = (settings: TalaSettings) => {
+    const grid = new TalaGrid(beatsFor(settings), settings.kalai);
+    const p = generatedPattern(grid.beats, grid.shape, grid.patternCounts, MRIDANGAM);
+    return laneFor(p, counting(settings), grid)!.rows;
+  };
+  const sapta = (tala: TalaSettings["tala"], jaathi: TalaSettings["jaathi"]): TalaSettings => ({ ...ADI, tala, jaathi });
+
+  it("start a row at each anga, where the tala claps", () => {
+    expect(rows(ADI)).toEqual([0, 4, 6]);
+    expect(rows(sapta("sapta_dhruva", "chatusram"))).toEqual([0, 4, 6, 10]);
+    expect(rows(sapta("sapta_ata", "khandam"))).toEqual([0, 5, 10, 12]);
+    expect(rows(sapta("sapta_jhumpa", "misram"))).toEqual([0, 7, 8]);
+  });
+
+  it("don't change with kalai, which repeats a beat without adding an anga", () => {
+    expect(rows({ ...ADI, kalai: 2 })).toEqual([0, 4, 6]);
+  });
+
+  it("are one row for a chaapu, written in more aksharas than its one beat", () => {
+    expect(laneFor(pattern("misra-chaapu-1"), counting(MISRA_CHAAPU), new TalaGrid(beatsFor(MISRA_CHAAPU)))!.rows).toEqual([0]);
+  });
+
+  it("are one row with no grid to break it by", () => {
+    expect(laneFor(pattern("adi-chatusram-1"), counting(ADI))!.rows).toEqual([0]);
+  });
+});
+
+describe("scrollToShow", () => {
+  it("leaves a row alone when the cell is already in view", () => {
+    expect(scrollToShow(100, 300, 150, 64)).toBe(100);
+  });
+
+  it("scrolls right just far enough to show a cell past the right edge", () => {
+    expect(scrollToShow(0, 300, 320, 64)).toBe(84);
+  });
+
+  it("scrolls left to a cell before the left edge", () => {
+    expect(scrollToShow(200, 300, 128, 64)).toBe(128);
   });
 });
