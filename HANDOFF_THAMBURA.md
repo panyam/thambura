@@ -82,8 +82,8 @@ flight. Delete it once the items below close.
 `docs/designs/solkattu.md` is the plan. Steps 1 to 3 are in: the kit's
 labels, the counting line in the lane (#162), and the `sol:` role realized
 through the phrase table (#176), with the left-hand tha playing thom
-(#178). No pattern has a `sol:` line yet. Next: solkattu in the lane (#82)
-once one does, then the pattern editor and the korvai generator, all in
+(#178). The first pattern with a `sol:` line is Khanda Chaapu's korvai
+(#200). Next: solkattu in the lane (#82), then the pattern editor and the korvai generator, all in
 syllable ids. Speeds (1st, 2nd, 3rd per nadai) are #198.
 
 ## Small follow-ups from #103, not filed

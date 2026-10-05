@@ -75,7 +75,38 @@ describe("the korvai", () => {
   });
 
   it("is absent where nobody has written one", () => {
-    expect(setup({ tala: "chaapu_khandam" }).korvai).toBeNull();
+    const grid = new TalaGrid(beatsFor({ tala: "chaapu_khandam", jaathi: "chatusram", nadai: "chatusram", kalai: 1 }));
+    const main = PATTERNS.find((p) => p.id === "khanda-chaapu-1")!;
+    expect(arrangementFor(grid, "chatusram", main, [main])!.korvai).toBeNull();
+  });
+
+  it("is Khanda Chaapu's tisram korvai: seven cycles, the phrase three times joined by tanga", () => {
+    const khanda = setup({ tala: "chaapu_khandam" });
+    const korvai = khanda.korvai!;
+    expect(korvai.id).toBe("khanda-chaapu-korvai-1");
+    expect(korvai.counts).toEqual(r(35, 2));
+    expect(korvai.solkattu).toBeDefined();
+    // 105 slots: a phrase of 33 at 0, 36 and 72, joined by tanga (od _ k) at 33 and 69.
+    const slots = (from: number, len: number) =>
+      korvai.strokes
+        .map((x) => ({ slot: Math.round((x.at.n * 105) / x.at.d), stroke: x.stroke }))
+        .filter((x) => x.slot >= from && x.slot < from + len)
+        .map((x) => `${x.slot - from}:${x.stroke}`);
+    expect(slots(0, 9)).toEqual(["0:R.thi", "1:R.ta", "3:R.thi", "5:R.nam", "7:L.thom"]);
+    expect(slots(36, 33)).toEqual(slots(0, 33));
+    expect(slots(72, 33)).toEqual(slots(0, 33));
+    expect(slots(33, 3)).toEqual(["0:L.dheem", "2:R.thi"]);
+    expect(slots(69, 3)).toEqual(["0:L.dheem", "2:R.thi"]);
+  });
+
+  it("starts Khanda Chaapu's korvai on sam and fills its seven cycles to the next one", () => {
+    const khanda = setup({ tala: "chaapu_khandam" });
+    const pieces = korvaiCycles(khanda.korvai!, khanda.main);
+    expect(pieces).toHaveLength(7);
+    expect(pieces[0].strokes[0].at).toEqual(r(0));
+    expect(pieces.reduce((n, p) => n + p.strokes.length, 0)).toBe(67);
+    const last = pieces[6].strokes.at(-1)!.at;
+    expect(last.n / last.d).toBeLessThan(1);
   });
 
   it("is Misra Chaapu's tirmanam: a phrase three times, joined by thom with din, in one cycle", () => {
