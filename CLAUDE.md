@@ -208,6 +208,13 @@ Things that have bitten:
   from the same day goes into `minimumReleaseAgeExclude` in
   `web/pnpm-workspace.yaml`; keep that list to the versions installed.
   `Stackfile.md` records them.
+- **A scrolling row can still widen the page.** An `overflow-x-auto` row
+  inside a column that sizes to its content (`flex-col items-center`) sets
+  that column's width, and on a phone the page's: the stroke lane did it on
+  master until #207. `contain: inline-size` didn't stop it in our Chromium.
+  Give the column a width from the page (`w-full max-w-md`, as
+  `PlayerView`'s beat column has when not wide) and let the row shrink
+  (`min-w-0`).
 - **Measure a performance change before trusting it.** Splitting the bundle
   (#91) made a first visit *slower* until the shared chunks were preloaded,
   because the browser found them one after another. A throttled Playwright
@@ -766,7 +773,8 @@ See NEXTSTEPS.md for the order.
   practice pattern shared with permission, recorded privately in
   thambura-ext. The repo is public, so files, issues and PRs call it "a
   practice pattern shared with permission" and never name it (thambura-ext's
-  README says why) (its left-hand tha plays `tham` until #80 records it). A pattern matches a tala on shape plus cycle length, since both
+  README says why). thambura-ext's `PATTERNS.md` maps each pattern file to
+  its source's exact line, with the steps to edit one (its left-hand tha plays `tham` until #80 records it). A pattern matches a tala on shape plus cycle length, since both
   chaapus are one clap and share a shape, and a chaapu's pattern (`nadai:
   any`) on its `ticks:` too, since Misra and Viloma are both seven counts
   (#187; the compiler refuses one without). `fitsGrid` is the one rule
@@ -829,7 +837,11 @@ See NEXTSTEPS.md for the order.
   beat), `StrokeEvent.index` says which stroke sounded, and the kit queues
   a cue per stroke so the lane lights from `heardNow` like the beat images.
   `engine/lane.ts` lays a pattern out for it, each cell split into slots
-  fine enough for every stroke and counting syllable to sit in one. The
+  fine enough for every stroke and counting syllable to sit in one, and
+  `Lane.rows` says where each anga starts (at every clap in the tala's beat
+  images, #81). The lane draws an anga as a group of fixed-width cells, and
+  the groups wrap only when the next doesn't fit; an anga wider than the
+  screen scrolls inside itself and follows the stroke heard (`scrollToShow`). The
   counting line (*ta ka di mi*, `engine/syllables.ts`) is the tala's, not
   the kit's: the tala publishes it on `clock.tala` as `counting`, the
   nadai's line per akshara, or a chaapu's own line across its one beat.
@@ -1080,8 +1092,11 @@ exercise's result as a comment on the mission issue.
 Playwright's Chromium is at `~/.cache/ms-playwright/chromium-<n>/` (1243 as
 of 2026-09-26; `ls` it, the number moves with Playwright updates), with the
 binary under `chrome-linux-arm64/chrome` on this arm64 box, and
-`playwright-core` can be required from another project's node_modules (e.g.
-`../Agni/main/web` or `/workspace/repos/projects/sdlold/web/frontend`). Launch with `--autoplay-policy=no-user-gesture-required`.
+`playwright-core` can be required from another project's node_modules,
+which other sessions sometimes wipe: `sdlold/web/frontend`'s went on
+2026-10-05. `find /workspace/repos/projects -type d -name playwright-core`
+finds one; `Agni/demo/web/node_modules/.pnpm/playwright-core@1.62.1/node_modules/playwright-core`
+worked then, `require()`d by that full path. Launch with `--autoplay-policy=no-user-gesture-required`.
 The speed and shruthi strip is `[aria-label="Speed and shruthi"]`: the tempo
 box `input[aria-label="Tempo in beats per minute"]`, the note
 `button[aria-controls="shruthi-keys"]` (its text reads `C 3 · 1`; clicking it

@@ -5,19 +5,19 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 ## At a glance
 
 - **Active mission:** #185, every tala in the menu plays a written mridangam
-  pattern (`mission_written_patterns`), 6 of 13 tickets closed. Exercise:
-  `make patternreport` (5 of 15 written at 26bffbb, 2026-10-04), then
-  listen at 60 and 120 bpm. Nobody has listened by ear yet; every check so
-  far was a browser probe.
+  pattern (`mission_written_patterns`), 8 of 13 tickets closed. Exercise:
+  `make patternreport` (5 of 15 written at a1f028c, 2026-10-05), then
+  listen at 60 and 120 bpm. All four common talas now have a variation and a
+  korvai, and the lane fits a phone (#207). Nobody has listened by ear yet;
+  every check so far was a browser probe.
 - **Next ready:** #181, which needs the user to say which talas the practice
-  source covers and write their lines into thambura-ext; then #200 (a Khanda
-  Chaapu korvai); #81 and #197 (eduppu) at P2.
+  source covers and write their lines into thambura-ext (thambura-ext's
+  `PATTERNS.md` is the table to add them to); then #197 (eduppu) at P2.
 - **Not live yet:** thambura.com still serves df1e4ba (2026-09-28). Dev
-  serves 26bffbb: the written-pattern work (#188–#201) and the kit's
-  fallback map. #202 (goapplib 0.6.0) merged after it and is on neither.
-- This run: no branch threads open; the stale `checkpoint-instruments`,
-  `checkpoint-thambura-lab` and `shruthi-copy` branches merged long ago (#84,
-  #35, #29).
+  serves a1f028c (2026-10-05): everything since, the written-pattern work
+  (#188–#207), goapplib 0.6.3 with lazy islands (#202, #206) and the kit's
+  fallback map. Waiting on a listen there and a production ask.
+- This run: no branch threads open.
 
 ## Live app
 
@@ -38,10 +38,10 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [x] Deploy #156 (a second thambura), #160 (Kriyas), #165 (the
       thambura's volume in links) and #167. thambura.com serves df1e4ba
       (checked 2026-09-28), and the docs site was published from it.
-- [ ] Deploy the written-patterns work (#188–#201, on dev at 26bffbb since
-      2026-10-04) and goapplib 0.6.0 (#202, on master only): waiting on a
-      listen on dev and a production ask. `make deploy` runs `kitcheck`
-      first (#191).
+- [ ] Deploy the written-patterns work, goapplib 0.6.3 and lazy islands
+      (#188–#207, on dev at a1f028c since 2026-10-05): waiting on a listen
+      on dev and a production ask. `make deploy` runs `kitcheck` first
+      (#191).
 - [ ] Listen to the tala on a real machine, and check it stays in step with
       the images. Headless Chromium has no audio device.
 - [ ] Record iTablaPro's tanpura, or any real tanpura, and run it through
@@ -138,7 +138,9 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [ ] **Mridangam patterns**: the mission #185 (above). Done on it: the
       report (#188), Viloma's own match (#189), two strokes at once (#193),
       variations for all four common talas and a Misra korvai (#199),
-      korvais of any length with Short Rupakam's (#201). Outside it: #77
+      korvais of any length with Short Rupakam's (#201), Khanda Chaapu's
+      korvai as the first `sol:` pattern (#205), and the lane by anga on a
+      phone (#207). Outside it: #77
       (fills, a count-in), #78 (a pattern per tempo, after #198, second
       speed), #80 (record arai chapu and the left-hand tha), #194 (the pad
       lighting a pair). Still open too: who vets the patterns, and a kit we

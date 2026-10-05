@@ -129,8 +129,9 @@ syllable ids. Speeds (1st, 2nd, 3rd per nadai) are #198.
    practice pattern shared with permission (provenance in thambura-ext).
 9. **#181: which talas the practice source covers**, and their lines
    written into thambura-ext, so #182 to #184 can start.
-10. **A listen on dev** (https://dev-dot-thambura.uc.r.appspot.com, 26bffbb)
-   to the new variations and korvais, before a production deploy.
+10. **A listen on dev** (https://dev-dot-thambura.uc.r.appspot.com, a1f028c)
+   to the new variations and korvais (Khanda's 7-cycle one most of all), and
+   the lane on a phone, before a production deploy.
 
 ## Open issues
 
