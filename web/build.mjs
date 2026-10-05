@@ -4,7 +4,7 @@ import { relative, resolve } from "path";
 import { build, context } from "esbuild";
 import { solidPlugin } from "esbuild-plugin-solid";
 import { createRequire } from "module";
-import { preloadFor, shellFor } from "./scripts/shell.mjs";
+import { shellFor } from "./scripts/shell.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -19,18 +19,19 @@ const solidAlias = {
 // Where the bundles go. scripts/check-build.mjs builds into a temp folder.
 const at = process.argv.indexOf("--outdir");
 const outdir = at > 0 ? process.argv[at + 1] : "static";
-// The bundle manifest Go reads at startup (internal/web/bundle.go): the chunks
-// each entry imports before it runs, which the pages preload so the browser
-// fetches them alongside app.js rather than one after another. It sits
-// outside static/, because App Engine serves that folder from its own static
-// servers and the Go app can't read files there.
+// esbuild's metafile, which Go reads at startup (internal/web/assets.go,
+// through goapplib's page.LoadEsbuildMetafile) to preload the chunks each
+// entry and each eager island needs, so the browser fetches them alongside
+// app.js rather than one after another. It sits outside static/, because App
+// Engine serves that folder from its own static servers and the Go app can't
+// read files there.
 const mat = process.argv.indexOf("--manifest");
-const manifest = mat > 0 ? process.argv[mat + 1] : "bundle.json";
+const manifest = mat > 0 ? process.argv[mat + 1] : "meta.json";
 
 // The entries keep their names: the templates, the service worker and the
 // live-build check in CLAUDE.md name app.js, and other sites link to
-// embed.js, so its URL is a promise to them. Code loaded on first use, such as the Lab
-// and Raagini views, goes into content-hashed chunks, which app.yaml lets
+// embed.js, so its URL is a promise to them. Code loaded on first use, such as each
+// island (src/islands/) and the Lab and Raagini views, goes into content-hashed chunks, which app.yaml lets
 // browsers keep for a long time since a name never changes its content.
 const options = {
   // app.js runs our pages; embed.js runs the same islands on other sites
@@ -99,9 +100,7 @@ const swOptions = (metafile) => ({
 });
 
 function writeManifest(metafile) {
-  const rel = relative(process.cwd(), resolve(outdir));
-  const entry = (name) => ({ script: `/static/${name}.js`, preload: preloadFor(metafile, name, { outdir: rel, base: "/static" }) });
-  writeFileSync(manifest, JSON.stringify({ app: entry("app"), embed: entry("embed") }, null, 2) + "\n");
+  writeFileSync(manifest, JSON.stringify(metafile));
 }
 
 // esbuild never deletes, so chunks from earlier builds would pile up and be

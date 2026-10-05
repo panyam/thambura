@@ -7,12 +7,12 @@
 
 | Component | Module | Version | Updated |
 |-----------|--------|---------|---------|
-| goapplib | github.com/panyam/goapplib | v0.6.0 | 2026-10-04 |
-| goapplib templates | github.com/panyam/goapplib (templar source, `web/templates/templar.yaml`) | v0.6.0 | 2026-10-04 |
+| goapplib | github.com/panyam/goapplib | v0.6.3 | 2026-10-05 |
+| goapplib templates | github.com/panyam/goapplib (templar source, `web/templates/templar.yaml`) | v0.6.3 | 2026-10-05 |
 | templar | github.com/panyam/templar | v0.1.2 | 2026-09-18 |
 | goutils | github.com/panyam/goutils | v0.1.14 (indirect) | 2026-10-04 |
-| tsappkit (TS) | @panyam/tsappkit | 0.6.0 | 2026-10-04 |
-| tsappkit-solid (TS) | @panyam/tsappkit-solid | 0.6.0 | 2026-10-04 |
+| tsappkit (TS) | @panyam/tsappkit | 0.6.3 | 2026-10-05 |
+| tsappkit-solid (TS) | @panyam/tsappkit-solid | 0.6.3 | 2026-10-05 |
 | s3gen | github.com/panyam/s3gen (`docs/go.mod` only) | v0.1.6 | 2026-09-26 |
 
 goapplib + templar render the page shell (BasePage, header, theme toggle).
@@ -35,10 +35,13 @@ and SEO helpers) waits for lilbattle; and maybe the esbuild splitting and
 preload setup as a shared preset (panyam/goapplib#29).
 
 From v0.6.0 (#202) goapplib, tsappkit and tsappkit-solid share one version.
-Its island load strategies, lazy island chunks and `page.Assets` /
-`IslandPreloads` are unused here: `internal/web/bundle.go` already writes the
-`modulepreload` links for `app.js` and `embed.js`, and swapping it for
-`page.Assets` wants its own throttled first-load comparison.
+Since #204 every island is a `lazy` registry entry, its own chunk, and
+`internal/web/assets.go` reads esbuild's metafile with `page.LoadEsbuildMetafile`
+and preloads `page.Assets.For(entry, spec)`, replacing our own bundle
+manifest. The pages still write the links themselves from a `Preload` list
+rather than through the `IslandPreloads` partial. `embed.ts` mounts through
+`mountIslands` with `onMount`/`onSkip` (`web/src/page/mountAll.ts`), and a
+test runs `page.CheckIslands` over every page's spec.
 
 ## Third-Party Dependencies
 

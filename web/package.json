@@ -18,8 +18,8 @@
     "buildcheck": "node scripts/check-build.mjs"
   },
   "dependencies": {
-    "@panyam/tsappkit": "^0.6.0",
-    "@panyam/tsappkit-solid": "^0.6.0",
+    "@panyam/tsappkit": "^0.6.3",
+    "@panyam/tsappkit-solid": "^0.6.3",
     "solid-js": "^1.9.15"
   },
   "devDependencies": {

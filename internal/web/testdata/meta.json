@@ -1,0 +1,25 @@
+{"outputs": {
+  "static/app.js": {"entryPoint": "src/main.ts", "imports": [
+    {"path": "static/chunks/shared-A.js", "kind": "import-statement"},
+    {"path": "static/chunks/app-only-O.js", "kind": "import-statement"},
+    {"path": "static/chunks/tala-T.js", "kind": "dynamic-import"},
+    {"path": "static/chunks/tracks-K.js", "kind": "dynamic-import"},
+    {"path": "static/chunks/thambura-H.js", "kind": "dynamic-import"},
+    {"path": "static/chunks/session-S.js", "kind": "dynamic-import"},
+    {"path": "static/chunks/ThamburaLab-L.js", "kind": "dynamic-import"}]},
+  "static/embed.js": {"entryPoint": "src/embed.ts", "imports": [
+    {"path": "static/chunks/shared-A.js", "kind": "import-statement"},
+    {"path": "static/chunks/embed-only-E.js", "kind": "import-statement"},
+    {"path": "static/chunks/tala-T.js", "kind": "dynamic-import"},
+    {"path": "static/chunks/thambura-H.js", "kind": "dynamic-import"}]},
+  "static/chunks/shared-A.js": {"imports": []},
+  "static/chunks/app-only-O.js": {"imports": []},
+  "static/chunks/embed-only-E.js": {"imports": []},
+  "static/chunks/tala-T.js": {"entryPoint": "src/islands/tala.tsx", "imports": [{"path": "static/chunks/view-V.js", "kind": "import-statement"}, {"path": "static/chunks/shared-A.js", "kind": "import-statement"}]},
+  "static/chunks/tracks-K.js": {"entryPoint": "src/islands/tracks.tsx", "imports": [{"path": "static/chunks/view-V.js", "kind": "import-statement"}, {"path": "static/chunks/panel-P.js", "kind": "import-statement"}]},
+  "static/chunks/thambura-H.js": {"entryPoint": "src/islands/thambura.tsx", "imports": [{"path": "static/chunks/panel-P.js", "kind": "import-statement"}]},
+  "static/chunks/session-S.js": {"entryPoint": "src/islands/session.tsx", "imports": [{"path": "static/chunks/view-V.js", "kind": "import-statement"}]},
+  "static/chunks/ThamburaLab-L.js": {"entryPoint": "src/player/ThamburaLab.tsx", "imports": []},
+  "static/chunks/view-V.js": {"imports": []},
+  "static/chunks/panel-P.js": {"imports": []}
+}}

@@ -20,47 +20,67 @@ make prodlogs    # tail App Engine logs
 make patternreport # which talas play a written mridangam pattern (#185); fails until all do
 ```
 
-Built assets (`app.js`, `static/chunks/`, `tailwind.css`, `web/bundle.json`)
+Built assets (`app.js`, `static/chunks/`, `tailwind.css`, `web/meta.json`)
 are gitignored. `.gcloudignore` exists so a deploy still uploads them.
 
-**The bundle is split** (#91). `web/build.mjs` builds `app.js` with
-`splitting`: the Lab and Raagini views load on first use from
-`static/chunks/`, behind a "Loading the Lab…" indicator, and code they share
-with the app goes into shared chunks that `app.js` imports up front. Three
-things keep that from making a first visit slower or a deploy break a page:
+**The bundle is split** (#91, #204). `web/build.mjs` builds `app.js` with
+`splitting`: each island is its own chunk (`web/src/islands/`, registered
+with tsappkit's `lazy` in `player/islands.ts`), fetched only on a page whose
+spec names it and when its `load` says, and the Lab and Raagini views load
+on first use, behind a "Loading the Lab…" indicator. Code they share goes
+into shared chunks. Four things keep that from making a first visit slower
+or a deploy break a page:
 
-- The build writes `web/bundle.json`, the chunks `app.js` imports before it
-  runs, and Go (`internal/web/bundle.go`) reads it at startup and puts them in
-  every page's `<head>` as `<link rel="modulepreload">`. Without that the
+- The build writes esbuild's metafile to `web/meta.json`, and Go
+  (`internal/web/assets.go`, goapplib's `page.LoadEsbuildMetafile`) reads it
+  at startup. Each page's `<head>` then preloads, as `<link
+  rel="modulepreload">`, the chunks its entry imports and those of its eager
+  islands (`page.Assets.For("app", spec)`, or `"embed"`). Without that the
   browser finds them one after another, and a first visit measured slower
-  than an unsplit bundle. The manifest is outside `static/` because App
-  Engine serves that folder itself and the Go app can't read it. After a
-  `pnpm watch` or `pnpm build` the server's copy is stale until it
-  restarts: the page preloads chunk names the rebuild deleted, and the
-  console shows a 404 per chunk. Restart the server after rebuilding before
-  counting console errors in a browser check.
+  than an unsplit bundle. An island with a `load` that waits (`visible`) is
+  left out on purpose. The metafile is outside `static/` because App Engine
+  serves that folder itself and the Go app can't read it. After a `pnpm
+  watch` or `pnpm build` the server's copy is stale until it restarts: the
+  page preloads chunk names the rebuild deleted, and the console shows a 404
+  per chunk. Restart the server after rebuilding before counting console
+  errors in a browser check.
 - The service worker precaches every script the build wrote (the list comes
-  from esbuild's metafile, `scripts/shell.mjs`), so the lazy views open
-  offline after one visit and an old worker always holds an `app.js` and the
-  chunks it asks for.
+  from the metafile, `scripts/shell.mjs`), so the lazy islands and views
+  open offline after one visit and an old worker always holds an `app.js`
+  and the chunks it asks for.
 - `app.yaml` makes `/static/*.js` revalidate on every load and keeps
   `/static/chunks/` for a year (their names are content hashes). Otherwise a
   browser holding a pre-deploy `app.js` would ask for chunks the deploy
   removed. The build empties `static/chunks/` first, since esbuild never
   deletes.
+- **A lazy island mounts late, so an empty slot above another can put the
+  other on screen at load.** On `/labs/side-by-side` below `lg` the thambura
+  (`load: "visible"`) sits under the tala, and with the tala's slot still
+  empty it was in view and mounted at once. The tala's slot holds a
+  screen-tall placeholder (`layouts/SideBySide.html`) that the island
+  replaces. `?islands` in the URL shows each island's state on the page.
+
+Splitting per island costs chunks: about 13 shared ones instead of 3, so a
+page fetches 17 to 20 scripts where it fetched 4 to 7. Measured for #204:
+`/` downloads 4 KB more, the side-by-side lab and the embed 7 KB less, and a
+throttled first visit to `/` is no slower (the preloads cover it).
 
 The build has two entries: `app.js` for our pages and `embed.js` for other
-sites (#92, below). They share chunks, `bundle.json` has an entry for each,
-and both keep fixed names, since other sites link to `embed.js`.
+sites (#92, below). They share chunks and both keep fixed names, since other
+sites link to `embed.js`. `embed.ts` has no page class, so it mounts through
+`page/mountAll.ts`, which waits for every lazy island and then runs their
+lifecycle, so `mount()` still resolves with the islands up.
 
 The pluck worker (`static/pluckWorker.js`, #39) is a third build, a classic
 script like `sw.js`, so it shares no chunks; the service worker precaches it.
 
 `pnpm buildcheck` (in `make test`) builds into a temp folder and checks all
-of this: the views are in chunks, the worker precaches every script, stale
-chunks are gone, `bundle.json` matches what each entry imports,
-`embed.js` carries none of our page chrome and shares chunks with `app.js`,
-and the pluck worker is a classic script with no page code in it.
+of this: each island has a chunk no entry imports up front, the views are in
+chunks, the worker precaches every script, stale chunks are gone, `embed.js`
+carries none of our page chrome and shares chunks with `app.js`, and the
+pluck worker is a classic script with no page code in it. Go's
+`TestSpecsNameKnownIslands` (`page.CheckIslands`) fails a spec that names an
+island the registry doesn't have; `islandNames` in `assets.go` is that list.
 
 `web/` has three pnpm scripts no make target and no CI runs, so they only run
 when you type them: `pnpm bench` (times the pluck renderer, see `tambura.ts`
@@ -146,7 +166,7 @@ Sadhana).
   written the way another site would write one, with no BasePage, header,
   `app.js` or `tailwind.css`: a `data-thambura-spec` script, a
   `data-thambura-slot` element per island, and `/static/embed.js`. It's
-  noindexed and preloads `embed.js`'s chunks from `bundle.json`. Go's
+  noindexed and preloads `embed.js`'s chunks and its islands' (`embedDemoSpec` in `embed.go`, which mirrors the template's spec). Go's
   `/static/` handler and all three `/static` handlers in `app.yaml` send
   `Access-Control-Allow-Origin: *`, since a module script, its chunks and
   `fetch()` of fixtures and sounds from another origin need it.
@@ -438,7 +458,7 @@ unit-tested:
   thambura's key, C. On our pages (`main.ts`, `wireSessionKeys`) Space is
   Start all and Shift+↑/↓ steps the shruthi (`shortcuts.ts`,
   `pageShortcut`); Space leaves a focused button alone, since it presses it.
-  `sessionIsland.tsx` mounts the strip alone, as the `session` island.
+  `islands/session.tsx` mounts the strip alone, as the `session` island.
 - `handsPresenter.ts` (`HandsPresenter`): the hand claps as a track (its
   row reads "Kriyas": the claps, waves and finger counts, whatever the sound),
   `hands-1`, seeded by Go as a `hands` instrument in the page spec. It loads
@@ -457,8 +477,9 @@ unit-tested:
   Its Sounds menu and Volume slider are the hands track's, the lane,
   Variety and Korvai the kit's, and the speed the session strip's; all come
   in as props. `Stepper.tsx` is the slider between − and + both use.
-  `island.tsx` wires the real browser dependencies in. `islands.ts` holds
-  the island registry (`tala`, `thambura`, `session`) and `buildContext`, which both
+  `island.tsx` wires the real browser dependencies into the presenters, and
+  `islands/tala.tsx` mounts the view. `islands.ts` holds
+  the island registry (`tala`, `tracks`, `thambura`, `session`, each `lazy`) and `buildContext`, which both
   entries use: `main.ts` for our pages, through tsappkit's
   `IslandPage` (a `BasePage`, which also wires the theme toggle), and
   `embed.ts` for other sites. Both mount through tsappkit's `mountIslands`, which logs and skips an unknown island, a missing slot or
@@ -514,7 +535,7 @@ unit-tested:
   thambura's, or the kit's pad) and Remove, which lives only there. The
   kit's stroke lane sits under its row while it plays. Rows are keyed by id,
   since the list makes new row objects on every change and a row remade
-  would close; while any row is soloed the rest fade. `tracksIsland.tsx`
+  would close; while any row is soloed the rest fade. `islands/tracks.tsx`
   mounts them; `watched.ts` makes a presenter's state a signal through its
   `watch`, since a kit can show in the tala's lane and in its row at once
   (the kit, claps, tala and thambura all have `watch`).
@@ -631,8 +652,8 @@ unit-tested:
   and the spectrum with the bloom band shaded. Shared bits are in
   `thamburaControls.tsx`. Every view must show every state even if it can only
   set part of it (the Raagini's Select only steps Pa/Ma/Ni/Sa).
-- `thamburaIsland.tsx` is the thambura docked in a slot (it's handed the
-  presenter; `newThamburaPresenter` is what `buildContext` makes it with).
+- `islands/thambura.tsx` is the thambura docked in a slot (it's handed the
+  presenter; `newThamburaPresenter` in `thamburaIsland.tsx` is what `buildContext` makes it with).
   The page's floating `#play-all` is Start all (`wireFloatingPlay` in
   `session.ts`), and the T key plays the thamburas alone on every page of
   ours (`pageShortcut`: not while typing in a field, not with Ctrl/Cmd/Alt,

@@ -35,21 +35,6 @@ func TestEmbedDemo(t *testing.T) {
 	}
 }
 
-func TestEmbedDemoPreloadsTheEmbedBundle(t *testing.T) {
-	srv, app := newServerWithApp(t)
-	app.Context.Bundle = Bundle{
-		App:   BundleEntry{Preload: []string{"/static/chunks/app-only.js"}},
-		Embed: BundleEntry{Preload: []string{"/static/chunks/chunk-E.js"}},
-	}
-	_, body := get(t, srv.URL+"/embed/demo")
-	if !strings.Contains(body, `<link rel="modulepreload" href="/static/chunks/chunk-E.js">`) {
-		t.Errorf("/embed/demo doesn't preload embed.js's chunks")
-	}
-	if strings.Contains(body, "app-only.js") {
-		t.Errorf("/embed/demo preloads app.js's chunks")
-	}
-}
-
 // Other sites load embed.js, its chunks, the stylesheet, the fixtures and
 // the sounds from us, and a module script or fetch() from another origin
 // needs this header.

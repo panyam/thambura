@@ -13,6 +13,6 @@ version: 1
 sources:
     goapplib:
         url: github.com/panyam/goapplib
-        ref: v0.6.0
-        resolved_commit: v0.6.0
-        fetched_at: "2026-10-04T20:23:00Z"
+        ref: v0.6.3
+        resolved_commit: v0.6.3
+        fetched_at: "2026-10-05T06:02:18Z"

@@ -59,7 +59,6 @@ func labPage(p *SitePage, app *goal.App[*App], title, description string) {
 	p.CanonicalUrl = brand.URL + "/"
 	p.DisableSplashScreen = true
 	p.Header.AppName = brand.Name
-	p.Preload = app.Context.Bundle.App.Preload
 }
 
 // LabsIndexPage lists the experiments.
@@ -75,6 +74,7 @@ func (p *LabsIndexPage) Load(r *http.Request, w http.ResponseWriter, app *goal.A
 	labPage(&p.SitePage, app, "Experiments", "Experiments with how "+brand.Name+" is laid out.")
 	p.Labs = labs
 	p.Spec = Spec{Spec: page.Spec{Layout: "index"}}
+	p.Preload = app.Context.Assets.For("app", p.Spec.Spec)
 	return nil, false
 }
 
@@ -90,12 +90,20 @@ type SideBySidePage struct {
 func (p *SideBySidePage) Load(r *http.Request, w http.ResponseWriter, app *goal.App[*App]) (error, bool) {
 	p.Lab = labBySlug("side-by-side")
 	labPage(&p.SitePage, app, p.Lab.Title, p.Lab.Blurb)
-	p.Spec = Spec{
-		Spec:        page.Spec{Layout: "side-by-side", Islands: []page.Island{talaIsland("main"), {Name: "thambura", Slot: "side", Presentation: "panel"}}},
-		Instruments: startingInstruments(app.Context.KitURLs),
-	}
+	p.Spec = sideBySideSpec(app.Context.KitURLs)
 	if err := p.Spec.Validate(); err != nil {
 		return err, false
 	}
+	p.Preload = app.Context.Assets.For("app", p.Spec.Spec)
 	return nil, false
+}
+
+// sideBySideSpec is the tala and a docked thambura in two columns. The
+// thambura mounts when it's scrolled to, since on a narrow screen it sits
+// below the tala.
+func sideBySideSpec(kitURLs []string) Spec {
+	return Spec{
+		Spec:        page.Spec{Layout: "side-by-side", Islands: []page.Island{talaIsland("main"), {Name: "thambura", Slot: "side", Presentation: "panel", Load: "visible"}}},
+		Instruments: startingInstruments(kitURLs),
+	}
 }

@@ -21,32 +21,3 @@ export function shellFor(metafile, { outdir, base, extras }) {
     .sort();
   return [...new Set([...extras, ...built])];
 }
-
-/**
- * The chunks an entry imports before it can run, directly or through other
- * chunks, as URLs under `base`: what a page should ask for with
- * <link rel="modulepreload"> so the browser fetches them alongside the entry
- * instead of one after another. Chunks loaded with import() are left out, as
- * is the entry itself (the page's own <script> fetches it). An entry the
- * build didn't write has none.
- *
- * @param {{ outputs: Record<string, { imports?: { path: string, kind: string }[] }> }} metafile
- * @param {string} entry the entry's name, e.g. "app" for static/app.js
- * @param {{ outdir: string, base: string }} opts
- * @returns {string[]}
- */
-export function preloadFor(metafile, entry, { outdir, base }) {
-  const dir = outdir.replace(/^\.\//, "").replace(/\/$/, "") + "/";
-  const outputs = Object.fromEntries(Object.entries(metafile.outputs).map(([p, v]) => [p.replace(/^\.\//, ""), v]));
-  const seen = new Set();
-  const visit = (path) => {
-    for (const imp of outputs[path]?.imports ?? []) {
-      const p = imp.path.replace(/^\.\//, "");
-      if (imp.kind !== "import-statement" || seen.has(p)) continue;
-      seen.add(p);
-      visit(p);
-    }
-  };
-  visit(`${dir}${entry}.js`);
-  return [...seen].filter((p) => p.startsWith(dir)).map((p) => `${base}/${p.slice(dir.length)}`).sort();
-}
