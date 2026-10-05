@@ -133,7 +133,7 @@ In rough order. See CLAUDE.md ("Adding the shruthi box / mridangam") for the des
 - [ ] **Solkattu as the patterns' vocabulary** (`docs/designs/solkattu.md`).
       Done: the stroke names and the counting line in the lane (#162), a
       `sol:` role realized through a phrase table (#176). Next: solkattu
-      in the lane (#82, waiting on the first pattern with a `sol:` line),
+      in the lane (#82; Khanda Chaapu's korvai is the first `sol:` pattern, #200),
       then the editor and korvais on demand.
 - [ ] **Mridangam patterns**: the mission #185 (above). Done on it: the
       report (#188), Viloma's own match (#189), two strokes at once (#193),

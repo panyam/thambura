@@ -1,0 +1,34 @@
+---
+id: khanda-chaapu-korvai-1
+name: Khanda Chaapu korvai
+counts: 35/2
+shape: down
+nadai: any
+ticks: "0 2/5 3/5"
+role: korvai
+source: >-
+  karya, Solkattu/Score/Solkattu2021.hs, kon_35_kanda, its first section,
+  learned from Ganesh, 2021-02-21 (github.com/elaforge/karya, GPL-3.0, used
+  with permission). Written there in tisram as tri tanga (tdktt_ . kp .
+  tdktt_ . kpnp . tdktt_), with tdktt_ "tadi_ki_ta_thom_": the phrase three
+  times, joined by tanga, seven cycles of Khanda Chaapu from sam to sam. karya
+  gives it no mridangam strokes, so the realization is ours, after karya's
+  own defaults: ta di ki ta thom as k t k n o, tanga as thom with din and ki
+  (od _ k), and ta ka and ta ka ti ku from our phrase table, whose p is the
+  left-hand tha, playing thom until the kit has one (#80). Unverified by a
+  player.
+realize:
+  ta di _ ki _ ta _ thom: k t _ k _ n _ o
+  tang _ ga: od _ k
+accents:
+  0: 1.1
+---
+\cycle("|5|5|5|5|5|5|5|")
+\beatDuration(3)
+sol: ta di , ki , ta , thom , ta ka ta di , ki
+     , ta , thom , ta ka ti ku ta di , ki , ta
+     , thom , tang , ga ta di , ki , ta , thom ,
+     ta ka ta di , ki , ta , thom , ta ka ti ku
+     ta di , ki , ta , thom , tang , ga ta di ,
+     ki , ta , thom , ta ka ta di , ki , ta ,
+     thom , ta ka ti ku ta di , ki , ta , thom ,

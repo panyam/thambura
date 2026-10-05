@@ -453,8 +453,13 @@ describe("KitPresenter on the tala's clock", () => {
     expect(kit.state.hasKorvai).toBe(true);
   });
 
-  it("has no korvai to offer for a tala without one", () => {
+  it("offers Khanda Chaapu's korvai", () => {
     tala.setSettings({ tala: "chaapu_khandam" });
+    expect(kit.state.hasKorvai).toBe(true);
+  });
+
+  it("has no korvai to offer for a tala without one", () => {
+    tala.setSettings({ tala: "sapta_ata", jaathi: "khandam" });
     expect(kit.state.hasKorvai).toBe(false);
     kit.askForKorvai();
     expect(kit.state.korvaiQueued).toBe(false);

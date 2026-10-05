@@ -321,9 +321,9 @@ phrase with no entry. Until the left-hand tha is recorded, `p` plays thom
    Done: `engine/syllables.ts` holds the syllable table and the counting
    lines, and the lane shows the count beside each slot.
 3. **`sol:` and the phrase table** in the pattern compiler, with the defaults
-   and the agreed additions. Done (#175): no pattern has a `sol:` line yet,
-   since none of today's has a known solkattu; the first comes with its
-   source in its own PR.
+   and the agreed additions. Done (#175). The first pattern written in
+   solkattu is Khanda Chaapu's korvai (#200), with its own `realize:` for
+   the phrases the table lacks.
 4. **The lane shows solkattu** over strokes (#82).
 5. Then the editor, korvais every N cycles and the generator, each on this.
 

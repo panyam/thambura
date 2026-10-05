@@ -20,8 +20,15 @@ is GPL-3.0.
 | `adi-korvai.not` | `tir_sam_adi_kirkalam` in `MridangamTirmanam.hs` | dated 2022-04-23 |
 | `rupakam-korvai.not` | `tir_icarnatic_guhan_kamalakiran_rupaka` in `MridangamTirmanam.hs` | dated 2023-03-10 |
 | `misra-chaapu-korvai.not` | `tir_18_06_15` in `Mridangam2018.hs`, the `t.k.o.o.k.o.o.k` variant | learned from Ganesh, dated 2018-06-15 |
+| `khanda-chaapu-korvai.not` | `kon_35_kanda` in `Solkattu2021.hs`, its first section | learned from Ganesh, dated 2021-02-21 |
 
-All but the last three are in `MridangamSarva.hs`.
+All but the last four are in `MridangamSarva.hs`.
+
+`khanda-chaapu-korvai.not` is written in solkattu, as karya has it, and karya
+gives it no mridangam strokes. Its realization, the pattern's own `realize:`
+plus our phrase table, is ours: *ta di ki ta thom* as `k t k n o`, the strokes
+karya's mridangam defaults give that figure, and *tanga* as thom with din and
+ki, as karya realizes it in `SolkattuMohra.hs`.
 
 ## adi-chatusram.not
 
