@@ -7,12 +7,12 @@
 
 | Component | Module | Version | Updated |
 |-----------|--------|---------|---------|
-| goapplib | github.com/panyam/goapplib | v0.6.3 | 2026-10-05 |
-| goapplib templates | github.com/panyam/goapplib (templar source, `web/templates/templar.yaml`) | v0.6.3 | 2026-10-05 |
+| goapplib | github.com/panyam/goapplib | v0.7.3 | 2026-10-06 |
+| goapplib templates | github.com/panyam/goapplib (templar source, `web/templates/templar.yaml`) | v0.7.3 | 2026-10-06 |
 | templar | github.com/panyam/templar | v0.1.2 | 2026-09-18 |
 | goutils | github.com/panyam/goutils | v0.1.14 (indirect) | 2026-10-04 |
-| tsappkit (TS) | @panyam/tsappkit | 0.6.3 | 2026-10-05 |
-| tsappkit-solid (TS) | @panyam/tsappkit-solid | 0.6.3 | 2026-10-05 |
+| tsappkit (TS) | @panyam/tsappkit | 0.7.3 | 2026-10-06 |
+| tsappkit-solid (TS) | @panyam/tsappkit-solid | 0.7.3 | 2026-10-06 |
 | s3gen | github.com/panyam/s3gen (`docs/go.mod` only) | v0.1.6 | 2026-09-26 |
 
 goapplib + templar render the page shell (BasePage, header, theme toggle).
