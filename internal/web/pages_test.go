@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	goal "github.com/panyam/goapplib"
+	"github.com/panyam/thambura/internal/brand"
 
 )
 
@@ -654,4 +655,54 @@ func checkKitServed(t *testing.T, srv *httptest.Server, url string) {
 		}
 	}
 	t.Logf("%s: %d strokes, %d takes all served", url, len(kit.Strokes), takes)
+}
+
+// Every page the sitemap lists names itself as canonical and isn't noindex,
+// so a new indexed page can't ship pointing somewhere else (Search Console
+// reports that as an alternate page and leaves it out).
+func TestIndexedPagesAreSelfCanonical(t *testing.T) {
+	srv := newServer(t)
+	_, sitemap := get(t, srv.URL+"/sitemap.xml")
+	canonical := regexp.MustCompile(`<link rel="canonical" href="([^"]*)">`)
+	for _, path := range indexedPages {
+		want := brand.URL + path
+		if !strings.Contains(sitemap, "<loc>"+want+"</loc>") {
+			t.Errorf("sitemap doesn't list %s", want)
+		}
+		resp := fetch(t, srv.URL+path)
+		if resp.code != http.StatusOK || resp.robots != "" {
+			t.Errorf("GET %s = %d, X-Robots-Tag %q", path, resp.code, resp.robots)
+		}
+		got := canonical.FindAllStringSubmatch(resp.body, -1)
+		if len(got) != 1 || got[0][1] != want {
+			t.Errorf("GET %s canonical links = %v, want one to %s", path, got, want)
+		}
+	}
+}
+
+// www and the project's appspot hosts redirect to thambura.com with the path
+// and query kept; a version's own host and a local server don't.
+func TestOtherHostsRedirect(t *testing.T) {
+	t.Setenv("GAE_VERSION", "")
+	t.Setenv("GOOGLE_CLOUD_PROJECT", "")
+	_, app := newServerWithApp(t)
+	mux := http.NewServeMux()
+	Register(app, mux, filepath.Join("..", "..", "web"))
+	h := SiteHandler(mux)
+	for _, host := range []string{"www.thambura.com", "WWW.thambura.com", "thambura.appspot.com", "thambura.uc.r.appspot.com"} {
+		req := httptest.NewRequest("GET", "https://"+host+"/about?s=abc", nil)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusMovedPermanently || rec.Header().Get("Location") != "https://thambura.com/about?s=abc" {
+			t.Errorf("%s: %d to %q", host, rec.Code, rec.Header().Get("Location"))
+		}
+	}
+	for _, host := range []string{"thambura.com", "dev-dot-thambura.uc.r.appspot.com", "localhost:8000"} {
+		req := httptest.NewRequest("GET", "https://"+host+"/about", nil)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Errorf("%s: %d, want 200", host, rec.Code)
+		}
+	}
 }

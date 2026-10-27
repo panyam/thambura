@@ -279,12 +279,41 @@ func Register(app *goal.App[*App], mux *http.ServeMux, webDir string) {
 	})
 	mux.HandleFunc("GET /sitemap.xml", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/xml; charset=utf-8")
-		fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8"?>
+		fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>%s/</loc></url>
-  <url><loc>%s/about</loc></url>
-</urlset>
-`, brand.URL, brand.URL)
+`)
+		for _, path := range indexedPages {
+			fmt.Fprintf(w, "  <url><loc>%s%s</loc></url>\n", brand.URL, path)
+		}
+		fmt.Fprint(w, "</urlset>\n")
+	})
+}
+
+// indexedPages are the pages we want in search, which the sitemap lists. Each
+// must set its CanonicalUrl to brand.URL plus its own path, exactly as here
+// (TestIndexedPagesAreSelfCanonical); a page left out is noindex, like labs.
+var indexedPages = []string{"/", "/about"}
+
+// otherHosts serve the same app as brand.URL. Their pages get a 301 to the
+// canonical host, so search engines index one copy instead of reporting the
+// rest as alternates. A version's own host (dev-dot-...) isn't listed, so
+// `make deploydev` stays reachable.
+var otherHosts = map[string]bool{
+	"www.thambura.com":          true,
+	"thambura.appspot.com":      true,
+	"thambura.uc.r.appspot.com": true,
+}
+
+// canonicalHost redirects a request on one of otherHosts to brand.URL, keeping
+// the path and query (a share link's ?s= among them). On App Engine, /static
+// and /legacy never reach Go, so those keep answering on every host.
+func canonicalHost(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if otherHosts[strings.ToLower(r.Host)] {
+			http.Redirect(w, r, brand.URL+r.URL.RequestURI(), http.StatusMovedPermanently)
+			return
+		}
+		h.ServeHTTP(w, r)
 	})
 }
 
@@ -301,10 +330,12 @@ func Staging() bool {
 	return strings.HasPrefix(os.Getenv("GAE_VERSION"), brand.DevVersionPrefix)
 }
 
-// SiteHandler wraps the mux with what a whole deploy needs. On a staging
+// SiteHandler wraps the mux with what a whole deploy needs: requests on
+// another host for the site go to brand.URL (canonicalHost), and on a staging
 // project every response is marked noindex, so a test copy can't turn up in
-// search beside the real site; on production h is returned as it is.
+// search beside the real site.
 func SiteHandler(h http.Handler) http.Handler {
+	h = canonicalHost(h)
 	if !Staging() {
 		return h
 	}
