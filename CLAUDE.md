@@ -141,7 +141,12 @@ Sadhana).
   `BasePage` plus our `Header`, `Social` and `StructuredData`), and
   `BasePage.html` turns it into the canonical link, Open Graph and Twitter
   tags, icons, manifest and JSON-LD. Absolute URLs come from `brand.URL`
-  (`https://thambura.com`), so the www and appspot copies point at it. Go
+  (`https://thambura.com`), so the www and appspot copies point at it, and
+  `SiteHandler` 301s their pages there anyway (`otherHosts`), so Search
+  Console doesn't list them as "Alternate page with proper canonical tag".
+  **A new page** either goes in `indexedPages` (the sitemap) with its
+  `CanonicalUrl` set to `brand.URL` plus exactly that path, or is noindex
+  like labs; `TestIndexedPagesAreSelfCanonical` checks the first. Go
   serves `/robots.txt`, `/sitemap.xml`, `/favicon.ico` and `/sw.js` (the
   service worker has to come from the root to cover the site, and goes out
   with `Cache-Control: no-cache`). `HomePage.html`
